@@ -1,5 +1,6 @@
 const BOMB_MAP_SCALE = 0.45;
 const BOMB_MAP_LIMIT = 208 * BOMB_MAP_SCALE;
+const BOMB_PREP_MS = 7e3;
 function bombSitesFor(attackTeam) {
   const defenderZ = (attackTeam === 0 ? -132 : 132) * BOMB_MAP_SCALE;
   return { A: [-110 * BOMB_MAP_SCALE, 0, defenderZ], B: [110 * BOMB_MAP_SCALE, 0, defenderZ] };
@@ -26,10 +27,10 @@ function createBombMatch(now = Date.now(), firstAttackTeam = Math.random() < 0.5
 }
 function startBombRound(m, fighters, now = Date.now()) {
   m.round++;
-  m.phase = "running";
+  m.phase = "prep";
   m.attackTeam = m.round <= 6 ? m.firstAttackTeam : 1 - m.firstAttackTeam;
   m.startedAt = now;
-  m.endsAt = now + 9e4;
+  m.endsAt = now + BOMB_PREP_MS;
   m.nextAt = 0;
   m.plantedSite = null;
   m.plantedAt = 0;
@@ -37,7 +38,7 @@ function startBombRound(m, fighters, now = Date.now()) {
   m.winner = null;
   const attackers = fighters.filter((p) => p.team === m.attackTeam && p.hp > 0);
   m.carrier = attackers.length ? attackers[Math.floor(Math.random() * attackers.length)].id : null;
-  m.event = `\u7B2C ${m.round}/12 \u56DE\u5408\u5F00\u59CB`;
+  m.event = `\u7B2C ${m.round}/12 \u56DE\u5408 \xB7 \u5B88\u65B9\u5E03\u9632`;
   m.revision++;
 }
 function finishBombRound(m, winner, event, now = Date.now()) {
@@ -52,6 +53,16 @@ function finishBombRound(m, winner, event, now = Date.now()) {
   m.revision++;
 }
 function tickBombMatch(m, fighters, now = Date.now()) {
+  if (m.phase === "prep") {
+    if (now >= m.endsAt) {
+      m.phase = "running";
+      m.startedAt = now;
+      m.endsAt = now + 9e4;
+      m.event = "\u653B\u65B9\u7A81\u5165 \xB7 \u56DE\u5408\u5F00\u59CB";
+      m.revision++;
+    }
+    return;
+  }
   if (m.phase !== "running") return;
   const alive = (team) => fighters.filter((p) => p.team === team && p.hp > 0 && p.connected !== false);
   const attackers = alive(m.attackTeam), defenders = alive(1 - m.attackTeam);
@@ -92,6 +103,7 @@ function beginBombHold(m, actor, site, now = Date.now()) {
 export {
   BOMB_MAP_LIMIT,
   BOMB_MAP_SCALE,
+  BOMB_PREP_MS,
   BOMB_PRESETS,
   BOMB_SITES,
   beginBombHold,

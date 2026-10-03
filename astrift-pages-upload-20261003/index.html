@@ -53,7 +53,7 @@
   <link rel="stylesheet" href="./supply.css?v=20260930-2" />
   <link rel="stylesheet" href="./practice-range.css?v=20260924-practice" />
   <link rel="stylesheet" href="./objective.css?v=1" />
-  <link rel="stylesheet" href="./bomb.css?v=20261001-loadout-1" />
+  <link rel="stylesheet" href="./bomb.css?v=20261003-bomb-pacing-1" />
   <style>#bombPresetField[hidden]{display:none!important}</style>
   <link rel="stylesheet" href="./keybinds.css?v=1" />
   <link rel="stylesheet" href="./wounds.css?v=1" />
@@ -146,7 +146,9 @@
     <div id="practicePanel" hidden><b>武器练习场</b><span>命中 <i id="practiceHits">0</i>　爆头 <i id="practiceHeadshots">0</i></span><small>退出按钮可返回主菜单</small></div>
     <div id="survivalPanel" hidden><b>生存模式</b><span id="survivalWave">第 1 波</span><small id="survivalRemain">敌人 0</small><small id="survivalPlayers">队员 1 人</small><label id="survivalWatchControl" hidden>观战队友<select id="survivalWatchSelect"></select></label></div>
     <div id="objectivePanel" hidden><b id="objectiveTitle"></b><span id="objectiveTimer"></span><span id="objectiveStatus"></span><small id="objectiveHint"></small></div>
-    <div id="bombPanel" hidden><b>相位爆破 <span id="bombRound">1/12</span></b><strong id="bombScore">攻 0 : 0 守</strong><span id="bombTimer">1:30</span><small id="bombWallet">相位点 1200</small><small id="bombStatus"></small><small id="bombHint"></small><label id="bombWatchField" hidden>观战<select id="bombWatch"></select></label></div>
+    <div id="bombPanel" hidden><b>相位爆破 <span id="bombRound">1/12</span></b><strong id="bombScore">攻 0 : 0 守</strong><span id="bombTimer">1:30</span><small id="bombWallet">相位点 1200</small><small id="bombStatus"></small><small id="bombRoutes"></small><small id="bombHint"></small><label id="bombWatchField" hidden>观战<select id="bombWatch"></select></label></div>
+    <div id="bombPrep" hidden><b id="bombPrepTitle">守方布防</b><strong id="bombPrepSeconds">7</strong><span id="bombPrepNote">攻方即将突入</span></div>
+    <div id="bombRoundBanner" hidden><small>回合结束</small><strong id="bombRoundOutcome"></strong><span id="bombRoundReason"></span></div>
     <div id="duelPanel" hidden><b id="duelTitle">单挑模式</b><span id="duelTimer">10:00</span><p id="duelStatus"></p><div id="duelRoster"></div><label id="watchControl" hidden>观战对象<select id="watchSelect"></select></label><small id="watchStatus"></small><div id="watchCombat" hidden></div><div class="duelActions"><button id="duelReady" type="button">准备开始</button><button id="gunmasterOpen" type="button" hidden>选择配件</button><button id="duelExit" type="button">退出房间</button></div></div>
     <div id="aiDuelPanel" hidden><b>单挑 AI</b><span id="aiDuelTimer">10:00</span><small>蓝队：你　红队：AI</small></div>
     <div id="healPointStatus" aria-live="polite"><b>治疗区域</b><span>站在中心范围内 · 每 0.5 秒恢复 4 点生命</span></div>
@@ -174,6 +176,6 @@
   <div id="aiDuelResult" hidden><div><h2 id="aiDuelWinner"></h2><p id="aiDuelFinal"></p><button id="aiDuelRetry" type="button">再战一局</button><button id="aiDuelExit" type="button">退出</button></div></div>
   <div id="gunmasterUpgrade" hidden><div><header><h2 id="gunmasterWeaponTitle">选择配件</h2><span id="gunmasterCredits"></span></header><p id="gunmasterHelp">每次击杀累计 1 次选择；按 F 自己打开。可在空槽装配或替换已有配件。</p><div id="gunmasterChoices"></div><button id="gunmasterLater" type="button">稍后选择</button></div></div>
   <div id="supplyPicker" hidden><div class="supplyCard"><span>ASTRIFT // FIELD SUPPLY</span><h2>选择一项补给</h2><div id="supplyChoices"></div><button id="supplyCancel" type="button">暂不领取</button></div></div>
-  <script type="module" src="./game.js?v=20261003-bomb-sites-1"></script>
+  <script type="module" src="./game.js?v=20261003-bomb-pacing-1"></script>
 </body>
 </html>
