@@ -8,8 +8,8 @@
   <title>星隙前线 | ASTRIFT FRONT</title>
   <script>
     // Pages 只托管界面；联机 API 和 WebSocket 继续走 Worker。
-    window.__ASTRIFT_API_ORIGIN__ = location.hostname.endsWith('.pages.dev')
-      ? 'https://astrift-front.fewa3729.workers.dev' : '';
+    window.__ASTRIFT_API_ORIGIN__ = ['.pages.dev','.github.io','.netlify.app','.vercel.app'].some(s => location.hostname.endsWith(s)) ? 'https://astrift-front.fewa3729.workers.dev' : '';
+      
     if (window.__ASTRIFT_API_ORIGIN__) {
       const nativeFetch = window.fetch.bind(window);
       window.fetch = (input, init) => {
