@@ -1,0 +1,40 @@
+.armoryOpen{width:100%;margin-top:10px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;border:1px solid #8d6cff66;background:linear-gradient(90deg,#171329,#0b1720);color:#fff;cursor:pointer;font-family:inherit}
+.armoryOpen b{color:#c5a8ff;font-size:15px}
+.armoryOpen small{color:#8ea3af}
+.armoryScreen{position:fixed;inset:0;z-index:20;padding:4vh 4vw;background:#02050bed;backdrop-filter:blur(8px);overflow:auto}
+.armoryScreen:not([hidden]){display:grid;place-items:center}
+.armoryCard{width:min(1040px,96vw);min-height:620px;padding:26px;background:linear-gradient(145deg,#111a2a,#071018);border:1px solid #5ff5ff55;box-shadow:0 30px 100px #000}
+.armoryHead{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #263d4b;padding-bottom:18px}
+.armoryHead span{font-size:10px;letter-spacing:.25em;color:var(--cyan)}
+.armoryHead h2{margin:3px 0 0;font-size:30px}
+.armoryHead button,.armoryCard aside button{padding:10px 18px;border:1px solid var(--cyan);background:#102a31;color:#dff;font-weight:800;cursor:pointer}
+.armoryTabs{display:flex;gap:8px;margin:18px 0}
+.armoryTabs button{flex:1;padding:12px;border:1px solid #2c414e;background:#09131d;color:#91a8b4;cursor:pointer}
+.armoryTabs button.active{border-color:var(--cyan);color:#fff;box-shadow:inset 0 -3px var(--cyan)}
+.armoryBody{display:grid;grid-template-columns:1fr 280px;gap:24px}
+.attachmentGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.attachmentSlot{padding:12px;background:#08131e;border:1px solid #243946}
+.attachmentSlot label{margin:0 0 8px;color:#6feaf3}
+.attachmentSlot select{width:100%;padding:10px;border:1px solid #385263;background:#050c13;color:#fff}
+.attachmentSlot p{min-height:32px;margin:8px 0 0;font-size:11px;line-height:1.45;color:#849da8}
+.armoryCard aside{padding:18px;background:#060d15;border-left:2px solid #926cff}
+.armoryCard aside h3{margin:0 0 16px}
+.gunStats{display:grid;gap:10px}
+.statLine{display:grid;grid-template-columns:76px 1fr 54px;gap:8px;align-items:center;font-size:12px}
+.statLine i{display:block;height:6px;background:#142630}
+.statLine i b{display:block;height:100%;background:linear-gradient(90deg,#49dcff,#9b72ff)}
+.statLine strong{text-align:right;color:#dff}
+.armoryCard aside p{min-height:86px;font-size:12px;line-height:1.55;color:#91a8b4}
+.armoryCard aside small{display:block;margin-top:10px;color:#5e7884}
+.buildCodeTools{margin-top:18px;padding-top:14px;border-top:1px solid #263d4b}
+.buildCodeTools h4{margin:0 0 10px;color:#c5a8ff}
+.buildCodeTools>button{width:100%}
+.buildCodeUse{display:flex;gap:7px;margin-top:8px}
+.buildCodeUse input{min-width:0;flex:1;padding:9px;border:1px solid #385263;background:#050c13;color:#fff;font:12px ui-monospace,monospace;text-transform:uppercase}
+.buildCodeUse button{padding:8px 12px!important}
+.buildCodeTools small{min-height:30px;line-height:1.45}
+.buildCodeTools small[data-error="true"]{color:#ff8a8a}
+.armoryCard aside button:disabled{opacity:.55;cursor:wait}
+@media(max-width:760px){.armoryBody{grid-template-columns:1fr}.attachmentGrid{grid-template-columns:1fr}.armoryCard aside{border-left:0;border-top:2px solid #926cff}.armoryTabs{flex-direction:column}}
+#adsOverlay.thermal{background:radial-gradient(circle at center,#ff7b1810 0 36%,#071018b8 70%);filter:sepia(.7) saturate(1.8)}
+#adsOverlay.thermal .optic:after{content:"THERMAL ONLINE";position:absolute;right:6px;top:6px;color:#ffb04d;font:9px monospace;letter-spacing:.12em}

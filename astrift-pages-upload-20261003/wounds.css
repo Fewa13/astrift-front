@@ -1,0 +1,5 @@
+#woundStatus{position:absolute;left:50%;bottom:126px;transform:translateX(-50%);display:flex;gap:7px;justify-content:center;flex-wrap:wrap;max-width:70vw;pointer-events:none;z-index:8}
+#woundStatus:empty{display:none}
+#woundStatus span{padding:5px 9px;border:1px solid rgba(255,166,127,.7);border-radius:5px;background:rgba(28,9,13,.8);color:#ffcfbb;font:700 12px/1.2 sans-serif;letter-spacing:.06em;text-shadow:0 1px 3px #000;box-shadow:0 0 14px rgba(255,83,61,.15)}
+#hud.headWound::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;background:radial-gradient(circle,transparent 43%,rgba(255,85,72,.16) 100%);animation:woundPulse .42s ease-in-out infinite alternate}
+@keyframes woundPulse{to{opacity:.28}}

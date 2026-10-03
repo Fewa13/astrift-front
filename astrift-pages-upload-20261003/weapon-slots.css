@@ -1,0 +1,28 @@
+.equipmentSlot.weaponSlot {
+  border-color: #5ff5ff66;
+  background: linear-gradient(145deg, #0b2028, #07151a);
+}
+
+.equipmentSlot.weaponSlot label { color: #5ff5ff; }
+
+#weaponSlotsHud {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+#weaponSlotsHud span {
+  padding: 3px 6px;
+  border: 1px solid #52646c;
+  background: #071019bb;
+  color: #7895a0;
+  font-size: 9px;
+  letter-spacing: .06em;
+}
+
+#weaponSlotsHud span.active {
+  border-color: #5ff5ff;
+  color: #eaffff;
+  box-shadow: inset 0 -2px #5ff5ff;
+}

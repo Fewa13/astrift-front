@@ -1,0 +1,9 @@
+.roomTools{display:grid;grid-template-columns:1fr auto;gap:7px}
+.roomTools input,.roomTools button{margin-top:8px}
+.roomTools button{padding:0 12px;border:1px solid #385462;background:#10222c;color:var(--cyan);font:700 11px system-ui;cursor:pointer}
+.modes{grid-template-columns:repeat(3,1fr)!important}
+.modes button{padding:10px!important}
+.modes b{font-size:14px!important}
+@media(max-width:620px){.modes{grid-template-columns:1fr!important}.modes button{min-height:58px}}
+.roomDialog{position:fixed;inset:0;z-index:30;background:#02060ddd;backdrop-filter:blur(8px);place-items:center;padding:20px}.roomDialog:not([hidden]){display:grid}.roomCard{width:min(470px,94vw);padding:28px;background:linear-gradient(145deg,#101d2a,#071019);border:1px solid #5ff5ff88;box-shadow:0 30px 100px #000}.roomCard>span{font-size:10px;letter-spacing:.24em;color:var(--cyan)}.roomCard h2{margin:8px 0;font-size:30px}.roomCard p{color:#9ab0ba;line-height:1.55}.roomCard input{text-align:center;font:900 34px monospace;letter-spacing:.28em;color:var(--cyan)}.roomActions{display:grid;grid-template-columns:1fr 1.2fr 1.4fr;gap:8px;margin-top:18px}.roomActions button{padding:12px 8px;border:1px solid #385361;background:#0a1721;color:#cfe5eb;font-weight:800;cursor:pointer}.roomActions .primary{border-color:var(--cyan);background:#12343b;color:white}.roomCard>small{display:block;margin-top:13px;color:#708b97}.roomCard>small.error{color:#ff7087}.roomCard>small.success{color:#70ffd0}@media(max-width:520px){.roomActions{grid-template-columns:1fr}.roomCard input{font-size:28px}}
+#roomMapField[hidden],#roomCodeField[hidden],#roomDialogHelp[hidden],#roomMessage[hidden]{display:none}

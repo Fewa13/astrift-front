@@ -1,0 +1,7 @@
+.qualityControl{display:grid;gap:6px;margin-top:12px;font-size:12px;color:#a4bbc5;text-align:left}
+.qualityControl select{width:100%;padding:9px 10px;border:1px solid #38515f;background:#09131d;color:#d8edf5;font:inherit}
+#fpsCounter{position:absolute;right:26px;top:72px;color:#9dc2cf;font:11px monospace;pointer-events:none}
+.migrationNotice{display:block;margin-top:10px;color:#ffc875;line-height:1.5}.migrationNotice[hidden]{display:none}
+.cross{will-change:transform}
+@media(max-height:900px){#menu{overflow-y:auto;align-items:flex-start}.panel{margin:15px 0}.brand{margin-top:40px}}
+@media(max-width:760px){#fpsCounter{top:60px;right:12px}}

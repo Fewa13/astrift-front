@@ -1,0 +1,24 @@
+#hitmarker.headshot {
+  width: 42px;
+  height: 42px;
+  color: #ff536f;
+  line-height: 42px;
+  text-align: center;
+  text-shadow: 0 0 10px #ff244f;
+  transition: 60ms;
+}
+
+#hitmarker.headshot::before,
+#hitmarker.headshot::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 20px;
+  width: 40px;
+  height: 2px;
+  background: #ff536f;
+  box-shadow: 0 0 8px #ff244f;
+}
+
+#hitmarker.headshot::before { transform: rotate(45deg); }
+#hitmarker.headshot::after { transform: rotate(-45deg); }

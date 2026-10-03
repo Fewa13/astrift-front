@@ -1,0 +1,37 @@
+#adsOverlay.gale .optic {
+  width: 230px;
+  height: 170px;
+  border: 4px solid #397b75;
+  border-radius: 42% 42% 16% 16%;
+  box-shadow: 0 0 0 7px #071312dd, inset 0 0 28px #65ffd326;
+}
+
+#adsOverlay.gale .optic .v,
+#adsOverlay.gale .optic .h,
+#adsOverlay.gale .optic b {
+  background: #72ffd4;
+  box-shadow: 0 0 6px #72ffd4;
+}
+
+#adsOverlay.optic-galeDefault .optic {
+  width: 165px;
+  height: 105px;
+  border: 0;
+  border-bottom: 5px solid #86ffca;
+  clip-path: polygon(0 100%,0 55%,13% 55%,22% 78%,42% 78%,47% 42%,53% 42%,58% 78%,78% 78%,87% 55%,100% 55%,100% 100%);
+}
+
+#adsOverlay.optic-galeReflex .optic { width: 155px; height: 135px; border-radius: 35px 35px 12px 12px; }
+#adsOverlay.optic-galeReflex .optic .v,
+#adsOverlay.optic-galeReflex .optic .h { display: none; }
+
+#adsOverlay.optic-galeTwoX .optic { width: 225px; height: 225px; border: 5px double #7de7ff; border-radius: 50%; }
+#adsOverlay.optic-galeTwoX .optic::after { content: "2×"; position: absolute; right: 20px; bottom: 16px; color: #7de7ff; font: 11px monospace; }
+
+#adsOverlay.optic-galeFourX .optic { width: 58vh; height: 58vh; border: 6px double #9aa8ff; border-radius: 50%; }
+#adsOverlay.optic-galeFourX .scopeMask { display: block; position: absolute; inset: 0; background: radial-gradient(circle at center,transparent 0 29vh,#020506 29.4vh); }
+
+#adsOverlay.optic-galeVariable .optic { width: 310px; height: 310px; border: 5px double #c38cff; border-radius: 50%; }
+#adsOverlay.optic-galeVariable .optic::after { content: attr(data-zoom-hint); position: absolute; right: 24px; bottom: 20px; color: #c38cff; font: 11px monospace; }
+
+#adsOverlay.optic-galeOpen .optic { width: 205px; height: 115px; border: 3px solid #8dffc3; border-top: 0; border-radius: 0 0 60px 60px; }

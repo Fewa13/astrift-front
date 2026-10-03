@@ -1,0 +1,18 @@
+.keybindOpen{display:block;width:100%;margin-top:12px;padding:11px 14px;border:1px solid #42616b;background:#0c1822;color:#dffcff;font:700 15px Rajdhani,'Noto Sans SC',sans-serif;cursor:pointer;text-align:left}
+.keybindOpen:hover,.keybindOpen:focus-visible{border-color:#5ff5ff;background:#103038}
+.keybindScreen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:#02050bea;padding:18px}
+.keybindScreen[hidden]{display:none}
+.keybindCard{width:min(760px,96vw);max-height:min(90vh,850px);display:flex;flex-direction:column;padding:24px;background:#09121f;border:1px solid #5ff5ff70;box-shadow:0 30px 100px #000;color:#ecfaff}
+.keybindHead{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.keybindHead span{font-size:11px;color:#7c9faa;letter-spacing:.2em}
+.keybindHead h2{font-size:30px;margin:2px 0}
+.keybindHead button,.keybindFoot button{border:1px solid #4e7780;background:#102a32;color:#e8fdff;padding:10px 16px;font:700 15px Rajdhani,'Noto Sans SC',sans-serif;cursor:pointer}
+.keybindCard>p{color:#9eb6bf;margin:10px 0 16px;font-size:14px}
+.keybindGrid{overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-right:5px}
+.keybindGrid h3{grid-column:1/-1;margin:12px 0 2px;color:#75deed;font-size:14px;letter-spacing:.12em}
+.keybindRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border:1px solid #263b49;background:#0d1a27}
+.keybindRow span{font-size:14px}
+.keybindRow button{min-width:98px;padding:8px;border:1px solid #42616b;background:#09121b;color:#72eafa;font:700 14px Rajdhani,'Noto Sans SC',sans-serif;cursor:pointer}
+.keybindRow button.capturing{border-color:#ffbf69;color:#ffbf69;box-shadow:0 0 0 2px #ffbf6933}
+.keybindFoot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;color:#8ba9b5;font-size:12px}
+@media(max-width:620px){.keybindCard{padding:15px}.keybindGrid{grid-template-columns:1fr}.keybindHead h2{font-size:24px}}

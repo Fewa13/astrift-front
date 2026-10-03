@@ -1,0 +1,17 @@
+.menuGroup .duelEntry+.duelEntry{margin-top:9px}
+body.arena-multiteam .top>.score{display:none}
+#arenaScores[hidden]{display:none!important}
+.arenaScores{display:flex!important;flex-direction:row!important;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;max-width:58vw}
+.arenaScores>div{display:flex;align-items:center;gap:7px;padding:5px 9px;background:#07111edc;border:1px solid #34546a;font-size:11px;white-space:nowrap}
+.arenaScores>div b{font-size:23px;line-height:1;color:inherit}
+.arenaScores>[data-team="0"]{color:#68caff;border-color:#3289ba}
+.arenaScores>[data-team="1"]{color:#ff7d94;border-color:#b94b61}
+.arenaScores>[data-team="2"]{color:#c298ff;border-color:#7955ae}
+.arenaScores>[data-team="3"]{color:#70dfa1;border-color:#3d9d69}
+#duelRoster [data-team="2"]{color:#c298ff}
+#duelRoster [data-team="3"]{color:#70dfa1}
+#playerIdentity[data-team="2"]{border-color:#a875ed}
+#playerIdentity[data-team="2"] em{color:#c298ff}
+#playerIdentity[data-team="3"]{border-color:#49bd7c}
+#playerIdentity[data-team="3"] em{color:#70dfa1}
+@media(max-width:760px){.arenaScores{gap:4px;max-width:70vw}.arenaScores>div{padding:3px 5px;font-size:9px}.arenaScores>div b{font-size:18px}}

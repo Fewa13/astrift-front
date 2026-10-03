@@ -1,0 +1,10 @@
+/* Keep the 3D receiver and fore-end visible below magnified optics. */
+#adsOverlay.frost .scopeMask,
+#adsOverlay.optic-galeFourX .scopeMask {
+  display: none !important;
+}
+#adsOverlay.optic-shotgunDefault .optic{width:220px;height:92px;border:3px solid #68d9e8;border-top:0;border-radius:0 0 64px 64px}
+#adsOverlay.optic-smgDefault .optic{width:146px;height:146px;border:4px solid #8c77ff;border-radius:50%;box-shadow:0 0 0 6px #10121bcc}
+#adsOverlay.optic-revolverDefault .optic{width:112px;height:86px;border-left:5px solid #ffbb82;border-right:5px solid #ffbb82;clip-path:polygon(0 0,22% 0,22% 60%,78% 60%,78% 0,100% 0,100% 100%,0 100%)}
+#adsOverlay.optic-lmgDefault .optic{width:198px;height:132px;border:5px double #c7eb68;border-radius:20px 20px 6px 6px}
+#adsOverlay.optic-autoShotgunDefault .optic{width:246px;height:110px;border:3px solid #ff729c;border-top:0;border-radius:0 0 20px 20px;clip-path:polygon(0 0,18% 0,18% 10%,82% 10%,82% 0,100% 0,100% 100%,0 100%)}

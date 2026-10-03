@@ -1,0 +1,16 @@
+#supplyHint{position:absolute;left:50%;top:63%;transform:translateX(-50%);z-index:9;padding:9px 22px;border:1px solid #f4d776aa;background:#13212de8;color:#ffe8a1;font-weight:800;letter-spacing:.18em;text-shadow:0 0 12px #ffdc73;white-space:nowrap}
+#supplyHint[hidden]{display:none}
+#supplyTracker{position:absolute;left:28px;bottom:137px;z-index:9;padding:5px 9px;border-left:2px solid #eacb72;background:#0a1924d9;color:#ffe5a2;font-size:12px;letter-spacing:.08em}
+#supplyTracker[hidden]{display:none}
+#supplyBuffs{position:absolute;left:28px;bottom:115px;z-index:9;display:grid;gap:3px;color:#ffe6a3;font-size:13px;text-shadow:0 0 8px #000}
+#supplyPicker{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#030711cf;pointer-events:auto;padding:20px}
+#supplyPicker[hidden]{display:none}
+.supplyCard{width:min(540px,94vw);max-height:90vh;overflow:auto;padding:25px;background:linear-gradient(155deg,#152536,#071019);border:1px solid #eacb72;box-shadow:0 24px 90px #000c,0 0 45px #e5ba5633;color:#eafaff}
+.supplyCard>span{color:#f1d988;font-size:11px;letter-spacing:.24em}
+.supplyCard h2{margin:8px 0 20px;font-size:29px}
+#supplyChoices{display:grid;gap:9px}
+#supplyChoices button,.supplyCard>#supplyCancel{width:100%;padding:12px 14px;text-align:left;border:1px solid #42616b;background:#10202c;color:white;font:700 16px Rajdhani,'Noto Sans SC',sans-serif;cursor:pointer}
+#supplyChoices button:hover{border-color:#f1d988;background:#28302c}
+#supplyChoices button:disabled{opacity:.5;cursor:not-allowed}
+#supplyChoices small{display:block;margin-top:4px;color:#a9bbc0;font-size:12px}
+.supplyCard>#supplyCancel{margin-top:13px;text-align:center;background:#0b141d}

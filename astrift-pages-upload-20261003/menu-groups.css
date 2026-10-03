@@ -1,0 +1,22 @@
+.panel{max-height:92vh;max-height:92dvh;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#33525f transparent}
+.menuGroup{margin-top:9px;border:1px solid #29404c;background:linear-gradient(105deg,#0c1722e8,#09121be8)}
+.menuGroup>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:54px;padding:10px 13px;cursor:pointer;list-style:none}
+.menuGroup>summary::-webkit-details-marker{display:none}
+.menuGroup>summary:after{content:"＋";color:var(--cyan);font:700 16px system-ui;transition:transform .18s}
+.menuGroup[open]>summary:after{content:"−"}
+.menuGroup>summary>b{font-size:16px;color:#e6f6fb}
+.menuGroup>summary>small{margin-left:auto;color:#7795a2;text-align:right;font-size:11px}
+.menuGroup[open]>summary{border-bottom:1px solid #263d49;background:#10212d}
+.menuGroupBody{padding:10px 12px 12px}
+.menuGroup .modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px;margin:0}
+.menuGroup .modes button{min-height:66px;padding:10px!important}
+.menuGroup .modes b{font-size:15px!important}
+.menuGroup .modes small{margin-top:4px;font-size:11px}
+.menuGroup .roomTools{margin-top:-8px}
+.menuGroup .quickstart{margin-top:10px}
+.menuGroup .duelEntry,.menuGroup .objectiveEntry{margin-top:0}
+.menuGroup .objectiveEntry+.objectiveEntry{margin-top:9px}
+.menuGroup .weaponPick{margin-top:0}
+.menuGroup .armoryOpen{margin-top:8px}
+.menuGroup>summary:focus-visible{outline:2px solid var(--cyan);outline-offset:-2px}
+@media(max-width:620px){.menuGroup .modes{grid-template-columns:1fr!important}.menuGroup>summary{min-height:50px}.menuGroup>summary>small{max-width:48%}}

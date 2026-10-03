@@ -1,0 +1,4 @@
+.dualWeaponPick > div { grid-template-columns: 1fr 1fr; }
+.dualWeaponPick label { margin: 0; padding: 8px; border: 1px solid #34505d; background: #09131c; color: #79dfe8; font-size: 10px; }
+.dualWeaponPick select { display: block; width: 100%; margin-top: 5px; padding: 8px; border: 1px solid #496673; background: #050b11; color: #fff; font: 700 12px Rajdhani, sans-serif; }
+.dualWeaponPick > small { display: block; margin-top: 6px; color: #8aa3ad; font-size: 9px; }

@@ -1,0 +1,37 @@
+/* Keep the aim reference centered independently of reticle dimensions. */
+#adsOverlay .optic { --aim-y: 0px; }
+#adsOverlay.optic-redlineDefault .optic { --aim-y: -2px; }
+#adsOverlay.optic-wide .optic { --aim-y: 1.5px; }
+#adsOverlay.optic-galeDefault .optic { --aim-y: 2.5px; }
+#adsOverlay.optic-galeOpen .optic { --aim-y: 1.5px; }
+#adsOverlay.optic-iron .optic { --aim-y: 2.5px; }
+#adsOverlay .optic .v,
+#adsOverlay .optic .h,
+#adsOverlay .optic b {
+  left: 50% !important;
+  top: calc(50% + var(--aim-y)) !important;
+  transform: translate(-50%, -50%) !important;
+}
+#adsOverlay.frost .optic .v { height: 34px; }
+#adsOverlay.frost .optic .h { width: 34px; }
+#adsOverlay.frost.optic-scope .optic .v,
+#adsOverlay.frost.optic-longOptic .optic .v { height: 100%; }
+#adsOverlay.frost.optic-scope .optic .h,
+#adsOverlay.frost.optic-longOptic .optic .h { width: 100%; }
+#adsOverlay.optic-fastOptic .optic .v,
+#adsOverlay.optic-fastOptic .optic .h,
+#adsOverlay.optic-fastOptic .optic b {
+  transform: translate(-50%, -50%) rotate(-45deg) !important;
+}
+/* Housing clipping previously cut out the central aim point itself. */
+#adsOverlay.optic-frostDefault .optic,
+#adsOverlay.optic-galeDefault .optic,
+#adsOverlay.optic-iron .optic { clip-path: none; }
+#adsOverlay.optic-iron .optic b { display: block; }
+#adsOverlay.optic-r6Fast .optic { width: 112px; height: 96px; border: 2px solid #ffcb72; border-radius: 50%; box-shadow: 0 0 0 5px #101820b0; }
+#adsOverlay.optic-r6Fast .optic .v { height: 24px; }
+#adsOverlay.optic-r6Fast .optic .h { width: 24px; }
+#adsOverlay.optic-r6Dot .optic { width: 144px; height: 112px; border: 3px solid #ff625e; border-radius: 48% 48% 18% 18%; box-shadow: inset 0 0 16px #ff625e1f; }
+#adsOverlay.optic-r6Dot .optic .v, #adsOverlay.optic-r6Dot .optic .h { background: #ff625e; box-shadow: 0 0 5px #ff625e; }
+#adsOverlay.optic-r6Holo .optic { width: 174px; height: 132px; border: 4px solid #79eaff; border-radius: 12px 12px 28px 28px; box-shadow: inset 0 0 22px #79eaff20, 0 0 0 4px #0b1116b0; }
+#adsOverlay.optic-r6Holo .optic .v, #adsOverlay.optic-r6Holo .optic .h, #adsOverlay.optic-r6Holo .optic b { background: #79eaff; box-shadow: 0 0 6px #79eaff; }

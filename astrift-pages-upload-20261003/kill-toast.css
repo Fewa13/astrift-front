@@ -1,0 +1,16 @@
+#killToast{position:absolute;left:50%;top:69%;width:min(420px,82vw);padding:11px 24px 13px;transform:translate(-50%,18px) skewX(-9deg) scale(.88);opacity:0;visibility:hidden;text-align:center;pointer-events:none;color:#f3fdff;background:linear-gradient(100deg,transparent,#07131deF 18%,#0a1b29f5 82%,transparent);border-top:1px solid #72f5ff99;border-bottom:1px solid #72f5ff55;filter:drop-shadow(0 8px 26px #00d9ff30);z-index:12}
+#killToast::before,#killToast::after{content:"";position:absolute;top:0;bottom:0;width:3px;background:#63f5ff;box-shadow:0 0 15px #50f2ff}
+#killToast::before{left:14%}#killToast::after{right:14%}
+#killToast .killToastLine{position:absolute;left:50%;top:-2px;width:0;height:2px;transform:translateX(-50%);background:#b5ffff;box-shadow:0 0 14px #6ff;transition:width .2s ease}
+#killToast b,#killToast strong,#killToast small{display:block;transform:skewX(9deg)}
+#killToast b{font-size:10px;letter-spacing:.5em;color:#70f8ff;text-transform:uppercase}
+#killToast strong{margin-top:1px;font-size:clamp(25px,4vw,38px);line-height:1.05;font-weight:900;letter-spacing:.13em;text-shadow:0 0 22px #3defff88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#killToast small{margin-top:5px;color:#96b8c2;font-size:9px;letter-spacing:.32em}
+#killToast.show{visibility:visible;animation:killToastIn .24s cubic-bezier(.16,.8,.24,1) both}
+#killToast.show .killToastLine{width:66%}
+#killToast.show::before,#killToast.show::after{animation:killToastFlash .42s ease-out both}
+#killToast:not(.show){transition:opacity .2s ease,transform .2s ease,visibility .2s}
+@keyframes killToastIn{0%{opacity:0;transform:translate(-50%,24px) skewX(-9deg) scale(.72)}65%{opacity:1;transform:translate(-50%,-3px) skewX(-9deg) scale(1.04)}100%{opacity:1;transform:translate(-50%,0) skewX(-9deg) scale(1)}}
+@keyframes killToastFlash{0%{height:0;top:50%;bottom:50%;opacity:0}30%{opacity:1}100%{height:100%;top:0;bottom:0;opacity:.7}}
+@media(max-height:600px){#killToast{top:66%;padding:7px 20px 8px}#killToast strong{font-size:25px}#killToast small{display:none}}
+@media(prefers-reduced-motion:reduce){#killToast.show{animation:none;opacity:1;transform:translate(-50%,0) skewX(-9deg) scale(1)}}
