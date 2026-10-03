@@ -1,6 +1,10 @@
 const BOMB_MAP_SCALE = 0.45;
 const BOMB_MAP_LIMIT = 208 * BOMB_MAP_SCALE;
-const BOMB_SITES = { A: [-110 * BOMB_MAP_SCALE, 0, 20 * BOMB_MAP_SCALE], B: [110 * BOMB_MAP_SCALE, 0, -20 * BOMB_MAP_SCALE] };
+function bombSitesFor(attackTeam) {
+  const defenderZ = (attackTeam === 0 ? -132 : 132) * BOMB_MAP_SCALE;
+  return { A: [-110 * BOMB_MAP_SCALE, 0, defenderZ], B: [110 * BOMB_MAP_SCALE, 0, defenderZ] };
+}
+const BOMB_SITES = bombSitesFor(0);
 const BOMB_PRESETS = {
   solo: { humans: 1, hostHumans: 1, alliedAi: 4, enemyAi: 5 },
   duoCoop: { humans: 2, hostHumans: 2, alliedAi: 3, enemyAi: 5 },
@@ -59,7 +63,7 @@ function tickBombMatch(m, fighters, now = Date.now()) {
   if (!m.plantedSite && attackers.length === 0) return finishBombRound(m, 1 - m.attackTeam, "\u653B\u65B9\u5168\u706D \xB7 \u5B88\u65B9\u83B7\u80DC", now);
   if (defenders.length === 0) return finishBombRound(m, m.attackTeam, "\u5B88\u65B9\u5168\u706D \xB7 \u653B\u65B9\u83B7\u80DC", now);
   if (m.hold) {
-    const h = m.hold, actor = fighters.find((p) => p.id === h.id), site = BOMB_SITES[h.site], close = actor && actor.hp > 0 && actor.connected !== false && actor.interacting && Math.hypot(actor.position[0] - site[0], actor.position[2] - site[2]) <= 3.2 && Math.abs(actor.position[1] - site[1]) < 4;
+    const h = m.hold, actor = fighters.find((p) => p.id === h.id), site = bombSitesFor(m.attackTeam)[h.site], close = actor && actor.hp > 0 && actor.connected !== false && actor.interacting && Math.hypot(actor.position[0] - site[0], actor.position[2] - site[2]) <= 3.2 && Math.abs(actor.position[1] - site[1]) < 4;
     if (!close || h.kind === "plant" && (m.plantedSite || m.carrier !== h.id || actor.team !== m.attackTeam) || h.kind === "defuse" && (m.plantedSite !== h.site || actor.team === m.attackTeam)) {
       m.hold = null;
       m.revision++;
@@ -78,7 +82,7 @@ function tickBombMatch(m, fighters, now = Date.now()) {
   if (now >= m.endsAt) finishBombRound(m, m.plantedSite ? m.attackTeam : 1 - m.attackTeam, m.plantedSite ? "\u76F8\u4F4D\u6838\u5FC3\u7206\u70B8 \xB7 \u653B\u65B9\u83B7\u80DC" : "\u56DE\u5408\u65F6\u95F4\u7ED3\u675F \xB7 \u5B88\u65B9\u83B7\u80DC", now);
 }
 function beginBombHold(m, actor, site, now = Date.now()) {
-  if (m.phase !== "running" || m.hold || actor.hp <= 0 || !actor.interacting || Math.hypot(actor.position[0] - BOMB_SITES[site][0], actor.position[2] - BOMB_SITES[site][2]) > 3.2) return false;
+  if (m.phase !== "running" || m.hold || actor.hp <= 0 || !actor.interacting || Math.hypot(actor.position[0] - bombSitesFor(m.attackTeam)[site][0], actor.position[2] - bombSitesFor(m.attackTeam)[site][2]) > 3.2) return false;
   const kind = m.plantedSite ? "defuse" : "plant";
   if (kind === "plant" && (actor.team !== m.attackTeam || actor.id !== m.carrier) || kind === "defuse" && (actor.team === m.attackTeam || m.plantedSite !== site)) return false;
   m.hold = { id: actor.id, kind, site, since: now };
@@ -91,6 +95,7 @@ export {
   BOMB_PRESETS,
   BOMB_SITES,
   beginBombHold,
+  bombSitesFor,
   createBombMatch,
   finishBombRound,
   startBombRound,
