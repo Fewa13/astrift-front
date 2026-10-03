@@ -13,8 +13,8 @@ export function createObjectiveWorld(T,scene,BASES,HILLS){
 }
 
 // One navigation grid shared by the AI. Routes are refreshed at most once per second per bot.
-export function createObjectiveNavigator(blocked,large=false){
-  const size=large?105:53,step=large?3:2,min=large?-156:-52,walk=new Uint8Array(size*size);
+export function createObjectiveNavigator(blocked,large=false,extent=156){
+  const step=large?3:2,min=large?-extent:-52,size=large?Math.ceil(extent*2/step)+1:53,walk=new Uint8Array(size*size);
   for(let z=0;z<size;z++)for(let x=0;x<size;x++)walk[z*size+x]=!blocked(min+x*step,min+z*step);
   const coords=i=>[min+(i%size)*step,min+Math.floor(i/size)*step];
   // The cover never moves. Build navigable edges once instead of testing every

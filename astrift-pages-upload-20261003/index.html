@@ -9,7 +9,6 @@
   <script>
     // Pages 只托管界面；联机 API 和 WebSocket 继续走 Worker。
     window.__ASTRIFT_API_ORIGIN__ = ['.pages.dev','.github.io','.netlify.app','.vercel.app'].some(s => location.hostname.endsWith(s)) ? 'https://astrift-front.fewa3729.workers.dev' : '';
-      
     if (window.__ASTRIFT_API_ORIGIN__) {
       const nativeFetch = window.fetch.bind(window);
       window.fetch = (input, init) => {
@@ -32,35 +31,35 @@
       event.returnValue = true;
     });
   </script>
-  <link rel="stylesheet" href="/style.css" />
-  <link rel="stylesheet" href="/tutorial.css?v=20260925-keybinds" />
-  <link rel="stylesheet" href="/rooms.css?v=20260928-solo-map-2" />
-  <link rel="stylesheet" href="/menu-groups.css?v=20260925" />
-  <link rel="stylesheet" href="/armory.css?v=20260925-armory-style-restore" />
-  <link rel="stylesheet" href="/armory-viewport.css?v=20260924" />
-  <link rel="stylesheet" href="/crosshair.css" />
-  <link rel="stylesheet" href="/equipment.css" />
-  <link rel="stylesheet" href="/headshot.css" />
-  <link rel="stylesheet" href="/weapon-slots.css" />
-  <link rel="stylesheet" href="/gale-d7.css?v=20260925-keybinds" />
-  <link rel="stylesheet" href="/loadout-fix.css" />
-  <link rel="stylesheet" href="/reticle-alignment.css?v=20260930-optic-compat-2" />
-  <link rel="stylesheet" href="/weapon-viewmodel.css?v=20260930-five-guns-1" />
-  <link rel="stylesheet" href="/performance.css?v=20260923-perf" />
-  <link rel="stylesheet" href="/duel.css?v=20261001-ai-levels-1" />
-  <link rel="stylesheet" href="/arena-modes.css?v=20260925" />
-  <link rel="stylesheet" href="/kill-toast.css?v=20260924-kill-toast" />
-  <link rel="stylesheet" href="/heal-point.css?v=20260924-heal-point" />
-  <link rel="stylesheet" href="/supply.css?v=20260930-2" />
-  <link rel="stylesheet" href="/practice-range.css?v=20260924-practice" />
-  <link rel="stylesheet" href="/objective.css?v=1" />
-  <link rel="stylesheet" href="/bomb.css?v=20261001-loadout-1" />
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./tutorial.css?v=20260925-keybinds" />
+  <link rel="stylesheet" href="./rooms.css?v=20260928-solo-map-2" />
+  <link rel="stylesheet" href="./menu-groups.css?v=20260925" />
+  <link rel="stylesheet" href="./armory.css?v=20260925-armory-style-restore" />
+  <link rel="stylesheet" href="./armory-viewport.css?v=20260924" />
+  <link rel="stylesheet" href="./crosshair.css" />
+  <link rel="stylesheet" href="./equipment.css" />
+  <link rel="stylesheet" href="./headshot.css" />
+  <link rel="stylesheet" href="./weapon-slots.css" />
+  <link rel="stylesheet" href="./gale-d7.css?v=20260925-keybinds" />
+  <link rel="stylesheet" href="./loadout-fix.css" />
+  <link rel="stylesheet" href="./reticle-alignment.css?v=20260930-optic-compat-2" />
+  <link rel="stylesheet" href="./weapon-viewmodel.css?v=20260930-five-guns-1" />
+  <link rel="stylesheet" href="./performance.css?v=20260923-perf" />
+  <link rel="stylesheet" href="./duel.css?v=20261001-ai-levels-1" />
+  <link rel="stylesheet" href="./arena-modes.css?v=20260925" />
+  <link rel="stylesheet" href="./kill-toast.css?v=20260924-kill-toast" />
+  <link rel="stylesheet" href="./heal-point.css?v=20260924-heal-point" />
+  <link rel="stylesheet" href="./supply.css?v=20260930-2" />
+  <link rel="stylesheet" href="./practice-range.css?v=20260924-practice" />
+  <link rel="stylesheet" href="./objective.css?v=1" />
+  <link rel="stylesheet" href="./bomb.css?v=20261001-loadout-1" />
   <style>#bombPresetField[hidden]{display:none!important}</style>
-  <link rel="stylesheet" href="/keybinds.css?v=1" />
-  <link rel="stylesheet" href="/wounds.css?v=1" />
-  <link rel="stylesheet" href="/throwables.css?v=20261001-cook-1" />
-  <link rel="stylesheet" href="/new-modes.css?v=20260930-knife-skins-1" />
-  <link rel="stylesheet" href="/forum.css?v=20260929-1" />
+  <link rel="stylesheet" href="./keybinds.css?v=1" />
+  <link rel="stylesheet" href="./wounds.css?v=1" />
+  <link rel="stylesheet" href="./throwables.css?v=20261001-cook-1" />
+  <link rel="stylesheet" href="./new-modes.css?v=20260930-knife-skins-1" />
+  <link rel="stylesheet" href="./forum.css?v=20260929-1" />
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -110,10 +109,10 @@
       </details>
       <label class="qualityControl">画质 / 性能<select id="qualitySelect"><option value="smooth">流畅（低负载）</option><option value="balanced">均衡（画面更细）</option><option value="sharp">清晰（高清 + 动态阴影）</option></select></label>
       <button id="openKeybinds" class="keybindOpen" type="button">键位设置</button>
-      <a id="openForum" href="/forum.html">论坛</a>
+      <a id="openForum" href="./forum.html">论坛</a>
       <small id="migrationNotice" class="migrationNotice" hidden></small>
       <p id="menuControlTip" class="tip"><kbd>WASD</kbd> 移动 · <kbd>右键 / E</kbd> 开镜 · <kbd>左键</kbd> 开火 · <kbd>Q</kbd> 相位突进</p>
-      <p class="legal">本游戏、阵营及武器均为原创虚构设定，与现实武器制造商无关。<a href="/THIRD_PARTY_NOTICES.txt" target="_blank">开源声明</a></p>
+      <p class="legal">本游戏、阵营及武器均为原创虚构设定，与现实武器制造商无关。<a href="./THIRD_PARTY_NOTICES.txt" target="_blank">开源声明</a></p>
     </div>
   </div>
   <div id="roomDialog" class="roomDialog" hidden>
@@ -175,6 +174,6 @@
   <div id="aiDuelResult" hidden><div><h2 id="aiDuelWinner"></h2><p id="aiDuelFinal"></p><button id="aiDuelRetry" type="button">再战一局</button><button id="aiDuelExit" type="button">退出</button></div></div>
   <div id="gunmasterUpgrade" hidden><div><header><h2 id="gunmasterWeaponTitle">选择配件</h2><span id="gunmasterCredits"></span></header><p id="gunmasterHelp">每次击杀累计 1 次选择；按 F 自己打开。可在空槽装配或替换已有配件。</p><div id="gunmasterChoices"></div><button id="gunmasterLater" type="button">稍后选择</button></div></div>
   <div id="supplyPicker" hidden><div class="supplyCard"><span>ASTRIFT // FIELD SUPPLY</span><h2>选择一项补给</h2><div id="supplyChoices"></div><button id="supplyCancel" type="button">暂不领取</button></div></div>
-  <script type="module" src="/game.js?v=20261002-ai-sprint-1"></script>
+  <script type="module" src="./game.js?v=20261003-bomb-cover-1"></script>
 </body>
 </html>

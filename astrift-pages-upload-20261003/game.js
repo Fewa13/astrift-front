@@ -2,9 +2,9 @@ import * as THREE from "https://esm.sh/three@0.180.0";
 import {organizeAttachments,migrateBuilds} from "./attachment-layout.js?v=20260923-perf";
 import {QUALITY,batchStaticScene,disposeObject,createEffects} from "./render-performance.js?v=20260928-combat-1";
 import {createMatch,tickMatch,carrierFlag,botGoal,BASES,HILLS} from './objective-rules.js?v=1';
-import {BOMB_MAP_SCALE,BOMB_MAP_LIMIT,BOMB_PRESETS,BOMB_SITES,createBombMatch,startBombRound,tickBombMatch,beginBombHold} from './bomb-rules.js?v=20261002-bomb-compact-1';
+import {BOMB_MAP_SCALE,BOMB_MAP_LIMIT,BOMB_PRESETS,BOMB_SITES,createBombMatch,startBombRound,tickBombMatch,beginBombHold} from './bomb-rules.js?v=20261003-bomb-cover-1';
 import {BOMB_WEAPON_COSTS,BOMB_START_CREDITS,awardBombCredits,buyBombWeapon} from './bomb-economy.js?v=20261001-bomb-buy-1';
-import {createObjectiveWorld,createObjectiveNavigator} from './objective-world.js?v=20261002-bomb-compact-1';
+import {createObjectiveWorld,createObjectiveNavigator} from './objective-world.js?v=20261003-bomb-cover-1';
 import {createWeaponViewModels} from './weapon-viewmodel.js?v=20260930-five-guns-1';
 import {botWeaponDamage} from './combat-balance.js?v=20260930-ai-fairness-1';
 import {COVER_SPECS} from './cover-layout.js?v=20260928-combat-1';
@@ -155,8 +155,7 @@ for(const [x,z,c] of [[-10,-23,0x4be7ef],[10,23,0xff5cb8],[-10,23,0xff5cb8],[10,
 for(const [x,z,c] of [[-18,-21,0x4be7ef],[18,21,0xff5cb8],[-18,27,0xff5cb8],[18,-27,0x4be7ef]])mapLight(x,4,z,c,6,15);
 addBreakableCovers('arcade');
 finishMap('arcade');
-// Bomb mode owns a scaled 312 × 312 m playable field. Three broad lanes, cross-links,
-// and low cover keep both sites reachable without making the map a flat firing range.
+// Compact bomb field: three lanes and cross-links retain several routes to each site.
 beginMap('bomb');
 surface(0,0,414,414,0x0d1929,.012);
 for(const x of [-108,0,108]){surface(x,0,32,400,0x14243a,.018);for(const edge of [-16,16])surface(x+edge,0,.35,400,x===0?0x4ae8ff:0x7669ff,.03)}
@@ -220,6 +219,23 @@ for(const [x,z,color] of [[-110,20,0xff9275],[110,-20,0x91a9ff]]){
   for(const dx of [-17,17])for(const dz of [-17,17]){
     detailBox(x+dx,2.3,z+dz,.45,4.6,.45,color);
   }
+}
+// Dense staggered cover. Only free cells are used, leaving spawns, sites, stairs
+// and the established lane intersections open. All dimensions scale with the map.
+let bombCoverCount=0;
+for(let row=-7;row<=7;row++)for(let column=-7;column<=7;column++){
+  if((row+column)%2===0)continue;
+  const x=column*24+(row%3===0?4:-4),z=row*24+(column%3===0?4:-4);
+  if(Math.abs(x)<20&&Math.abs(z)<20)continue;
+  if(Math.abs(x)<46&&Math.abs(z)>152)continue;
+  if(Math.hypot(x+110,z-20)<25||Math.hypot(x-110,z+20)<25)continue;
+  const width=(Math.abs(row*7+column)%3===0?9:6),depth=(Math.abs(row-column*5)%3===0?8:5);
+  if(mapBuildColliders.some(mesh=>{const b=mesh.userData.bounds;return b&&x+width/2+8>b.minX&&x-width/2-8<b.maxX&&z+depth/2+8>b.minZ&&z-depth/2-8<b.maxZ}))continue;
+  const tall=(row*11+column*7)%5===0,height=tall?5.2:2.35;
+  const color=(row+column)%4===0?0x49516e:(row-column)%3===0?0x326078:0x354859;
+  box(x,z,width,height,depth,color);
+  detailBox(x,height+.08,z,width+.25,.16,depth+.25,(row+column)%4===0?0xaf8cff:0x64d9ee);
+  bombCoverCount++;
 }
 box(65,0,8,9,8,0x20384f);
 for(const y of [2.5,5.5,8.5])detailBox(65,y,0,8.5,.24,8.5,0x67e7ff);
@@ -1091,7 +1107,7 @@ function handleSurvivalMessage(d){if(roomMode!=='survival'||!online)return false
   return false}
 function botDown(bot,killer=$("name").value,killerId=playerId,knife=weaponKey==='knife'&&killerId===playerId){bot.userData.wounds=Object.create(null);bot.userData.dodgeProneUntil=bot.userData.dodgeHopUntil=0;setActorProne(bot,false);if(bot.userData.trainingTarget){bot.visible=false;setTimeout(()=>{if(!playing||!trainingMode||!bots.includes(bot))return;bot.userData.hp=300;bot.visible=true},900);return}if(bot.userData.deathCounted)return;const deathRound=objectiveState?.round;bot.userData.deathCounted=true;bot.visible=false;awardKill(1-bot.userData.team,killer,bot.userData.name);if(roomMode==='survival'){survivalKills++;if(online&&isSurvivalHost()){sendNetwork({type:'survivalBotDown',botId:bot.userData.networkId,target:killerId,weapon:knife?'knife':''});if(killerId===playerId)showKillToast(bot.userData.name,knife)}updateSurvivalPanel();if(bots.every(enemy=>enemy.userData.deathCounted)){feed(`第 ${survivalWave} 波完成 · 4 秒后下一波`);survivalPending=setTimeout(nextSurvivalWave,4000)}return}setTimeout(()=>{if(!playing||matchFinished||!bots.includes(bot)||(isObjectiveMode()&&objectiveState?.round!==deathRound))return;bot.userData.deathCounted=false;bot.userData.hp=100;const p=randomSpawn(bot.position,bot.userData.team);bot.position.set(p.x,0,p.z);bot.visible=true},2600)}
 let duelNavigator=null,duelNavigatorMap='',duelNavigatorColliderCount=-1;
-function duelRoute(bot,goal,now,purpose){if(!duelNavigator||duelNavigatorMap!==activeMapId||duelNavigatorColliderCount!==obstacles.length){duelNavigator=createObjectiveNavigator(blocked,activeMapId==='bomb');duelNavigatorMap=activeMapId;duelNavigatorColliderCount=obstacles.length}return duelNavigator.direction(`${bot.uuid}:${purpose}`,bot.position.toArray(),goal.toArray(),now)}
+function duelRoute(bot,goal,now,purpose){if(!duelNavigator||duelNavigatorMap!==activeMapId||duelNavigatorColliderCount!==obstacles.length){duelNavigator=createObjectiveNavigator(blocked,activeMapId==='bomb',BOMB_MAP_LIMIT);duelNavigatorMap=activeMapId;duelNavigatorColliderCount=obstacles.length}return duelNavigator.direction(`${bot.uuid}:${purpose}`,bot.position.toArray(),goal.toArray(),now)}
 function duelAwareness(bot,target,now){
   const reaction=roomMode==='aiDuel'?(aiDuelLevel==='master'?30:aiDuelLevel==='advanced'?80:150):150;
   const targetKey=target.kind==='player'?'player':target.kind==='remote'?`remote:${target.id}`:`bot:${target.mesh?.uuid}`;

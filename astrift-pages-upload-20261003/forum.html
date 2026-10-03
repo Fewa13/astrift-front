@@ -11,12 +11,12 @@
       window.fetch = (input, init) => { if (typeof input === 'string' && input.startsWith('/api/')) input = apiOrigin + input; return nativeFetch(input, init); };
     }
   </script>
-  <link rel="stylesheet" href="/forum.css?v=20260929-1" />
-  <script type="module" src="/forum.js?v=20260929-1"></script>
+  <link rel="stylesheet" href="./forum.css?v=20260929-1" />
+  <script type="module" src="./forum.js?v=20260929-1"></script>
 </head>
 <body class="forumPage">
   <main class="forumShell">
-    <header class="forumHeader"><div><span>ASTRIFT // COMMUNITY</span><h1>战区论坛</h1></div><a href="/">返回游戏</a></header>
+    <header class="forumHeader"><div><span>ASTRIFT // COMMUNITY</span><h1>战区论坛</h1></div><a href="./">返回游戏</a></header>
     <section class="forumCompose">
       <form id="postForm">
         <label for="forumName">名字</label><input id="forumName" maxlength="20" autocomplete="nickname" placeholder="2–20 字，文明用语" required />
