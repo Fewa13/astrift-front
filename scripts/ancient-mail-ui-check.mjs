@@ -1,0 +1,9 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';import {createAncientMailUI} from '../public/ancient-mail-ui.js';
+class Element{constructor(tag){this.tag=tag;this.children=[];this.style={}}append(...nodes){this.children.push(...nodes)}setAttribute(){}replaceChildren(){this.children=[]}}
+globalThis.document={createElement:tag=>new Element(tag)};
+const state={profession:'lightning',messages:[{id:'xp',date:'2026-10-15',sender:'ASTRIFT',title:'补偿',titleEn:'Compensation',body:'抱歉',bodyEn:'We apologize.',claimedAt:0}],choices:[{id:'chain',name:'连锁雷电',en:'Chain Lightning'},{id:'storm',name:'雷暴',en:'Thunderstorm'}]},root=new Element('main');let ui,claims=0,english=false,profileUpdated=0;
+const all=n=>[n,...n.children.flatMap(all)],refresh=()=>{root.replaceChildren();ui.render(root)};
+ui=createAncientMailUI({en:()=>english,request:async(kind,data)=>{if(kind==='mailClaim'){claims++;assert.deepEqual(data.selection,[{id:'chain',quantity:1},{id:'storm',quantity:3}]);state.messages[0].claimedAt=1}return {mailState:structuredClone(state),profile:{}}},onProfile:()=>profileUpdated++,refresh,isOpen:()=>true});await ui.poll();refresh();
+const claim=()=>all(root).find(n=>n.tag==='button'&&n.textContent==='领取'),inputs=()=>all(root).filter(n=>n.tag==='input');assert(claim().disabled);inputs()[0].value='1';inputs()[0].oninput();assert(claim().disabled);inputs()[1].value='3';inputs()[1].oninput();assert.equal(claim().disabled,false);await claim().onclick();await new Promise(r=>setTimeout(r,0));assert.equal(claims,1);assert(!claim());assert(all(root).some(n=>n.textContent==='已领取'));english=true;refresh();assert(all(root).some(n=>n.textContent==='Claimed'));assert(profileUpdated>=2);
+console.log('PASS: bilingual mail, mandatory 4-book selection, mixed choices, inventory update and claimed state without a second claim button.');

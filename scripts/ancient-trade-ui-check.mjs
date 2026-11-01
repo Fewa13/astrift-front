@@ -1,0 +1,19 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import {createAncientTradeUI} from '../public/ancient-trade-ui.js';
+class Element{constructor(tag){this.tag=tag;this.children=[];this.value='0';this.style={};this.dataset={};this.classList={toggle(){}}}append(...nodes){this.children.push(...nodes)}setAttribute(){}replaceChildren(){this.children=[]}}
+globalThis.document={body:new Element('body'),createElement:t=>new Element(t)};globalThis.setInterval=()=>0;
+const profile={gear:[],gearEquipped:{},materials:{tooth:3},potions:{minor:2}};
+let deal={id:'d',revision:1,accepted:true,players:['a','b'],offers:{a:{coins:0,items:[],confirmed:false},b:{coins:0,items:[],confirmed:false}}};
+const root=new Element('section');let ui;const refresh=()=>{root.replaceChildren();ui.render(root)};
+let offers=0,conflict=false,fail=false,hold=null;const calls=[];
+ui=createAncientTradeUI({en:()=>false,name:()=> 'a',request:async(kind,data)=>{calls.push(kind);if(kind==='tradeOffer'){offers++;if(hold)await hold;if(fail)throw Error('网络断开');if(conflict){conflict=false;deal.revision++;deal.offers.b.coins=1;throw Error('交易内容已更改，请重新确认')}assert.equal(data.revision,deal.revision);deal.offers.a={...structuredClone(data),confirmed:false};delete deal.offers.a.id;delete deal.offers.a.revision;deal.offers.b.confirmed=false;deal.revision++;}return {tradeState:structuredClone({deal,players:[]}),profile}},onProfile:()=>{},getProfile:()=>profile,label:i=>i.id,open:()=>{},refresh,isOpen:()=>true});await ui.poll();refresh();
+const all=n=>[n,...n.children.flatMap(all)];const button=text=>all(root).find(n=>n.tag==='button'&&n.textContent===text);const choices=()=>all(root).filter(n=>n.className==='ancientTradeChoice');
+assert(!all(root).some(n=>n.tag==='select'));assert(button('＋ 放入交易').disabled);button('材料').onclick();button('tooth × 3').onclick();button('＋ 放入交易').onclick();assert(button('tooth × 2'));button('＋ 放入交易').onclick();assert(button('tooth × 1'));button('＋ 放入交易').onclick();assert(!button('tooth × 1'));assert(button('＋ 放入交易').disabled);button('撤回物品').onclick();assert(button('tooth × 3'));
+const delay=ms=>new Promise(r=>setTimeout(r,ms));await delay(30);assert.equal(offers,1);assert.equal(button('确认交换').disabled,false);assert(!button('② 发送给对方'));
+const coin=()=>all(root).find(n=>n.tag==='input'&&n.type==='number');conflict=true;coin().value='2';coin().oninput();assert.equal(button('确认交换').disabled,true);await delay(350);assert.equal(deal.offers.a.coins,2);assert.equal(deal.offers.b.coins,1);assert.equal(button('确认交换').disabled,false);
+fail=true;coin().value='3';coin().oninput();await delay(350);assert(button('重试同步'));assert(button('确认交换').disabled);fail=false;button('重试同步').onclick();await delay(30);assert.equal(deal.offers.a.coins,3);assert(!button('重试同步'));
+let release;hold=new Promise(r=>release=r);coin().value='4';coin().oninput();await delay(320);coin().value='5';coin().oninput();release();hold=null;await delay(350);assert.equal(deal.offers.a.coins,5,'Newest input must survive an older response');assert.equal(button('确认交换').disabled,false);
+for(let i=0;i<25;i++)profile.materials['test'+i]=1;refresh();assert.equal(choices().length,8);button('下一页').onclick();assert.equal(choices().length,8);const search=all(root).find(n=>n.type==='search');search.value='test24';search.oninput();assert.equal(choices().length,1);assert.equal(choices()[0].textContent,'test24 × 1');button('消耗品').onclick();assert.equal(choices().length,0);search.value='';search.oninput();assert.equal(choices()[0].textContent,'minor × 2');
+assert(!calls.includes('tradeConfirm'),'Autosync must never confirm a trade');
+console.log('PASS: live add/withdraw/coin sync, debounce, revision conflict retry, failure/retry, queued input preservation, confirmation safety, categories/search/pagination.');

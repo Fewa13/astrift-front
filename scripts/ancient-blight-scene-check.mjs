@@ -1,0 +1,13 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import * as T from '../public/three.module.js';
+globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>new Proxy({},{get:(o,k)=>o[k]??(()=>{}),set:(o,k,v)=>(o[k]=v,true)})})};
+const {buildBlightScene,createBlightCreature}=await import('../public/ancient-blight-scene.js');
+const scene=new T.Scene(),map=buildBlightScene(scene);assert.equal(map.crystals.size,12);scene.updateMatrixWorld(true);
+for(const [eye,target]of [[[0,1.7,10],[0,2,55]],[[-4,3,256],[-24,4,287]],[[0,-1,417],[6,-7,472]],[[10,-10,578],[0,-10,601]]]){
+ const camera=new T.PerspectiveCamera(75,16/9,.05,190);camera.position.fromArray(eye);camera.lookAt(...target);camera.updateMatrixWorld(true);const frustum=new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));let draws=0,triangles=0;scene.traverse(m=>{if(m.isMesh){assert(m.geometry.attributes.position.array.every(Number.isFinite));if(frustum.intersectsObject(m)){draws++;triangles+=(m.geometry.index?.count||m.geometry.attributes.position.count)/3}}});console.log({eye,draws,triangles});assert(draws<200);assert(triangles<150000);
+}
+for(const kind of ['blight_beast','blight_stalker','rift_maw','blight_lord']){const a=createBlightCreature(kind,100),b=createBlightCreature(kind,100);let draws=0;a.traverse(o=>{if(o.isMesh)draws++});assert(draws<=24);assert(a.userData.arms[1]!==b.userData.arms[1]);a.userData.arms[1].rotation.x=1;assert(Math.abs(b.userData.arms[1].rotation.x)<1e-9);console.log(kind,draws)}
+map.syncCrystals({'blight-crystal-0':Date.now()+10000});assert.equal(map.crystals.get('blight-crystal-0').visible,false);map.syncCrystals();assert.equal(map.crystals.get('blight-crystal-0').visible,true);
+const {tintCorrupted}=await import('../public/ancient-blight-ui.js');const one=createBlightCreature('blight_lord',100),two=createBlightCreature('blight_lord',100);let first,second;one.traverse(m=>{if(m.isMesh&&!first)first=m});two.traverse(m=>{if(m.isMesh&&!second)second=m});const original=first.material,color=second.material.color.getHex();tintCorrupted(one,true);assert.notEqual(first.material,original);assert.equal(first.material.color.getHex(),0x333039);assert.equal(second.material.color.getHex(),color,'Shared template does not become corrupted');const tinted=first.material;tintCorrupted(one,true);assert.equal(first.material,tinted,'No per-frame material cloning');tintCorrupted(one,false);assert.equal(first.material,original);
+console.log('PASS: chunked map budgets, finite geometry, independent cached creature joints, shared crystal visibility.');

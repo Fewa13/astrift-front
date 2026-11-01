@@ -1,0 +1,29 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+export type BossArea={x:number;z:number;radius:number;arc?:number;inner?:number;angle?:number;length?:number;width?:number};
+export type BossCast={id:string;kind:string;x:number;z:number;areas:BossArea[];started:number;hitAt:number;power:number};
+export type BossState={huntBoss?:boolean;id:string;kind:string;x:number;z:number;hp:number;maxHp?:number;attackAt:number;action:string;actionAt:number;bossCast?:BossCast;bossStep?:number};
+export function isAncientBoss(kind:string){return kind==='sky_sovereign'||kind==='thunder_warden'||kind==='frost_crowned'||kind==='furnace_regent'||kind==='starbound_heart'||kind==='immaculate_judge'||kind==='blight_lord'||kind==='chief'||kind==='oathknight'||kind==='emptyking'||kind==='lord'||kind==='rootwarden'||['metal','wood','water','fire','earth'].some(e=>kind==='crystal_'+e)}
+export function bossAreaHit(a:BossArea,x:number,z:number){const dx=x-a.x,dz=z-a.z;if(a.arc){const angle=Math.atan2(dx,dz)-(a.angle||0),wrapped=Math.atan2(Math.sin(angle),Math.cos(angle));return Math.hypot(dx,dz)<=a.radius&&Math.abs(wrapped)<=a.arc/2}if(a.length){const along=dx*Math.sin(a.angle||0)+dz*Math.cos(a.angle||0),side=dx*Math.cos(a.angle||0)-dz*Math.sin(a.angle||0);return along>=0&&along<=a.length&&Math.abs(side)<=(a.width||3)/2}const d=Math.hypot(dx,dz);return d<=a.radius&&d>=(a.inner||0)}
+export function tickAncientBoss(m:BossState,target:{x:number;z:number},now:number,fx:(stage:string,c:BossCast)=>void,hit:(c:BossCast)=>void){
+ if(m.hp<=0){delete m.bossCast;return false}if(!isAncientBoss(m.kind))return false;
+ if(m.bossCast){const c=m.bossCast;if(now>=c.hitAt){delete m.bossCast;m.action='attack';m.actionAt=now;m.attackAt=now+2800;fx('impact',c);hit(c)}return true}
+ if(now<m.attackAt)return false;
+ const step=m.bossStep||0;m.bossStep=step+1;const variant=step%2,kind=m.kind,angle=Math.atan2(target.x-m.x,target.z-m.z);
+ let id='quake',areas:BossArea[]=[{x:m.x,z:m.z,radius:kind==='chief'?7:9}],power=1;
+ if(kind==='lord'&&variant||kind==='crystal_metal'&&!variant||kind==='crystal_earth'&&!variant){id=kind==='lord'?'totemLine':kind==='crystal_metal'?'goldLance':'stoneRidge';areas=[{x:m.x,z:m.z,radius:0,angle,length:26,width:4}];power=1.15}
+ else if(kind==='rootwarden'&&!variant||kind==='crystal_wood'&&!variant){id='rootSpikes';areas=[-5,0,5].map(v=>({x:target.x+v,z:target.z,radius:3}));power=.9}
+ else if(kind==='crystal_fire'&&!variant||kind==='crystal_metal'&&variant||kind==='crystal_earth'&&variant){id=kind==='crystal_fire'?'meteors':kind==='crystal_metal'?'goldShards':'rockFall';areas=[{x:target.x,z:target.z,radius:4},{x:target.x+6,z:target.z+3,radius:3},{x:target.x-6,z:target.z-3,radius:3}];power=1.1}
+ else if(kind==='crystal_water'&&variant){id='tidalPool';areas=[{x:target.x,z:target.z,radius:7}];power=.9}
+ else if(kind!=='lord'&&kind!=='chief'){id=kind==='crystal_water'?'tidalRing':kind==='crystal_fire'?'fireRing':kind==='rootwarden'||kind==='crystal_wood'?'rootRing':'quake';areas=[{x:m.x,z:m.z,radius:18,inner:6}];power=1.05}
+ if(kind==='oathknight'){id=variant?'oathGuard':'oathCharge';areas=variant?[{x:m.x,z:m.z,radius:7}]:[{x:m.x,z:m.z,radius:0,angle,length:20,width:3.5}];power=variant?.85:1.2}
+ if(kind==='emptyking'){const enraged=m.hp<(m.maxHp||m.hp)*.5;id=enraged&&step%3===2?'royalMuster':variant?'voidRifts':'crownBlade';areas=id==='crownBlade'?[{x:m.x,z:m.z,radius:0,angle,length:30,width:enraged?6:4}]:id==='royalMuster'?[{x:m.x,z:m.z,radius:15,inner:5}]:[-1,0,1].map(v=>({x:target.x+v*7,z:target.z+v*3,radius:enraged?5:3.5}));power=enraged?1.25:1}
+ if(kind==='blight_lord'){id=step%3===0?'blightMuster':step%3===1?'blightRupture':'blightScythe';areas=id==='blightMuster'?[{x:m.x,z:m.z,radius:12,inner:4}]:id==='blightRupture'?[-1,0,1].map(v=>({x:target.x+v*6,z:target.z+v*3,radius:4})):[{x:m.x,z:m.z,radius:0,angle,length:28,width:5}];power=id==='blightMuster'?.6:1.2}
+ if(kind==='immaculate_judge'){id=step%3===0?'judgmentRay':step%3===1?'verdictSweep':'sealingArray';areas=id==='judgmentRay'?[{x:m.x,z:m.z,radius:0,angle,length:35,width:3.6}]:id==='verdictSweep'?[{x:m.x,z:m.z,radius:16,angle,arc:Math.PI*.75}]:[-1,0,1].map(v=>({x:target.x+v*6,z:target.z-v*3,radius:4}));power=m.hp<(m.maxHp||m.hp)*.5?1.2:1}
+ if(kind==='starbound_heart'){id=step%3===0?'judgmentRay':step%3===1?'tidalRing':'sealingArray';areas=step%3===0?[{x:m.x,z:m.z,radius:0,angle,length:32,width:3.6}]:step%3===1?[{x:m.x,z:m.z,radius:18,inner:6}]:[-1,0,1].map(v=>({x:target.x+v*6,z:target.z-v*3,radius:4}));power=m.hp<(m.maxHp||m.hp)*.5?1.2:1;}
+ if(kind==='furnace_regent'){id=variant?'forgeHammer':'furnaceRing';areas=variant?[{x:m.x,z:m.z,radius:0,angle,length:24,width:4}]:[{x:m.x,z:m.z,radius:18,inner:6}];power=1.05;}
+ if(kind==='thunder_warden'){id=variant?'forgeHammer':'furnaceRing';areas=variant?[{x:m.x,z:m.z,radius:0,angle,length:26,width:4}]:[{x:m.x,z:m.z,radius:17,inner:7}];power=1.05;}
+ if(kind==='sky_sovereign'){id=step%3===0?'frostEdict':step%3===1?'furnaceRing':'edictStorm';areas=step%3===0?[{x:m.x,z:m.z,radius:0,angle,length:34,width:4}]:step%3===1?[{x:m.x,z:m.z,radius:19,inner:8}]:[-1,0,1].map(v=>({x:target.x+v*7,z:target.z-v*4,radius:4}));power=m.hp<(m.maxHp||m.hp)*.5?1.15:1;}
+ if(kind==='frost_crowned'){id=step%3===0?'frostEdict':step%3===1?'furnaceRing':'edictStorm';areas=step%3===0?[{x:m.x,z:m.z,radius:0,angle,length:34,width:4}]:step%3===1?[{x:m.x,z:m.z,radius:18,inner:6}]:[-1,0,1].map(v=>({x:target.x+v*7,z:target.z-v*4,radius:4}));power=m.hp<(m.maxHp||m.hp)*.5?1.2:1;}
+ if(m.huntBoss&&kind==='chief'&&variant){id='boneSweep';areas=[{x:m.x,z:m.z,radius:10,angle,arc:Math.PI*.7}];power=1.1;}
+ const c:BossCast={id,kind,x:m.x,z:m.z,areas,started:now,hitAt:now+(id==='quake'?1000:id==='oathCharge'?1200:1400),power};m.bossCast=c;m.action='windup';m.actionAt=now;fx('warning',c);return true;
+}

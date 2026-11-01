@@ -1,0 +1,17 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {emailHarness} from './account-email-check.mjs';import {ancientProfileHealth} from '../public/ancient-gear.js';import {ANCIENT_POTIONS} from '../public/ancient-rules.js';
+const originalNow=Date.now;let now=originalNow();Date.now=()=>now;
+try{
+ const h=await emailHarness(),db=new DatabaseSync(':memory:'),sql={exec(q,...args){const rows=db.prepare(q).all(...args);return {toArray:()=>rows,one:()=>rows[0]}}},sockets=[],sent=[];
+ const ctx={storage:{sql,setAlarm:async()=>{},transactionSync:fn=>fn()},getWebSockets:()=>sockets};const server=new h.classes.AncientWorld(ctx,h.env);await server.command('drinktest','profile',{});const profile=server.read('drinktest');profile.level=10;profile.potions={minor:4,medium:4};server.save('drinktest',profile);
+ let actor={name:'drinktest',map:'city',x:0,y:1.7,z:10,yaw:0,hp:1000,maxHp:ancientProfileHealth(profile),seen:now,lastMove:now,moveSeq:0,moveCredit:2,weapon:profile.weapons[0],ammo:10,lastShot:0,reloadAt:0};
+ const ws={readyState:1,deserializeAttachment:()=>structuredClone(actor),serializeAttachment:p=>actor=structuredClone(p),send:s=>sent.push(JSON.parse(s)),close(){}};sockets.push(ws);const world={map:'city',monsters:[],tick:now};server.world=()=>world;
+ let result=await server.command('drinktest','usePotion',{id:'minor'});assert(result.ok);assert.equal(actor.hp,1000,'no instant healing');assert.equal(actor.drinking.ends-now,2000);assert.equal(server.read('drinktest').potions.minor,3);assert(sent.some(m=>m.type==='potionStart'));
+ assert.equal((await server.command('drinktest','usePotion',{id:'minor'})).ok,false);assert.equal(server.read('drinktest').potions.minor,3,'double click consumes only one');assert.equal((await server.command('drinktest','useSupply',{id:'defense'})).ok,false);
+ const shot=actor.lastShot;await server.webSocketMessage(ws,JSON.stringify({type:'melee',direction:[0,0,1]}));assert.equal(actor.lastShot,shot);await server.webSocketMessage(ws,JSON.stringify({type:'slot',slot:2}));assert(!actor.skillRuntime||actor.skillRuntime.mode===1);
+ now+=500;await server.webSocketMessage(ws,JSON.stringify({type:'move',seq:1,x:0,y:1.7,z:11,yaw:0}));assert.equal(actor.z,11,'movement remains authoritative during drinking');
+ actor.hp-=100;now+=1499;await server.tickMap('city');assert.equal(actor.hp,900,'hit does not cancel, but healing still waits');assert(actor.drinking);now++;await server.tickMap('city');assert.equal(actor.hp,900+ANCIENT_POTIONS.minor.heal);assert(!actor.drinking);const healed=actor.hp;await server.tickMap('city');assert.equal(actor.hp,healed,'heal exactly once');
+ await server.command('drinktest','usePotion',{id:'minor'});actor.hp=0;now+=2000;await server.tickMap('city');assert.equal(actor.hp,0,'death must not resurrect');assert(!actor.drinking);
+ actor.hp=1000;actor.deadAt=0;now+=100;assert((await server.command('drinktest','usePotion',{id:'minor'})).ok);actor={...actor,drinking:undefined};now+=3000;await server.tickMap('city');assert.equal(actor.hp,1000,'replacement connection cannot receive an old drink');
+ console.log('PASS real server: delayed healing at 2s, movement allowed, attacks/skills/items denied, one bottle per start, damage does not interrupt, death/disconnect cancel, no repeated heal.');
+}finally{Date.now=originalNow}

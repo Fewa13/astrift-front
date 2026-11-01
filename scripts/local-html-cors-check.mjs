@@ -1,0 +1,11 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import fs from 'node:fs';import assert from 'node:assert/strict';import {transform} from 'esbuild';
+const source=fs.readFileSync('src/index.ts','utf8'),tail=source.slice(source.indexOf('const PUBLIC_ORIGINS='));
+const compiled=await transform('async function handleRequest(){return Response.json({error:"Authentication required"},{status:401})}\n'+tail,{loader:'ts',format:'esm'}),worker=(await import('data:text/javascript;base64,'+Buffer.from(compiled.code).toString('base64'))).default;
+for(const path of ['/api/account/login','/api/account/register','/api/account/save','/api/ancient/profile','/api/ancient/connect','/api/social/friends','/api/extraction/squad','/api/matchmaking/ranked']){
+ const preflight=await worker.fetch(new Request('https://play.astrift.com'+path,{method:'OPTIONS',headers:{Origin:'null','Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'}}),{});assert.equal(preflight.status,204);assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),'*');assert.equal(preflight.headers.get('Access-Control-Allow-Credentials'),null);
+ const auth=await worker.fetch(new Request('https://play.astrift.com'+path,{method:'POST',headers:{Origin:'null','Content-Type':'application/json'},body:'{}'}),{});assert.equal(auth.status,401);assert.equal(auth.headers.get('Access-Control-Allow-Origin'),'*');assert.equal((await auth.json()).error,'Authentication required');
+}
+for(const path of ['/api/joinlog','/api/tournaments/admin-login','/api/forum/login','/api/forum/moderate','/api/unknown'])for(const method of ['OPTIONS','POST']){const r=await worker.fetch(new Request('https://play.astrift.com'+path,{method,headers:{Origin:'null'}}),{});assert.equal(r.status,403);assert.equal(r.headers.get('Access-Control-Allow-Origin'),null);}
+const evil=await worker.fetch(new Request('https://play.astrift.com/api/account/login',{method:'OPTIONS',headers:{Origin:'https://unrelated.example'}}),{});assert.equal(evil.headers.get('Access-Control-Allow-Origin'),null);
+console.log('PASS opaque-file clients: credentialless preflights/readable authentication failures; management/unknown paths and unrelated sites remain blocked.');

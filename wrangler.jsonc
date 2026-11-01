@@ -1,0 +1,26 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "astrift-front",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "account_id": "d60c4866625dd96ac934269afcd04ff1",
+  "workers_dev": true,
+  "vars": {"GAME_GUIDE_FREE_ONLY":"true"},
+  "routes": [{"pattern": "play.astrift.com", "custom_domain": true}],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/admin", "/admin/", "/joinlog", "/joinlog/", "/joinlog.html", "/api/*", "/", "/index.html", "/ancient", "/ancient/", "/ancient.html", "/_world/*"]
+  },
+  "send_email": [{"name":"EMAIL","allowed_sender_addresses":["help@astrift.com","verify-noreply@astrift.com","reset-noreply@astrift.com","security-noreply@astrift.com","notice-noreply@astrift.com"]}],
+  "durable_objects": {
+    "bindings": [{ "name": "ANCIENT_WORLDS", "class_name": "AncientWorld" },{ "name": "GAME_ROOMS", "class_name": "GameRoom" },{ "name": "OBJECTIVE_ROOMS", "class_name": "ObjectiveRoom" },{ "name": "BOMB_ROOMS", "class_name": "BombRoom" },{ "name": "LOADOUT_CODES", "class_name": "LoadoutCodeRegistry" },{ "name": "FORUM_BOARD", "class_name": "ForumBoard" },{ "name": "DUEL_MATCHMAKER", "class_name": "DuelMatchmaker" },{ "name": "PLAYER_ACCOUNTS", "class_name": "PlayerAccount" },{ "name": "SOCIAL_HUB", "class_name": "SocialHub" },{ "name": "ACCOUNT_SESSIONS", "class_name": "AccountSessionRegistry" },{ "name": "TOURNAMENTS", "class_name": "TournamentHub" },{ "name": "SURVIVAL_LEADERBOARD", "class_name": "SurvivalLeaderboard" },{ "name": "EXTRACTION_ROOMS", "class_name": "ExtractionRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] },{ "tag": "v2-objectives", "new_sqlite_classes": ["ObjectiveRoom"] },{ "tag": "v3-loadout-codes", "new_sqlite_classes": ["LoadoutCodeRegistry"] },{ "tag": "v4-forum-board", "new_sqlite_classes": ["ForumBoard"] },{ "tag": "v5-duel-matchmaker", "new_sqlite_classes": ["DuelMatchmaker"] },{ "tag": "v6-bomb", "new_sqlite_classes": ["BombRoom"] },{ "tag": "v7-player-accounts", "new_sqlite_classes": ["PlayerAccount"] },{ "tag": "v8-social-hub", "new_sqlite_classes": ["SocialHub"] },{ "tag": "v9-account-sessions", "new_sqlite_classes": ["AccountSessionRegistry"] },{ "tag": "v10-tournaments", "new_sqlite_classes": ["TournamentHub"] },{ "tag": "v11-tower-leaderboard", "new_sqlite_classes": ["SurvivalLeaderboard"] },{ "tag": "v12-extraction", "new_sqlite_classes": ["ExtractionRoom"] },{ "tag": "v13-ancient", "new_sqlite_classes": ["AncientWorld"] }],
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 }
+  }
+}

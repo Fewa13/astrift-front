@@ -1,0 +1,15 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import {GEAR,GEAR_AFFIXES,GEAR_LEVELS,ancientGearStats,rollGearItem,ancientGearLoot,equipAncientGear,gearName,gearDescription} from '../public/ancient-gear.js';
+import {marketGearValue,marketGearItem} from '../public/ancient-market-rules.js';
+import {newAncientProfile} from '../public/ancient-rules.js';
+import {gearIconMarkup} from '../public/ancient-gear-icons.js';
+import {createAncientWeaponModel,releaseAncientWeaponModel} from '../public/ancient-weapon-models.js';
+for(const q of [7,8]){const p=newAncientProfile();p.level=GEAR_LEVELS[q-1];p.gear=[];p.gearEquipped={};const affix=q===7?'astralTempo':'primalTempo';for(const slot of ['weapon','helmet','armor','wings']){const key=(slot==='weapon'?'blade':slot)+q,item=rollGearItem(key,()=>.25);item.affixes=[{key:affix,value:GEAR_AFFIXES[affix].max}];p.gear.push(item);assert.equal(equipAncientGear(p,slot,item.id),null);assert(!GEAR[key].cooldown);assert(Number.isFinite(marketGearValue(item))&&marketGearValue(item)>0);if(slot!=='wings')assert(marketGearItem(item));for(const en of [false,true])assert(!/undefined|NaN/.test(gearName(key,en)+gearDescription(key,en)));assert(!/undefined|NaN/.test(gearIconMarkup(key)));}
+assert(Math.abs(ancientGearStats(p).cooldown-(q===7?.45:.5))<1e-9);p.level--;assert.equal(equipAncientGear(p,'weapon',p.gear[0].id),'玩家等级不足');assert.equal(ancientGearStats(p).cooldown,0);p.level++;for(const i of p.gear)i.affixes=[{key:'cooldown',value:.025}];assert(ancientGearStats(p).cooldown<=.16);const weapon=createAncientWeaponModel('blade'+q);assert(weapon);weapon.traverse(n=>{if(n.isMesh){const materials=Array.isArray(n.material)?n.material:[n.material];for(const m of materials)assert(Number.isFinite(m.color.r));}});releaseAncientWeaponModel(weapon);
+}
+for(let n=0;n<100;n++){for(const q of [7,8]){const i=rollGearItem('helmet'+q);assert.equal(i.affixes.length,4);assert.equal(i.affixes.filter(a=>GEAR_AFFIXES[a.key].quality).length,1);assert(!i.affixes.some(a=>a.key==='cooldown'));}}
+let seed=12345;const random=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296),counts={7:0,8:0};for(let i=0;i<15000;i++)for(const item of ancientGearLoot('sky_sovereign',random,230))if(GEAR[item.key].quality>=7)counts[GEAR[item.key].quality]++;
+assert(counts[7]>20&&counts[7]<90);assert(counts[8]>0&&counts[8]<25);for(let i=0;i<500;i++)assert(ancientGearLoot('lord',random,25).every(i=>GEAR[i.key].quality<7));assert.equal(ancientGearLoot('grox',()=>0,230).length,0);
+const p=newAncientProfile();p.level=200;p.gear=[{id:'a',key:'blade8',affixes:[{key:'starHunter',value:.12},{key:'primalVerdict',value:.16}]}];p.gearEquipped={weapon:'a'};assert.equal(ancientGearStats(p).bossSkill,.12);assert.equal(ancientGearStats(p).finisherSkill,.16);
+console.log('PASS Lv140/200 equipment gates; 45%/50% complete cooldown builds; no innate cooldown; exclusive affixes, valid icons/3D materials, finite market prices, low rare drop rates and no low-tier/ordinary enemy drops.',counts);

@@ -1,0 +1,21 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import {newExtractionState,transact,beginExtraction,settleExtraction,refreshDaily,kitPrice} from '../public/extraction-economy.js';
+const s=newExtractionState();for(let i=0;i<10;i++)transact(s,{kind:'free'});
+assert.throws(()=>transact(s,{kind:'free'}));assert.equal(s.credits,2000);
+transact(s,{kind:'sellKit',id:s.inventory[0].id});assert.equal(s.credits,2000,'Free kit resale must not mint currency');
+const kit=s.inventory[0];beginExtraction(s,kit.id);assert(!s.inventory.some(k=>k.id===kit.id));
+s.raid.bag.push('core','wire');settleExtraction(s,false);assert.equal(s.warehouse.length,0);assert(!s.inventory.some(k=>k.id===kit.id));
+beginExtraction(s,s.inventory[0].id);s.raid.bag.push('core','wire');const id=s.raid.kit.id;
+settleExtraction(s,true,17);assert.equal(s.inventory.find(k=>k.id===id).ammo,17);assert.equal(s.warehouse.length,2);
+assert.equal(settleExtraction(s,true,17),null);assert.equal(s.warehouse.length,2,'Repeated settlement must be idempotent');
+const current=s.credits;transact(s,{kind:'sellLoot',index:0});assert.equal(s.credits,current+850);
+const paid={weapon:'redline',mods:{},armor:'none',helmet:'none',ammo:0,special:false};
+const before=s.credits;transact(s,{kind:'buy',kit:paid});assert.equal(s.credits,before-kitPrice(paid));
+const gun=s.inventory.at(-1);assert.throws(()=>beginExtraction(s,gun.id),'Empty gun must require ammo');
+transact(s,{kind:'ammo',id:gun.id,quantity:30});assert.equal(gun.ammo,30);
+const money=s.credits;transact(s,{kind:'upgrade',id:gun.id,mods:{弹药:'highVelocity'},special:true,armor:'none',helmet:'none'});assert.equal(s.credits,money-60,'Existing ammunition upgrade must charge per-round premium');
+assert.throws(()=>transact(s,{kind:'ammo',id:gun.id,quantity:-100}));
+const used=s.freeUsed;refreshDaily(s,Date.now()-86400000);assert.equal(s.freeUsed,used,'Clock rollback must not replenish free kits');
+refreshDaily(s,Date.now()+86400000);assert.equal(s.freeUsed,0);
+console.log('PASS: quotas, fixed-price purchases, free resale, escrow, finite ammo, loss/extraction, repeated settlement and clock rollback');

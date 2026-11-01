@@ -1,0 +1,40 @@
+/* © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved. */
+.extractPanel:has(.extractBackpack) .extractLoadout,
+.extractPanel:has(.extractBackpack) [data-balance],
+.extractPanel:has(.extractBackpack) nav,
+.extractError:empty,.extractCard p:empty{display:none}
+.extractGrid.extractBackpack{grid-template-columns:180px minmax(0,1fr);align-items:start}
+.extractGrid.extractBackpack:has(.extractContainer){grid-template-columns:180px minmax(0,1fr) minmax(0,1fr)}
+.extractBackpack .extractBagSlots{grid-template-columns:repeat(4,minmax(0,1fr));align-content:start;grid-auto-rows:min-content;gap:6px}
+.extractBackpack .extractBagSlots>h3{font-size:15px;margin:0;min-height:28px}
+.extractBackpack .extractBagTools{min-height:28px;justify-content:flex-start}
+.extractBackpack .extractContainer{grid-column:auto;grid-template-columns:repeat(3,minmax(0,1fr));align-content:start;border-top:0;border-left:1px solid #36586a;padding:0 0 0 12px;gap:6px}
+.extractBackpack .extractContainer>.extractCard:first-child{padding:10px;background:#162e3d;border-color:#47636d}
+.extractBackpack .extractContainer>.extractCard:first-child h3{margin:0;font-size:17px}
+.extractBackpack .extractItem{padding:7px;min-height:96px}
+.extractBackpack .extractItem.empty{min-height:72px}
+.extractBackpack .extractItem h3{font-size:12px;font-weight:600;overflow-wrap:anywhere}
+.extractBackpack .extractItem .extractIcon{float:none;display:block;width:28px;height:28px;margin:0 0 5px}
+.extractBackpack .extractItem p{font-size:11px;margin:4px 0}
+.extractBackpack .extractItem button{padding:5px 6px;margin:3px 1px;font-size:11px}
+.extractBackpack .extractGearSlots .extractCard{padding:12px}
+.extractBackpack .extractGearSlots h3{font-size:14px;margin:3px 0 10px}
+.extractBackpack .extractGearSlots>p{font-size:13px;color:#a7c7ce}
+.extractPanel:has(.extractBackpack){inset:5vh 4vw}
+.extractPanel:has(.extractBackpack) header{margin-bottom:18px}
+@media(max-width:900px){
+ .extractGrid.extractBackpack:has(.extractContainer){grid-template-columns:130px minmax(0,1fr) minmax(0,1fr)}
+ .extractBackpack .extractBagSlots,.extractBackpack .extractContainer{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+ .extractPanel:has(.extractBackpack){inset:2vh 2vw;padding:10px}
+ .extractGrid.extractBackpack,.extractGrid.extractBackpack:has(.extractContainer){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .extractBackpack .extractGearSlots{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .extractBackpack .extractGearSlots .extractCard{padding:6px}
+ .extractBackpack .extractGearSlots h3{font-size:11px;margin:2px}
+ .extractBackpack .extractGearSlots>p{grid-column:1/-1;margin:0}
+ .extractBackpack .extractContainer{padding-left:5px}
+ .extractBackpack .extractItem{min-height:80px}
+ .extractBackpack .extractItem.empty{min-height:45px}
+ .extractBackpack .extractContainer>.extractCard:first-child{padding:6px}
+}

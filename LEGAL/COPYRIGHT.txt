@@ -1,0 +1,9 @@
+© 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+
+ASTRIFT // FRONT and its original source code, game design, gameplay systems,
+written content, original artwork, models, UI, and branding are protected by
+copyright. No copying, redistribution, resale, or rehosting is permitted
+without written permission from Felix.
+
+Third-party libraries and assets remain subject to their respective licenses.
+Those licenses are listed in ASSET_LICENSES.md.

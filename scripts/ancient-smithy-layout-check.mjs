@@ -1,0 +1,7 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';import {SMITHY_FIXTURES,COMMUNITY_CATALOG,communityCatalogParts} from '../public/ancient-community-catalog.js';import {communityModelBounds} from '../public/ancient-community-models.js';
+const catalog=new Map(COMMUNITY_CATALOG.map(m=>[m.kind,m]));
+const bounds=SMITHY_FIXTURES.map(f=>{const m=catalog.get(f.kind),[w,h,d]=m.size.map(n=>n*f.scale),b=communityModelBounds(m.id,w,h,d,0);return {kind:f.kind,minX:f.x+b.minX,maxX:f.x+b.maxX,minY:.28+b.minY,maxY:.28+b.maxY,minZ:f.z+b.minZ,maxZ:f.z+b.maxZ}});
+const wallX=-2+14*.65/2,wallHalf=.19;for(const b of bounds){assert(b.maxX<wallX-wallHalf||b.minX>wallX+wallHalf,b.kind+' penetrates right room wall');assert(b.minY>=.279,'furniture feet align with the 0.28m floor');assert(b.minZ> -5.2&&b.maxZ<5.2,'furniture stays clear of end walls and posts');if(b.minX>wallX){assert(b.maxX<6.5,'furniture stays inside awning posts');assert(b.maxY<3.4,'furniture stays below awning roof')}}
+for(let i=0;i<bounds.length;i++)for(let j=i+1;j<bounds.length;j++){const a=bounds[i],b=bounds[j],overlap=Math.min(a.maxX,b.maxX)-Math.max(a.minX,b.minX)>0&&Math.min(a.maxZ,b.maxZ)-Math.max(a.minZ,b.minZ)>0;assert(!overlap,a.kind+' intersects '+b.kind)}
+const parts=communityCatalogParts('kit-blacksmith');assert(parts.length>80);console.log('PASS actual smithy component bounds: furnace, bench, weapon rack and barrel clear all walls, each other and roof; supported by matching floors.');

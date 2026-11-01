@@ -1,0 +1,19 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+export const ANCIENT_NAV_GROUPS=[
+ ['成长与物品','Character & Items',[['skills','技能','Skills'],['bag','背包','Inventory'],['collections','藏品','Collections'],['stones','原石','Stones']]],
+ ['冒险与记录','Adventure',[['dungeon','副本','Dungeons'],['hunts','狩猎','Hunts'],['trials','试炼','Trials'],['research','图鉴','Codex']]],
+ ['玩家与社交','Players & Social',[['online','在线','Players'],['friends','好友','Friends'],['invite','邀请','Invite'],['party','组队','Party'],['trade','交易','Trade'],['chat','聊天','Chat']]],
+ ['商店与服务','Shop & Services',[['shop','商店','Shop'],['market','市场','Market'],['guide','游戏助手','Game guide'],['mail','邮件','Mail'],['leaderboard','排行','Ranking']]]
+];
+const expandedGroups=new WeakMap();
+export function renderAncientNavigation(root,{en,view,open,chat,controls,language,exit,active,admin,test,friendUnread=0}){
+ const L=(a,b)=>en()?b:a;root.classList.add('ancientGroupedNav');
+ const button=(id,zh,eng,parent,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=L(zh,eng);b.dataset.layoutKey='nav-'+id;b.dataset.navTarget=id;if(id==='friends'){b.dataset.friendUnread='';b.dataset.unreadLabel=L(zh,eng)}b.setAttribute('aria-label',L(zh,eng));b.classList.toggle('selected',view===id);if(view===id)b.setAttribute('aria-current','page');b.onclick=fn;parent.append(b);return b;};
+ const headings=[],panels=[];let expanded=expandedGroups.get(root)??-1;
+ const update=()=>{expandedGroups.set(root,expanded);headings.forEach((b,i)=>{b.setAttribute('aria-expanded',String(expanded===i));b.classList.toggle('expanded',expanded===i);panels[i].hidden=expanded!==i})};
+ for(const[index,[zh,eng,items]]of ANCIENT_NAV_GROUPS.entries()){const group=document.createElement('section'),title=document.createElement('button'),links=document.createElement('div');group.className='ancientNavGroup';title.type='button';title.className='ancientNavCategory';title.textContent=L(zh,eng);if(items.some(([id])=>id==='friends')){title.dataset.friendUnread='';title.dataset.unreadLabel=L(zh,eng)}title.setAttribute('aria-label',L(zh,eng));title.setAttribute('aria-controls','ancient-nav-group-'+index);title.classList.toggle('selected',items.some(([id])=>id===view));title.onclick=()=>{expanded=expanded===index?-1:index;update()};links.className='ancientNavLinks ancientNavSubmenu';links.id='ancient-nav-group-'+index;links.setAttribute('role','group');links.setAttribute('aria-label',L(zh,eng));group.append(title);root.append(group);headings.push(title);panels.push(links);for(const[id,cn,english]of items){const b=button(id,cn,english,links,()=>{expanded=-1;update();if(id==='chat')chat();else open(id)});if(!active&&['online','invite','trade','chat'].includes(id)){b.disabled=true;b.title=L('进入地图后使用','Available inside a map')}}}
+ root.append(...panels);update();
+ const utilities=document.createElement('div');utilities.className='ancientNavUtilities';root.append(utilities);button('controls','设置','Settings',utilities,controls);const lang=button('language','中文 / EN','中文 / EN',utilities,language);lang.id='ancientLanguage';updateAncientFriendUnread(root,friendUnread,en());lang.setAttribute('aria-label',L('切换到英文','Switch to Chinese'));if(admin)button('testSkills','测试','Test',utilities,test);if(active)button('exit','退出','Exit',utilities,exit).classList.add('ancientExit');
+}
+
+export function updateAncientFriendUnread(root,count,english=false){const n=Math.max(0,Math.floor(Number(count)||0));for(const b of (root?.querySelectorAll('[data-friend-unread]')||[])){let badge=b.querySelector('.ancientUnreadBadge');if(!badge){badge=document.createElement('span');badge.className='ancientUnreadBadge';badge.setAttribute('aria-hidden','true');b.append(badge)}badge.hidden=n===0;badge.textContent=n?String(n):'';b.setAttribute('aria-label',b.dataset.unreadLabel+(n?(english?`, ${n} unread messages`:`，${n}条未读消息`):''))}}

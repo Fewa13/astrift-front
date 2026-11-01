@@ -1,0 +1,6 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import {setCommunityMap,communityBlocked,communityHeight,communityCeiling} from '../public/ancient-community.js';
+const boundary=[{x:-50,z:-50},{x:50,z:-50},{x:50,z:50},{x:-50,z:50}];
+for(const rotation of [0,.37,1.5]){const map={id:921,tier:3,boundary,spawn:{x:0,z:-20},sky:'#93b4c2',skyArt:[],spawns:[],objects:[{id:'tower',model:'kit-lighthouse',x:0,y:0,z:0,w:10,h:22,d:10,rotation,color:'#889988',solid:true}]};setCommunityMap(map);for(let floor=0;floor<4;floor++)for(let j=0;j<18;j++){const x=10*.92/2-1.1,z=-10*.9/2+1.1+(j+.5)*6.12/18,wx=Math.cos(rotation)*x-Math.sin(rotation)*z,wz=Math.sin(rotation)*x+Math.cos(rotation)*z,top=.28+floor*3.2+(j+1)*3.2/18;assert(!communityBlocked('community:921',wx,wz,.6,top),`blocked on floor ${floor+1}, step ${j+1}`);assert(communityCeiling('community:921',wx,wz,top+1.7)>=top+1.7,`head collision on floor ${floor+1}, step ${j+1}`);assert(Math.abs(communityHeight('community:921',wx,wz,top)-top)<.02,`unsupported step ${floor}/${j}`)}}
+console.log('PASS lighthouse: all 72 steps across four flights support a radius-0.6 player with head clearance at three rotations.');

@@ -1,0 +1,31 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+import {fileURLToPath} from 'node:url';
+import {execFileSync} from 'node:child_process';
+const directory=path.dirname(fileURLToPath(import.meta.url)),root=path.dirname(directory);
+const latest=JSON.parse(fs.readFileSync(path.join(directory,'latest.json'),'utf8')),game=path.resolve(directory,latest.game);
+assert(game.startsWith(path.join(directory,'releases')+path.sep));
+const report=JSON.parse(fs.readFileSync(path.join(directory,latest.report),'utf8'));
+const entries=fs.readdirSync(game),html=fs.readFileSync(path.join(game,'index.html'),'utf8');
+assert(entries.includes('index.html')&&entries.includes('crazygames-platform.js'));
+assert(!entries.some(file=>file==='sw.js'||file==='forum.html'||file.startsWith('.')||/\.vars|\.ts$|package|wrangler|secret/i.test(file)));
+assert(!/\b(?:src|href)="\/(?!\/)/.test(html));assert(!html.includes("serviceWorker.register('/sw.js')"));assert(!html.includes("addEventListener('beforeunload'"));
+assert(fs.readFileSync(path.join(root,'public/index.html'),'utf8').includes("addEventListener('beforeunload'"),'normal entry must remain unchanged');
+const zipped=execFileSync('/usr/bin/unzip',['-Z1',path.join(directory,latest.archive)],{encoding:'utf8'}).trim().split('\n');assert.deepEqual(zipped.sort(),entries.sort());assert(report.totalBytes<20*1024*1024);
+const fetches=[],sockets=[],events=[],scripts=[],timers=[],store=new Map();
+class NativeSocket{static OPEN=1;constructor(url,protocols){sockets.push({url,protocols})}}
+let settingsListener;const settingsApplied=[];
+const sdk={environment:'local',init:async()=>events.push('init'),game:{...Object.fromEntries(['loadingStart','loadingStop','gameplayStart','gameplayStop'].map(method=>[method,()=>events.push(method)])),settings:{muteAudio:true,disableChat:true},addSettingsChangeListener:listener=>{settingsListener=listener}}};
+const window={__ASTRIFT_CRAZYGAMES_CONFIG__:JSON.parse(fs.readFileSync(path.join(directory,'config.json'),'utf8')),fetch:async(input,init)=>{fetches.push({input,init});return {ok:true}},WebSocket:NativeSocket,CrazyGames:{SDK:sdk}};
+const document={createElement:()=>({}),head:{append:script=>scripts.push(script)}};
+vm.runInNewContext(fs.readFileSync(path.join(game,'crazygames-platform.js'),'utf8'),{window,document,URL,location:{href:'https://games.crazygames.com/astrift/1/index.html'},localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value)},console,setInterval:callback=>timers.push(callback)});
+assert.equal(window.WebSocket.OPEN,1);await window.fetch('/api/matchmaking/duel',{method:'GET'});assert.equal(fetches[0].input,report.backendOrigin+'/api/matchmaking/duel');await window.fetch('./three.module.js');assert.equal(fetches[1].input,'./three.module.js');
+new window.WebSocket('wss://games.crazygames.com/api/duel/A7K2M9');assert.equal(sockets[0].url,'wss://astrift-front.fewa3729.workers.dev/api/duel/A7K2M9');
+assert.equal(scripts[0].src,'https://sdk.crazygames.com/crazygames-sdk-v3.js');assert.equal(store.get('astrift.language.v1'),'en');
+window.__ASTRIFT_CG_STATE__=()=>({playing:false});await scripts[0].onload();assert.deepEqual(events,['init','loadingStart','loadingStop']);window.__ASTRIFT_CG_STATE__=()=>({playing:true});timers[0]();timers[0]();assert.equal(events.filter(e=>e==='gameplayStart').length,1);window.__ASTRIFT_CG_STATE__=()=>({playing:false});timers[0]();assert.equal(events.at(-1),'gameplayStop');
+assert.equal(window.__ASTRIFT_CG_SETTINGS__.muteAudio,true);assert.equal(window.__ASTRIFT_CG_SETTINGS__.disableChat,true);
+window.__ASTRIFT_CG_APPLY_SETTINGS__=settings=>settingsApplied.push({...settings});settingsListener({muteAudio:false,disableChat:false});assert.deepEqual(settingsApplied,[{muteAudio:false,disableChat:false}]);settingsListener({muteAudio:true,disableChat:true});assert.equal(settingsApplied.at(-1).disableChat,true);
+console.log(`PASS: ${entries.length} relative-path bundled assets, root ZIP entry, no secrets/server files, unchanged normal frontend, API/WebSocket routing, SDK init/loading/gameplay events.\n${report.warnings.map(w=>'PENDING: '+w).join('\n')}`);

@@ -1,0 +1,19 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {build} from 'esbuild';
+const bundle=await build({entryPoints:['src/ancient-trade.ts'],bundle:true,write:false,format:'esm',platform:'node'}),{AncientTrade}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+const db=new DatabaseSync(':memory:'),sql={exec(q,...args){const rows=db.prepare(q).all(...args);return {toArray:()=>rows}}},profiles=new Map(['a','b','c'].map(n=>[n,{coins:100,materials:{core:10},potions:{low:5},gear:[{id:n+'sword',key:'stoneRough'}],gearEquipped:{}}]));
+const trade=new AncientTrade(sql,n=>structuredClone(profiles.get(n)),(n,p)=>profiles.set(n,structuredClone(p)),()=>[{name:'a',map:'tribe'},{name:'b',map:'tribe'},{name:'c',map:'forest'}]);
+const act=(name,kind,data={})=>{const d=trade.state(name).deal;return trade.command(name,kind,{id:d?.id,revision:d?.revision,...data})};
+assert.ok(act('a','tradeInvite',{target:'c'}));assert.equal(act('a','tradeInvite',{target:'b'}),null);assert.ok(act('a','tradeAccept'));assert.equal(act('b','tradeAccept'),null);
+profiles.get('a').gearEquipped.weapon='asword';assert.ok(act('a','tradeOffer',{coins:0,items:[{type:'gear',id:'asword',quantity:1}]}));profiles.get('a').gearEquipped={};
+assert.ok(act('a','tradeOffer',{coins:-1,items:[]}));assert.ok(act('a','tradeOffer',{coins:0,items:[null]}));
+assert.equal(act('a','tradeOffer',{coins:30,items:[{type:'gear',id:'asword',quantity:1},{type:'material',id:'core',quantity:3}]}),null);
+assert.equal(act('a','tradeConfirm'),null);assert.equal(act('b','tradeOffer',{coins:5,items:[{type:'potion',id:'low',quantity:2}]}),null);assert.equal(trade.state('a').deal.offers.a.confirmed,false);
+assert.ok(act('a','tradeConfirm',{revision:1}));assert.equal(act('a','tradeConfirm'),null);const id=trade.state('a').deal.id;assert.equal(act('b','tradeConfirm'),null);assert.equal(trade.state('a').deal,null);
+assert.equal(profiles.get('a').coins,75);assert.equal(profiles.get('b').coins,125);assert.equal(profiles.get('a').materials.core,7);assert.equal(profiles.get('b').materials.core,13);assert.equal(profiles.get('a').potions.low,7);assert.equal(profiles.get('b').potions.low,3);assert.equal(profiles.get('b').gear.filter(g=>g.id==='asword').length,1);assert.ok(trade.command('a','tradeConfirm',{id,revision:3}));
+assert.equal(act('a','tradeInvite',{target:'b'}),null);assert.equal(act('b','tradeAccept'),null);assert.equal(act('a','tradeOffer',{coins:0,items:[{type:'material',id:'core',quantity:7}]}),null);assert.equal(act('a','tradeConfirm'),null);profiles.get('a').materials.core=0;assert.ok(act('b','tradeConfirm'));assert.equal(trade.state('a').deal.offers.a.confirmed,false);assert.equal(profiles.get('b').materials.core,13);
+const contribution=await build({entryPoints:['src/ancient-contribution.ts'],bundle:true,write:false,format:'esm',platform:'node'}),{splitContribution,contributionOwner}=await import('data:text/javascript;base64,'+Buffer.from(contribution.outputFiles[0].text).toString('base64'));
+assert.deepEqual(splitContribution(100,[{name:'a',damage:70},{name:'b',damage:30}]),[{name:'a',amount:70},{name:'b',amount:30}]);assert.equal(splitContribution(17,[{name:'a',damage:7},{name:'b',damage:3}]).reduce((s,x)=>s+x.amount,0),17);assert.equal(contributionOwner([{name:'a',damage:7},{name:'b',damage:3}],()=>.8),'b');
+console.log('PASS: consent, same-map restriction, equipped-item rejection, input validation, stale revision, confirmation reset, atomic exchange, replay rejection, inventory revalidation; proportional reward totals and weighted loot.');db.close();

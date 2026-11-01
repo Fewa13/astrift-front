@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import * as r from '../public/survival-rules.js';
+const s=r.newSurvivalState();s.players=[r.newSurvivalPlayer('a','甲'),r.newSurvivalPlayer('b','乙')];
+r.tickSurvival(s,200);assert.equal(s.zombies.length,0);
+s.status='running';r.tickSurvival(s,200);assert.equal(s.zombies.length,1);
+s.points=10000;s.towerHp=50;
+assert(r.purchaseSurvival(s,'a','health').ok);assert.equal(s.towerMax,500);assert.equal(s.towerHp,250);assert.equal(s.points,9500);
+assert(r.purchaseSurvival(s,'b','attack').ok);assert.equal(r.survivalDamageMultiplier(s,'a'),2);assert.equal(r.survivalDamageMultiplier(s,'b'),2);
+assert(!r.purchaseSurvival(s,'a','rage1').ok);
+s.elapsed=300000;assert(r.purchaseSurvival(s,'a','rage1').ok);assert.equal(s.players[1].rage,0);r.activateSurvivalSkill(s,'a','5');
+assert.equal(r.survivalDamageMultiplier(s,'a'),4);assert.equal(r.survivalDamageMultiplier(s,'b'),2);assert(!r.activateSurvivalSkill(s,'a','5').ok);
+assert(r.purchaseSurvival(s,'a','rage2').ok);assert.equal(r.survivalDamageMultiplier(s,'a'),5);
+assert.equal(r.zombieStats(120000).reward,8);assert.equal(r.zombieStats(120000).damage,3);
+s.elapsed=359900;s.spawnAt=999999;s.zombies=[{id:'existing',x:30,z:30,hp:50,maxHp:100,attackAt:0}];r.tickSurvival(s,200);assert.equal(s.zombies[0].maxHp,130);assert.equal(s.zombies[0].hp,65);
+s.players[0].protectionUntil=s.elapsed+20000;s.zombies=[{id:'attacker',x:6.6,z:0,hp:100,maxHp:100,attackAt:0}];const before=s.towerHp;r.tickSurvival(s,200);assert.equal(s.towerHp,before);
+s.players[0].protectionUntil=0;s.zombies[0].attackAt=0;r.tickSurvival(s,200);assert.equal(s.towerHp,before-7);
+s.players[1].bloodUntil=s.elapsed+120000;const points=s.points;const hit=r.hitSurvivalZombie(s,'b','attacker',1000);assert(hit.killed);assert.equal(s.points,points+128);assert.equal(s.towerHp,before-7+5);
+console.log('PASS tower survival: waiting, minute scaling, shared upgrades/points, personal skills, protection, lifesteal');

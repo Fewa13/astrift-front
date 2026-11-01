@@ -1,0 +1,8 @@
+/* © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved. */
+.languageButton{width:100%;margin-top:10px;padding:9px 12px;background:#0c1c29;border:1px solid #315065;color:#c7eef8;font-size:13px;letter-spacing:.05em;cursor:pointer}
+.languageButton:hover{border-color:#49e9f7;color:#fff}.languageButton[aria-pressed=true]{border-color:#49e9f7}
+html[lang=en] button,html[lang=en] small,html[lang=en] label{overflow-wrap:break-word}
+html[lang=en] .brand h1{font-size:clamp(48px,7vw,100px);line-height:1.05;letter-spacing:-.04em}
+html[lang=en] .mobile-game #gameChatHint::after,html.mobile-game[lang=en] #gameChatHint::after{content:'Chat'}
+html[lang=en] .touchButton span{font-size:8px;line-height:1.05}
+html[lang=en] .specialModeChoice{white-space:normal}

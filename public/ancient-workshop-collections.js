@@ -1,0 +1,13 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+export function renderWorkshopCollections(host,{products,en,command,isBusy}){
+ const L=(a,b)=>en()?b:a,el=(tag,text,parent=host)=>{const n=document.createElement(tag);n.textContent=text;parent.append(n);return n},btn=(text,fn,parent)=>{const b=el('button',text,parent);b.type='button';b.onclick=fn;return b},receipts=new Map();
+ const send=(action,ids)=>{if(isBusy()||!ids.length)return;const key=action+JSON.stringify(ids);if(!receipts.has(key))receipts.set(key,crypto.randomUUID());return command(action,{...(action==='stoneString'?{ids}:{lastProduct:ids.at(-1)}),requestId:receipts.get(key)});};
+ const bar=el('div','');bar.className='ancientWorkshopCollectActions';btn(L('全部放入藏品','Collect all jewelry'),()=>void send('stoneCollectAll',products.map(p=>p.id)),bar);
+ const beads=products.filter(p=>p.blank.kind==='bead'),groups=new Map();for(const p of beads){const g=groups.get(p.blank.size)||[];g.push(p);groups.set(p.blank.size,g);}
+ const auto=btn(L('一键编串','Weave matching beads'),()=>void send('stoneStringAll',beads.map(p=>p.id)),bar);auto.disabled=![...groups.values()].some(g=>g.length>=2);
+ const picker=el('div','');picker.className='ancientWorkshopStringPicker';picker.hidden=true;const choose=btn(L('选择编串','Choose beads'),()=>{picker.hidden=!picker.hidden;choose.setAttribute('aria-expanded',String(!picker.hidden))},bar);choose.disabled=beads.length<2;choose.setAttribute('aria-expanded','false');
+ const size=el('select','',picker);size.setAttribute('aria-label',L('珠子直径','Bead diameter'));for(const n of [...groups.keys()].sort((a,b)=>a-b))size.add(new Option(n+' mm',n));
+ const list=el('div','',picker);list.className='ancientWorkshopBeadPicker';const selected=new Set(),count=el('small','',picker),all=btn(L('选择同规格前20颗','Select first 20'),()=>{selected.clear();for(const p of (groups.get(Number(size.value))||[]).slice(0,20))selected.add(p.id);paint()},picker),confirm=btn(L('编串并存入藏品','Weave & collect'),()=>void send('stoneString',[...selected]),picker);
+ function paint(){list.replaceChildren();for(const [i,p]of (groups.get(Number(size.value))||[]).entries()){const label=el('label','',list),check=el('input','',label);check.type='checkbox';check.checked=selected.has(p.id);check.disabled=!check.checked&&selected.size>=20;check.onchange=()=>{if(check.checked)selected.add(p.id);else selected.delete(p.id);paint()};el('span',(i+1)+'. '+p.blank.size+' mm · '+L('估价 ','Value ')+p.value.toLocaleString(),label);}count.textContent=selected.size+' / 20';confirm.disabled=selected.size<2;all.disabled=!(groups.get(Number(size.value))||[]).length;}
+ size.onchange=()=>{selected.clear();paint()};paint();
+}

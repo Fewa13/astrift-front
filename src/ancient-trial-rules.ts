@@ -1,0 +1,12 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+export const TRIAL_TIERS=[{id:'normal',name:'普通',en:'Normal',level:1,time:120,reward:100},{id:'advanced',name:'进阶',en:'Advanced',level:20,time:110,reward:250},{id:'holy',name:'圣级',en:'Holy',level:80,time:100,reward:500}];
+export const TRIAL_LESSONS:Record<string,{name:[string,string];goal:[string,string];required:string[];multi?:string;pet?:boolean}>={
+ warrior:{name:['裂地攻势','Earthbreaker Assault'],goal:['使用体质强化、伤害强化与狂暴；伤害强化同时命中至少2个敌人，再击败所有敌人。','Use Vitality, Power and Berserk. Hit at least two enemies with Power, then defeat every enemy.'],required:['vitality','power','rage'],multi:'power'},
+ summoner:{name:['驭兽协战','Beast Commander'],goal:['召唤铁甲兽，使用灵魂弹指挥攻击，再变身；召唤兽必须实际造成伤害，最后击败所有敌人。','Summon your beast, direct it with Soul Bolt, then transform. Your beast must deal damage. Defeat every enemy.'],required:['summon','soulbolt','transform'],pet:true},
+ ice:{name:['冰域掌控','Glacial Control'],goal:['使用冰晶护体与暴风雪，暴风雪覆盖至少2个敌人，再击败所有敌人。','Use Ice Ward and Blizzard. Cover at least two enemies with Blizzard, then defeat every enemy.'],required:['icearmor','blizzard'],multi:'blizzard'},
+ lightning:{name:['雷霆连锁','Thunder Circuit'],goal:['连锁闪电命中至少2个敌人，使用雷霆疾行穿梭战场，再击败所有敌人。','Chain Lightning must hit at least two enemies. Use Thunderstride to reposition, then defeat every enemy.'],required:['chain','haste'],multi:'chain'},
+ curse:{name:['灾厄编织','Doom Weaver'],goal:['使用衰弱印记、生命汲取与灾厄领域，领域覆盖至少2个敌人，再击败所有敌人。','Use Frailty Hex, Life Drain and Doom Field. Cover at least two enemies with Doom Field, then defeat every enemy.'],required:['hex','drain','doom'],multi:'doom'},
+ swordsman:{name:['青穹剑阵','Verdant Formation'],goal:['使用三连斩、剑雨与天剑，剑雨覆盖至少2个敌人，再击败所有敌人。','Use Triple Slash, Sword Rain and Phantom Blade. Cover at least two enemies with Sword Rain, then defeat every enemy.'],required:['triplecut','swordrain','phantomblade'],multi:'swordrain'},
+ shadowblade:{name:['穿影回锋','Rift and Return'],goal:['使用穿影、影返与夜幕追猎，穿影同时击中至少2个敌人，再击败所有敌人。','Use Shadowstep, Shadow Recall and Nightfall Hunt. Hit at least two enemies with one Shadowstep, then defeat every enemy.'],required:['shadowstep','shadowreturn','nightfall'],multi:'shadowstep'},
+ stonewright:{name:['地脉围攻','Tectonic Siege'],goal:['使用地脉震、岩牢与山岳坠，岩牢覆盖至少2个敌人，再击败所有敌人。','Use Faultline, Stone Prison and Mountainfall. Cover at least two enemies with Stone Prison, then defeat every enemy.'],required:['faultline','stoneprison','mountainfall'],multi:'stoneprison'}
+};

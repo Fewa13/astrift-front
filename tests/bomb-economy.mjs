@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {BOMB_START_CREDITS,BOMB_MAX_CREDITS,buyBombWeapon,awardBombCredits} from '../public/bomb-economy.js';
+assert.equal(BOMB_START_CREDITS,1200);
+assert.deepEqual(buyBombWeapon(1200,'redline'),{weapon:'redline',credits:200});
+assert.deepEqual(buyBombWeapon(1200,null),{weapon:null,credits:1200});
+assert.equal(buyBombWeapon(1200,'frost'),null);
+assert.equal(buyBombWeapon(1200,'knife'),null);
+assert.equal(awardBombCredits(200,true),1400);
+assert.equal(awardBombCredits(200,false),1000);
+assert.equal(awardBombCredits(4900,true),BOMB_MAX_CREDITS);
+console.log('PASS bomb economy: per-round purchase, saving, win/loss credits and cap');

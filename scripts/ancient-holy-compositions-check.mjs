@@ -1,0 +1,8 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';import * as THREE from '../public/three.module.js';
+import {createAncientMagicFX,ANCIENT_FX_IDS} from '../public/ancient-spell-fx.js';
+const fingerprints=new Set();
+function signature(g){return JSON.stringify(g.children.map(m=>[m.geometry.uuid,m.count||0,m.userData.motion,m.position.toArray(),m.scale.toArray()]))}
+for(const id of ANCIENT_FX_IDS){const scene=new THREE.Scene(),fx=createAncientMagicFX(scene);fx.effect({id,x:0,z:0,radius:6},()=>0);const ordinary=signature(scene.children[0]);fx.clear();fx.effect({id,x:0,z:0,radius:6,holy:true},()=>0);const holy=signature(scene.children[0]);assert.notEqual(holy,ordinary,id+' not a normal spell overlay');fingerprints.add(holy);fx.clear()}
+assert.equal(fingerprints.size,ANCIENT_FX_IDS.length,'all 24 holy compositions are distinct');
+const scene=new THREE.Scene(),fx=createAncientMagicFX(scene),links=Array.from({length:32},(_,i)=>({x:i,y:1,z:0,height:1}));for(let i=0;i<100;i++)fx.effect({id:i%2?'chain':'doom',x:0,z:0,holy:true,links,radius:8},()=>0);assert(fx.count<=12);let instances=0;for(const g of scene.children)for(const m of g.children)if(m.isInstancedMesh)instances+=m.count;assert(instances<=2400);fx.update(1000,.05);for(const g of scene.children)for(const m of g.children)if(m.isInstancedMesh)assert([...m.instanceMatrix.array].every(Number.isFinite));fx.clear();assert.equal(scene.children.length,0);console.log('PASS: 24 independently distinct holy compositions, all differ from normal; 100-cast/32-target stress retains 2400-instance cap and cleans up.');

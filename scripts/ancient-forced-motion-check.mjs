@@ -1,0 +1,4 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';import {beginForcedMotion,tickForcedMotion,motionPoint} from '../public/ancient-forced-motion.js';
+const a={x:0,y:1.7,z:0,hp:100};const m=beginForcedMotion(a,{x:0,y:1.7,z:8},1000);assert.equal(a.z,0);tickForcedMotion(a,1000+m.duration/2,()=>false);assert(a.z>0&&a.z<8);assert.equal(a.z,motionPoint(m,1000+m.duration/2).z);tickForcedMotion(a,1000+m.duration,()=>false);assert.equal(a.z,8);assert(!a.forcedMotion);
+Object.assign(a,{z:0});beginForcedMotion(a,{x:0,y:1.7,z:8},2000);tickForcedMotion(a,3000,(_x,z)=>z>=3);assert(a.z<3);assert(!a.forcedMotion);Object.assign(a,{z:0,hp:0});beginForcedMotion(a,{x:0,y:1.7,z:8},4000);tickForcedMotion(a,5000,()=>false);assert.equal(a.z,0);assert(!a.forcedMotion);console.log('PASS authoritative forced motion: gradual progress, exact completion, swept collision stops before walls, death cancels.');

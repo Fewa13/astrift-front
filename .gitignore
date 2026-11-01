@@ -1,0 +1,23 @@
+node_modules/
+.wrangler/
+.dev.vars
+dist/
+
+.static-hosting/
+.firebase/
+firebase-debug.log
+
+# Local credentials, caches, generated releases and private diagnostics
+.DS_Store
+.env
+.env.*
+!.env.example
+.dev.vars.*
+*.pem
+*.key
+*.log
+artifacts/
+crazygames/releases/
+crazygames/*.jpg
+crazygames/*.png
+mobile-controls-preview.png

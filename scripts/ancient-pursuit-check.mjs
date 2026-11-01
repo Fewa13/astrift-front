@@ -1,0 +1,21 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import {ancientTarget,lineClear} from '../public/ancient-rules.js';
+const monster={hp:100,target:'',region:0,kind:'grox',x:0,z:60};
+const player=(name,x,z,hp=100)=>({p:{name,x,z,y:1.7,hp}});
+const first=player('Alice',0,68),nearer=player('Bob',0,61);
+assert.equal(ancientTarget(monster,[first]),first,'Initial visible acquisition');
+monster.target='Alice';
+const far=player('Alice',0,700);
+assert.equal(ancientTarget(monster,[far,nearer]),far,'Retain pursuit across distance and region boundaries, without switching to nearer players');
+const camp=player('Alice',0,10);
+assert.equal(ancientTarget(monster,[camp]),camp,'Returning to spawn does not reset pursuit');
+const covered={...monster,x:27,z:30},behind=player('Alice',27,70);
+assert.equal(lineClear(27,1.5,30,27,1.7,70),false);
+assert.equal(ancientTarget(covered,[behind]),behind,'Losing visibility does not reset pursuit');
+assert.equal(ancientTarget({...covered,target:''},[behind]),undefined,'Unseen players are not initially acquired through walls');
+assert.equal(ancientTarget(monster,[player('Alice',0,700,0)]),undefined,'Player death ends pursuit');
+assert.equal(ancientTarget(monster,[]),undefined,'Disconnected target is released');
+assert.equal(ancientTarget({...monster,hp:0},[far]),undefined,'Monster death ends pursuit');
+assert.equal(ancientTarget({...monster,target:''},[far]),undefined,'Fresh or respawned monsters must detect a target again');
+console.log('PASS: acquisition; persistent pursuit across range, region, cover and camp; no target switching; wall-safe detection; player/monster death; disconnect; fresh respawn');

@@ -1,0 +1,8 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import {MAIN_QUESTS,currentQuest,advanceQuest} from '../public/ancient-quests.js';
+import {newAncientProfile,xpNeeded} from '../public/ancient-rules.js';
+const added=MAIN_QUESTS.filter(q=>!q.patrol&&q.id.startsWith('tribe-outer-'));assert.equal(added.filter(q=>q.kind==='kill').length,2);assert(added.filter(q=>q.kind==='kill').every(q=>q.count>=20));assert.equal(added.reduce((n,q)=>n+(q.reward?.xp||0),0),10000);
+const p=newAncientProfile();p.level=23;p.xp=xpNeeded(23)/2-1;p.quest={revision:7,step:MAIN_QUESTS.findIndex(q=>q.id==='tribe-outer-half23'),count:0};advanceQuest(p);assert.equal(currentQuest(p).id,'tribe-outer-ready25');p.xp++;advanceQuest(p);assert.equal(currentQuest(p).id,'tribe-outer-ready25');advanceQuest(p,{kind:'talk',map:'tribe',npc:'raka'});assert.equal(currentQuest(p).id,'tribe-outer-reach25-patrol-brief');p.level=24;advanceQuest(p);assert.equal(currentQuest(p).id,'tribe-outer-reach25-patrol-brief');p.level=25;advanceQuest(p);assert.equal(currentQuest(p).id,'raka-scout');
+const oldIds=MAIN_QUESTS.filter(q=>!q.patrol&&!q.id.startsWith('tribe-outer-')).map(q=>q.id);for(const id of ['raka-scout','gorash','tribe-recovery-defense']){const old=newAncientProfile();old.quest={revision:4,step:oldIds.indexOf(id),count:id==='tribe-recovery-defense'?7:0};assert.equal(currentQuest(old).id,id);assert.equal(old.quest.revision,6);if(id==='tribe-recovery-defense')assert.equal(old.quest.count,7)}
+console.log('PASS: low XP, combat objectives, no half-XP gate, level-25 target, revision-4 quest/count preservation.');

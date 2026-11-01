@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {build} from 'esbuild';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+import * as THREE from 'three';
+const compiled=await build({entryPoints:['src/damage-receipts.ts'],bundle:true,write:false,format:'esm',platform:'node'});
+const {initDamageReceipts,recordDamageReceipt,confirmDamageReceipt}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
+const db=new DatabaseSync(':memory:'),ctx={storage:{sql:{exec(query,...args){const s=db.prepare(query),rows=s.columns().length?s.all(...args):(s.run(...args),[]);return {toArray:()=>rows}}}}};
+initDamageReceipts(ctx);
+recordDamageReceipt(ctx,'hit','attacker','victim',100,{zone:'head',round:1,hitPoint:[1,2,3]});
+assert.equal(confirmDamageReceipt(ctx,'intruder',{shotId:'hit',damage:64}),null);
+assert.equal(confirmDamageReceipt(ctx,'victim',{shotId:'hit',damage:101}),null);
+const receipt=confirmDamageReceipt(ctx,'victim',{shotId:'hit',damage:64});assert.equal(receipt.damage,64);assert.equal(receipt.target,'attacker');assert.deepEqual(receipt.position,[1,2,3]);
+assert.equal(confirmDamageReceipt(ctx,'victim',{shotId:'hit',damage:64}),null);
+recordDamageReceipt(ctx,'expired','attacker','victim',51,{zone:'body'});db.prepare('UPDATE damage_receipts SET created=?').run(Date.now()-16000);assert.equal(confirmDamageReceipt(ctx,'victim',{shotId:'expired',damage:35}),null);
+db.close();
+const game=await readFile('public/game.js','utf8'),line=prefix=>game.split('\n').find(l=>l.startsWith(prefix));
+const equipment=line('const EQUIPMENT='),damage=line('function damage(n,');
+const messages=[],c={roomMode:'normal',duelBlocked:()=>false,matchFinished:false,phaseActive:0,hp:100,equipmentLoadout:{护甲:'heavy',头盔:'fortress'},performance:{now:()=>1000},shieldUntil:0,bonusGuard:0,online:true,ws:{readyState:1},sendNetwork:d=>messages.push(d),$:()=>({style:{}}),setTimeout:()=>{},applyWound:()=>{},clearWounds:()=>{},syncNow:()=>{},updateHud:()=>{},respawn:()=>{}};
+vm.runInNewContext(equipment+damage,c);
+for(const [raw,zone,expected] of [[100,'head',64],[51,'body',35],[31,'arm',21]]){c.hp=100;messages.length=0;c.damage(raw,'attacker',zone,'id');assert.equal(100-c.hp,expected);assert.equal(messages[0].type,'damageAck');assert.equal(messages[0].damage,expected)}
+c.hp=100;c.shieldUntil=2000;c.bonusGuard=20;messages.length=0;c.damage(51,'attacker','body','shield');assert.equal(messages[0].damage,23);assert.equal(c.bonusGuard,0);assert.equal(c.hp,97);
+c.hp=1;c.shieldUntil=0;messages.length=0;c.damage(100,'attacker','head','lethal');assert.deepEqual(messages.map(m=>m.type),['damageAck','death']);
+const numbers=[],display={THREE,playing:true,playerId:'attacker',roomMode:'normal',isBombMode:()=>false,isArenaMode:()=>false,isObjectiveMode:()=>false,seenDamageReceipts:new Set(),remotes:new Map(),showDamageNumber:(n)=>numbers.push(n)};
+vm.runInNewContext(game.slice(game.indexOf('function receiveDamageResult('),game.indexOf('let roomMode=')),display);
+display.receiveDamageResult(receipt);display.receiveDamageResult(receipt);assert.deepEqual(numbers,[64]);
+assert(game.includes('trainingMaxHp:100'));assert(line('function botDown(').includes('bot.userData.trainingMaxHp||100'));
+for(const file of ['src/index.ts','src/duel-room.ts','src/objective-room.ts','src/bomb-room.ts']){const s=await readFile(file,'utf8');assert(s.includes('recordDamageReceipt(this.ctx'));assert(s.includes("type==='damageAck'"));}
+console.log('PASS: 100-HP training/reset, computed armor/helmet/shield numbers, lethal receipt before death, authenticated one-shot receipts, expired/forged/duplicate rejection, all room types integrated.');

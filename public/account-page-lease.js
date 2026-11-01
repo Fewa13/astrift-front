@@ -1,0 +1,7 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+// Same-origin mode frames share the top page's lease, so changing worlds is not a new login.
+export function accountPageLease(){let host=window;try{if(window.top.location.origin===location.origin)host=window.top}catch{}if(host.__ASTRIFT_PAGE_LEASE__)return host.__ASTRIFT_PAGE_LEASE__;
+ const owner=crypto.randomUUID(),key='astrift.activePage.v1';let ready;const promise=new Promise(resolve=>ready=resolve);host.__ASTRIFT_PAGE_LEASE__=promise;const resolve=ready;ready=allowed=>{if(!allowed)delete host.__ASTRIFT_PAGE_LEASE__;resolve(allowed)};
+ const fallback=()=>{const claim=()=>{try{const prior=JSON.parse(localStorage.getItem(key)||'null');if(prior&&prior.owner!==owner&&prior.until>Date.now())return false;localStorage.setItem(key,JSON.stringify({owner,until:Date.now()+12000}));return true}catch{return true}};const ok=claim();ready(ok);if(ok){const timer=host.setInterval(claim,4000);host.addEventListener('pagehide',()=>{host.clearInterval(timer);delete host.__ASTRIFT_PAGE_LEASE__;try{if(JSON.parse(localStorage.getItem(key)||'null')?.owner===owner)localStorage.removeItem(key)}catch{}},{once:true})}};
+ if(host.navigator.locks){void host.navigator.locks.request('astrift-account-page',{ifAvailable:true},async lock=>{ready(!!lock);if(!lock)return;await new Promise(resolve=>host.addEventListener('pagehide',()=>{delete host.__ASTRIFT_PAGE_LEASE__;resolve()},{once:true}))}).catch(fallback)}else fallback();return promise;
+}

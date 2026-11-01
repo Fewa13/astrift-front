@@ -1,0 +1,7 @@
+{
+  "hosting": {
+    "public": ".static-hosting",
+    "ignore": ["**/.*", "CNAME"],
+    "headers": [{"source": "**", "headers": [{"key": "Cache-Control", "value": "no-cache"}]}]
+  }
+}

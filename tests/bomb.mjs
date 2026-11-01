@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {BOMB_MAP_LIMIT,BOMB_MAP_SCALE,BOMB_PRESETS,BOMB_SITES,bombSitesFor,beginBombHold,createBombMatch,startBombRound,tickBombMatch} from '../public/bomb-rules.js';
+assert.equal(BOMB_MAP_SCALE,.45);
+assert.ok(Math.abs(BOMB_MAP_LIMIT-93.6)<1e-9);
+assert.ok(Math.abs(BOMB_SITES.A[0]+49.5)<1e-9);
+assert.ok(Math.abs(BOMB_SITES.B[0]-49.5)<1e-9);
+assert.equal(BOMB_SITES.A[2],-132*BOMB_MAP_SCALE);
+assert.equal(BOMB_SITES.B[2],-132*BOMB_MAP_SCALE);
+assert.equal(bombSitesFor(1).A[2],132*BOMB_MAP_SCALE);
+assert.equal(bombSitesFor(1).B[2],132*BOMB_MAP_SCALE);
+const expected={solo:[1,1,4,5],duoCoop:[2,2,3,5],duoOpposite:[2,1,4,4],trioCoop:[3,3,2,3],trioOpposite:[3,1,3,4],fourCoop:[4,4,1,5],fourOpposite:[4,2,3,3],fiveCoop:[5,5,0,5],fiveOpposite:[5,3,2,3],sixOpposite:[6,3,2,2],sevenOpposite:[7,4,1,2],eightOpposite:[8,4,1,1],nineOpposite:[9,5,0,1],full:[10,5,0,0]};
+for(const [key,values] of Object.entries(expected)){const p=BOMB_PRESETS[key];assert.deepEqual([p.humans,p.hostHumans,p.alliedAi,p.enemyAi],values,key)}
+const a={id:'a',team:0,hp:100,position:[...BOMB_SITES.A],interacting:true,connected:true},b={id:'b',team:1,hp:100,position:[0,0,40],interacting:false,connected:true};const fighters=[a,b];let now=1000;const m=createBombMatch(now,0);startBombRound(m,fighters,now);assert.equal(m.round,1);assert.equal(m.phase,'prep');assert.equal(m.carrier,'a');assert.equal(beginBombHold(m,a,'A',now),false,'planting is disabled during setup');tickBombMatch(m,fighters,now+6999);assert.equal(m.phase,'prep');tickBombMatch(m,fighters,now+7000);assert.equal(m.phase,'running');assert.equal(m.endsAt,now+97000);assert.equal(beginBombHold(m,a,'A',now+7000),true);tickBombMatch(m,fighters,now+11900);assert.equal(m.plantedSite,null);tickBombMatch(m,fighters,now+12000);assert.equal(m.plantedSite,'A');assert.equal(m.endsAt,now+47000);b.position=[...BOMB_SITES.A];b.interacting=true;assert.equal(beginBombHold(m,b,'A',now+12100),true);b.interacting=false;tickBombMatch(m,fighters,now+12200);assert.equal(m.hold,null,'release cancels defuse');b.interacting=true;assert.equal(beginBombHold(m,b,'A',now+12300),true);tickBombMatch(m,fighters,now+17300);assert.equal(m.phase,'intermission');assert.deepEqual(m.scores,[0,1]);
+for(let round=2;round<=12;round++){const started=now+round*20000;startBombRound(m,fighters,started);assert.equal(m.attackTeam,round<=6?0:1);tickBombMatch(m,fighters,started+7000);assert.equal(m.phase,'running');if(round===7){a.position=[...bombSitesFor(1).B];a.interacting=true;assert.equal(beginBombHold(m,a,'B',started+7000),false,'defender cannot plant after side swap');b.position=[...bombSitesFor(1).B];b.interacting=true;if(m.carrier==='b')assert.equal(beginBombHold(m,b,'B',started+7000),true,'new attacker plants by new defender spawn');m.hold=null;}tickBombMatch(m,fighters,m.endsAt);assert.equal(m.scores[round<=6?1:0],round<=6?round:round-6);}
+assert.equal(m.phase,'finished');assert.equal(m.round,12);assert.deepEqual(m.scores,[6,6]);
+const n=createBombMatch(0,0);startBombRound(n,fighters,0);tickBombMatch(n,fighters,7000);a.hp=0;tickBombMatch(n,fighters,7001);assert.equal(n.winner,1,'all attackers dead before plant');a.hp=100;startBombRound(n,fighters,100);tickBombMatch(n,fighters,7100);b.hp=0;tickBombMatch(n,fighters,7101);assert.equal(n.winner,0,'all defenders dead before plant');
+console.log('PASS bomb presets, continuous 5-second holds, planted timer, defuse, side swap, 12-round scoring and elimination.');

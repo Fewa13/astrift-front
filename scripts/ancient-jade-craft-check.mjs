@@ -1,0 +1,24 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import {makeRoughStone,stoneworkCommand,stoneView,assessJadeBlank,updateStoneworkAssays,jadeFractures,jadeBlankPoint} from '../public/ancient-stonework.js';
+import {stoneReport} from '../public/ancient-stone-report.js';
+function fixture(cracks=0){const s=Object.assign(makeRoughStone('roughMoon',4,'craft'),{grade:5,variety:'imperial',weight:2.7,coverage:.8,color:1,cracks}),state={stones:[s],receipts:[]},p={coins:10000,materials:{}};assert(!stoneworkCommand(p,state,'stoneCut',{id:s.id,plane:{normal:[1,0,0],constant:0},pose:[0,0,0,1]}).error);return {s,state,p};}
+const {s,state,p}=fixture(),layout={kind:'bangle',size:54,face:0,point:[0,0,0]},cmd=(action,data)=>stoneworkCommand(p,state,action,{id:s.id,...data});
+const before=JSON.stringify({s,p}),piece=s.cut.pieces[0];assert(cmd('stoneCraft',{piece:'0',requestId:'invalid-input',layout:{...layout,point:[0,.96,0]}}).error);assert.equal(JSON.stringify({s,p}),before);
+for(const bad of [{size:1},{size:999},{size:NaN},{face:99},{point:[Infinity,0,0]},{point:[0,0]}])assert(cmd('stoneCraft',{piece:'0',requestId:'bad-request',layout:{...layout,...bad}}).error);
+const inspection=assessJadeBlank(stoneView(s),piece,layout);assert(inspection.valid);const weight=piece.weight,jade=piece.jadeWeight,sibling=structuredClone(s.cut.pieces[1]),oldCoins=p.coins;
+assert(!cmd('stoneCraft',{piece:'0',requestId:'first-bangle',layout,value:999999999,weight:999}).error);assert.equal(s.products.length,1);assert.equal(p.coins,oldCoins-8);assert(piece.weight<weight&&piece.jadeWeight<jade);assert.deepEqual(s.cut.pieces[1],sibling);assert.equal(piece.holes.length,1);assert(s.products[0].weight>0);assert(s.products[0].value>0);assert(s.products[0].value+s.cut.value<=6000000);
+const once=JSON.stringify({s,p});assert(!cmd('stoneCraft',{piece:'0',requestId:'first-bangle',layout}).error);assert.equal(JSON.stringify({s,p}),once);assert(cmd('stoneCraft',{piece:'0',requestId:'overlap-request',layout}).error);assert.equal(JSON.stringify({s,p}),once);
+assert(cmd('stoneRecut',{piece:'0',plane:{normal:[0,1,0],constant:0},pose:[0,0,0,0]}).error);
+// The ring core and opposite half really remain available.
+assert(!cmd('stoneCraft',{piece:'0',requestId:'core-bead',layout:{...layout,kind:'bead',size:12}}).error);assert(!cmd('stoneCraft',{piece:'1',requestId:'other-half',layout}).error);assert.equal(s.products.length,3);
+const r=stoneReport(stoneView(s));assert.equal(r.price,s.cut.value+s.products.reduce((n,p)=>n+p.value,0));assert.equal(r.net,r.price-s.cost);assert(s.cut.pieces[0].holes.length===2);
+const saved=JSON.stringify(state);assert(!updateStoneworkAssays(state));assert.equal(JSON.stringify(state),saved);
+const cracked=fixture(.95),crackedLayout={...layout},expected=assessJadeBlank(stoneView(cracked.s),cracked.s.cut.pieces[0],crackedLayout);assert(expected.valid&&expected.crackCount>0);assert(!stoneworkCommand(cracked.p,cracked.state,'stoneCraft',{id:'craft',piece:'0',layout:crackedLayout,requestId:'cracked-bangle'}).error);assert(cracked.s.products[0].value<s.products[0].value*.2,'Crossing fissures sharply devalue the finished item');assert.deepEqual(jadeFractures(stoneView(cracked.s).jade),jadeFractures(stoneView(structuredClone(cracked.s)).jade));
+const item=s.products[0],sale=p.coins+item.value;assert(!cmd('stoneProductSell',{product:item.id}).error);assert.equal(p.coins,sale);assert(!cmd('stoneProductSell',{product:item.id}).error);assert.equal(p.coins,sale);assert.equal(s.products.length,2);
+const afterSale=stoneReport(stoneView(s));assert.equal(afterSale.realized,item.value);assert.equal(afterSale.net,afterSale.price+item.value-s.cost);
+const remaining=p.coins+s.cut.value+s.products.reduce((n,p)=>n+p.value,0);assert(!cmd('stoneSell',{}).error);assert.equal(p.coins,remaining);assert.equal(state.stones.length,0);assert(cmd('stoneSell',{}).error);
+// A face that looks large in 2D but has a thin back cannot supply a thick bead.
+const thin=fixture();thin.s.cut.pieces[0].path.push({normal:[1,0,0],constant:-.04,side:-1});assert(!assessJadeBlank(stoneView(thin.s),thin.s.cut.pieces[0],{...layout,kind:'bead',size:24}).valid);
+const local=fixture(),localPiece=local.s.cut.pieces[0],centre=assessJadeBlank(stoneView(local.s),localPiece,{...layout,kind:'bead',size:12}),edge=assessJadeBlank(stoneView(local.s),localPiece,{...layout,kind:'bead',size:12,point:[0,.65,0]});assert(centre.valid&&edge.valid);assert(edge.purity<centre.purity*.6,'Local finished shape cannot inherit jade content from elsewhere in the rough');
+console.log('PASS thickness/outline fit, both halves, retained bangle core, non-overlap, immutable cracks, shape-derived appraisal, bounded prices, atomic accounting, retry-safe craft/sale, persistence and no forged weights/prices.');

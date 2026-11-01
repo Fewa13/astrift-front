@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+
+const base=process.env.FORUM_TEST_URL||'http://127.0.0.1:8789';
+const password=process.env.FORUM_ADMIN_PASSWORD;
+assert.ok(password,'Run with: node --env-file=.dev.vars tests/forum-network.mjs');
+const request=async(path,data)=>{
+  const response=await fetch(base+'/api/forum'+path,{method:data?'POST':'GET',headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined});
+  return {status:response.status,body:await response.json()};
+};
+const device=randomUUID();
+const name='测试玩家';
+const first=await request('/post',{name,body:'论坛测试 '+device,device});
+assert.equal(first.status,201);
+const id=first.body.post.id;
+const repeat=await request('/post',{name,body:'重复发帖',device});
+assert.equal(repeat.status,429);
+const tooLong=await request('/post',{name,body:'测'.repeat(201),device:randomUUID()});
+assert.equal(tooLong.status,400);
+const login=await request('/login',{password});
+assert.equal(login.status,200);
+const token=login.body.token;
+const pinned=await request('/post',{name:'管理员',body:'置顶测试 '+device,device,token,pinned:true});
+assert.equal(pinned.status,201);
+const pinnedId=pinned.body.post.id;
+const list=await request('');
+assert.equal(list.status,200);
+assert.equal(list.body.posts[0].id,pinnedId);
+assert.equal(list.body.posts[0].pinned,1);
+assert.equal((await request('/moderate',{id:pinnedId,action:'unpin',token})).status,200);
+assert.equal((await request('/moderate',{id:pinnedId,action:'delete',token})).status,200);
+assert.equal((await request('/moderate',{id,action:'delete',token})).status,200);
+assert.equal((await request('/logout',{token})).status,200);
+assert.equal((await request('/moderate',{id,action:'pin',token})).status,403);
+console.log('PASS forum publishing, 60-second device limit, 200-character limit, admin pin/delete, logout revocation');

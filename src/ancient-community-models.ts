@@ -1,0 +1,54 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {communityCatalogParts} from './ancient-community-catalog.js';
+export type CommunityModelPart={shape:string;x:number;y:number;z:number;w:number;h:number;d:number;color?:string;ry:number;stair?:boolean};
+export function communityModelParts(model:string):CommunityModelPart[]{
+ if(model==='__npc'){const parts:CommunityModelPart[]=[];const p=(shape:CommunityModelPart['shape'],color:string,x:number,y:number,z:number,w:number,h:number,d:number)=>parts.push({shape,color,x,y,z,w,h,d,ry:0});p('cone','#55776a',0,.95,0,.65,1.25,.5);p('sphere','#d2ad83',0,1.76,0,.42,.46,.4);p('cylinder','#4a3f32',0,1.98,0,.46,.14,.45);p('box','#a98d59',0,1.15,-.27,.42,.12,.07);p('box','#c9b788',0,1.16,-.32,.1,.1,.04);p('box','#8a745b',0,1.5,-.22,.12,.16,.09);for(const side of [-1,1]){p('cylinder','#55776a',side*.34,1.12,0,.16,.65,.16);p('cylinder','#bcb490',side*.34,.84,0,.18,.09,.18);p('sphere','#d2ad83',side*.34,.74,-.02,.17,.2,.17);p('cylinder','#45493c',side*.16,.32,0,.18,.48,.2);p('box','#483f34',side*.16,.1,-.08,.23,.2,.36);p('sphere','#2a2926',side*.085,1.8,-.19,.035,.04,.025);p('box','#d1c6a1',side*.13,1.46,-.22,.07,.12,.035)}for(let i=0;i<4;i++)p('sphere','#bbad79',0,1.36-i*.11,-.26,.035,.035,.035);p('cylinder','#755b3e',.55,1.12,0,.055,2.2,.055);p('rock','#8cb5a2',.55,2.22,0,.15,.22,.15);return parts}
+
+ const catalog=communityCatalogParts(model);if(catalog)return catalog;
+ const out:CommunityModelPart[]=[],add=(shape:string,x:number,y:number,z:number,w:number,h:number,d:number,color?:string,ry=0)=>out.push({shape,x,y,z,w,h,d,color,ry});
+ if(['box','sphere','cylinder','cone','wedge','torus'].includes(model)){add(model,0,.5,0,1,1,1);return out}
+ if(model==='mirror'){add('box',0,.5,0,.9,1,.09,'#9ae9f3');add('box',-.48,.5,0,.07,1.1,.15,'#b79e67');add('box',.48,.5,0,.07,1.1,.15,'#b79e67');add('box',0,1.02,0,1,.07,.15,'#b79e67');add('box',0,.03,0,1,.07,.15,'#b79e67');return out}
+ const [f,n]=model.split('-'),v=Number(n),a=(v%5)/5,b=Math.floor((v-1)/5)%4,edition=Math.floor((v-1)/20),stone=['#6e7773','#8a8173','#596b6c','#9d9d87'][b],wood=['#6a4d33','#86623e','#513f32','#a28154'][b],leaf=['#47794b','#5e8852','#74904b','#396c60'][b];
+ if(f==='rocks'||f==='cliffs'){for(let i=0;i<5+b*2;i++){const t=i*2.399+v;add('rock',Math.sin(t)*.26,.18+i*.055,Math.cos(t)*.2,.45+a*.2,.35+(f==='cliffs'?.35:0),.4,stone,t)}for(let i=0;i<3;i++)add('box',-.24+i*.19,.17+i*.18,.28,.24,.025,.11,'#435c41',.3);}
+ else if(f==='trees'){add('cylinder',0,.4,0,.13,.8,.13,wood);for(let i=0;i<5;i++){const t=i*1.8+v;add('cylinder',Math.sin(t)*.13,.48+i*.045,Math.cos(t)*.13,.045,.35,.045,wood,t);add(b%2?'cone':'rock',Math.sin(t)*.2,.63+i*.07,Math.cos(t)*.2,.55+a*.2,.35,.5,leaf,t)}for(let i=0;i<4;i++)add('rock',Math.sin(i*1.57)*.12,.025,Math.cos(i*1.57)*.12,.22,.06,.12,wood);}
+ else if(f==='shrubs'||f==='flowers'){for(let i=0;i<7+b;i++){const t=i*2.4+v,x=Math.sin(t)*.35,z=Math.cos(t)*.3;add('cylinder',x,.2,z,.025,.35,.025,leaf);add('rock',x,.37+a*.2,z,f==='flowers'?.16:.35,.14,.2,f==='flowers'?['#e7a5bb','#dec574','#b6aad5','#dfe9dc'][b]:leaf,t)}}
+ else if(f==='pillars'||f==='ruins'){add('cylinder',0,.45,0,.45,.8,.45,stone);for(let i=0;i<4+b;i++)add('cylinder',0,.08+i*.17,0,.52,.04,.52,'#a09a7c');add('box',0,.93,0,.7,.14,.7,stone);for(let i=0;i<4;i++)add('box',Math.sin(i*1.57)*.23,.45,Math.cos(i*1.57)*.23,.055,.6,.055,'#394b43');if(f==='ruins')for(let i=0;i<4;i++)add('rock',Math.sin(i+v)*.34,.06,Math.cos(i+v)*.3,.2,.12,.23,stone,i);}
+ else if(f==='arches'){for(const x of [-.4,.4]){add('box',x,.4,0,.2,.8,.5,stone);for(let i=0;i<4;i++)add('box',x,.1+i*.2,.26,.23,.035,.04,'#b0a68d')}for(let i=0;i<7;i++){const t=i*Math.PI/6;add('box',Math.cos(t)*.4,.75+Math.sin(t)*.24,0,.18,.17,.5,stone,t)}}
+ else if(f==='walls'){for(let y=0;y<5;y++)for(let x=0;x<4;x++)add('box',(x-1.5)*.25+(y%2?.06:0),.1+y*.2,0,.24,.19,.6,stone);for(let i=0;i<4;i++)add('rock',Math.sin(i+v)*.38,.07,.32,.2,.1,.2,'#506849')}
+ else if(f==='fences'){for(const x of [-.44,0,.44]){add('cylinder',x,.5,0,.08,1,.08,wood);add('cone',x,1.02,0,.1,.1,.1,wood)}for(const y of [.3,.65])add('box',0,y,0,1,.06,.08,wood);}
+ else if(f==='crystals'){for(let i=0;i<6;i++){const t=i*2.4+v;add('cone',Math.sin(t)*.23,.4+(i%3)*.1,Math.cos(t)*.23,.18,.65,.18,['#78bec9','#bd8acb','#9bbf80','#d9b36b'][b],t);add('rock',Math.sin(t)*.3,.07,Math.cos(t)*.3,.3,.1,.25,stone)}}
+ else if(f==='lanterns'){add('cylinder',0,.33,0,.06,.65,.06,wood);add('box',0,.75,0,.4,.4,.4,'#f4d58d');add('cone',0,1.02,0,.6,.2,.6,wood);for(const x of [-.21,.21])for(const z of [-.21,.21])add('cylinder',x,.75,z,.025,.48,.025,wood);add('box',0,.51,0,.5,.05,.5,wood)}
+ else if(f==='statues'){add('box',0,.07,0,.7,.14,.7,stone);add('cone',0,.5,0,.45,.7,.45,stone);add('sphere',0,.9,0,.25,.25,.25,stone);for(const x of [-.23,.23])add('cylinder',x,.6,0,.1,.5,.1,stone);add('torus',0,.94,-.01,.5,.5,.12,'#b8aa72');}
+ else if(f==='camp'){add('cone',0,.45,0,1,.9,.9,['#a69774','#867c65','#a09083','#6d887a'][b]);for(let i=0;i<5;i++)add('cylinder',-.4+i*.2,.04,.42,.07,.1,.15,wood);add('box',0,.25,.44,.25,.5,.02,'#403d36');add('cylinder',0,.96,0,.04,.2,.04,wood)}
+ else if(f==='bridges'){for(let i=0;i<10;i++)add('box',0,.12,-.45+i*.1,.95,.08,.09,wood);for(const x of [-.46,.46]){add('box',x,.06,0,.08,.12,1,wood);for(const z of [-.45,0,.45])add('cylinder',x,.4,z,.06,.6,.06,wood);add('box',x,.65,0,.06,.05,1,wood)}}
+ if(edition){
+  if(f==='rocks'||f==='cliffs'){for(let i=0;i<6;i++)add('cone',Math.sin(i*2.4+v)*.28,.3+i*.06,Math.cos(i*2.4+v)*.25,.1,.3,.1,'#9cae9f',i)}
+  else if(f==='trees'){for(let i=0;i<5;i++){const t=i*1.7+v;add('cylinder',Math.sin(t)*.28,.53+i*.045,Math.cos(t)*.28,.055,.55,.055,wood,t);add('rock',Math.sin(t)*.4,.81+i*.04,Math.cos(t)*.4,.4,.22,.4,leaf,t)}}
+  else if(f==='shrubs'||f==='flowers'){for(let i=0;i<5;i++)add('rock',Math.sin(i*1.3)*.4,.06,Math.cos(i*1.3)*.4,.16,.12,.19,stone,i)}
+  else if(f==='walls'||f==='ruins'){for(let i=0;i<5;i++)add('box',-.4+i*.2,1.05,0,.15,.2,.65,stone);for(let i=0;i<3;i++)add('rock',-.3+i*.3,.1,.36,.25,.14,.2,stone,i)}
+  else if(f==='bridges'){for(const x of [-.48,.48])for(const z of [-.45,.45]){add('rock',x,.1,z,.24,.18,.24,stone);add('sphere',x,.75,z,.15,.15,.15,'#b6ab83')}}
+  else if(f==='arches'||f==='pillars'){add('torus',0,.8,.3,.55,.55,.05,'#b1a17d');for(let i=0;i<5;i++)add('box',-.3+i*.15,.92,.29,.05,.06,.04,'#c9bb8f')}
+  else if(f==='statues'){for(let i=0;i<7;i++){const t=i*Math.PI/6;add('cone',Math.cos(t)*.27,.9+Math.sin(t)*.27,0,.09,.25,.09,'#b6a778',t)}}
+  else if(f==='crystals'){for(let i=0;i<8;i++)add('rock',Math.sin(i)*.4,.05,Math.cos(i)*.4,.16,.1,.16,stone);add('torus',0,.32,0,.7,.7,.08,'#acbdb1')}
+  else if(f==='camp'){for(const x of [-.45,.45])add('cylinder',x,.45,.5,.05,.9,.05,wood);add('box',0,.88,.5,1,.06,.6,'#bcae89')}
+  else if(f==='lanterns'){add('torus',0,1.15,0,.25,.25,.07,wood);for(const x of [-.2,.2])add('box',x,.75,.22,.025,.38,.03,wood)}
+  else if(f==='fences'){for(let i=0;i<5;i++)add('box',-.4+i*.2,.48,0,.04,.8,.1,wood);add('box',0,.92,0,1,.06,.12,wood)}
+ }
+ return out;
+}
+export function communityModelBounds(model:string,w=1,h=1,d=1,rotation=0){
+ const bounds={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity,minZ:Infinity,maxZ:-Infinity};
+ for(const p of communityModelParts(model)){const r=-rotation+p.ry,c=Math.cos(r),s=Math.sin(r),dx=p.x*w,dz=p.z*d,x=Math.cos(rotation)*dx-Math.sin(rotation)*dz,z=Math.sin(rotation)*dx+Math.cos(rotation)*dz,halfX=p.w*w*(p.shape==='torus'?.48:.5),halfZ=p.d*d*(p.shape==='torus'?.1:.5),ex=Math.abs(c)*halfX+Math.abs(s)*halfZ,ez=Math.abs(s)*halfX+Math.abs(c)*halfZ,ey=p.h*h*(p.shape==='torus'?.48:.5);bounds.minX=Math.min(bounds.minX,x-ex);bounds.maxX=Math.max(bounds.maxX,x+ex);bounds.minY=Math.min(bounds.minY,p.y*h-ey);bounds.maxY=Math.max(bounds.maxY,p.y*h+ey);bounds.minZ=Math.min(bounds.minZ,z-ez);bounds.maxZ=Math.max(bounds.maxZ,z+ez)}return bounds;
+}
+export function communitySurfacePlacement(model:string,point:{x:number;y:number;z:number;normal?:{x:number;y:number;z:number}},w=3,h=3,d=3,rotation=0){const b=communityModelBounds(model,w,h,d,rotation),n=point.normal||{x:0,y:1,z:0},radius=(b.maxX-b.minX)/2*Math.abs(n.x)+(b.maxY-b.minY)/2*Math.abs(n.y)+(b.maxZ-b.minZ)/2*Math.abs(n.z)+.004;return {x:point.x-(b.minX+b.maxX)/2+n.x*radius,y:Math.max(0,point.y-(b.minY+b.maxY)/2+n.y*radius),z:point.z-(b.minZ+b.maxZ)/2+n.z*radius}}
+export function communityFlightStep(position:{x:number;y:number;z:number},forward:number,side:number,vertical:number,yaw:number,pitch:number,speed:number,dt:number){const step=Math.max(0,Math.min(.05,dt))*speed;return {x:position.x+(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*step,y:Math.max(.25,Math.min(600,position.y+vertical*step)),z:position.z+(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*step}}
+export type CommunityAssemblyPart={model:string;x:number;y:number;z:number;w:number;h:number;d:number;rotation:number};
+export function communityAssemblyBounds(parts:CommunityAssemblyPart[]){const bounds={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity,minZ:Infinity,maxZ:-Infinity};for(const p of parts){const b=communityModelBounds(p.model,p.w,p.h,p.d,p.rotation);for(const [min,max,offset]of [['minX','maxX',p.x],['minY','maxY',p.y],['minZ','maxZ',p.z]] as const){bounds[min]=Math.min(bounds[min],b[min]+offset);bounds[max]=Math.max(bounds[max],b[max]+offset)}}return bounds}
+export function communityAssemblyPlacement<T extends CommunityAssemblyPart>(parts:T[],point:{x:number;y:number;z:number;normal?:{x:number;y:number;z:number}}):T[]{if(!parts.length)return [];const b=communityAssemblyBounds(parts),n=point.normal||{x:0,y:1,z:0},radius=(b.maxX-b.minX)/2*Math.abs(n.x)+(b.maxY-b.minY)/2*Math.abs(n.y)+(b.maxZ-b.minZ)/2*Math.abs(n.z)+.004,offset={x:point.x-(b.minX+b.maxX)/2+n.x*radius,y:point.y-(b.minY+b.maxY)/2+n.y*radius,z:point.z-(b.minZ+b.maxZ)/2+n.z*radius},minBase=Math.min(...parts.map(p=>p.y+offset.y));if(minBase<0)offset.y-=minBase;return parts.map(p=>({...p,x:p.x+offset.x,y:p.y+offset.y,z:p.z+offset.z}))}
+
+// Models use +Z as their front; retain the authored relative pose of assemblies.
+export function communitySnapRotation(angle:number,free=false){const target=Math.round(angle/(Math.PI/2))*(Math.PI/2);return !free&&Math.abs(angle-target)<=Math.PI/18+1e-9?target:angle}
+export function communityFacingPlacement<T extends CommunityAssemblyPart>(parts:T[],point:{x:number;y:number;z:number;normal?:{x:number;y:number;z:number}},player:{x:number;z:number;freeRotation?:boolean}):T[]{
+ const rawYaw=Math.atan2(point.x-player.x,player.z-point.z),yaw=communitySnapRotation(rawYaw,player.freeRotation),c=Math.cos(yaw),s=Math.sin(yaw),b=communityAssemblyBounds(parts),cx=(b.minX+b.maxX)/2,cz=(b.minZ+b.maxZ)/2;
+ return communityAssemblyPlacement(parts.map(p=>({...p,x:c*(p.x-cx)-s*(p.z-cz),z:s*(p.x-cx)+c*(p.z-cz),rotation:p.rotation+yaw})),point);
+}

@@ -1,0 +1,22 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {transform} from 'esbuild';
+import * as gear from "../public/ancient-gear.js";
+import * as rules from '../public/ancient-rules.js';
+import * as forest from '../public/ancient-forest.js';
+import {skills,combat,quests} from './ancient-test-modules.mjs';
+const compiled=await transform(fs.readFileSync('src/ancient-world.ts','utf8'),{loader:'ts',format:'cjs'}),module={exports:{}},now=Date.now();
+let profile={...rules.newAncientProfile(),profession:'summoner',skills:{summon:1}},actor={name:'owner',map:'tribe',x:0,z:49,y:1.7,yaw:0,hp:100,maxHp:100,weapon:profile.weapons[0],ammo:10,lastShot:0,reloadAt:0,seen:now,deadAt:0,profession:'summoner',skills:{summon:1},skillRuntime:{effects:{},cooldowns:{},mode:1,summon:{x:0,z:50,hp:100,maxHp:100,damage:10,until:now+100000,attackAt:0,target:'grox',level:1}}};
+const messages=[],ws={deserializeAttachment:()=>structuredClone(actor),serializeAttachment:a=>actor=structuredClone(a),send:s=>messages.push(JSON.parse(s)),close(){}},ctx={getWebSockets:()=>[ws],storage:{sql:{exec:()=>({toArray:()=>[]})},setAlarm:async()=>{}}};
+vm.runInNewContext(compiled.code,{module,exports:module.exports,require:n=>n==='cloudflare:workers'?{DurableObject:class{constructor(ctx){this.ctx=ctx}}}:n.includes('ancient-commerce')?commerce:n.includes('ancient-gear')?gear:n.includes('ancient-quests')?quests:n.includes('ancient-skill-combat')?combat:n.includes('ancient-skills')?skills:n.includes('ancient-forest')?forest:rules,Date:{now:()=>now},crypto});
+const server=new module.exports.AncientWorld(ctx,{}),monster={id:'grox',kind:'grox',level:1,hp:100,maxHp:100,x:0,z:51,homeX:0,homeZ:51,region:0,action:'idle',actionAt:0,attackAt:0,respawnAt:0,target:'owner'},world={map:'tribe',monsters:[monster],tick:now-200};
+server.read=()=>structuredClone(profile);server.save=(_,p)=>profile=structuredClone(p);server.world=()=>world;server.persist=()=>{};
+await server.alarm();
+assert.equal(monster.hp,92,'Summon really hits the monster');assert.equal(monster.target,'@pet:owner','Pet hit redirects an existing owner pursuit');assert.equal(actor.hp,100,'Owner does not receive the pet-targeted melee hit');assert.equal(actor.skillRuntime.summon.hp,80,'Monster damage is applied and synchronized to pet HP');
+const context=server.skillContext(ws,actor,world.monsters,'tribe');monster.hp=100;context.damage(monster,1);assert.equal(monster.target,'owner','Player attacks keep player aggro');context.damage(monster,1,'summon');assert.equal(monster.target,'@pet:owner');
+actor.skillRuntime.summon.hp=0;await server.alarm();assert.equal(actor.skillRuntime.summon,undefined);assert.notEqual(monster.target,'@pet:owner','A dead pet is no longer targeted');
+monster.hp=1;context.damage(monster,5,'summon');const kill=messages.find(m=>m.type==='kill');assert(kill);assert.equal(kill.xp,10);assert.equal(profile.xp,10);assert.equal(profile.coins,.2,'Pet rewards still go to the owner');
+console.log('PASS: real summon tick pulls monster off owner; monster attacks/damages pet; synchronized pet HP; normal player aggro preserved; dead pet releases target; pet kill XP/coins belong to owner');
+import * as commerce from '../public/ancient-commerce.js';

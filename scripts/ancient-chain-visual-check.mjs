@@ -1,0 +1,5 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import assert from 'node:assert/strict';import * as T from '../public/three.module.js';import {createBestiaryFX} from '../public/ancient-bestiary-fx.js';
+const scene=new T.Scene(),fx=createBestiaryFX(scene),now=Date.now(),event={boss:'jailer',kind:'chain_jailer',id:'hook',stage:'warning',started:now-1000,hitAt:now-500,ends:now+500,tx:0,tz:16,areas:[{x:0,z:0,length:16,width:1.4,angle:0}]};
+fx.effect(event,()=>0);fx.update();const group=scene.children[0],chain=group.children[2];assert(chain.isInstancedMesh);assert(chain.visible);assert(chain.count>20&&chain.count<=96);assert.equal(chain.material.transparent,false);assert.equal(group.children[1].geometry.type,'TorusGeometry');assert.equal(group.children[0].scale.x,1.4);assert(group.children[0].visible);assert([...chain.instanceMatrix.array].every(Number.isFinite));fx.clear();assert.equal(scene.children.length,0);
+console.log('PASS: visible opaque hook and alternating chain links, bounded instances, one chain draw call, unchanged lane and complete cleanup.');

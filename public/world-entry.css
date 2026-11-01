@@ -1,0 +1,33 @@
+/* © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved. */
+#worldEntry{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;padding:40px 28px;overflow:auto;background:radial-gradient(ellipse at 12% 35%,#12314370,transparent 50%),radial-gradient(ellipse at 88% 65%,#283d2560,transparent 50%),#080e15;color:#f0f7f6;font-family:system-ui,sans-serif;text-align:left;isolation:isolate}
+#worldEntry[hidden]{display:none}
+#worldEntry:before{content:'';position:absolute;inset:20px;pointer-events:none;border:1px solid #c4e9e50b;z-index:-1}
+#worldEntry .entryHeader{display:flex;align-items:end;justify-content:space-between;gap:24px;width:min(1120px,100%)}
+#worldEntry .entryBrand{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.23em;font-weight:700;color:#b9d1d7}
+#worldEntry .entryBrand:before{content:'';width:17px;height:24px;background:#bcebf0;clip-path:polygon(48% 0,100% 0,60% 42%,100% 42%,0 100%,35% 55%,0 55%)}
+#worldEntry h1{margin:20px 0 0;font-size:clamp(29px,3.4vw,46px);font-weight:650;line-height:1.12;letter-spacing:-.045em}
+#worldEntry .entryHeadingSecondary{display:block;margin-top:11px;color:#849aa5;font-size:13px;font-weight:400;letter-spacing:.12em}
+#worldEntry .entryIndex{font:11px ui-monospace,monospace;letter-spacing:.12em;color:#708c97;white-space:nowrap;padding-bottom:3px}
+#worldEntry .entryChoices{display:grid;grid-template-columns:1fr 1fr;gap:22px;width:min(1120px,100%)}
+#worldEntry .entryCard{--accent:#80e3f6;position:relative;display:flex;flex-direction:column;justify-content:space-between;width:100%;min-width:0;height:clamp(330px,48vh,510px);min-height:330px;padding:25px 28px 23px;overflow:hidden;border:1px solid #8cc9db35;border-radius:4px;background:#10212c;color:inherit;font:inherit;text-align:left;cursor:pointer;isolation:isolate;transition:border-color .2s,transform .2s,box-shadow .2s;-webkit-tap-highlight-color:transparent}
+#worldEntry .entryCard.ancientEntryCard{--accent:#dfcf93;border-color:#e0cc8838;background:#1b2820}
+#worldEntry .entryCard>img{position:absolute;inset:0;z-index:-3;width:100%;height:100%;object-fit:cover;object-position:50% 65%;filter:brightness(1.35) saturate(.9);transition:transform .5s ease}
+#worldEntry .ancientEntryCard>img{object-position:48% 55%;filter:saturate(.8) brightness(1.02)}
+#worldEntry .entryCard:before{content:'';position:absolute;inset:0;z-index:-2;background:linear-gradient(180deg,#060d1755 0%,transparent 36%,#070f17b0 65%,#070f17 100%)}
+#worldEntry .ancientEntryCard:before{background:linear-gradient(180deg,#101a1855 0%,transparent 30%,#0d1717bb 66%,#0b1416 100%)}
+#worldEntry .entryCard:after{content:'';position:absolute;inset:9px;z-index:-1;pointer-events:none;border:1px solid #e3f4e719;clip-path:polygon(0 0,38px 0,38px 1px,1px 1px,1px 38px,0 38px,0 100%,100% 100%,100% calc(100% - 38px),calc(100% - 1px) calc(100% - 38px),calc(100% - 1px) calc(100% - 1px),calc(100% - 38px) calc(100% - 1px),calc(100% - 38px) 100%,0 100%)}
+#worldEntry .entryCardTop{display:flex;align-items:center;justify-content:space-between;color:var(--accent);font:11px ui-monospace,monospace;letter-spacing:.14em}
+#worldEntry .entryCardIcon{width:33px;height:33px;stroke:currentColor;fill:none;stroke-width:1.25}
+#worldEntry .entryCardNumber{border-bottom:1px solid currentColor;padding:0 0 6px;opacity:.8}
+#worldEntry .entryCardBottom{display:block}
+#worldEntry .entryCardTitle{display:block;font-size:clamp(28px,3.5vw,44px);font-weight:650;line-height:1.1;letter-spacing:-.035em}
+#worldEntry .entryCardSubtitle{display:block;margin-top:9px;color:#c9d6d5b5;font-size:14px;letter-spacing:.08em}
+#worldEntry .entryTags{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+#worldEntry .entryTags>span{border:1px solid #e5f6f024;padding:5px 8px;color:#c4d3d0;font-size:10px;letter-spacing:.065em;background:#0d17194d}
+#worldEntry .entryCardAction{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:24px;padding-top:17px;border-top:1px solid #e5f6f028;font-size:12px;letter-spacing:.12em;color:var(--accent)}
+#worldEntry .entryArrow{font-size:25px;line-height:16px;transition:transform .2s}
+#worldEntry .entryCard:focus-visible{outline:2px solid var(--accent);outline-offset:5px}
+@media(hover:hover){#worldEntry .entryCard:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 14px 40px #0006}#worldEntry .entryCard:hover>img{transform:scale(1.035)}#worldEntry .entryCard:hover .entryArrow{transform:translateX(5px)}}
+@media(max-width:640px){#worldEntry{justify-content:flex-start;gap:23px;padding:27px 19px}#worldEntry:before{inset:9px}#worldEntry .entryIndex{display:none}#worldEntry .entryChoices{grid-template-columns:1fr;gap:14px}#worldEntry .entryCard{height:310px;min-height:310px;padding:19px 22px}#worldEntry .entryCardTitle{font-size:33px}#worldEntry .entryTags{margin-top:13px}#worldEntry .entryCardAction{margin-top:16px;padding-top:12px}#worldEntry .entryBrand{font-size:10px}#worldEntry h1{margin-top:14px}}
+@media(max-height:600px) and (min-width:641px){#worldEntry{justify-content:flex-start;padding:23px 28px;gap:20px}#worldEntry h1{margin-top:9px;font-size:28px}#worldEntry .entryHeadingSecondary{display:none}#worldEntry .entryCard{height:310px;min-height:310px}}
+@media(prefers-reduced-motion:reduce){#worldEntry .entryCard,#worldEntry .entryCard>img,#worldEntry .entryArrow{transition:none}#worldEntry .entryCard:hover{transform:none}}

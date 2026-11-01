@@ -1,0 +1,10 @@
+<!-- © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved. -->
+<!doctype html><html><head><meta charset="utf-8"><title>Ancient Magic Visual QA</title><style>body{margin:0;background:#0b1420;color:#def6ff;font:16px system-ui}header{position:absolute;top:20px;left:24px}footer{position:absolute;bottom:20px;left:0;width:100%;display:flex;justify-content:space-around;color:#d7e8f4}canvas{display:block}</style></head><body><header>ASTRIFT // ANCIENT AGE · SKILL EFFECTS</header><footer><span>WARRIOR</span><span>SUMMONER</span><span>ICE</span><span>LIGHTNING</span><span>CURSE</span></footer><script type="module">
+import * as THREE from '../public/three.module.js';
+import {createAncientMagicFX} from '../public/ancient-magic-fx.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b1420);scene.fog=new THREE.Fog(0x0b1420,45,100);
+const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.1,200);const portrait=camera.aspect<1,distance=Math.max(37,32/camera.aspect);camera.position.set(0,portrait?44:distance*.65,portrait?42:distance);camera.lookAt(0,0,0);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(2,devicePixelRatio));document.body.append(renderer.domElement);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,70),new THREE.MeshBasicMaterial({color:0x18242b}));floor.rotation.x=-Math.PI/2;floor.position.y=-.05;scene.add(floor);scene.add(new THREE.GridHelper(100,50,0x35554a,0x243c35));
+const fx=createAncientMagicFX(scene);['rage','summon','blizzard','storm','doom'].forEach((id,i)=>fx.effect({id,x:portrait?(i%2?7:-7):(i-2)*10,z:portrait?Math.floor(i/2)*13-13:0,radius:4},()=>0));fx.update(300,.3);renderer.render(scene,camera);
+</script></body></html>

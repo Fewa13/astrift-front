@@ -1,0 +1,22 @@
+/* © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved. */
+.forumOverlay[hidden]{display:none!important}
+.forumOverlay{position:fixed;inset:0;z-index:145;display:grid;place-items:center;padding:18px;background:#020811dc;backdrop-filter:blur(12px);color:#ecfaff;font-family:system-ui,'Noto Sans SC',sans-serif}
+.forumOverlay *{box-sizing:border-box}
+.forumOverlay .forumShell{width:min(1000px,100%);max-height:calc(100vh - 36px);overflow-y:auto;margin:0;padding:22px;background:linear-gradient(150deg,#102736,#07121d 70%);border:1px solid #3c7a87;border-radius:16px;box-shadow:0 30px 90px #000c,0 0 35px #25deeb18}
+.forumOverlay .forumHeader{padding:3px 2px 17px}
+.forumOverlay .forumHeader h1{font-size:clamp(27px,4vw,40px)}
+.forumOverlay button{border:1px solid #42636b;background:#10232d;color:#d8faff;border-radius:5px;padding:10px 14px;font:700 14px system-ui,'Noto Sans SC',sans-serif;cursor:pointer}
+.forumOverlay button:hover{border-color:#6ef6ff;background:#183743}
+.forumOverlay button:disabled{opacity:.55;cursor:default}
+.forumOverlay input:not([type=checkbox]),.forumOverlay textarea{width:100%;border:1px solid #36525c;background:#071019;color:#f3fbff;padding:12px 13px;font:16px system-ui,'Noto Sans SC',sans-serif;outline:none;border-radius:4px}
+.forumOverlay input:focus,.forumOverlay textarea:focus{border-color:#5ff5ff}
+.forumOverlay input[readonly]{color:#8ce8e7;background:#0c2630;cursor:default}
+.forumOverlay textarea{resize:vertical;min-height:105px;margin-bottom:10px}
+.forumOverlay .forumColumns{display:grid;grid-template-columns:minmax(260px,330px) minmax(0,1fr);gap:18px;align-items:start}
+.forumOverlay .forumCompose,.forumOverlay .forumFeed{margin-top:18px;border-radius:9px;padding:18px}
+.forumOverlay .forumCompose{position:sticky;top:0}
+.forumOverlay #forumLoginPrompt{width:100%;margin-top:8px}
+.forumOverlay #forumLoginPrompt[hidden]{display:none}
+.forumOverlay .forumFeedHead{flex-wrap:wrap}
+.forumOverlay .forumHeader button{white-space:nowrap}
+@media(max-width:700px){.forumOverlay{padding:6px}.forumOverlay .forumShell{max-height:calc(100vh - 12px);padding:12px}.forumOverlay .forumColumns{grid-template-columns:1fr;gap:0}.forumOverlay .forumCompose{position:static}.forumOverlay .forumCompose,.forumOverlay .forumFeed{padding:13px;margin-top:12px}}

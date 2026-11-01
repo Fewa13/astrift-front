@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+import {knifeCombat,knifeSwingPose,hipCone,HIP_SPREAD_SCALE} from '../public/knife-combat.js';
+import {KNIFE_FORMS} from '../public/knife-forms.js';
+const ids=Object.keys(KNIFE_FORMS),values=ids.map(knifeCombat);
+assert.equal(new Set(values.map(s=>`${s.range}/${s.damage.body}`)).size,19);
+assert(values.every(s=>s.range>=3&&s.range<=3.45&&s.damage.body>=49&&s.damage.body<=63));
+const poses=ids.map(id=>JSON.stringify(knifeSwingPose(id,155,1)));
+assert.equal(new Set(poses).size,19,'every skin must have its own swing path');
+const out={};for(const id of ids)for(const age of [-1,0,90,240,400,480,600]){assert.equal(knifeSwingPose(id,age,2,out),out);assert(Object.values(out).every(Number.isFinite));if(age>=480)assert.equal(out.swing,0)}
+for(const base of [.005,.02,.06,.1,.2])for(const floor of [.06,.065,.08])assert.equal(hipCone(base,floor),Math.max(base,floor)*.8);
+assert.equal(HIP_SPREAD_SCALE,.8);
+const game=await readFile('public/game.js','utf8');
+const weapons=game.slice(game.indexOf('const WEAPONS='),game.indexOf('const MODS='));
+assert(game.includes('interval:218.75'));assert.equal(175/218.75,.8);
+const build=game.split('\n').find(l=>l.startsWith('function buildWeapon('));
+let selected;
+const ctx={MODS:{},builds:{},knifeCombat,activeKnifeSkin:()=>selected?{id:selected}:null};
+vm.runInNewContext(weapons+build+'\nthis.W=WEAPONS;',ctx);
+assert(ctx.W.knife.auto,'hold-to-attack must use the automatic fire loop');
+for(const id of ids){selected=id;const w=ctx.buildWeapon('knife');assert.deepEqual(w.damage,knifeCombat(id).damage);assert.equal(w.range,knifeCombat(id).range)}
+let now=0,hits=0;
+const combat={matchFinished:false,duelBlocked:()=>false,isBombMode:()=>false,performance:{now:()=>now},lastShot:-99999,switchTarget:-1,cycling:false,hp:100,reloading:false,cancelInspect:()=>{},weaponKey:'knife',weaponDef:ctx.W.knife,knifeAttack:()=>hits++};
+const shoot=game.slice(game.indexOf('function shoot(){'),game.indexOf('function shootPellets(){'));
+vm.runInNewContext(shoot,combat);
+for(now=0;now<2100;now+=10)combat.shoot();assert.equal(hits,5,'continuous hold obeys the 520 ms cadence');
+combat.hp=0;now=2600;combat.shoot();assert.equal(hits,5);combat.hp=100;combat.matchFinished=true;combat.shoot();assert.equal(hits,5);
+assert(game.includes('(aim?1:HIP_SPREAD_SCALE)'),'shotgun ADS must be unchanged');
+console.log('PASS: 19 knife stat/animation profiles, no per-frame pose allocation, continuous attack cadence/guards, hip spread -20% including its floor, H8 fire rate -20%.');

@@ -1,0 +1,12 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {noticeTheme} from './ancient-notice-themes.js';
+const QUALITY_COLORS=['#f0f2f5','#91cae0','#bc9df6','#f1ca68','#68e6e4','#ffdfa3','#8ebeff','#e9a0ff'];
+export function createCombatNotices(root=document.body){
+ const feed=document.createElement('div');feed.className='ancientCombatFeed';feed.setAttribute('role','log');feed.setAttribute('aria-live','polite');root.append(feed);
+ const pending=[],visible=[];
+ function push(text,duration=4000,options={}){pending.push({text,duration:Math.max(4200,duration),...options});}
+ function kill(d,{boss,name,en,material,gearName,gearDefinition,kind,map}){push(`${boss?(en?'BOSS VANQUISHED':'首领已击败'):(en?'Defeated':'击败')} · ${name}\n+${d.xp.toLocaleString()} XP · +${(d.coins||0).toLocaleString(undefined,{maximumFractionDigits:2})} ${en?'Ancient Gold':'远古金币'}`,boss?8500:4600,{boss,theme:noticeTheme(kind,map,boss),drops:Object.entries(d.drops||{}).map(([key,n])=>({text:`${material(key)} ×${n}`})).concat((d.gearDrops||[]).map(i=>({text:gearName(i.key,en),color:QUALITY_COLORS[(gearDefinition(i.key)?.quality||1)-1]})))});}
+ function update(now){for(let i=visible.length-1;i>=0;i--)if(now>=visible[i].until){visible[i].node.remove();visible.splice(i,1);}const limit=innerHeight<500?2:4;while(pending.length&&visible.length<limit){const item=pending.shift(),node=document.createElement('div');node.className='ancientCombatMessage'+(item.boss?' ancientBossVictory':'');if(item.theme){const [accent,tint,motif,sigil]=item.theme;node.style.setProperty('--notice-accent',accent);node.style.setProperty('--notice-tint',tint);node.dataset.motif=motif;if(item.boss&&sigil){const seal=document.createElement('span');seal.className='ancientNoticeSigil';seal.textContent=sigil;seal.setAttribute('aria-hidden','true');node.append(seal);}}const title=document.createElement('div');title.className='ancientNoticeTitle';title.textContent=item.text;node.append(title);if(item.drops?.length){const drops=document.createElement('div');drops.className='ancientCombatDrops';for(const drop of item.drops){const tag=document.createElement('span');tag.textContent=drop.text;if(drop.color)tag.style.color=drop.color;drops.append(tag)}node.append(drops);}feed.append(node);visible.push({node,until:now+item.duration});}}
+ function clear(){pending.length=0;visible.length=0;feed.replaceChildren();}
+ return {push,kill,update,clear};
+}
