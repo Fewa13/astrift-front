@@ -58,6 +58,9 @@ function skillRadius(id, level, holy = false) {
   const base = { riftblade: 2, shadowstep: 2, shadowreturn: 3, nightfall: 5, stonefist: 2, faultline: 4, stoneprison: 4, mountainfall: 6, frostburst: 2, slash: 4, power: 7, rage: 7, icearmor: 6, blizzard: 6, haste: 6, storm: 5, doom: 6, swordwave: 2, swordrain: 3, phantomblade: 5 };
   return base[id] === void 0 ? 0 : (base[id] + Math.max(0, level - 1) * 0.5) * (holy ? 1.5 : 1);
 }
+function curseHitMultiplier(id, level, hexed = false) {
+  return id === "hex" ? (3.2 + 0.3 * level) * 1.2 : (4 + 0.4 * level) * (hexed ? 1.5 : 1);
+}
 function skillCooldown(id, level) {
   return id === "vitality" || id === "power" ? Math.max(50, 100 - level * 2) : SKILLS[id]?.cooldown || 0;
 }
@@ -117,8 +120,8 @@ function skillDescription(id, n, en = false) {
     chain: [`30\u7C73\u9996\u76EE\u6807\uFF0C\u8FDE\u9501\u6700\u591A${level + 2}\u4E2A\u76EE\u6807\u3001\u8FDE\u9501\u76F4\u5F84${16 + level - 1}\u7C73\uFF0C\u9996\u4E2A${300 + 30 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u540E\u7EED\u8DF3\u8DC3\u5404\u51CF25%\uFF1B\u51B7\u53747\u79D2`, `30m first target: up to ${level + 2} enemies, ${16 + level - 1}m chain diameter, ${300 + 30 * level}% base attack damage on the first, -25% each jump. Cooldown 7s.`],
     haste: [`\u5411\u524D\u7A81\u8FDB\u6700\u591A15\u7C73\uFF0C\u6CBF\u9014\u534A\u5F84${skillRadius("haste", level)}\u7C73\u5185\u6BCF\u4E2A\u602A\u7269\u53D7\u51FB\u4E00\u6B21\uFF0C\u9020\u6210${300 + 30 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B10\u79D2\u901F\u5EA6 +${Math.min(40, 15 + 2 * level)}%\uFF0C\u653B\u51FB\u95F4\u9694 -${Math.min(25, 8 + level)}%\uFF1B\u51B7\u537445\u79D2`, `Dash forward up to 15m; hit each enemy within ${skillRadius("haste", level)}m of the path once: ${300 + 30 * level}% base attack damage. 10s: +${Math.min(40, 15 + 2 * level)}% speed, -${Math.min(25, 8 + level)}% attack interval. Cooldown 45s.`],
     storm: [`30\u7C73\u76EE\u6807\u5468\u56F4${skillRadius("storm", level)}\u7C73\u96F7\u66B44\u79D2\uFF0C\u6BCF\u79D2${160 + 15 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B\u51B7\u537424\u79D2`, `30m target: ${skillRadius("storm", level)}m storm for 4s, ${160 + 15 * level}% base attack damage/s. Cooldown 24s.`],
-    hex: [`30\u7C73\u76EE\u6807\u53D7\u5230${320 + 30 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B10\u79D2\u653B\u51FB -${Math.min(40, 10 + 2 * level)}%\uFF0C\u53D7\u4F24 +${Math.min(30, 8 + level)}%\uFF1B\u51B7\u53748\u79D2`, `30m hex: ${320 + 30 * level}% base attack damage; -${Math.min(40, 10 + 2 * level)}% enemy damage, +${Math.min(30, 8 + level)}% damage taken for 10s. Cooldown 8s.`],
-    drain: [`20\u7C73\u6C72\u53D6\uFF0C\u9020\u6210${400 + 40 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u56DE\u590D\u5B9E\u9645\u4F24\u5BB330%\uFF08\u6700\u591A\u6700\u5927\u8840\u91CF20%\uFF09\uFF1B\u51B7\u537410\u79D2`, `20m drain: ${400 + 40 * level}% base attack damage, heal 30% actual damage (max 20% max HP). Cooldown 10s.`],
+    hex: [`30\u7C73\u76EE\u6807\u53D7\u5230${Math.round(curseHitMultiplier("hex", level) * 100)}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B10\u79D2\u653B\u51FB -${Math.min(40, 10 + 2 * level)}%\uFF0C\u53D7\u4F24 +${Math.min(30, 8 + level)}%\uFF1B\u51B7\u53748\u79D2`, `30m hex: ${Math.round(curseHitMultiplier("hex", level) * 100)}% base attack damage; -${Math.min(40, 10 + 2 * level)}% enemy damage, +${Math.min(30, 8 + level)}% damage taken for 10s. Cooldown 8s.`],
+    drain: [`20\u7C73\u6C72\u53D6\uFF0C\u9020\u6210${400 + 40 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u76EE\u6807\u5E26\u6709\u8870\u5F31\u5370\u8BB0\u65F6\u4F24\u5BB3\u989D\u5916+50%\uFF0C\u56DE\u590D\u5B9E\u9645\u4F24\u5BB330%\uFF08\u6700\u591A\u6700\u5927\u8840\u91CF20%\uFF09\uFF1B\u51B7\u537410\u79D2`, `20m drain: ${400 + 40 * level}% base attack damage, +50% damage against a target with an active Frailty Hex; heal 30% actual damage (max 20% max HP). Cooldown 10s.`],
     doom: [`30\u7C73\u76EE\u6807\u5468\u56F4${skillRadius("doom", level)}\u7C73\u9886\u57DF8\u79D2\uFF0C\u6BCF\u79D2${80 + 8 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u653B\u51FB -${Math.min(40, 10 + level)}%\uFF1B\u51B7\u537428\u79D2`, `30m target: ${skillRadius("doom", level)}m field for 8s, ${80 + 8 * level}% base attack damage/s, -${Math.min(40, 10 + level)}% enemy damage. Cooldown 28s.`]
   };
   const text = texts[id]?.[en ? 1 : 0] || "", radius = skillRadius(id, level);
@@ -160,6 +163,7 @@ export {
   PROFESSIONS,
   SKILLS,
   activeSkill,
+  curseHitMultiplier,
   ensureBasicSkills,
   runtime,
   skillBook,

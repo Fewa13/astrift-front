@@ -9,7 +9,7 @@ import {rayAncientHitbox,ancientHitbox} from './ancient-hitboxes';
 import {bossBodyPathBlocked} from './ancient-boss-collision';
 import {isHoly,holyPower} from './ancient-ascension';
 import {ancientSkillDamage,ancientProfileHealth,ancientGearStats,equippedGear,GROWTH_COMBOS} from './ancient-gear';
-import {SKILLS,skillRadius,runtime,activeSkill,skillCooldown,skillDamageMultiplier,skillHealth,type SkillActor} from './ancient-skills';
+import {SKILLS,skillRadius,curseHitMultiplier,runtime,activeSkill,skillCooldown,skillDamageMultiplier,skillHealth,type SkillActor} from './ancient-skills';
 import {ancientMaxHealth,weaponDamage,blocked,lineClear,ancientMapHeight,type AncientProfile} from './ancient-rules';
 import {ANCIENT_KINDS as FOREST_KINDS} from './ancient-rules';
 import {forestPath} from './ancient-forest';
@@ -85,8 +85,8 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
  if(id==='slash'){for(const m of c.monsters)if(m.hp>0&&Math.hypot(m.x-target.x,m.z-target.z)<=skillRadius(id,n,isHoly(p))*branchRadius(p,id)&&(m.id===target.id||lineClear(a.x,a.y,a.z,m.x,(ancientMapHeight(c.map,m.x,m.z,m.y))+1,m.z,c.map)))c.damage(m,body*((320+30*n)/100))}
  if(id==='soulbolt'){c.damage(target,body*((330+30*n)/100));if(r.summon)r.summon.target=target.id}
  if(id==='icebolt'){c.damage(target,body*((300+30*n)/100));slow(target,Math.min(.7,.2+.02*n+gear.slow),now+6000)}
- if(id==='hex'){c.damage(target,body*((320+30*n)/100));weaken(target,Math.min(.4,.1+.02*n),now+10000);target.vulnerable=Math.min(.3,.08+.01*n);target.vulnerableUntil=now+10000}
- if(id==='drain'){const actual=c.damage(target,body*(4+.4*n));a.hp=Math.min(a.maxHp||100,a.hp+Math.min(actual*.3,(a.maxHp||100)*.2))}
+ if(id==='hex'){c.damage(target,body*curseHitMultiplier('hex',n));weaken(target,Math.min(.4,.1+.02*n),now+10000);target.vulnerable=Math.min(.3,.08+.01*n);target.vulnerableUntil=now+10000}
+ if(id==='drain'){const actual=c.damage(target,body*curseHitMultiplier('drain',n,(target.vulnerableUntil||0)>now));a.hp=Math.min(a.maxHp||100,a.hp+Math.min(actual*.3,(a.maxHp||100)*.2))}
  if(id==='chain'){let current=target;const seen=new Set<string>(),links:{x:number;y:number;z:number;target:string;height:number}[]=[];for(let i=0;i<Math.min(c.monsters.length,activeBranch(p)==='heavenwrath'?2:n+2+gear.chainTargets+(isHoly(p)?2:0)+(activeBranch(p)==='thunderfield'?3:0));i++){seen.add(current.id);const size=FOREST_KINDS[current.kind]?.size??(current.kind==='lord'?3.4:current.kind==='chief'?2.7:1),height=(current.kind==='hunter'?2.1:1.65)*size*.5;links.push({x:current.x,y:ancientMapHeight(c.map,current.x,current.z)+height,z:current.z,target:current.id,height});c.damage(current,body*((300+30*n)/100)*.75**i);const next=c.monsters.filter(m=>m.hp>0&&!seen.has(m.id)&&Math.hypot(m.x-current.x,m.z-current.z)<=(16+n-1)/2*(isHoly(p)?1.5:1)*(activeBranch(p)==='thunderfield'?1.35:1)&&lineClear(current.x,(ancientMapHeight(c.map,current.x,current.z))+1,current.z,m.x,(ancientMapHeight(c.map,m.x,m.z,m.y))+1,m.z,c.map)).sort((x,y)=>Math.hypot(x.x-current.x,x.z-current.z)-Math.hypot(y.x-current.x,y.z-current.z))[0];if(!next)break;current=next}c.fx(id,target.x,target.z,1,{target:target.id,source:{x:a.x,y:a.y-.25,z:a.z},links});return null}
  if(['blizzard','storm','doom'].includes(id)){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(const m of skillAreaTargets(target,radius,c)){const amount=id==='blizzard'?1.25+.1*n:id==='storm'?1.6+.15*n:.8+.08*n;m.dots=(m.dots||[]).filter(d=>d.until>now&&d.owner!==a.name);if(m.dots.length>=8)m.dots.shift();m.dots.push({skillId:id,owner:a.name,until:now+s.duration*1000,next:now,damage:body*amount});if(id==='blizzard')slow(m,Math.min(.7,.25+.01*n+gear.slow),now+6000);if(id==='doom')weaken(m,Math.min(.4,.1+.01*n),now+8000)}}
  c.fx(id,target.x,target.z,skillRadius(id,n,isHoly(p))*branchRadius(p,id)||1);return null;
