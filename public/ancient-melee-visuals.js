@@ -2,7 +2,7 @@
 import {clearAncientRemotePotion} from './ancient-potion-visuals.js';
 import * as THREE from './three.module.js';
 import {PROFESSION_LOOKS} from './ancient-profession-models.js?v=20261014-new-professions-1';
-import {createAncientWeaponModel,releaseAncientWeaponModel} from './ancient-weapon-models.js?v=20261018-cast-hands-1';
+import {createAncientWeaponModel,releaseAncientWeaponModel} from './ancient-weapon-models.js?v=20261101-distinct-weapons-1';
 import {equippedGear} from './ancient-gear.js?v=20261021-skyreach-market-1';
 import {castGestureProfile,castGesturePhase} from './ancient-cast-gestures.js?v=20261018-cast-hands-1';
 import {activeSkill} from './ancient-skills.js?v=20261021-skyreach-market-1';
