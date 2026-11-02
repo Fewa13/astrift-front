@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { mapChapterNPCs } from "./ancient-geography.js";
 const SKYREACH_NPCS = {
   nerys: { name: "\u5948\u7483\u4E1D", en: "Nerys", map: "skyreach", x: -7, z: 18, role: ["\u5929\u7A79\u89C2\u6D4B\u8005", "Sky Observer"] },
   orren: { name: "\u5965\u4F26", en: "Orren", map: "skyreach", x: 7, z: 89, role: ["\u661F\u4EEA\u4FEE\u590D\u5E08", "Astrolabe Restorer"] },
@@ -9,6 +10,7 @@ const SKYREACH_NPCS = {
   skymirrorseal: { name: "\u5929\u7A79\u955C\u73AF", en: "Celestial Mirror Array", map: "skyreach", x: 12, z: 256, role: ["\u6298\u5149\u661F\u4EEA", "Prismatic Astrolabe"] },
   skydawnseal: { name: "\u9ECE\u660E\u5F15\u661F\u76D8", en: "Dawn Star Dial", map: "skyreach", x: -12, z: 315, role: ["\u5F15\u661F\u88C5\u7F6E", "Starcalling Device"] }
 };
+mapChapterNPCs(SKYREACH_NPCS);
 const reward = { xpFraction: 9e-3 };
 const talk = (id, npc, title, dialogue) => ({ id: "sky-" + id, title, goal: ["\u4EA4\u8C08", "Talk"], kind: "talk", map: npc === "kael" ? "frostcourt" : "skyreach", npc, dialogue, reply: ["\u7EE7\u7EED", "Continue"], reward });
 const kill = (id, kind, count, region, title) => ({ id: "sky-" + id, title, goal: [`\u51FB\u8D25${count}\u4E2A\u654C\u4EBA`, `Defeat ${count} enemies`], kind: "kill", map: "skyreach", kinds: [kind], count, region, reward });

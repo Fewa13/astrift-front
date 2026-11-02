@@ -1,6 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261101-trial-tower-1';
+const CACHE_NAME='astrift-offline-20261101-unique-chapters-3';
 const ASSETS=[
+ '/ancient-geography.js','/ancient-chapter-worlds.js','/ancient-chapter-features.js','/ancient-chapter-feature-ui.js','/ancient-dunes.js','/ancient-dunes-quests.js','/ancient-dunes-creatures.js',
  '/account-auth-panel.js','/account-auth-panel.css',
  '/ancient-map-expressions.js',
  '/ancient-community-furniture.js','/ancient-community-catalog.js','/ancient-community-editor.js','/ancient-community-creation.js','/ancient-community-editor.css','/ancient-community-models.js','/ancient-community-hulls.js','/ancient-community.js','/ancient-community-ui.js','/ancient-community-scene.js','/account-page-lease.js','/ancient-potion-visuals.js','/ancient-potion-drink.js',

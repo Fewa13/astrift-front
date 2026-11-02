@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {mapChapterNPCs} from './ancient-geography.js';
 import type {QuestStep} from './ancient-quests';
 type Text=[string,string];
 export const FROSTCOURT_NPCS={
@@ -11,6 +12,7 @@ export const FROSTCOURT_NPCS={
  courtcodexseal:{name:'旧誓原典',en:'The Original Covenant',map:'frostcourt',x:-12,z:254,role:['禁令原典','Edict Archive'] as Text},
  courtfinalseal:{name:'双相封令环',en:'Twinphase Edict Seal',map:'frostcourt',x:14,z:314,role:['封令装置','Edict Seal'] as Text}
 };
+mapChapterNPCs(FROSTCOURT_NPCS);
 const reward={xpFraction:.009};
 const talk=(id:string,npc:string,title:Text,dialogue:Text):QuestStep=>({id:'court-'+id,title,goal:['交谈','Talk'],kind:'talk',map:npc==='sela'?'starfall':'frostcourt',npc,dialogue,reply:['继续','Continue'],reward});
 const kill=(id:string,title:Text,kind:string,count:number,region:number):QuestStep=>({id:'court-'+id,title,goal:[`击败${count}个敌人`,`Defeat ${count} enemies`],kind:'kill',map:'frostcourt',kinds:[kind],count,region,reward});

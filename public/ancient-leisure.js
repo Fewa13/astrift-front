@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { CHAPTER_ROUTES, chapterPoint, chapterSafe, chapterHeight } from "./ancient-geography.js";
 import { ROUGH_STONES } from "./ancient-stonework.js";
 const PASSAGE_RECTS = {
   tribe: [[35, 84, 78, 90], [64, 84, 78, 138], [35, 84, 126, 138]],
@@ -87,6 +88,7 @@ for (const [map, spots] of Object.entries({
   sanctum: [[-10, 50], [10, 70], [-12, 130], [12, 155], [-10, 260], [10, 290]],
   frostcourt: [[-10, 45], [10, 63], [-14, 120], [12, 147], [-12, 224], [14, 245], [-14, 325], [14, 343]],
   skyreach: [[-15, 42], [14, 58], [-15, 112], [15, 146], [-15, 212], [14, 246], [-15, 314], [14, 340]],
+  dunes: [[-12, 45], [10, 75], [-12, 130], [12, 155], [-12, 225], [12, 250], [-12, 320], [12, 345]],
   starfall: [[-10, 45], [10, 70], [-12, 165], [10, 190], [-10, 315], [12, 340]]
 })) {
   spots.forEach(([x, z], i) => LEISURE_NODES.push({ id: map + "-ground-" + i, map, x, z, y: map === "skyreach" ? z >= 285 ? 18 : z >= 185 ? 12 : z >= 85 ? 6 : 0 : map === "frostcourt" ? z >= 290 ? 18 : z >= 190 ? 12 : z >= 90 ? 6 : 0 : map === "sanctum" && z >= 240 ? 8 : map === "starfall" ? z >= 290 ? -12 : z >= 150 ? -6 : 0 : 0, kind: "mine", material: ["roughStone", "oreCopper", "roughDark", "oreIron", "roughMoon", "oreMoon"][i % 6], name: "\u6563\u843D\u77F3\u6599", en: "Loose Stone" }));
@@ -106,6 +108,10 @@ const LEISURE_POSTS = Object.entries(PASSAGE_RECTS).flatMap(([map]) => {
   for (const z of [start, end]) for (const side of [-1, 1]) out.push({ map, x: map === "tribe" ? 38 : -34, z: z + side * 4.8, r: 0.25 });
   return out;
 });
+for (const n of LEISURE_NODES) if (CHAPTER_ROUTES[n.map]) {
+  const p = chapterPoint(n.map, n.x, n.z);
+  Object.assign(n, chapterSafe(n.map, p.x, p.z), { y: chapterHeight(n.map, p.x, p.z) });
+}
 function leisureSolid(map, x, z, r = 0.6) {
   return LEISURE_POSTS.some((p) => p.map === map && Math.hypot(p.x - x, p.z - z) < p.r + r);
 }

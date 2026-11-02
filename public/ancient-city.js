@@ -73,8 +73,8 @@ function cityMonsterHP(kind, level) {
 function cityMonsterDamage(kind, level) {
   return ancientBossDamage(kind, level) || ancientMobDamage(kind, level) || Math.floor(3200 * (Math.max(1, level) / 70) ** 2.5 * CITY_KINDS[kind].damage);
 }
-const cityWorldId = (map) => /^community:[1-9]\d{0,7}$/.test(map) ? 3e9 + Number(map.slice(10)) * 2 : /^dungeon:[1-9]\d{0,8}$/.test(map) ? 1e3 + Number(map.slice(8)) * 2 : map === "skyreach" ? 15 : map === "frostcourt" ? 13 : map === "starfall" ? 11 : map === "sanctum" ? 9 : map === "blight" ? 7 : map === "city" ? 5 : map === "forest" ? 3 : 1;
-const cityMap = (value) => value === "skyreach" ? "skyreach" : value === "frostcourt" ? "frostcourt" : value === "starfall" ? "starfall" : value === "sanctum" ? "sanctum" : value === "blight" ? "blight" : value === "city" ? "city" : value === "forest" ? "forest" : "tribe";
+const cityWorldId = (map) => /^community:[1-9]\d{0,7}$/.test(map) ? 3e9 + Number(map.slice(10)) * 2 : /^dungeon:[1-9]\d{0,8}$/.test(map) ? 1e3 + Number(map.slice(8)) * 2 : map === "dunes" ? 17 : map === "skyreach" ? 15 : map === "frostcourt" ? 13 : map === "starfall" ? 11 : map === "sanctum" ? 9 : map === "blight" ? 7 : map === "city" ? 5 : map === "forest" ? 3 : 1;
+const cityMap = (value) => value === "dunes" ? "dunes" : value === "skyreach" ? "skyreach" : value === "frostcourt" ? "frostcourt" : value === "starfall" ? "starfall" : value === "sanctum" ? "sanctum" : value === "blight" ? "blight" : value === "city" ? "city" : value === "forest" ? "forest" : "tribe";
 let nav;
 function segment(ax, az, bx, bz) {
   const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 0.5));

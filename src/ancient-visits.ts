@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-export const ANCIENT_MAP_LEVELS:Record<string,number>={tribe:1,forest:30,city:70,blight:90,sanctum:120,starfall:150,frostcourt:180,skyreach:220};
+export const ANCIENT_MAP_LEVELS:Record<string,number>={tribe:1,forest:30,city:70,blight:90,sanctum:120,starfall:150,frostcourt:180,skyreach:220,dunes:260};
 export type AncientVisit={id:string;map:string;expires:number};
 export class AncientVisits{
  constructor(private sql:SqlStorage){

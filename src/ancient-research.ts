@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {DUNES_KINDS} from './ancient-dunes';
 import {ANCIENT_KINDS} from './ancient-rules';
 import {BESTIARY} from './ancient-bestiary';
 import {FOREST_KINDS} from './ancient-forest';
@@ -8,7 +9,7 @@ import {SANCTUM_KINDS} from './ancient-sanctum';
 import {SKYREACH_KINDS} from './ancient-skyreach';
 import {FROSTCOURT_KINDS} from './ancient-frostcourt';
 import {STARFALL_KINDS} from './ancient-starfall';
-export const RESEARCH_MAPS:Record<string,[string,string]>={tribe:['部落','The Tribe'],forest:['森林','The Forest'],city:['失落王城','Lost Royal City'],blight:['蚀影荒原','Shadowblight Wastes'],sanctum:['净界圣域','Sanctum of the Veil'],starfall:['沉星遗境','Sunken Star Ruins'],frostcourt:['霜烬王庭','Frostfire Court'],skyreach:['寂雷天穹','Silent Storm Skyreach']};
+export const RESEARCH_MAPS:Record<string,[string,string]>={tribe:['部落','The Tribe'],forest:['森林','The Forest'],city:['失落王城','Lost Royal City'],blight:['蚀影荒原','Shadowblight Wastes'],sanctum:['净界圣域','Sanctum of the Veil'],starfall:['沉星遗境','Sunken Star Ruins'],frostcourt:['霜烬王庭','Frostfire Court'],skyreach:['寂雷天穹','Silent Storm Skyreach'],dunes:['暮沙迷城','Duskglass Labyrinth']};
 const TIPS:Record<string,[string,string]>={
  shield:['正面骨盾会抵挡攻击，从侧后方寻找空隙。','Its frontal shield resists attacks. Move around to its flank.'],
  charge:['注意压低身体的蓄势动作，横移躲开冲撞。','Watch its lowered charging stance; sidestep the rush.'],
@@ -24,7 +25,7 @@ const TIPS:Record<string,[string,string]>={
 };
 export type ResearchEntry={kind:string;name:string;en:string;map:string;boss:boolean;tip:[string,string];kills:number;observations:number;dodges:number;claimed:number;stage:number;requirements:number[]};
 export const RESEARCH_CATALOG=Object.entries({grox:{name:'穴居兽',en:'Grox',boss:false},hunter:{name:'碎牙猎手',en:'Fangbreaker Hunter',boss:false},chief:{name:'碎骨酋长',en:'Bonebreaker Chieftain',boss:true},lord:{name:'远古大酋长·戈拉什',en:'Ancient Warchief Gorash',boss:true},...ANCIENT_KINDS}).filter(([kind])=>kind!=='noble_echo').map(([kind,d])=>{
- const map=BESTIARY[kind]?.map||(SKYREACH_KINDS[kind]?'skyreach':FROSTCOURT_KINDS[kind]?'frostcourt':STARFALL_KINDS[kind]?'starfall':SANCTUM_KINDS[kind]?'sanctum':BLIGHT_KINDS[kind]?'blight':CITY_KINDS[kind]?'city':FOREST_KINDS[kind]?'forest':'tribe');
+ const map=BESTIARY[kind]?.map||(DUNES_KINDS[kind]?'dunes':SKYREACH_KINDS[kind]?'skyreach':FROSTCOURT_KINDS[kind]?'frostcourt':STARFALL_KINDS[kind]?'starfall':SANCTUM_KINDS[kind]?'sanctum':BLIGHT_KINDS[kind]?'blight':CITY_KINDS[kind]?'city':FOREST_KINDS[kind]?'forest':'tribe');
  const boss=!!d.boss,behavior=BESTIARY[kind]?.behavior||kind;
  const tip=TIPS[behavior]||TIPS[kind]||(boss?TIPS.lord:kind==='hunter'?TIPS.javelin:['看清攻击前的抬手动作，保持距离并抓住攻击后的空档。','Read the attack windup, control your distance and punish its recovery.']);
  return {kind,name:d.name,en:d.en,map,boss,tip:tip as [string,string],requirements:boss?[1,3,8]:[1,10,30]};

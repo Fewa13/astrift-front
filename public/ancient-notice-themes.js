@@ -9,11 +9,12 @@ export const BOSS_NOTICE_THEMES={
  blight_lord:['#c5a0f5','#2c163a','rift','⋈'],immaculate_judge:['#fff0be','#333225','halo','⊙'],
  starbound_heart:['#9bb5ff','#171c3c','stars','✦'],furnace_regent:['#ffa764','#3e2116','forge','⏣'],
  frost_crowned:['#a6f0f5','#162f3c','frost','❄'],thunder_warden:['#b9b4ff','#241d42','storm','ϟ'],
+ buried_marshal:['#e4be81','#392b1c','strata','▱'],hourglass_regent:['#ffd995','#3c2c1d','facets','⌛'],
  sky_sovereign:['#e4c7ff','#2e2045','sky','⌁']
 };
 export const MAP_NOTICE_THEMES={
  tribe:['#c9b38d','#2e2418','bone'],forest:['#9ed5a7','#18301f','leaves'],city:['#b4bedb','#23293b','heraldry'],
  blight:['#c7a3df','#2e1d36','rift'],sanctum:['#ede2ad','#302f22','halo'],starfall:['#a2b9f2','#1c2540','stars'],
- frostcourt:['#a3dce9','#1b303c','frost'],skyreach:['#c6b5f4','#28213f','storm'],dungeon:['#c7a08c','#30221d','strata']
+ frostcourt:['#a3dce9','#1b303c','frost'],skyreach:['#c6b5f4','#28213f','storm'],dunes:['#ebc18a','#3c3020','strata'],dungeon:['#c7a08c','#30221d','strata']
 };
 export function noticeTheme(kind,map,boss){return boss?(BOSS_NOTICE_THEMES[kind]||['#edcf91','#352619','totem','◆']):(MAP_NOTICE_THEMES[map]||MAP_NOTICE_THEMES.dungeon);}

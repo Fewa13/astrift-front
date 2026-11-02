@@ -1,13 +1,13 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {buildSunkenRuins} from './ancient-chapter-environments.js?v=20261023-rebuild-1';
+import {buildDistinctStarfall} from './ancient-chapter-worlds.js?v=20261101-unique-chapters-3';
 import {STARFALL_SOLIDS,STARFALL_KINDS,starfallHeight,starfallSurface} from './ancient-starfall.js?v=20261015-starfall-1';
 import {mergeEnvironment,environmentTexture} from './ancient-environment-detail.js?v=20261012-new-player-flow-1';
 const G={box:new T.BoxGeometry(1,1,1),column:new T.CylinderGeometry(1,1,1,10),cone:new T.ConeGeometry(1,1,8),orb:new T.IcosahedronGeometry(1,1),crystal:new T.OctahedronGeometry(1),ring:new T.TorusGeometry(1,.065,5,32),wireArch:new T.TorusGeometry(1,.006,5,32,Math.PI),arch:new T.TorusGeometry(1,.03,6,32,Math.PI)};
 const M={stone:new T.MeshStandardMaterial({color:0x466e78,map:environmentTexture('stone'),roughness:.78}),trim:new T.MeshStandardMaterial({color:0xc7b58c,metalness:.6,roughness:.38}),dark:new T.MeshStandardMaterial({color:0x172c40,roughness:.65}),coral:new T.MeshStandardMaterial({color:0xa96f9d,roughness:.8}),light:new T.MeshBasicMaterial({color:0x8ceee1}),blue:new T.MeshStandardMaterial({color:0x3b8faa,metalness:.4,roughness:.38}),glass:new T.MeshStandardMaterial({color:0x144559,metalness:.6,roughness:.3})};
 const add=(g,geo,mat,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0)=>{const m=new T.Mesh(G[geo],M[mat]);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.rotation.set(rx,ry,rz);g.add(m);return m};
 M.glass.transparent=true;M.glass.opacity=.38;M.glass.depthWrite=false;
-export function buildStarfallScene(scene){return buildSunkenRuins(scene);}
+export function buildStarfallScene(scene){return buildDistinctStarfall(scene);}
 const templates=new Map();
 export function createStarfallCreature(kind,level){
  if(!templates.has(kind)){

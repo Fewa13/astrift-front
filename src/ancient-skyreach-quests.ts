@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {mapChapterNPCs} from './ancient-geography.js';
 import type {QuestStep} from './ancient-quests';
 export const SKYREACH_NPCS={
  nerys:{name:'奈璃丝',en:'Nerys',map:'skyreach',x:-7,z:18,role:['天穹观测者','Sky Observer'] as [string,string]},
@@ -10,6 +11,7 @@ export const SKYREACH_NPCS={
  skymirrorseal:{name:'天穹镜环',en:'Celestial Mirror Array',map:'skyreach',x:12,z:256,role:['折光星仪','Prismatic Astrolabe'] as [string,string]},
  skydawnseal:{name:'黎明引星盘',en:'Dawn Star Dial',map:'skyreach',x:-12,z:315,role:['引星装置','Starcalling Device'] as [string,string]}
 };
+mapChapterNPCs(SKYREACH_NPCS);
 const reward={xpFraction:.009};
 const talk=(id:string,npc:string,title:[string,string],dialogue:[string,string]):QuestStep=>({id:'sky-'+id,title,goal:['交谈','Talk'],kind:'talk',map:npc==='kael'?'frostcourt':'skyreach',npc,dialogue,reply:['继续','Continue'],reward});
 const kill=(id:string,kind:string,count:number,region:number,title:[string,string]):QuestStep=>({id:'sky-'+id,title,goal:[`击败${count}个敌人`,`Defeat ${count} enemies`],kind:'kill',map:'skyreach',kinds:[kind],count,region,reward});

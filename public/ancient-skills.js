@@ -154,7 +154,7 @@ function skillHealth(a, base, now) {
   a.hp = Math.min(a.hp, a.maxHp);
 }
 function skillDrops(kind, random = Math.random) {
-  const boss = kind === "sky_sovereign" || kind === "thunder_warden" || kind === "frost_crowned" || kind === "furnace_regent" || kind === "starbound_heart" || kind === "immaculate_judge" || kind === "blight_lord" || kind === "oathknight" || kind === "emptyking" || kind === "chief" || kind === "lord" || kind === "rootwarden" || ["metal", "wood", "water", "fire", "earth"].some((e) => kind === "crystal_" + e);
+  const boss = kind === "buried_marshal" || kind === "hourglass_regent" || kind === "sky_sovereign" || kind === "thunder_warden" || kind === "frost_crowned" || kind === "furnace_regent" || kind === "starbound_heart" || kind === "immaculate_judge" || kind === "blight_lord" || kind === "oathknight" || kind === "emptyking" || kind === "chief" || kind === "lord" || kind === "rootwarden" || ["metal", "wood", "water", "fire", "earth"].some((e) => kind === "crystal_" + e);
   if (!boss) return {};
   const ids = Object.keys(SKILLS), id = ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
   return { [skillBook(id)]: 1 };

@@ -1,9 +1,11 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {CHAPTER_ROUTES,chapterPoint} from './ancient-geography.js';
 import {communityId,getCommunityMap} from './ancient-community.js';
 import {tribeCompactZ} from './ancient-rules.js';
 export type Wanderer={x:number;z:number;homeX:number;homeZ:number;region:number;wander?:{x:number;z:number;until:number};wanderAt?:number;action:string;actionAt:number};
 export function wanderAllowed(map:string,region:number,x:number,z:number){
  if(communityId(map)){const spawn=getCommunityMap(map)?.spawn;return !!spawn&&Math.hypot(x-spawn.x,z-spawn.z)>=12;}
+ if(CHAPTER_ROUTES[map])return ![10,89,189,289].some(u=>{const p=chapterPoint(map,0,u);return Math.hypot(x-p.x,z-p.z)<20});
  if(map==='skyreach'&&[18,89,189,289].some(n=>Math.hypot(x,z-n)<22))return false;
  if(map==='frostcourt'&&[18,94,196,296].some(n=>Math.hypot(x,z-n)<22))return false;
  if(map==='forest'&&Math.hypot(x-25.5,z-165)<11)return false;

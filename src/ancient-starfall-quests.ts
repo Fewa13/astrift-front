@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {mapChapterNPCs} from './ancient-geography.js';
 import type {QuestStep} from './ancient-quests';
 type Text=[string,string];
 export const STARFALL_NPCS={
@@ -10,6 +11,7 @@ export const STARFALL_NPCS={
  starwestseal:{name:'西侧抑制器',en:'West Suppressor',map:'starfall',x:-20,z:350,role:['封印装置','Seal Array'] as Text},
  stareastseal:{name:'东侧抑制器',en:'East Suppressor',map:'starfall',x:20,z:350,role:['封印装置','Seal Array'] as Text}
 };
+mapChapterNPCs(STARFALL_NPCS);
 const reward={xpFraction:.012};
 const talk=(id:string,npc:string,title:Text,dialogue:Text):QuestStep=>({id:'starfall-'+id,title,goal:['交谈','Talk'],kind:'talk',map:npc==='seraph'?'sanctum':'starfall',npc,dialogue,reply:['继续','Continue'],reward});
 const kill=(id:string,title:Text,kind:string,count:number,region:number):QuestStep=>({id:'starfall-'+id,title,goal:[`击败${count}个敌人`,`Defeat ${count} enemies`],kind:'kill',map:'starfall',kinds:[kind],count,region,reward});

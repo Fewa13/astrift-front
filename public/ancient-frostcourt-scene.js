@@ -1,13 +1,13 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {buildTwinphaseCourt} from './ancient-chapter-environments.js?v=20261023-rebuild-1';
+import {buildDistinctFrostcourt} from './ancient-chapter-worlds.js?v=20261101-unique-chapters-3';
 import {FROSTCOURT_SOLIDS,FROSTCOURT_KINDS,frostcourtHeight,frostcourtSurface} from './ancient-frostcourt.js?v=20261020-frostcourt-1';
 import {mergeEnvironment,environmentTexture} from './ancient-environment-detail.js?v=20261012-new-player-flow-1';
 const G={box:new T.BoxGeometry(1,1,1),column:new T.CylinderGeometry(1,1,1,10),cone:new T.ConeGeometry(1,1,8),orb:new T.IcosahedronGeometry(1,1),crystal:new T.OctahedronGeometry(1),ring:new T.TorusGeometry(1,.055,6,28),arch:new T.TorusGeometry(1,.045,6,32,Math.PI)};
 const M={stone:new T.MeshStandardMaterial({color:0x596c7c,map:environmentTexture('stone'),roughness:.87}),ice:new T.MeshStandardMaterial({color:0xa7c8d7,metalness:.3,roughness:.38}),dark:new T.MeshStandardMaterial({color:0x26323e,roughness:.82}),iron:new T.MeshStandardMaterial({color:0x394a58,metalness:.7,roughness:.43}),gold:new T.MeshStandardMaterial({color:0xb8985b,metalness:.65,roughness:.35}),ember:new T.MeshStandardMaterial({color:0x624034,roughness:.75}),cold:new T.MeshBasicMaterial({color:0x88d9fa}),fire:new T.MeshBasicMaterial({color:0xffb15e}),snow:new T.MeshStandardMaterial({color:0xd9e5e8,roughness:.96}),cloth:new T.MeshStandardMaterial({color:0x344c68,roughness:.9,side:T.DoubleSide})};
 const add=(parent,geo,mat,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0)=>{const m=new T.Mesh(G[geo],M[mat]);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.rotation.set(rx,ry,rz);parent.add(m);return m;};
 function crown(g,x,y,z,r,material){add(g,'ring','gold',x,y,z,r,r,r,Math.PI/2);for(let i=0;i<7;i++){const a=i*Math.PI*2/7;add(g,'crystal',material,x+Math.cos(a)*r,y+.8,z+Math.sin(a)*r,.3,1.2,.3,0,0,Math.cos(a)*.15);}}
-export function buildFrostcourtScene(scene){return buildTwinphaseCourt(scene);}
+export function buildFrostcourtScene(scene){return buildDistinctFrostcourt(scene);}
 const templates=new Map();
 export function createFrostcourtCreature(kind,level){
  if(!templates.has(kind)){

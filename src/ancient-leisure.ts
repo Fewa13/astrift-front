@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {CHAPTER_ROUTES,chapterPoint,chapterSafe,chapterHeight} from './ancient-geography.js';
 import {ROUGH_STONES} from './ancient-stonework.js';
 import type {AncientProfile} from './ancient-rules';
 export const PASSAGE_RECTS:Record<string,number[][]>={
@@ -62,12 +63,14 @@ for(const [map,spots]of Object.entries({
  sanctum:[[-10,50],[10,70],[-12,130],[12,155],[-10,260],[10,290]],
  frostcourt:[[-10,45],[10,63],[-14,120],[12,147],[-12,224],[14,245],[-14,325],[14,343]],
  skyreach:[[-15,42],[14,58],[-15,112],[15,146],[-15,212],[14,246],[-15,314],[14,340]],
+ dunes:[[-12,45],[10,75],[-12,130],[12,155],[-12,225],[12,250],[-12,320],[12,345]],
  starfall:[[-10,45],[10,70],[-12,165],[10,190],[-10,315],[12,340]]
 })){spots.forEach(([x,z],i)=>LEISURE_NODES.push({id:map+'-ground-'+i,map,x,z,y:map==='skyreach'?(z>=285?18:z>=185?12:z>=85?6:0):map==='frostcourt'?(z>=290?18:z>=190?12:z>=90?6:0):map==='sanctum'&&z>=240?8:map==='starfall'?(z>=290?-12:z>=150?-6:0):0,kind:'mine',material:['roughStone','oreCopper','roughDark','oreIron','roughMoon','oreMoon'][i%6],name:'散落石料',en:'Loose Stone'}));}
 // Ground pickups are unclassified rough stones; the workshop rolls their actual contents.
 for(const n of LEISURE_NODES)if(n.kind==='mine'){n.material='roughStone';n.name='原石';n.en='Rough Stone';}
 for(const key of ['roughStone','roughDark','roughMoon']){LEISURE_ITEMS[key].name='原石';LEISURE_ITEMS[key].en='Rough Stone';}
 const LEISURE_POSTS=Object.entries(PASSAGE_RECTS).flatMap(([map])=>{const x=map==='tribe'?74:-55,start=map==='tribe'?82:40,end=map==='tribe'?134:85,out:{map:string;x:number;z:number;r:number}[]=[];for(let z=start;z<=end;z+=7)for(const side of [-1,1])out.push({map,x:x+side*8.5,z,r:.18});for(const z of [start,end])for(const side of [-1,1])out.push({map,x:map==='tribe'?38:-34,z:z+side*4.8,r:.25});return out});
+for(const n of LEISURE_NODES)if(CHAPTER_ROUTES[n.map]){const p=chapterPoint(n.map,n.x,n.z);Object.assign(n,chapterSafe(n.map,p.x,p.z),{y:chapterHeight(n.map,p.x,p.z)});}
 export function leisureSolid(map:string,x:number,z:number,r=.6){return LEISURE_POSTS.some(p=>p.map===map&&Math.hypot(p.x-x,p.z-z)<p.r+r)}
 export type LeisureSession={node:string;kind:'mine'|'fish';phase:'mining'|'waiting'|'hooked';started:number;nextAt:number;biteAt:number;expires:number;hits:number;progress:number;hp:number;fish?:string;weight?:number;tension?:number;lastAt?:number;controlAt?:number;held?:boolean;strain?:number;seed?:number};
 export type LeisureActor={map?:string;x:number;y:number;z:number;hp:number;leisure?:LeisureSession;leisureAt?:number};

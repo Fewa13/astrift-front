@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {DUNES_NPCS,DUNES_QUESTS} from './ancient-dunes-quests.js';
 import {SANCTUM_NPCS,SANCTUM_QUESTS} from './ancient-sanctum-quests.js';
 import {SKYREACH_NPCS,SKYREACH_QUESTS} from './ancient-skyreach-quests.js';
 import {FROSTCOURT_NPCS,FROSTCOURT_QUESTS} from './ancient-frostcourt-quests.js';
@@ -233,6 +234,7 @@ Object.assign(QUEST_NPCS,FROSTCOURT_NPCS);
 for(const q of FROSTCOURT_QUESTS)if(q.kind==='talk'&&q.npc){const n=QUEST_NPCS[q.npc];q.goal=[(q.npc.endsWith('seal')?'操作':'与')+n.name+(q.npc.endsWith('seal')?'':'交谈'),(q.npc.endsWith('seal')?'Interact with ':'Talk to ')+n.en]}
 steps.push(...FROSTCOURT_QUESTS);
 Object.assign(QUEST_NPCS,SKYREACH_NPCS);for(const q of SKYREACH_QUESTS)if(q.kind==='talk'&&q.npc){const n=QUEST_NPCS[q.npc];q.goal=[(q.npc.endsWith('seal')?'操作':'与')+n.name+(q.npc.endsWith('seal')?'':'交谈'),(q.npc.endsWith('seal')?'Interact with ':'Talk to ')+n.en]}steps.push(...SKYREACH_QUESTS);
+Object.assign(QUEST_NPCS,DUNES_NPCS);for(const q of DUNES_QUESTS)if(q.kind==='talk'&&q.npc){const n=QUEST_NPCS[q.npc];q.goal=[(q.npc.endsWith('seal')?'操作':'与')+n.name+(q.npc.endsWith('seal')?'':'交谈'),(q.npc.endsWith('seal')?'Interact with ':'Talk to ')+n.en]}steps.push(...DUNES_QUESTS);
 export const MAIN_QUESTS:readonly QuestStep[]=steps;
 // Preserve numeric saves while retiring the opening combat gate and extra dialogue.
 for(const id of ['grox-five','gruk-reward'])steps.find(q=>q.id===id)!.kind='openingSkip';

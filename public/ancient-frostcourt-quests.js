@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { mapChapterNPCs } from "./ancient-geography.js";
 const FROSTCOURT_NPCS = {
   velra: { name: "\u7EF4\u5C14\u62C9", en: "Velra", map: "frostcourt", x: -7, z: 18, role: ["\u5931\u8A93\u5DE1\u5BDF\u5B98", "Forsworn Inspector"] },
   brann: { name: "\u5E03\u5170", en: "Brann", map: "frostcourt", x: -7, z: 94, role: ["\u738B\u5EAD\u94F8\u5320", "Court Smith"] },
@@ -9,6 +10,7 @@ const FROSTCOURT_NPCS = {
   courtcodexseal: { name: "\u65E7\u8A93\u539F\u5178", en: "The Original Covenant", map: "frostcourt", x: -12, z: 254, role: ["\u7981\u4EE4\u539F\u5178", "Edict Archive"] },
   courtfinalseal: { name: "\u53CC\u76F8\u5C01\u4EE4\u73AF", en: "Twinphase Edict Seal", map: "frostcourt", x: 14, z: 314, role: ["\u5C01\u4EE4\u88C5\u7F6E", "Edict Seal"] }
 };
+mapChapterNPCs(FROSTCOURT_NPCS);
 const reward = { xpFraction: 9e-3 };
 const talk = (id, npc, title, dialogue) => ({ id: "court-" + id, title, goal: ["\u4EA4\u8C08", "Talk"], kind: "talk", map: npc === "sela" ? "starfall" : "frostcourt", npc, dialogue, reply: ["\u7EE7\u7EED", "Continue"], reward });
 const kill = (id, title, kind, count, region) => ({ id: "court-" + id, title, goal: [`\u51FB\u8D25${count}\u4E2A\u654C\u4EBA`, `Defeat ${count} enemies`], kind: "kill", map: "frostcourt", kinds: [kind], count, region, reward });

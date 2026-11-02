@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { DUNES_KINDS, dunesSurface, dunesHeight, dunesBlocked, dunesLineClear, dunesMonsterDamage } from "./ancient-dunes.js";
 import { communityId, communityHeight, communityBlocked, communityClear } from "./ancient-community.js";
 import { passageInside, leisureSolid, tribePassageLineClear } from "./ancient-leisure.js";
 import { SKYREACH_KINDS, skyreachHeight, skyreachSurface, skyreachBlocked, skyreachLineClear, skyreachMonsterDamage } from "./ancient-skyreach.js";
@@ -15,14 +16,14 @@ import { forestBlocked, forestLineClear, forestMonsterDamage, FOREST_KINDS, fore
 import { ensureAncientGear, ancientBaseHealth } from "./ancient-gear.js";
 import { forestHeight as forestHeight2, FOREST_TREES, FOREST_ALTARS, FOREST_KINDS as FOREST_KINDS2, forestBlocked as forestBlocked2, forestInside } from "./ancient-forest.js";
 import { CITY_KINDS as CITY_KINDS2, cityHeight as cityHeight2, citySurface as citySurface2 } from "./ancient-city.js";
-const ANCIENT_KINDS = { ...SKYREACH_KINDS, ...FROSTCOURT_KINDS, ...STARFALL_KINDS, ...BESTIARY, ...FOREST_KINDS, ...CITY_KINDS, ...BLIGHT_KINDS, ...SANCTUM_KINDS };
+const ANCIENT_KINDS = { ...DUNES_KINDS, ...SKYREACH_KINDS, ...FROSTCOURT_KINDS, ...STARFALL_KINDS, ...BESTIARY, ...FOREST_KINDS, ...CITY_KINDS, ...BLIGHT_KINDS, ...SANCTUM_KINDS };
 const TRIBE_LAYOUT = 2;
 const TRIBE_LENGTH = 600;
 function tribeCompactZ(z) {
   return z <= 30 ? z : z <= 200 ? 30 + (z - 30) * 120 / 170 : z <= 500 ? 150 + (z - 200) * 2 / 3 : 350 + (z - 500) * 0.5;
 }
 function ancientMapHeight(map, x, z, feet) {
-  return communityId(map) ? communityHeight(map, x, z, feet) : map === "skyreach" ? skyreachSurface(x, z) : map === "frostcourt" ? frostcourtSurface(x, z) : map === "starfall" ? starfallSurface(x, z) : map === "sanctum" ? sanctumSurface(x, z) : map === "blight" ? blightSurface(x, z, feet) : isDungeonMap(map) ? 0 : map === "city" ? feet === void 0 ? cityHeight(x, z) : citySurface(x, z, feet) : map === "forest" ? forestSurface(x, z) : feet === void 0 ? tribeAltarHeight(x, z) : Math.max(tribeAltarHeight(x, z), tribeSurface(x, z, feet));
+  return map === "dunes" ? dunesSurface(x, z) : communityId(map) ? communityHeight(map, x, z, feet) : map === "skyreach" ? skyreachSurface(x, z) : map === "frostcourt" ? frostcourtSurface(x, z) : map === "starfall" ? starfallSurface(x, z) : map === "sanctum" ? sanctumSurface(x, z) : map === "blight" ? blightSurface(x, z, feet) : isDungeonMap(map) ? 0 : map === "city" ? feet === void 0 ? cityHeight(x, z) : citySurface(x, z, feet) : map === "forest" ? forestSurface(x, z) : feet === void 0 ? tribeAltarHeight(x, z) : Math.max(tribeAltarHeight(x, z), tribeSurface(x, z, feet));
 }
 function tribeAltarHeight(x, z) {
   let height = 0;
@@ -57,6 +58,7 @@ function ancientMonsterBaseXP(kind, level) {
   if (kind === "rootwarden" || kind.startsWith("crystal_")) return Math.floor(xpRewardBase(l) * (kind === "rootwarden" ? 0.18 : 0.25));
   if (["mossling", "thorn", "sentinel"].includes(kind)) return Math.max(1, Math.floor(xpRewardBase(l) / (36 + 0.48 * (l - 30))));
   if (l >= 30 && kind !== "chief" && kind !== "lord" && !ANCIENT_KINDS[kind]?.boss) return Math.max(1, Math.floor(xpRewardBase(l) / (36 + 0.48 * (l - 30))));
+  if (DUNES_KINDS[kind]) return Math.floor(200 * l * l * 0.4);
   if (SKYREACH_KINDS[kind]) return Math.floor(200 * l * l * 0.4);
   if (FROSTCOURT_KINDS[kind]) return Math.floor(200 * l * l * (FROSTCOURT_KINDS[kind].boss ? 0.4 : 0.065));
   if (STARFALL_KINDS[kind]) return Math.floor(200 * l * l * (STARFALL_KINDS[kind].boss ? 0.4 : 0.065));
@@ -90,6 +92,7 @@ function ancientSyncHealth(player, level) {
   if (player.hp > 0) player.hp = Math.min(maxHp, Math.max(0, player.hp + maxHp - previous));
 }
 function ancientMonsterDamage(kind, level, skill = "attack") {
+  if (DUNES_KINDS[kind]) return dunesMonsterDamage(kind, level);
   if (SKYREACH_KINDS[kind]) return skyreachMonsterDamage(kind, level);
   if (FROSTCOURT_KINDS[kind]) return frostcourtMonsterDamage(kind, level);
   if (STARFALL_KINDS[kind]) return starfallMonsterDamage(kind, level);
@@ -211,7 +214,7 @@ function ancientTarget(monster, players) {
   }
   const locked = players.find(({ p }) => p.name === monster.target && p.hp > 0);
   if (locked) return locked;
-  if (communityId(monster.map) || isDungeonMap(monster.map) || monster.map === "forest" || monster.map === "city" || monster.map === "blight" || monster.map === "skyreach" || monster.map === "frostcourt" || monster.map === "starfall" || monster.map === "sanctum") return players.filter(({ p }) => p.hp > 0 && Math.hypot(p.x - monster.x, p.z - monster.z) < (ANCIENT_KINDS[monster.kind]?.boss ? 38 : 20) && lineClear(monster.x, ancientMapHeight(monster.map, monster.x, monster.z, monster.y) + 1.5, monster.z, p.x, p.y, p.z, monster.map)).sort((a, b) => Math.hypot(a.p.x - monster.x, a.p.z - monster.z) - Math.hypot(b.p.x - monster.x, b.p.z - monster.z))[0];
+  if (communityId(monster.map) || isDungeonMap(monster.map) || monster.map === "forest" || monster.map === "city" || monster.map === "blight" || monster.map === "dunes" || monster.map === "skyreach" || monster.map === "frostcourt" || monster.map === "starfall" || monster.map === "sanctum") return players.filter(({ p }) => p.hp > 0 && Math.hypot(p.x - monster.x, p.z - monster.z) < (ANCIENT_KINDS[monster.kind]?.boss ? 38 : 20) && lineClear(monster.x, ancientMapHeight(monster.map, monster.x, monster.z, monster.y) + 1.5, monster.z, p.x, p.y, p.z, monster.map)).sort((a, b) => Math.hypot(a.p.x - monster.x, a.p.z - monster.z) - Math.hypot(b.p.x - monster.x, b.p.z - monster.z))[0];
   const lo = monster.region === 0 ? 30 : tribeCompactZ(monster.region === 1 ? 220 : 520), hi = tribeCompactZ(monster.region === 0 ? 200 : monster.region === 1 ? 500 : 1e3), radius = monster.kind === "lord" ? 45 : monster.kind === "chief" ? 30 : 20;
   return players.filter(({ p }) => p.hp > 0 && p.z >= lo && p.z < hi && Math.hypot(p.x - monster.x, p.z - monster.z) <= radius && lineClear(monster.x, 1.5, monster.z, p.x, p.y, p.z)).sort((a, b) => Math.hypot(a.p.x - monster.x, a.p.z - monster.z) - Math.hypot(b.p.x - monster.x, b.p.z - monster.z))[0];
 }
@@ -263,6 +266,7 @@ function tribeSurface(x, z, feet) {
   return height;
 }
 function blocked(x, z, r = 0.6, map = "tribe", feet = NaN) {
+  if (map === "dunes") return dunesBlocked(x, z, r, Number.isFinite(feet) ? feet : dunesHeight(x, z));
   if (communityId(map)) return communityBlocked(map, x, z, r, Number.isFinite(feet) ? feet : 0);
   if (map === "skyreach") return skyreachBlocked(x, z, r, Number.isFinite(feet) ? feet : skyreachHeight(x, z));
   if (map === "frostcourt") return frostcourtBlocked(x, z, r, Number.isFinite(feet) ? feet : frostcourtHeight(x, z));
@@ -276,6 +280,7 @@ function blocked(x, z, r = 0.6, map = "tribe", feet = NaN) {
   return (Math.abs(x) > 39 - r || z < 3 || z > TRIBE_LENGTH - 3) && !passageInside("tribe", x, z, r) || leisureSolid("tribe", x, z, r) || TRIBE_COLLIDERS.some((o) => feet < o.h - 0.05 && feet + 1.7 > (o.bottom || 0) + 0.02 && Math.abs(x - o.x) < o.w / 2 + r && Math.abs(z - o.z) < o.d / 2 + r);
 }
 function lineClear(ax, ay, az, bx, by, bz, map = "tribe") {
+  if (map === "dunes") return dunesLineClear(ax, ay, az, bx, by, bz);
   if (communityId(map)) return communityClear(map, ax, ay, az, bx, by, bz);
   if (map === "skyreach") return skyreachLineClear(ax, ay, az, bx, by, bz);
   if (map === "frostcourt") return frostcourtLineClear(ax, ay, az, bx, by, bz);

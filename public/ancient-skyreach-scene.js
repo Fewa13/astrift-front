@@ -1,12 +1,12 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {buildBrokenSkyreach} from './ancient-chapter-environments.js?v=20261023-rebuild-1';
+import {buildDistinctSkyreach} from './ancient-chapter-worlds.js?v=20261101-unique-chapters-3';
 import {SKYREACH_SOLIDS,SKYREACH_KINDS,skyreachHeight,skyreachSurface} from './ancient-skyreach.js?v=20261021-skyreach-market-1';
 import {mergeEnvironment,environmentTexture} from './ancient-environment-detail.js?v=20261012-new-player-flow-1';
 const G={box:new T.BoxGeometry(1,1,1),orb:new T.IcosahedronGeometry(1,1),crystal:new T.OctahedronGeometry(1),column:new T.CylinderGeometry(1,1,1,10),ring:new T.TorusGeometry(1,.045,6,32),cone:new T.ConeGeometry(1,1,8)};
 const M={stone:new T.MeshStandardMaterial({color:0x394659,map:environmentTexture('stone'),roughness:.8}),dark:new T.MeshStandardMaterial({color:0x171e32,roughness:.68}),gold:new T.MeshStandardMaterial({color:0xc7a766,metalness:.65,roughness:.35}),glass:new T.MeshStandardMaterial({color:0x568caf,metalness:.3,roughness:.24}),cloth:new T.MeshStandardMaterial({color:0x263d72,roughness:.9,side:T.DoubleSide}),light:new T.MeshBasicMaterial({color:0x8ce6ff}),violet:new T.MeshBasicMaterial({color:0xb7a2ff})};
 function add(g,shape,material,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0){const m=new T.Mesh(G[shape],M[material]);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.rotation.set(rx,ry,rz);g.add(m);return m;}
-export function buildSkyreachScene(scene){return buildBrokenSkyreach(scene);}
+export function buildSkyreachScene(scene){return buildDistinctSkyreach(scene);}
 const templates=new Map();
 export function createSkyreachCreature(kind,level){
  if(!templates.has(kind)){const root=new T.Group(),body=new T.Group(),d=SKYREACH_KINDS[kind],boss=d.boss,heavy=kind==='prism_golem';body.name='body';root.add(body);root.scale.setScalar(d.size);

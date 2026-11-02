@@ -56,7 +56,7 @@ export function createAncientLeisure({scene,camera,getMap,getPlayer,getPlayers,e
   batchEnvironment(statics,1000);root.visible=false;
  }
  build('tribe');build('forest');
- for(const map of ['city','blight','sanctum','starfall','frostcourt','skyreach']){
+ for(const map of ['city','blight','sanctum','starfall','frostcourt','skyreach','dunes']){
   const root=new T.Group();scene.add(root);roots[map]=root;root.visible=false;
   for(const n of LEISURE_NODES.filter(n=>n.map===map)){const g=new T.Group();g.position.set(n.x,n.y||0,n.z);g.name=n.id;root.add(g);nodes.set(n.id,{n,g});part(g,'rock','rock',0,.16,0,.32,.24,.28,0,n.x,.15);part(g,'crystal',n.material==='oreMoon'||n.material==='roughMoon'?'moon':n.material==='oreIron'||n.material==='roughDark'?'iron':'copper',.08,.22,.02,.13,.14,.1);if(['roughStone','roughDark','roughMoon'].includes(n.material||''))g.scale.setScalar(.5);batchEnvironment(g,1000);}
  }

@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { mapChapterNPCs } from "./ancient-geography.js";
 const STARFALL_NPCS = {
   neris: { name: "\u5948\u8389\u4E1D", en: "Neris", map: "starfall", x: -8, z: 18, role: ["\u9057\u5883\u9886\u822A\u5458", "Sunken Expedition Guide"] },
   orien: { name: "\u5965\u91CC\u6069", en: "Orien", map: "starfall", x: 8, z: 151, role: ["\u661F\u6838\u6863\u6848\u5458", "Starcore Archivist"] },
@@ -8,6 +9,7 @@ const STARFALL_NPCS = {
   starwestseal: { name: "\u897F\u4FA7\u6291\u5236\u5668", en: "West Suppressor", map: "starfall", x: -20, z: 350, role: ["\u5C01\u5370\u88C5\u7F6E", "Seal Array"] },
   stareastseal: { name: "\u4E1C\u4FA7\u6291\u5236\u5668", en: "East Suppressor", map: "starfall", x: 20, z: 350, role: ["\u5C01\u5370\u88C5\u7F6E", "Seal Array"] }
 };
+mapChapterNPCs(STARFALL_NPCS);
 const reward = { xpFraction: 0.012 };
 const talk = (id, npc, title, dialogue) => ({ id: "starfall-" + id, title, goal: ["\u4EA4\u8C08", "Talk"], kind: "talk", map: npc === "seraph" ? "sanctum" : "starfall", npc, dialogue, reply: ["\u7EE7\u7EED", "Continue"], reward });
 const kill = (id, title, kind, count, region) => ({ id: "starfall-" + id, title, goal: [`\u51FB\u8D25${count}\u4E2A\u654C\u4EBA`, `Defeat ${count} enemies`], kind: "kill", map: "starfall", kinds: [kind], count, region, reward });

@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {DUNES_KINDS} from './ancient-dunes';
 import {BESTIARY} from './ancient-bestiary';
 import {FOREST_KINDS} from './ancient-forest';
 import {CITY_KINDS} from './ancient-city';
@@ -16,6 +17,7 @@ export function ancientHitbox(kind:string){
  else if(FOREST_KINDS[kind]){scale=FOREST_KINDS[kind].size;height=1.9;}
  else if(CITY_KINDS[kind]){scale=CITY_KINDS[kind].size;height=1.95;}
  else if(BLIGHT_KINDS[kind]){scale=BLIGHT_KINDS[kind].size;height=kind==='blight_beast'?1.65:2.1;}
+ else if(DUNES_KINDS[kind]){scale=DUNES_KINDS[kind].size;height=kind==='dune_scarab'||kind==='glass_jackal'?1.7:2.5;}
  else if(SKYREACH_KINDS[kind]){scale=SKYREACH_KINDS[kind].size;height=2.4;}
  else if(FROSTCOURT_KINDS[kind]){scale=FROSTCOURT_KINDS[kind].size;height=2.2;}
  else if(STARFALL_KINDS[kind]){scale=STARFALL_KINDS[kind].size;height=2.2;}

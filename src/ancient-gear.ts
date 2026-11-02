@@ -142,7 +142,7 @@ for(const [q,blade,zh,en,seal]of [[2,'fangBlade','兽骨','Bonebound','hollowSea
  ANCIENT_FORGE['hollow_'+q+'_weapon']={[seal]:8};ANCIENT_FORGE['hollow_'+q+'_armor']={[seal]:6};
  FORGE_MATERIAL_NAMES[seal]=[zh+'地穴印记',en+' Hollow Seal'];
 }
-export function ancientCraftMaterials(kind:string,random=Math.random){if(kind==='sky_sovereign')return {skyCore:1,core:650};if(kind==='thunder_warden')return {stormSigil:1,core:450};if(kind==='frost_crowned')return {edictCore:1,core:550};if(kind==='furnace_regent')return {forgeSigil:1,core:350};if(kind==='starbound_heart')return {starCore:1,core:550};if(kind==='immaculate_judge')return {verdictShard:1,core:550};if(kind==='blight_lord')return {blightHeart:1,core:500};if(kind==='oathknight'||kind==='emptyking'){const drops:Record<string,number>={};if(random()<.8)drops[kind==='oathknight'?'royalSeal':'emptyCrown']=1;if(random()<.35)drops.core=kind==='emptyking'?400:250;return drops}const boss=kind==='lord'||kind==='rootwarden'||['metal','wood','water','fire','earth'].some(e=>kind==='crystal_'+e);const drops:Record<string,number>={};if(!boss)return drops;const scale=kind==='lord'?1:kind==='rootwarden'?2:3;for(const k of ['bone','wood','stone'])if(random()<.6)drops[k]=10*scale;if(random()<.8){if(kind==='lord')Object.assign(drops,{crown:1,totem:1,fang:2,spear:2});else if(kind==='rootwarden')Object.assign(drops,{rootHeart:1,mossHide:2,thornSeed:2});else{drops[kind.slice(8)+'Crystal']=1;drops.crystalShard=1}}if(random()<.35)drops.core=kind==='lord'?120:kind==='rootwarden'?100:250;return drops}
+export function ancientCraftMaterials(kind:string,random=Math.random){if(kind==='hourglass_regent')return {core:700};if(kind==='buried_marshal')return {core:330};if(kind==='sky_sovereign')return {skyCore:1,core:650};if(kind==='thunder_warden')return {stormSigil:1,core:450};if(kind==='frost_crowned')return {edictCore:1,core:550};if(kind==='furnace_regent')return {forgeSigil:1,core:350};if(kind==='starbound_heart')return {starCore:1,core:550};if(kind==='immaculate_judge')return {verdictShard:1,core:550};if(kind==='blight_lord')return {blightHeart:1,core:500};if(kind==='oathknight'||kind==='emptyking'){const drops:Record<string,number>={};if(random()<.8)drops[kind==='oathknight'?'royalSeal':'emptyCrown']=1;if(random()<.35)drops.core=kind==='emptyking'?400:250;return drops}const boss=kind==='lord'||kind==='rootwarden'||['metal','wood','water','fire','earth'].some(e=>kind==='crystal_'+e);const drops:Record<string,number>={};if(!boss)return drops;const scale=kind==='lord'?1:kind==='rootwarden'?2:3;for(const k of ['bone','wood','stone'])if(random()<.6)drops[k]=10*scale;if(random()<.8){if(kind==='lord')Object.assign(drops,{crown:1,totem:1,fang:2,spear:2});else if(kind==='rootwarden')Object.assign(drops,{rootHeart:1,mossHide:2,thornSeed:2});else{drops[kind.slice(8)+'Crystal']=1;drops.crystalShard=1}}if(random()<.35)drops.core=kind==='lord'?120:kind==='rootwarden'?100:250;return drops}
 export function ensureAncientGear(p:AncientProfile){
  if(p.gear!==undefined&&p.gearAffixVersion===2&&p.gear.every(i=>i.affixBonusVersion===1))return false;
  let changed=p.gearAffixVersion!==2;
@@ -196,17 +196,17 @@ export function ancientMeleeInterval(p:AncientProfile){return (equippedGear(p,'w
 export function equipAncientGear(p:AncientProfile,slot:string,id:string){if(!Object.hasOwn(GEAR_SLOTS,slot))return '装备槽不存在';if(!id){p.gearEquipped??={};delete p.gearEquipped[slot as GearSlot];return null}const item=p.gear?.find(i=>i.id===id),d=item&&gearDefinition(item.key);if(!d||d.slot!==slot)return '装备不存在';if(p.level<GEAR_LEVELS[d.quality-1])return '玩家等级不足';p.gearEquipped??={};p.gearEquipped[slot as GearSlot]=id;return null}
 // Weights are conditional on an equipment drop; map progression, never player level, sets the tier.
 export function ancientBossGearWeights(map:string):number[]{
- const center=({tribe:2,forest:4,city:5,blight:6,sanctum:6,starfall:6,frostcourt:6,skyreach:6} as Record<string,number>)[map]||2;
+ const center=({tribe:2,forest:4,city:5,blight:6,sanctum:6,starfall:6,frostcourt:6,skyreach:6,dunes:6} as Record<string,number>)[map]||2;
  const weights=Array(8).fill(0) as number[];
  if(center===2){weights[0]=30;weights[1]=65;weights[2]=4.5;weights[3]=.5}
  else if(center===6){weights[3]=5;weights[4]=30;weights[5]=65}
  else{weights[center-3]=5;weights[center-2]=30;weights[center-1]=60;weights[center]=center===5?5:4.5;if(center<5)weights[center+1]=.5}
- if(map==='frostcourt'||map==='skyreach'){weights[5]-=.35;weights[6]=.3;weights[7]=.05}
+ if(map==='frostcourt'||map==='skyreach'||map==='dunes'){weights[5]-=.35;weights[6]=.3;weights[7]=.05}
  return weights;
 }
 export function ancientGearLoot(kind:string,random=Math.random,level=0,map?:string){
  if(map?.startsWith('community:'))return [];
- const maps:Record<string,string>={chief:'tribe',lord:'tribe',rootwarden:'forest',oathknight:'city',emptyking:'city',blight_lord:'blight',immaculate_judge:'sanctum',starbound_heart:'starfall',frost_crowned:'frostcourt',furnace_regent:'frostcourt',sky_sovereign:'skyreach',thunder_warden:'skyreach'};
+ const maps:Record<string,string>={buried_marshal:'dunes',hourglass_regent:'dunes',chief:'tribe',lord:'tribe',rootwarden:'forest',oathknight:'city',emptyking:'city',blight_lord:'blight',immaculate_judge:'sanctum',starbound_heart:'starfall',frost_crowned:'frostcourt',furnace_regent:'frostcourt',sky_sovereign:'skyreach',thunder_warden:'skyreach'};
  const home=maps[kind]||(['metal','wood','water','fire','earth'].some(e=>kind==='crystal_'+e)?'forest':'');if(!home)return [];
  const weights=ancientBossGearWeights(map||home),result:AncientGear[]=[];
  const quality=()=>{let r=Math.max(0,Math.min(.999999999,random()))*100;for(let i=0;i<weights.length;i++){r-=weights[i];if(r<0)return i+1}return 6};

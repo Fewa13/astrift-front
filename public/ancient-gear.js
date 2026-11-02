@@ -207,6 +207,8 @@ for (const [q, blade, zh, en, seal] of [[2, "fangBlade", "\u517D\u9AA8", "Bonebo
   FORGE_MATERIAL_NAMES[seal] = [zh + "\u5730\u7A74\u5370\u8BB0", en + " Hollow Seal"];
 }
 function ancientCraftMaterials(kind, random = Math.random) {
+  if (kind === "hourglass_regent") return { core: 700 };
+  if (kind === "buried_marshal") return { core: 330 };
   if (kind === "sky_sovereign") return { skyCore: 1, core: 650 };
   if (kind === "thunder_warden") return { stormSigil: 1, core: 450 };
   if (kind === "frost_crowned") return { edictCore: 1, core: 550 };
@@ -416,7 +418,7 @@ function equipAncientGear(p, slot, id) {
   return null;
 }
 function ancientBossGearWeights(map) {
-  const center = { tribe: 2, forest: 4, city: 5, blight: 6, sanctum: 6, starfall: 6, frostcourt: 6, skyreach: 6 }[map] || 2;
+  const center = { tribe: 2, forest: 4, city: 5, blight: 6, sanctum: 6, starfall: 6, frostcourt: 6, skyreach: 6, dunes: 6 }[map] || 2;
   const weights = Array(8).fill(0);
   if (center === 2) {
     weights[0] = 30;
@@ -434,7 +436,7 @@ function ancientBossGearWeights(map) {
     weights[center] = center === 5 ? 5 : 4.5;
     if (center < 5) weights[center + 1] = 0.5;
   }
-  if (map === "frostcourt" || map === "skyreach") {
+  if (map === "frostcourt" || map === "skyreach" || map === "dunes") {
     weights[5] -= 0.35;
     weights[6] = 0.3;
     weights[7] = 0.05;
@@ -443,7 +445,7 @@ function ancientBossGearWeights(map) {
 }
 function ancientGearLoot(kind, random = Math.random, level = 0, map) {
   if (map?.startsWith("community:")) return [];
-  const maps = { chief: "tribe", lord: "tribe", rootwarden: "forest", oathknight: "city", emptyking: "city", blight_lord: "blight", immaculate_judge: "sanctum", starbound_heart: "starfall", frost_crowned: "frostcourt", furnace_regent: "frostcourt", sky_sovereign: "skyreach", thunder_warden: "skyreach" };
+  const maps = { buried_marshal: "dunes", hourglass_regent: "dunes", chief: "tribe", lord: "tribe", rootwarden: "forest", oathknight: "city", emptyking: "city", blight_lord: "blight", immaculate_judge: "sanctum", starbound_heart: "starfall", frost_crowned: "frostcourt", furnace_regent: "frostcourt", sky_sovereign: "skyreach", thunder_warden: "skyreach" };
   const home = maps[kind] || (["metal", "wood", "water", "fire", "earth"].some((e) => kind === "crystal_" + e) ? "forest" : "");
   if (!home) return [];
   const weights = ancientBossGearWeights(map || home), result = [];

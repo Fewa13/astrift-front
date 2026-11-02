@@ -31,8 +31,8 @@ import {ancientBossHP,ancientBossDamage} from './ancient-boss-stats.js';
 import {ancientMobHP,ancientMobDamage} from './ancient-mob-stats.js';
 export function cityMonsterHP(kind:string,level:number){return ancientBossHP(kind,level)||ancientMobHP(kind,level)||Math.floor(20000*(Math.max(1,level)/50)**3*CITY_KINDS[kind].hp)}
 export function cityMonsterDamage(kind:string,level:number){return ancientBossDamage(kind,level)||ancientMobDamage(kind,level)||Math.floor(3200*(Math.max(1,level)/70)**2.5*CITY_KINDS[kind].damage)}
-export const cityWorldId=(map:string)=>/^community:[1-9]\d{0,7}$/.test(map)?3000000000+Number(map.slice(10))*2:/^dungeon:[1-9]\d{0,8}$/.test(map)?1000+Number(map.slice(8))*2:map==='skyreach'?15:map==='frostcourt'?13:map==='starfall'?11:map==='sanctum'?9:map==='blight'?7:map==='city'?5:map==='forest'?3:1;
-export const cityMap=(value:unknown)=>value==='skyreach'?'skyreach':value==='frostcourt'?'frostcourt':value==='starfall'?'starfall':value==='sanctum'?'sanctum':value==='blight'?'blight':value==='city'?'city':value==='forest'?'forest':'tribe';
+export const cityWorldId=(map:string)=>/^community:[1-9]\d{0,7}$/.test(map)?3000000000+Number(map.slice(10))*2:/^dungeon:[1-9]\d{0,8}$/.test(map)?1000+Number(map.slice(8))*2:map==='dunes'?17:map==='skyreach'?15:map==='frostcourt'?13:map==='starfall'?11:map==='sanctum'?9:map==='blight'?7:map==='city'?5:map==='forest'?3:1;
+export const cityMap=(value:unknown)=>value==='dunes'?'dunes':value==='skyreach'?'skyreach':value==='frostcourt'?'frostcourt':value==='starfall'?'starfall':value==='sanctum'?'sanctum':value==='blight'?'blight':value==='city'?'city':value==='forest'?'forest':'tribe';
 let nav:Map<string,{x:number;z:number}>|undefined;
 function segment(ax:number,az:number,bx:number,bz:number){const n=Math.max(1,Math.ceil(Math.hypot(bx-ax,bz-az)/.5));for(let i=1;i<=n;i++){const x=ax+(bx-ax)*i/n,z=az+(bz-az)*i/n;if(cityBlocked(x,z,1))return false}return true}
 export function cityPath(ax:number,az:number,bx:number,bz:number){
