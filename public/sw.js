@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261102-map-script-ui-1';
+const CACHE_NAME='astrift-offline-20261102-map-script-ui-2';
 const ASSETS=[
  '/ancient-community-script-ui.js','/codehelp.html','/codehelp.js','/codehelp-data.js','/codehelp.css',
  '/ancient-geography.js','/ancient-chapter-worlds.js','/ancient-chapter-features.js','/ancient-chapter-feature-ui.js','/ancient-dunes.js','/ancient-dunes-quests.js','/ancient-dunes-creatures.js',

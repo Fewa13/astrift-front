@@ -12,7 +12,7 @@ import {accountEmailError} from './account-email-ui.js';
 import {authenticateAccount,logoutAccount} from './account.js?v=20261027-auth-recovery-1';
 import {createAncientPotionVisuals,updateAncientRemotePotion} from './ancient-potion-visuals.js';
 import {createCombatNotices} from './ancient-combat-notices.js';
-import {createCommunityPlay} from './ancient-community-play.js?v=20261102-map-script-ui-1';
+import {createCommunityPlay} from './ancient-community-play.js?v=20261102-map-script-ui-2';
 import {renderAncientNavigation,updateAncientFriendUnread} from './ancient-navigation.js?v=20261030-friend-unread-1';
 let friendUnread=0;
 import {weaveCollections} from './ancient-collection-weave.js?v=20261020-weavefix-1';
