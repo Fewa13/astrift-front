@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { MAP_GAME_COMMANDS, MAP_SCRIPT_KEYS } from "./ancient-map-gameplay.js";
 import { parseMapExpression, evaluateMapExpression, splitMapArgs, mapIdentifier, mapRead, mapNumber, mapValue, interpolateMapText } from "./ancient-map-expressions.js";
 const identifier = { test: mapIdentifier };
 function compileMapScript(source) {
@@ -29,15 +30,39 @@ function compileMapScript(source) {
         if (p.items.length > 128) fail("Maximum 128 items");
         continue;
       }
+      if (op === "recipe" || op === "loot") {
+        if (body) fail("Put recipe/loot definitions outside blocks");
+        name(args[0]);
+        const number = (v) => {
+          const n = Number(v);
+          if (!Number.isSafeInteger(n) || n < 1 || n > 999999) fail("Recipe/loot amounts and weights must be 1\u2013999999");
+          return n;
+        };
+        if (op === "recipe") {
+          if (args.length < 5 || args.length % 2 !== 1) fail("recipe id output quantity ingredient quantity ...");
+          p.recipes ??= [];
+          if (p.recipes.length >= 64 || p.recipes.some((r) => r.id === args[0])) fail("Maximum 64 unique recipes");
+          p.recipes.push({ id: args[0], output: name(args[1]), quantity: number(args[2]), ingredients: Array.from({ length: (args.length - 3) / 2 }, (_, i) => ({ item: name(args[3 + i * 2]), quantity: number(args[4 + i * 2]) })) });
+        } else {
+          if (args.length < 4 || (args.length - 1) % 3 !== 0) fail("loot id item quantity weight ...");
+          p.loot ??= [];
+          if (p.loot.length >= 32 || p.loot.some((r) => r.id === args[0])) fail("Maximum 32 unique loot tables");
+          p.loot.push({ id: args[0], entries: Array.from({ length: (args.length - 1) / 3 }, (_, i) => ({ item: name(args[1 + i * 3]), quantity: number(args[2 + i * 3]), weight: number(args[3 + i * 3]) })) });
+        }
+        continue;
+      }
       if (op === "when" || op === "function") {
         if (body) fail("Cannot nest event/function definitions");
         const next = [];
         if (op === "when") {
           const event = args[0];
-          if (!["join", "kill", "npc", "timer", "zone", "button"].includes(event)) fail("Unknown event");
+          if (!["join", "kill", "npc", "timer", "zone", "leavezone", "button", "interact", "key", "hurt", "death", "respawn", "phase", "input"].includes(event)) fail("Unknown event");
+          if (["interact", "input", "phase"].includes(event) && (args.length !== 2 || !mapIdentifier(args[1]))) fail(event + " requires an identifier");
+          if (event === "key" && (args.length !== 2 || !MAP_SCRIPT_KEYS.includes(args[1]))) fail("Unsupported map key");
+          if (["hurt", "death", "respawn", "join"].includes(event) && args.length !== 1) fail(event + " has no arguments");
           if (event === "button" && (args.length !== 2 || !mapIdentifier(args[1]))) fail("button requires an identifier");
           if (event === "timer" && (args.length !== 2 || !Number.isInteger(+args[1]) || +args[1] < 1 || +args[1] > 3600)) fail("Timer must be 1\u20133600 seconds");
-          if (event === "zone" && (args.length !== 4 || args.slice(1).some((v) => !Number.isFinite(+v)) || +args[3] <= 0)) fail("zone X Z radius");
+          if (["zone", "leavezone"].includes(event) && (args.length !== 4 || args.slice(1).some((v) => !Number.isFinite(+v)) || +args[3] <= 0)) fail("zone X Z radius");
           p.events.push({ event, args: args.slice(1), body: next });
           if (p.events.length > 32) fail("Maximum 32 events");
           stack.push({ kind: "when", body: next });
@@ -90,6 +115,13 @@ function compileMapScript(source) {
           if (typeof v !== "number" || !Number.isInteger(v) || v < 0 || v > 16) fail("Repeat count must be 0\u201316");
         }
         c.body = [];
+      } else if (MAP_GAME_COMMANDS[op]) {
+        const spec = MAP_GAME_COMMANDS[op];
+        count(spec.count);
+        if (spec.literals.includes(0)) name(args[0]);
+        if (["input", "progress"].includes(op)) name(args[1]);
+        c.args = [...args.map((v, i) => spec.literals.includes(i) ? literal(v) : "")];
+        c.expressions = args.filter((_, i) => !spec.literals.includes(i)).map(expression);
       } else if (op === "panel") {
         count(7);
         name(args[0]);
@@ -174,6 +206,8 @@ function compileMapScript(source) {
       }
     }
   };
+  for (const r of p.recipes || []) for (const item of [r.output, ...r.ingredients.map((i) => i.item)]) if (!p.items.some((i) => i.id === item)) throw Error("Undefined recipe item " + item);
+  for (const table of p.loot || []) for (const e of table.entries) if (!p.items.some((i) => i.id === e.item)) throw Error("Undefined loot item " + e.item);
   p.events.forEach((e) => check(e.body));
   Object.values(p.functions).forEach((f) => check(f.body));
   return p;
@@ -207,7 +241,7 @@ function runMapScript(program, event, match, ctx) {
   }, read = (key) => {
     if (key.startsWith("shared.")) return mapRead(shared, key.slice(7));
     if (key.startsWith("item.") || key.startsWith("items.")) return mapRead(ctx.items, key.slice(key.indexOf(".") + 1));
-    if (key.startsWith("player.")) return ctx.query?.(key) ?? 0;
+    if (["player.", "event.", "round.", "input."].some((p) => key.startsWith(p))) return ctx.query?.(key) ?? 0;
     for (let i = frames.length - 1; i >= 0; i--) if (Object.hasOwn(frames[i], key)) return frames[i][key];
     return Object.hasOwn(temp, key) ? temp[key] : mapRead(ctx.vars, key);
   };
@@ -257,6 +291,32 @@ function runMapScript(program, event, match, ctx) {
         step();
         const a = c.args, v = (i) => evaluate(c.expressions[i]), n = (i) => mapNumber(v(i));
         switch (c.op) {
+          case "checkpoint":
+          case "clearcheckpoint":
+          case "deathitems":
+          case "deathloss":
+          case "effect":
+          case "stopeffect":
+          case "sound":
+          case "stopsound":
+          case "sky":
+          case "fog":
+          case "environmentreset":
+          case "round":
+          case "stage":
+          case "nextstage":
+          case "resetround":
+          case "stat":
+          case "resetstats":
+          case "craft":
+          case "roll":
+          case "input":
+          case "option":
+          case "progress": {
+            if (!ctx.game) throw Error("Map gameplay unavailable");
+            ctx.game(c.op, a, (c.expressions || []).map(evaluate));
+            break;
+          }
           case "panel":
           case "text":
           case "button":
