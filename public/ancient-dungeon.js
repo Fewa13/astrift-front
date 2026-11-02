@@ -21,16 +21,18 @@ const DUNGEON_BLOCKS = [
   ...DUNGEON_PILLARS.map((p) => ({ ...p, w: 3, d: 3, h: 9 }))
 ];
 const geometry = /* @__PURE__ */ new Map();
-function setDungeonGeometry(map, collapsed, gateZ = 189, mechanisms) {
+function setDungeonGeometry(map, collapsed, gateZ = 189, mechanisms, tower = false) {
   if (!isDungeonMap(map)) return;
   if (geometry.size > 128 && !geometry.has(map)) geometry.delete(geometry.keys().next().value);
-  geometry.set(map, { collapsed, gateZ, mechanisms });
+  geometry.set(map, { collapsed, gateZ, mechanisms, tower });
 }
 function solids(map) {
+  if (geometry.get(map || "")?.tower) return [];
   const { collapsed, gateZ, mechanisms } = geometry.get(map || "") || { collapsed: [], gateZ: 189 };
   return [...DUNGEON_BLOCKS.filter((o) => !collapsed.some((i) => DUNGEON_PILLARS[i].x === o.x && DUNGEON_PILLARS[i].z === o.z)), ...dungeonObstacles({ collapsed }), ...dungeonMechanismSolids(mechanisms), ...gateZ < 189 ? [{ x: 0, z: gateZ + 1, w: gateZ === 162 ? 48 : 16, d: 2, h: 14 }] : []];
 }
 function dungeonBlocked(x, z, r = 0.6, map) {
+  if (geometry.get(map || "")?.tower) return !Number.isFinite(x + z) || Math.abs(x) > 22 - r || z < 3 + r || z > 55 - r;
   return !Number.isFinite(x + z) || Math.abs(x) > 24 - r || z < 3 + r || z > (geometry.get(map || "")?.gateZ || 189) - r || solids(map).some((o) => Math.abs(x - o.x) < o.w / 2 + r && Math.abs(z - o.z) < o.d / 2 + r);
 }
 function dungeonLineClear(ax, ay, az, bx, by, bz, map, ignore) {

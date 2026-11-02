@@ -12,6 +12,13 @@ export class AncientDungeonStore{
  read(id:number){const row=this.sql.exec<{data:string}>('SELECT data FROM ancient_dungeon_runs WHERE id=?',id).toArray()[0];if(!row)return;const r=JSON.parse(row.data) as DungeonRun;if((r.status==='active'||r.status==='preparing')&&r.expires<Date.now()){r.status='failed';r.reason='expired';if(r.hunt)r.traps=[];r.finished=Date.now();this.save(r)}return r}
  get(name:string){const row=this.sql.exec<{run:number}>('SELECT run FROM ancient_dungeon_members WHERE name=?',name).toArray()[0];return row?this.read(row.run):undefined}
  save(r:DungeonRun){r.revision=(r.revision||0)+1;this.sql.exec('UPDATE ancient_dungeon_runs SET data=? WHERE id=?',JSON.stringify(r),r.id)}
+ createTower(name:string){
+  const old=this.get(name);if(old?.tower&&old.status==='active'&&!old.fallen.includes(name)&&!old.abandoned?.includes(name))return null;
+  if(old&&['active','preparing'].includes(old.status))return 'Finish or abandon the current challenge first.';
+  if(!this.alive(name))return 'Revive in camp before starting.';
+  const now=Date.now(),id=this.sql.exec<{id:number}>("INSERT INTO ancient_dungeon_runs(data) VALUES('{}') RETURNING id").one().id;
+  const r:DungeonRun={id,map:'dungeon:'+id,leader:name,members:[name],ready:[name],tier:'tower',level:5,stage:0,tower:{floor:1},gateZ:55,status:'active',created:now,expires:Number.MAX_SAFE_INTEGER,started:now,joined:[],fallen:[],positions:{},seed:0,traps:[],trapAt:0,collapsed:[]};this.save(r);this.sql.exec('INSERT INTO ancient_dungeon_members VALUES(?,?) ON CONFLICT(name) DO UPDATE SET run=excluded.run',name,id);return null;
+ }
  createHunt(name:string,data:Record<string,unknown>):string|null{
   const def=huntDefinition(data.hunt),rank=data.rank===undefined?0:Number(data.rank);
   if(!def||!Number.isInteger(rank)||rank<0||rank>2||def.kind==='contract'&&rank!==0)return 'Invalid hunt.';

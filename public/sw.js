@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261101-curse-single-1';
+const CACHE_NAME='astrift-offline-20261101-trial-tower-1';
 const ASSETS=[
  '/account-auth-panel.js','/account-auth-panel.css',
  '/ancient-map-expressions.js',
