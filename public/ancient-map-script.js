@@ -34,7 +34,8 @@ function compileMapScript(source) {
         const next = [];
         if (op === "when") {
           const event = args[0];
-          if (!["join", "kill", "npc", "timer", "zone"].includes(event)) fail("Unknown event");
+          if (!["join", "kill", "npc", "timer", "zone", "button"].includes(event)) fail("Unknown event");
+          if (event === "button" && (args.length !== 2 || !mapIdentifier(args[1]))) fail("button requires an identifier");
           if (event === "timer" && (args.length !== 2 || !Number.isInteger(+args[1]) || +args[1] < 1 || +args[1] > 3600)) fail("Timer must be 1\u20133600 seconds");
           if (event === "zone" && (args.length !== 4 || args.slice(1).some((v) => !Number.isFinite(+v)) || +args[3] <= 0)) fail("zone X Z radius");
           p.events.push({ event, args: args.slice(1), body: next });
@@ -89,6 +90,20 @@ function compileMapScript(source) {
           if (typeof v !== "number" || !Number.isInteger(v) || v < 0 || v > 16) fail("Repeat count must be 0\u201316");
         }
         c.body = [];
+      } else if (op === "panel") {
+        count(7);
+        name(args[0]);
+        c.args = [args[0]];
+        c.expressions = args.slice(1).map(expression);
+      } else if (op === "text" || op === "button") {
+        count(4);
+        name(args[0]);
+        name(args[1]);
+        c.args = args.slice(0, 2);
+        c.expressions = args.slice(2).map(expression);
+      } else if (["uishow", "uihide", "uiremove"].includes(op)) {
+        count(1);
+        c.args = [name(args[0])];
       } else if (op === "message") {
         count(2);
         c.expressions = args.map(expression);
@@ -242,6 +257,16 @@ function runMapScript(program, event, match, ctx) {
         step();
         const a = c.args, v = (i) => evaluate(c.expressions[i]), n = (i) => mapNumber(v(i));
         switch (c.op) {
+          case "panel":
+          case "text":
+          case "button":
+          case "uishow":
+          case "uihide":
+          case "uiremove": {
+            if (!ctx.ui) throw Error("Map UI unavailable");
+            ctx.ui(c.op, a[0], a[1] || "", (c.expressions || []).map(evaluate));
+            break;
+          }
           case "let":
             assignLocal(a[0], v(0));
             break;

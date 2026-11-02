@@ -12,7 +12,7 @@ import {accountEmailError} from './account-email-ui.js';
 import {authenticateAccount,logoutAccount} from './account.js?v=20261027-auth-recovery-1';
 import {createAncientPotionVisuals,updateAncientRemotePotion} from './ancient-potion-visuals.js';
 import {createCombatNotices} from './ancient-combat-notices.js';
-import {createCommunityPlay} from './ancient-community-play.js';
+import {createCommunityPlay} from './ancient-community-play.js?v=20261102-map-script-ui-1';
 import {renderAncientNavigation,updateAncientFriendUnread} from './ancient-navigation.js?v=20261030-friend-unread-1';
 let friendUnread=0;
 import {weaveCollections} from './ancient-collection-weave.js?v=20261020-weavefix-1';
@@ -321,7 +321,7 @@ import {createAncientSupplyUI} from './ancient-supply-ui.js?v=20261015-shop-trai
 const supplyUI=createAncientSupplyUI({getProfile:()=>profile,getPlayer:()=>active?me:null,en,action,openSkills:()=>openMenu('skills')});
 import {createAncientQuickbar} from './ancient-quickbar.js?v=20261018-cast-hands-1';
 const quickbar=createAncientQuickbar({getProfile:()=>profile,en,account:()=>accountSession()?.name||'',canUse:()=>active&&!paused&&!busy&&me?.hp>0&&!me?.drinking&&!questUI.isOpen(),action,visible:()=>active&&!paused&&me?.hp>0});
-const communityPlay=createCommunityPlay({en,getMap:()=>currentMap,getDefinition:()=>getCommunityMap(currentMap),getPlayer:()=>me,camera,active:()=>active,paused:()=>paused,request:activityRequest,unlock,lock,clear:(...args)=>mapLineClear(...args,currentMap),clearInput:()=>{keys.clear();fire=false;aim=false},notice:text=>combatNotices.push(text,3500)});
+const communityPlay=createCommunityPlay({send:d=>socket?.send(JSON.stringify(d)),en,getMap:()=>currentMap,getDefinition:()=>getCommunityMap(currentMap),getPlayer:()=>me,camera,active:()=>active,paused:()=>paused,request:activityRequest,unlock,lock,clear:(...args)=>mapLineClear(...args,currentMap),clearInput:()=>{keys.clear();fire=false;aim=false},notice:text=>combatNotices.push(text,3500)});
 const inventoryUI=createAncientInventoryUI({getProfile:()=>profile,getPlayer:()=>active?me:null,getCommunity:()=>communityPlay.bag(),inCommunity:()=>active&&!!communityId(currentMap),en,gearUI,supplyUI,quickbar,action,refresh:renderPanel,busy:()=>busy,material,weaponLootName,stonework:stoneworkUI,collections:collectionUI});
 const mailUI=createAncientMailUI({en,onBack:()=>{if(active){paused=false;view='pause';renderPanel();lock()}else{view='lobby';renderPanel()}},request:async(action,data={})=>{const before=profile,r=await accountApi('ancient/profile',{...accountSession(),action,...data});return {...r,profile:profile===before?r.profile:undefined}},onProfile:p=>{if(p){profile=p;identity();quickbar.update()}},refresh:renderPanel,isOpen:()=>view==='mail'&&(!active||paused)});
 const friendUI=createAncientFriendsUI({en,onUnread:count=>{friendUnread=count;updateAncientFriendUnread($('ancientNav'),count,en())},name:()=>accountSession()?.name||'',active:()=>active,open:openMenu,join:map=>selectMap(map,true),isOpen:()=>['friends','invite'].includes(view)&&(!active||paused),refresh:renderPanel,status,request:(action,data={})=>accountApi('ancient/profile',{...accountSession(),action,...data})});
