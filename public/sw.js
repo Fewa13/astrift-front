@@ -1,11 +1,11 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261102-map-gameplay-1';
+const CACHE_NAME='astrift-offline-20261102-model-expansion-1';
 const ASSETS=[
  '/ancient-community-gameplay.js','/ancient-map-gameplay.js','/ancient-community-script-ui.js','/codehelp.html','/codehelp.js','/codehelp-data.js','/codehelp.css',
  '/ancient-geography.js','/ancient-chapter-worlds.js','/ancient-chapter-features.js','/ancient-chapter-feature-ui.js','/ancient-dunes.js','/ancient-dunes-quests.js','/ancient-dunes-creatures.js',
  '/account-auth-panel.js','/account-auth-panel.css',
  '/ancient-map-expressions.js',
- '/ancient-community-furniture.js','/ancient-community-catalog.js','/ancient-community-editor.js','/ancient-community-creation.js','/ancient-community-editor.css','/ancient-community-models.js','/ancient-community-hulls.js','/ancient-community.js','/ancient-community-ui.js','/ancient-community-scene.js','/account-page-lease.js','/ancient-potion-visuals.js','/ancient-potion-drink.js',
+ '/ancient-community-expansion.js','/ancient-community-furniture.js','/ancient-community-catalog.js','/ancient-community-editor.js','/ancient-community-creation.js','/ancient-community-editor.css','/ancient-community-models.js','/ancient-community-hulls.js','/ancient-community.js','/ancient-community-ui.js','/ancient-community-scene.js','/account-page-lease.js','/ancient-potion-visuals.js','/ancient-potion-drink.js',
  '/mailbox-view.js',
  '/official-announcements.js',
  '/network-diagnostics.js',

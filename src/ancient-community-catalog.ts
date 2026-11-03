@@ -1,7 +1,8 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {COMMUNITY_EXPANSION,buildCommunityExpansion} from './ancient-community-expansion.js';
 import {FURNITURE_EXPANSION,buildFurnitureExpansion} from './ancient-community-furniture.js';
 import type {CommunityModelPart} from './ancient-community-models';
-export type CommunityCatalogItem={id:string;category:string;subcategory:string;name:string;en:string;size:[number,number,number];kind:string;family?:string};
+export type CommunityCatalogItem={id:string;category:string;subcategory:string;name:string;en:string;size:[number,number,number];kind:string;family?:string;tier?:2|3};
 const items:CommunityCatalogItem[]=[];
 function register(category:string,subcategory:string,rows:[string,string,string,[number,number,number]][]){for(const [kind,name,en,size]of rows)items.push({id:'kit-'+kind,kind,name,en,size,category,subcategory})}
 register('furniture','seating',[
@@ -35,10 +36,11 @@ register('architecture','structures',[
 register('roomSets','rooms',[
  ['setDining','六人餐厅套装','Six-seat dining room',[5.5,2.4,4.5]],['setBanquet','长桌宴会套装','Banquet room set',[8,2.5,5]],['setLiving','客厅沙发茶几套装','Sofa living room set',[6,2.4,5]],['setGrandLiving','会客厅转角沙发套装','Grand lounge set',[7,2.5,6]],['setStudy','书桌书柜套装','Study room set',[5,2.4,4.5]],['setBedroom','双人卧室套装','Double bedroom set',[5.5,2.8,5]],['setCanopyBedroom','四柱床卧室套装','Canopy bedroom set',[6.5,3,5.5]],['setDorm','双层床宿舍套装','Bunk dormitory set',[6,2.5,5]],['setKitchen','完整厨房套装','Complete kitchen set',[6,2.5,5]],['setBathroom','卫浴套装','Complete bathroom set',[4.5,2.5,4]],['setTavern','酒馆吧台套装','Tavern bar set',[6.5,2.5,5]],['setSmithy','锻造工坊套装','Smithy workshop set',[6,2.5,5]],['setAlchemy','炼金工作室套装','Alchemy workshop set',[5,2.5,4.5]],['setLibrary','书架阅览区套装','Library reading area',[7,2.5,6]],['setCamp','营火露营套装','Campfire rest set',[6,2.2,6]],['setGarden','庭院休息套装','Garden seating set',[6,2.5,5]]]);
 for(const section of FURNITURE_EXPANSION)for(const [kind,name,en,size,family]of section.rows)items.push({id:'kit-'+kind,kind,name,en,size,category:'furniture',subcategory:section.subcategory,family});
+items.push(...COMMUNITY_EXPANSION);
 const canonical:Record<string,string>={};
 for(const [family,kinds]of Object.entries({diningTable:['diningTable','roundTable','coffeeTable','sideTable','writingDesk','executiveDesk','counter','workbench','banquetTable','consoleTable','picnicTable','altarTable','butcherBlock'],diningChair:['diningChair','stool','barStool','rockingChair','bench','parkBench','throne','officeChair','pew'],sofa:['sofa','armchair','cornerSofa','chaise','ottoman'],wardrobe:['wardrobe','dresser','nightstand','bookcase','openShelf','glassCabinet','cupboard','potionShelf','wineRack','pantry','locker','bathCabinet'],singleBed:['singleBed','doubleBed','canopyBed','bunkBed','cot'],floorLamp:['floorLamp','tableLamp','chandelier','wallSconce','candelabra','streetLamp','paperLantern','brazier'],washbasin:['washbasin','washstand'],indoorPlant:['indoorPlant','flowerVase']}))for(const kind of kinds)canonical[kind]=family;
 for(const item of items){item.family=canonical[item.family||item.kind]||item.family||item.kind;if(item.category==='furniture'){if(['books'].includes(item.kind))item.subcategory='books';if(['vase','flowerVase','indoorPlant'].includes(item.kind))item.subcategory='plants';if(item.kind==='fireplace')item.subcategory='fireplaces'}}
-export function communityCatalogTier(id:string){const item=byId.get(id);if(!item)return null;if(item.category!=='furniture')return 2;return item.kind===item.family?1:2}
+export function communityCatalogTier(id:string){const item=byId.get(id);if(!item)return null;if(item.tier)return item.tier;if(item.category!=='furniture')return 2;return item.kind===item.family?1:2}
 export const COMMUNITY_CATALOG=items;
 const byId=new Map(items.map(v=>[v.id,v])),cache=new Map<string,CommunityModelPart[]>();
 export const communityCatalogItem=(id:string)=>byId.get(id);
@@ -46,6 +48,7 @@ const WOOD='#795538',DARK='#42352e',TRIM='#bd945d',STONE='#8c918b',METAL='#46525
 export const SMITHY_FIXTURES=[{kind:'forge',x:-3.8,z:-2.2,scale:1},{kind:'workbench',x:4.7,z:-2,scale:1},{kind:'weaponRack',x:4.7,z:1.6,scale:1},{kind:'barrel',x:-4.7,z:2.6,scale:1}];
 function rawModel(kind:string):CommunityModelPart[]{
  const out:CommunityModelPart[]=[],add=(shape:string,x:number,y:number,z:number,w:number,h:number,d:number,color=WOOD,ry=0)=>out.push({shape,x,y,z,w,h,d,color,ry}),box=(x:number,y:number,z:number,w:number,h:number,d:number,color=WOOD,ry=0)=>add('box',x,y+h/2,z,w,h,d,color,ry),cyl=(x:number,y:number,z:number,r:number,h:number,color=WOOD)=>add('cylinder',x,y+h/2,z,r*2,h,r*2,color),ball=(x:number,y:number,z:number,r:number,color=CREAM)=>add('sphere',x,y,z,r*2,r*2,r*2,color),ring=(x:number,y:number,z:number,w:number,h:number,d:number,color=METAL,ry=0)=>add('torus',x,y,z,w,h,d,color,ry),legs=(w:number,d:number,h:number,color=WOOD)=>{for(const x of [-w/2,w/2])for(const z of [-d/2,d/2])box(x,0,z,.085,h,.085,color)},trim=(w:number,d:number,y:number)=>{for(const z of [-d/2,d/2])box(0,y,z,w,.045,.045,TRIM);for(const x of [-w/2,w/2])box(x,y,0,.045,.045,d,TRIM)},append=(id:string,x:number,y:number,z:number,rotation=0,scale=1)=>{for(const p of rawModel(id)){const c=Math.cos(rotation),s=Math.sin(rotation);out.push({...p,x:x+(p.x*c-p.z*s)*scale,y:y+p.y*scale,z:z+(p.x*s+p.z*c)*scale,w:p.w*scale,h:p.h*scale,d:p.d*scale,ry:p.ry+rotation})}};
+ const expansion=buildCommunityExpansion(kind,rawModel);if(expansion)return expansion;
  const expanded=buildFurnitureExpansion(kind,rawModel);if(expanded)return expanded;
  const item=items.find(i=>i.kind===kind)!;if(!item)throw Error('Unknown community model '+kind);const [W,H,D]=item.size;
  if(['diningChair','stool','barStool','armchair','rockingChair','bench','parkBench','sofa','cornerSofa','chaise','throne','officeChair','pew','ottoman'].includes(kind)){

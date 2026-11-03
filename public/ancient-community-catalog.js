@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { COMMUNITY_EXPANSION, buildCommunityExpansion } from "./ancient-community-expansion.js";
 import { FURNITURE_EXPANSION, buildFurnitureExpansion } from "./ancient-community-furniture.js";
 const items = [];
 function register(category, subcategory, rows) {
@@ -227,6 +228,7 @@ register("roomSets", "rooms", [
   ["setGarden", "\u5EAD\u9662\u4F11\u606F\u5957\u88C5", "Garden seating set", [6, 2.5, 5]]
 ]);
 for (const section of FURNITURE_EXPANSION) for (const [kind, name, en, size, family] of section.rows) items.push({ id: "kit-" + kind, kind, name, en, size, category: "furniture", subcategory: section.subcategory, family });
+items.push(...COMMUNITY_EXPANSION);
 const canonical = {};
 for (const [family, kinds] of Object.entries({ diningTable: ["diningTable", "roundTable", "coffeeTable", "sideTable", "writingDesk", "executiveDesk", "counter", "workbench", "banquetTable", "consoleTable", "picnicTable", "altarTable", "butcherBlock"], diningChair: ["diningChair", "stool", "barStool", "rockingChair", "bench", "parkBench", "throne", "officeChair", "pew"], sofa: ["sofa", "armchair", "cornerSofa", "chaise", "ottoman"], wardrobe: ["wardrobe", "dresser", "nightstand", "bookcase", "openShelf", "glassCabinet", "cupboard", "potionShelf", "wineRack", "pantry", "locker", "bathCabinet"], singleBed: ["singleBed", "doubleBed", "canopyBed", "bunkBed", "cot"], floorLamp: ["floorLamp", "tableLamp", "chandelier", "wallSconce", "candelabra", "streetLamp", "paperLantern", "brazier"], washbasin: ["washbasin", "washstand"], indoorPlant: ["indoorPlant", "flowerVase"] })) for (const kind of kinds) canonical[kind] = family;
 for (const item of items) {
@@ -240,6 +242,7 @@ for (const item of items) {
 function communityCatalogTier(id) {
   const item = byId.get(id);
   if (!item) return null;
+  if (item.tier) return item.tier;
   if (item.category !== "furniture") return 2;
   return item.kind === item.family ? 1 : 2;
 }
@@ -260,6 +263,8 @@ function rawModel(kind) {
       out.push({ ...p, x: x + (p.x * c - p.z * s) * scale, y: y + p.y * scale, z: z + (p.x * s + p.z * c) * scale, w: p.w * scale, h: p.h * scale, d: p.d * scale, ry: p.ry + rotation });
     }
   };
+  const expansion = buildCommunityExpansion(kind, rawModel);
+  if (expansion) return expansion;
   const expanded = buildFurnitureExpansion(kind, rawModel);
   if (expanded) return expanded;
   const item = items.find((i) => i.kind === kind);
