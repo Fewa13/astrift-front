@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import assert from 'node:assert/strict';
-class Node{constructor(tag){this.tag=tag;this.children=[];this.classList={toggle(){}};this.isConnected=true}append(n){this.children.push(n)}replaceChildren(){this.children=[]}setAttribute(){} }
+class Node{constructor(tag){this.tag=tag;this.children=[];this.style={};this.classList={toggle(){}};this.isConnected=true}append(n){this.children.push(n)}replaceChildren(){this.children=[]}setAttribute(){} }
 globalThis.document={createElement:tag=>new Node(tag),getElementById:()=>new Node('div')};
 const {createAncientSkillUI}=await import('../public/ancient-skill-ui.js');
 let p={level:30,skills:{},materials:{'supply:transfer':1}},english=true,calls=[],release;

@@ -56,8 +56,9 @@ function compileMapScript(source) {
         const next = [];
         if (op === "when") {
           const event = args[0];
-          if (!["join", "kill", "npc", "timer", "zone", "leavezone", "button", "interact", "key", "hurt", "death", "respawn", "phase", "input"].includes(event)) fail("Unknown event");
+          if (!["join", "kill", "npc", "timer", "zone", "leavezone", "button", "interact", "key", "hurt", "death", "respawn", "phase", "input", "sit", "stand", "lie", "plant", "water", "harvest", "cook"].includes(event)) fail("Unknown event");
           if (["interact", "input", "phase"].includes(event) && (args.length !== 2 || !mapIdentifier(args[1]))) fail(event + " requires an identifier");
+          if (["sit", "stand", "lie", "plant", "water", "harvest", "cook"].includes(event) && (args.length > 2 || args[1] && !mapIdentifier(args[1]))) fail(event + " accepts an optional identifier or any");
           if (event === "key" && (args.length !== 2 || !MAP_SCRIPT_KEYS.includes(args[1]))) fail("Unsupported map key");
           if (["hurt", "death", "respawn", "join"].includes(event) && args.length !== 1) fail(event + " has no arguments");
           if (event === "button" && (args.length !== 2 || !mapIdentifier(args[1]))) fail("button requires an identifier");

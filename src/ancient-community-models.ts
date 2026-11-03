@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {communityCatalogParts} from './ancient-community-catalog.js';
-export type CommunityModelPart={shape:string;x:number;y:number;z:number;w:number;h:number;d:number;color?:string;ry:number;stair?:boolean};
+export type CommunityModelPart={shape:string;x:number;y:number;z:number;w:number;h:number;d:number;color?:string;ry:number;stair?:boolean;uses?:import('./ancient-amenity-defs').AmenityUse[]};
 export function communityModelParts(model:string):CommunityModelPart[]{
  if(model==='__npc'){const parts:CommunityModelPart[]=[];const p=(shape:CommunityModelPart['shape'],color:string,x:number,y:number,z:number,w:number,h:number,d:number)=>parts.push({shape,color,x,y,z,w,h,d,ry:0});p('cone','#55776a',0,.95,0,.65,1.25,.5);p('sphere','#d2ad83',0,1.76,0,.42,.46,.4);p('cylinder','#4a3f32',0,1.98,0,.46,.14,.45);p('box','#a98d59',0,1.15,-.27,.42,.12,.07);p('box','#c9b788',0,1.16,-.32,.1,.1,.04);p('box','#8a745b',0,1.5,-.22,.12,.16,.09);for(const side of [-1,1]){p('cylinder','#55776a',side*.34,1.12,0,.16,.65,.16);p('cylinder','#bcb490',side*.34,.84,0,.18,.09,.18);p('sphere','#d2ad83',side*.34,.74,-.02,.17,.2,.17);p('cylinder','#45493c',side*.16,.32,0,.18,.48,.2);p('box','#483f34',side*.16,.1,-.08,.23,.2,.36);p('sphere','#2a2926',side*.085,1.8,-.19,.035,.04,.025);p('box','#d1c6a1',side*.13,1.46,-.22,.07,.12,.035)}for(let i=0;i<4;i++)p('sphere','#bbad79',0,1.36-i*.11,-.26,.035,.035,.035);p('cylinder','#755b3e',.55,1.12,0,.055,2.2,.055);p('rock','#8cb5a2',.55,2.22,0,.15,.22,.15);return parts}
 

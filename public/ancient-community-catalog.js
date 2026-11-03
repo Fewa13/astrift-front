@@ -252,6 +252,29 @@ const communityCatalogItem = (id) => byId.get(id);
 const WOOD = "#795538", DARK = "#42352e", TRIM = "#bd945d", STONE = "#8c918b", METAL = "#46525a", CLOTH = "#567e83", CREAM = "#e1d5b5", LEAF = "#5b8651";
 const SMITHY_FIXTURES = [{ kind: "forge", x: -3.8, z: -2.2, scale: 1 }, { kind: "workbench", x: 4.7, z: -2, scale: 1 }, { kind: "weaponRack", x: 4.7, z: 1.6, scale: 1 }, { kind: "barrel", x: -4.7, z: 2.6, scale: 1 }];
 function rawModel(kind) {
+  const parts = buildRawModel(kind), item = items.find((i) => i.kind === kind);
+  if (kind === "forge") {
+    for (const p of parts) delete p.uses;
+    return parts;
+  }
+  if (!item || item.category !== "furniture" || parts.some((p) => p.uses?.length)) return parts;
+  const family = item.family || kind, kindOfUse = ["diningChair", "sofa"].includes(family) ? "seat" : family === "singleBed" ? "bed" : ["stove", "oven", "cauldron", "fireplace", "cookingStation"].includes(family) ? "cook" : null;
+  if (!kindOfUse) return parts;
+  if (kindOfUse === "bed" && ["singleBed", "doubleBed", "canopyBed", "bunkBed", "cot"].includes(kind)) {
+    for (const p of parts) if (p.shape === "box" && Math.abs(p.h - 0.07) < 1e-3 && p.d > item.size[2] * 0.5 && p.d < item.size[2] * 0.7) p.uses = [{ kind: "bed", z: -0.25, depth: 1 / 0.6 }];
+    return parts;
+  }
+  const targetY = kindOfUse === "seat" ? kind === "barStool" ? 0.76 : 0.5 : kindOfUse === "bed" ? 0.53 : item.size[1] * 0.55;
+  const candidates = parts.filter((p) => p.shape === "box" && p.h < 0.35 && p.w > 0.25 && p.d > 0.25);
+  const part = (candidates.length ? candidates : parts).reduce((best, p) => Math.abs(p.x) + Math.abs(p.z) + Math.abs(p.y - targetY) * 3 < Math.abs(best.x) + Math.abs(best.z) + Math.abs(best.y - targetY) * 3 ? p : best);
+  if (kindOfUse === "cook" && ["oven", "fireplace", "tallFireplace"].includes(kind)) {
+    part.uses = [{ kind: "cook", z: (item.size[2] * 0.54 - part.z) / part.d, y: (Math.min(1.1, item.size[1] * 0.58) - part.y - part.h / 2) / part.h }];
+    return parts;
+  }
+  part.uses = kindOfUse === "seat" && part.w > 1.5 ? [{ kind: "seat", x: -0.28 }, { kind: "seat", x: 0.28 }] : [{ kind: kindOfUse }];
+  return parts;
+}
+function buildRawModel(kind) {
   const out = [], add = (shape, x, y, z, w, h, d, color = WOOD, ry = 0) => out.push({ shape, x, y, z, w, h, d, color, ry }), box = (x, y, z, w, h, d, color = WOOD, ry = 0) => add("box", x, y + h / 2, z, w, h, d, color, ry), cyl = (x, y, z, r, h, color = WOOD) => add("cylinder", x, y + h / 2, z, r * 2, h, r * 2, color), ball = (x, y, z, r, color = CREAM) => add("sphere", x, y, z, r * 2, r * 2, r * 2, color), ring = (x, y, z, w, h, d, color = METAL, ry = 0) => add("torus", x, y, z, w, h, d, color, ry), legs = (w, d, h, color = WOOD) => {
     for (const x of [-w / 2, w / 2]) for (const z of [-d / 2, d / 2]) box(x, 0, z, 0.085, h, 0.085, color);
   }, trim = (w, d, y) => {
@@ -1057,7 +1080,7 @@ function rawModel(kind) {
         box(0, 3.5, z, W, 0.12, 0.12, METAL);
         for (const x of [-W * 0.3, W * 0.3]) {
           box(x, 0.15, z, W * 0.23, 0.25, D * 0.12, WOOD);
-          for (let j = 0; j < 3; j++) append("indoorPlant", x + (j - 1) * 0.7, 0.4, z, 0, 0.65);
+          out.at(-1).uses = [{ kind: "plant", x: -0.28 }, { kind: "plant", x: 0 }, { kind: "plant", x: 0.28 }];
         }
       }
       return out;
