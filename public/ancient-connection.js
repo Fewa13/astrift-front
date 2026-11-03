@@ -5,12 +5,12 @@ export function createAncientConnection({session,map,origin,onSocket,onMessage,o
  function setReady(value){if(ready===value)return;ready=value;onReady(value)}
  function clearHealth(){clearTimer(watchdog);clearTimer(healthTimer);watchdog=healthTimer=0;outstanding.clear();welcomed=false;setReady(false)}
  function stop(){enabled=false;generation++;clearTimer(retryTimer);retryTimer=0;clearHealth();request?.abort();request=null;const old=socket;socket=null;onSocket(null);if(old){old.onclose=old.onerror=old.onmessage=null;try{if(old.readyState===1)old.send(JSON.stringify({type:'leave'}))}catch{}try{old.close()}catch{}}onStatus('idle')}
- function schedule(){if(!enabled)return;clearTimer(retryTimer);if(!online()){onStatus('offline');return}const delay=Math.min(10000,2000*2**Math.min(attempts++,3));onStatus('retrying',undefined,{retryAt:now()+delay,busy:false});retryTimer=setTimer(()=>{retryTimer=0;void connect(true)},delay)}
+ function schedule(){if(!enabled)return;clearTimer(retryTimer);if(!online()){onStatus('offline');return}const failed=attempts++,delay=failed===0?0:failed===1?1000:Math.min(10000,2000*2**Math.min(failed-2,3));onStatus(failed<2?'recovering':'retrying',undefined,{retryAt:now()+delay,busy:false});retryTimer=setTimer(()=>{retryTimer=0;void connect(true)},delay)}
  function dropped(ws){if(!enabled||socket!==ws)return;clearHealth();socket=null;onSocket(null);ws.onclose=ws.onerror=ws.onmessage=null;try{ws.close()}catch{}onDisconnect();schedule()}
  function guard(ws,ms){clearTimer(watchdog);watchdog=setTimer(()=>dropped(ws),ms)}
  function checkHealth(ws){if(!enabled||socket!==ws||!welcomed)return false;if(ws.readyState>1){dropped(ws);return false}const age=now()-lastStateAt,oldest=outstanding.values().next().value,ackAge=oldest===undefined?0:now()-oldest;
   if(age>=disconnectAfter||ackAge>=ackTimeout){dropped(ws);return false}
-  if(age>=staleAfter||ackAge>=staleAfter){if(ready){setReady(false);onStatus('syncing',undefined,{reason:ackAge>=staleAfter?'movement':'world'})}return false}
+  if(age>=staleAfter||ackAge>=staleAfter){if(ready){setReady(false);onStatus(attempts<2?'recovering':'syncing',undefined,{reason:ackAge>=staleAfter?'movement':'world'})}return false}
   return true;
  }
  function monitor(ws){clearTimer(healthTimer);healthTimer=setTimer(()=>{healthTimer=0;checkHealth(ws);if(enabled&&socket===ws)monitor(ws)},1000)}
@@ -18,7 +18,7 @@ export function createAncientConnection({session,map,origin,onSocket,onMessage,o
   const epoch=++generation,current=session();if(!enabled)return;if(!online()){onStatus('offline');return}if(!current){enabled=false;setReady(false);onStatus('auth');return}
   const controller=new AbortController();request=controller;const timeout=setTimer(()=>controller.abort(),12000);
   try{
-   onStatus(reconnect?'retrying':'connecting',undefined,{busy:true});
+   onStatus(reconnect?(attempts<=2?'recovering':'retrying'):'connecting',undefined,{busy:true});
    const response=await fetchImpl('/api/ancient/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...current,action:'ticket',map:map()}),cache:'no-store',signal:controller.signal});
    if(epoch!==generation||!enabled)return;
    if(response.status===401||response.status===403){enabled=false;setReady(false);onStatus('auth');return}

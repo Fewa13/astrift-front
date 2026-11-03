@@ -26,7 +26,7 @@ import {createGrowthHud} from './ancient-growth-hud.js?v=20261016-growth-1';
 import {LEISURE_ITEMS,leisureErrorText} from './ancient-leisure.js?v=20261021-skyreach-market-1';
 import {createAncientFriendsUI} from './ancient-friends-ui.js?v=20261030-friend-unread-1';
 import {createAncientConnectionUI} from './ancient-connection-ui.js';
-import {createAncientConnection} from './ancient-connection.js?v=20261014-loot-leave-guide-1';
+import {createAncientConnection} from './ancient-connection.js?v=20261102-silent-reconnect-1';
 import {navigateWorld} from './world-navigation.js?v=20261012-ancient-auth-buttons-1';
 import {createAncientDeathUI} from './ancient-death-ui.js?v=20261013-regression-fixes-1';
 import {releaseAncientInstances} from './ancient-model-cleanup.js?v=20261013-regression-fixes-1';

@@ -11,10 +11,10 @@ function harness(){
  return {connection,timers,sockets,statuses,messages,responses,get current(){return current},get requests(){return requests},async advance(ms){const end=clock+ms;while(true){const next=[...timers].filter(([,v])=>v.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];if(!next)break;clock=next[1].at;timers.delete(next[0]);next[1].fn();await flush()}clock=end;await flush()}};
 }
 {
- const h=harness();h.responses.push(new Error('offline'),{ok:false,status:502,json:async()=>{throw Error('HTML error page')}});await h.connection.start();assert.equal(h.sockets.length,0);await h.advance(2000);assert.equal(h.requests,2);await h.advance(4000);assert.equal(h.sockets.length,1);h.current.message({type:'welcome'});assert(h.messages[0].r);h.connection.stop();assert.equal(h.timers.size,0);
+ const h=harness();h.responses.push(new Error('offline'),{ok:false,status:502,json:async()=>{throw Error('HTML error page')}});await h.connection.start();assert.equal(h.sockets.length,0);await h.advance(0);assert.equal(h.requests,2);assert(!h.statuses.includes('retrying'));await h.advance(999);assert.equal(h.requests,2);await h.advance(1);assert.equal(h.sockets.length,1);h.current.message({type:'welcome'});assert(h.messages[0].r);h.connection.stop();assert.equal(h.timers.size,0);
 }
 {
- const h=harness();await h.connection.start();const old=h.current;await h.advance(12000);assert(old.closed);await h.advance(2000);assert.equal(h.sockets.length,2);h.current.message({type:'welcome'});await h.advance(8001);assert.equal(h.current,null);await h.advance(2000);assert.equal(h.sockets.length,3);h.connection.stop();await h.advance(60000);assert.equal(h.sockets.length,3);
+ const h=harness();await h.connection.start();const old=h.current;await h.advance(12000);assert(old.closed);await h.advance(2000);assert.equal(h.sockets.length,2);h.current.message({type:'welcome'});const restored=h.current;await h.advance(8001);assert(restored.closed);assert.notEqual(h.current,restored);assert.equal(h.sockets.length,3);h.connection.stop();await h.advance(60000);assert.equal(h.sockets.length,3);
 }
 {
  const h=harness();let complete;h.responses.push(()=>new Promise(resolve=>complete=resolve));const pending=h.connection.start();h.connection.stop();complete({ok:true,status:200,json:async()=>({ok:true,ticket:'late'})});await pending;assert.equal(h.sockets.length,0);assert.equal(h.timers.size,0);
@@ -29,3 +29,7 @@ function harness(){
  const h=harness();h.responses.push(new Error('offline'));await h.connection.start();h.connection.retryNow();await flush();assert.equal(h.sockets.length,1);h.current.message({type:'welcome'});await h.advance(4000);h.current.message({type:'state'});await h.advance(4000);assert.equal(h.sockets.length,1);h.connection.stop();assert.equal(h.timers.size,0);
 }
 console.log('PASS: ticket failure and HTML/502 retries, ticket and welcome timeouts, silent disconnect watchdog, online recovery, auth stop, stale responses and intentional exit cancellation.');
+
+{
+ const h=harness();await h.connection.start();h.current.message({type:'welcome'});h.responses.push(new Error('first retry fails'),new Error('second retry fails'));h.current.onclose();await h.advance(0);assert.equal(h.requests,2);assert(!h.statuses.includes('retrying'),'first retry is silent');await h.advance(999);assert.equal(h.requests,2);await h.advance(1);assert.equal(h.requests,3);assert.equal(h.statuses.at(-1),'retrying','show notice only after both silent retries fail');h.connection.stop();assert.equal(h.timers.size,0);
+}
