@@ -31,6 +31,31 @@ function communityModelParts(model) {
     add(model, 0, 0.5, 0, 1, 1, 1);
     return out;
   }
+  if (model === "lightSource") {
+    add("cylinder", 0, 0.16, 0, 0.85, 0.32, 0.85, "#536c72");
+    add("cylinder", 0, 0.34, 0, 0.25, 0.36, 0.25, "#bc9e68");
+    add("box", 0, 0.5, 0, 0.5, 0.3, 0.5, "#50646b");
+    add("sphere", 0, 0.5, 0.33, 0.24, 0.24, 0.14, "#b6fff3");
+    for (const x of [-0.31, 0.31]) add("box", x, 0.5, 0.12, 0.055, 0.36, 0.5, "#c5a36c");
+    return out;
+  }
+  if (model === "lightReceiver") {
+    add("cylinder", 0, 0.12, 0, 0.85, 0.24, 0.85, "#536c72");
+    add("box", 0, 0.33, 0, 0.22, 0.5, 0.22, "#bc9e68");
+    add("sphere", 0, 0.5, 0, 0.45, 0.35, 0.45, "#b29a62");
+    add("torus", 0, 0.5, 0, 0.68, 0.55, 0.15, "#8bcfca");
+    return out;
+  }
+  if (model === "lightGate") {
+    for (const x of [-0.45, 0.45]) {
+      add("box", x, 0.5, 0, 0.1, 1, 1, "#60757a");
+      for (const y of [0.12, 0.5, 0.88]) add("box", x, y, -0.53, 0.13, 0.04, 0.08, "#be9e68");
+    }
+    add("box", 0, 0.94, 0, 1, 0.12, 1, "#60757a");
+    for (let i = 0; i < 7; i++) add("box", (i - 3) * 0.11, 0.45, 0, 0.045, 0.88, 0.18, "#8ccbc5");
+    add("sphere", 0, 0.88, -0.55, 0.12, 0.12, 0.12, "#b5fff2");
+    return out;
+  }
   if (model === "mirror") {
     add("box", 0, 0.5, 0, 0.9, 1, 0.09, "#9ae9f3");
     add("box", -0.48, 0.5, 0, 0.07, 1.1, 0.15, "#b79e67");

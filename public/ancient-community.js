@@ -6,9 +6,9 @@ import { COMMUNITY_HULLS, TORUS_TRIANGLES, TORUS_BINS } from "./ancient-communit
 const MAP_LIMITS = { 1: { area: 1e4, spawns: 30, bosses: 1, level: 80, bossLevel: 49, objects: 200 }, 2: { area: 4e4, spawns: 80, bosses: 3, level: 150, bossLevel: 150, objects: 600 }, 3: { area: 9e4, spawns: 250, bosses: 6, level: 300, bossLevel: 300, objects: 1200 } };
 const BASIC_MODELS = ["box", "sphere", "cylinder", "cone", "wedge", "torus"];
 const families = [["rocks", "\u5CA9\u77F3", "Rock"], ["cliffs", "\u5047\u5C71", "Crag"], ["trees", "\u6811\u6728", "Tree"], ["shrubs", "\u704C\u6728", "Shrub"], ["flowers", "\u82B1\u8349", "Flower"], ["ruins", "\u9057\u8FF9", "Ruin"], ["pillars", "\u77F3\u67F1", "Pillar"], ["arches", "\u62F1\u95E8", "Arch"], ["walls", "\u56F4\u5899", "Wall"], ["fences", "\u6805\u680F", "Fence"], ["crystals", "\u6C34\u6676", "Crystal"], ["lanterns", "\u706F\u9970", "Lantern"], ["statues", "\u96D5\u50CF", "Statue"], ["camp", "\u8425\u5730", "Camp"], ["bridges", "\u6865\u6881", "Bridge"]];
-const COMMUNITY_MODELS = [...COMMUNITY_CATALOG, ...BASIC_MODELS.map((id) => ({ id, category: "basic", name: { box: "\u65B9\u5757", sphere: "\u7403\u4F53", cylinder: "\u5706\u67F1", cone: "\u5706\u9525", wedge: "\u659C\u5761", torus: "\u5706\u73AF" }[id], en: id })), ...families.flatMap(([category, zh, en]) => Array.from({ length: 40 }, (_, i) => ({ id: `${category}-${i + 1}`, category, name: `${zh} ${i + 1}`, en: `${en} ${i + 1}` }))), { id: "mirror", category: "interactive", name: "\u65CB\u8F6C\u955C\u9762", en: "Rotating mirror" }];
+const COMMUNITY_MODELS = [...COMMUNITY_CATALOG, ...BASIC_MODELS.map((id) => ({ id, category: "basic", name: { box: "\u65B9\u5757", sphere: "\u7403\u4F53", cylinder: "\u5706\u67F1", cone: "\u5706\u9525", wedge: "\u659C\u5761", torus: "\u5706\u73AF" }[id], en: id })), ...families.flatMap(([category, zh, en]) => Array.from({ length: 40 }, (_, i) => ({ id: `${category}-${i + 1}`, category, name: `${zh} ${i + 1}`, en: `${en} ${i + 1}` }))), { id: "mirror", category: "interactive", name: "\u53CD\u5C04\u955C", en: "Reflecting mirror", size: [2, 3, 0.22] }, ...[["lightSource", "\u5149\u6E90", "Light emitter", [1, 3, 1]], ["lightReceiver", "\u5149\u7EBF\u63A5\u6536\u5668", "Light receiver", [1.5, 3, 1]], ["lightGate", "\u5149\u63A7\u673A\u5173\u95E8", "Light gate", [4, 4, 0.7]]].map(([id, name, en, size]) => ({ id, category: "interactive", name, en, size }))];
 function communityModelTier(id) {
-  if (id === "mirror") return 3;
+  if (["mirror", "lightSource", "lightReceiver", "lightGate"].includes(id)) return 3;
   if (BASIC_MODELS.includes(id)) return 1;
   const catalog = communityCatalogTier(id);
   if (catalog !== null) return catalog;
@@ -32,8 +32,9 @@ function setCommunityMap(map) {
   maps.set(key, map);
   navigation.delete(key);
   const index = /* @__PURE__ */ new Map();
-  for (const o of map.objects.filter((o2) => o2.solid !== false && !o2.scriptHidden && !o2.scriptOpen)) for (const p of communityModelParts(o.model)) {
-    const r = o.rotation, dx = p.x * o.w, dz = p.z * o.d, c = { id: o.id, shape: p.shape, stair: p.stair, x: o.x + Math.cos(r) * dx - Math.sin(r) * dz, y: o.y + p.y * o.h, z: o.z + Math.sin(r) * dx + Math.cos(r) * dz, w: p.w * o.w, h: p.h * o.h, d: p.d * o.d, rotation: o.model === "mirror" ? r + p.ry : -r + p.ry }, radius = Math.hypot(c.w, c.d) / 2 + 2;
+  for (const o of map.objects.filter((o2) => o2.solid !== false && !o2.scriptHidden && (!o2.scriptOpen || o2.model === "lightGate"))) for (const p of communityModelParts(o.model)) {
+    if (o.model === "lightGate" && o.scriptOpen && p.w < 0.1) continue;
+    const r = o.rotation, dx = p.x * o.w, dz = p.z * o.d, c = { id: o.id, shape: p.shape, stair: p.stair, x: o.x + Math.cos(r) * dx - Math.sin(r) * dz, y: o.y + p.y * o.h, z: o.z + Math.sin(r) * dx + Math.cos(r) * dz, w: p.w * o.w, h: p.h * o.h, d: p.d * o.d, rotation: -r + p.ry }, radius = Math.hypot(c.w, c.d) / 2 + 2;
     for (let x = Math.floor((c.x - radius) / 16); x <= Math.floor((c.x + radius) / 16); x++) for (let z = Math.floor((c.z - radius) / 16); z <= Math.floor((c.z + radius) / 16); z++) {
       const k = x + "," + z;
       if (!index.has(k)) index.set(k, []);
@@ -130,11 +131,11 @@ function communityBlocked(map, x, z, r = 0.6, feet = 0) {
   if (!m || !Number.isFinite(x + z) || !insideBoundary(m.boundary, x, z, r)) return true;
   return nearby(map, x, z).some((o) => o.y + o.h / 2 > feet + (o.stair ? 0.65 : 0.45) && o.y - o.h / 2 < feet + 1.7 && column(o, x, z, r).some(([bottom, top]) => feet < top - (o.stair ? 0.65 : 0.45) && feet + 1.7 > bottom + 0.02));
 }
-function communityClear(map, ax, ay, az, bx, by, bz) {
+function communityClear(map, ax, ay, az, bx, by, bz, ignore = []) {
   if (!maps.has(map)) return false;
   const candidates = /* @__PURE__ */ new Set(), steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 4));
   for (let i = 0; i <= steps; i++) for (const c of nearby(map, ax + (bx - ax) * i / steps, az + (bz - az) * i / steps)) candidates.add(c);
-  return ![...candidates].some((o) => {
+  return ![...candidates].filter((o) => !ignore.includes(o.id)).some((o) => {
     const a = local(o, ax, az), b = local(o, bx, bz), from = [a.x / o.w, (ay - o.y) / o.h, a.z / o.d], to = [b.x / o.w, (by - o.y) / o.h, b.z / o.d];
     let lo = 0, hi = 1;
     const hull = COMMUNITY_HULLS[o.shape] || COMMUNITY_HULLS.box;
@@ -180,8 +181,9 @@ function cleanCommunityMap(raw, tier, id, owner) {
     if (!COMMUNITY_MODELS.some((m) => m.id === o.model) || communityModelTier(o.model) > tier) throw Error("Model requires a higher map tier");
     const p = point(o);
     if (!insideBoundary(boundary, p.x, p.z)) throw Error("Object outside boundary");
-    return { id: entityId(o.id, "o" + i), model: o.model, ...p, y: number(o.y, 0, 500), w: number(o.w, 5e-3, 60, 1e3), h: number(o.h, 5e-3, 60, 1e3), d: number(o.d, 5e-3, 60, 1e3), rotation: number(o.rotation, -100, 100), color: color(o.color), solid: true, ...tier === 3 && typeof o.group === "string" ? { group: o.group.slice(0, 40) } : {} };
+    return { id: entityId(o.id, "o" + i), model: o.model, ...p, y: number(o.y, 0, 500), w: number(o.w, 5e-3, 60, 1e3), h: number(o.h, 5e-3, 60, 1e3), d: number(o.d, 5e-3, 60, 1e3), rotation: number(o.rotation, -100, 100), color: color(o.color), solid: true, ...tier === 3 && o.model === "lightReceiver" && typeof o.opticsTarget === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(o.opticsTarget) ? { opticsTarget: o.opticsTarget } : {}, ...tier === 3 && typeof o.group === "string" ? { group: o.group.slice(0, 40) } : {} };
   });
+  if (objects.filter((o) => o.model === "lightSource").length > 16 || objects.filter((o) => o.model === "lightReceiver").length > 32 || objects.filter((o) => o.model === "lightGate").length > 32) throw Error("Light mechanism limit: 16 sources, 32 receivers, 32 gates");
   if (objects.filter((o) => o.model === "mirror").length > 24) throw Error("At most 24 interactive mirrors");
   const spawns = a.spawns.map((s, i) => {
     const p = point(s);
