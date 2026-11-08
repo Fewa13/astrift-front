@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {PUZZLE_FLOORS,newPuzzleState,puzzleOperate,puzzleReward,puzzleView,type PuzzleState} from './ancient-puzzle';
+import {PUZZLE_FLOORS,newPuzzleState,upgradePuzzleState,puzzleOperate,puzzleReward,puzzleView,type PuzzleState} from './ancient-puzzle';
 import {gearHuntEligible,gearHuntCounts,gearHuntQuota,gearRerollQuote,GEAR_LEVELS} from './ancient-gear';
 import {CLIENT_OUTDATED,currentClient,worldActionRequiresVersion} from './client-version';
 import {traceCommunityLight} from './ancient-community-optics';
@@ -242,7 +242,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
     const sql=this.ctx.storage.sql,now=Date.now(),key='global-puzzle-v1';
     sql.exec('CREATE TABLE IF NOT EXISTS ancient_puzzle_presence(name TEXT PRIMARY KEY, seen INTEGER NOT NULL, floor INTEGER NOT NULL, x REAL NOT NULL, z REAL NOT NULL)');
     const row=sql.exec<{data:string}>('SELECT data FROM ancient_abilities WHERE name=?',key).toArray()[0];
-    let state:PuzzleState=row?JSON.parse(row.data):newPuzzleState(),notice='';
+    let state:PuzzleState=row?upgradePuzzleState(JSON.parse(row.data)):newPuzzleState(),notice='';
     if(action==='puzzleLeave'){sql.exec('DELETE FROM ancient_puzzle_presence WHERE name=?',name);return {ok:true};}
     const presence=sql.exec<{seen:number;floor:number;x:number;z:number}>('SELECT seen,floor,x,z FROM ancient_puzzle_presence WHERE name=?',name).toArray()[0];
     if((action==='puzzleOperate'||action==='puzzleChat')&&(!presence||presence.seen<now-15000))return fail('请先进入解谜地图 / Enter the puzzle map first');

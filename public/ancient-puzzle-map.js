@@ -45,7 +45,7 @@ export function createPuzzleMap(canvas,name,en,interact){
   box(scene,x,1.85,4.26,.11,2.7,.12,0x81eacf).material=jade;
  }
  const stick={x:0,y:0};
- let nearby=false;
+ let nearby=-1;
  let state=null,pos={x:50,z:80},yaw=0,pitch=0,height=eyeHeight,vy=0,frame=0,last=0,drag=null;
  const moveKeys={KeyW:'w',ArrowUp:'w',KeyS:'s',ArrowDown:'s',KeyA:'a',ArrowLeft:'a',KeyD:'d',ArrowRight:'d',ShiftLeft:'sprint',ShiftRight:'sprint'};
  function jump(){if(height<=eyeHeight+.01)vy=6.5}
@@ -72,7 +72,7 @@ export function createPuzzleMap(canvas,name,en,interact){
   turn(event.clientX-drag.x,event.clientY-drag.y,(event.pointerType==='touch'?.004*ancientSensitivity(true):.002*ancientSensitivity(false)));drag.x=event.clientX;drag.y=event.clientY;
  });
  for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>drag=null);
- function tryInteract(){if(nearby||state?.complete)interact();}
+ function tryInteract(){if(nearby>=0||state?.complete)interact(nearby);}
  function badge(name){
   const label=document.createElement('canvas');label.width=256;label.height=48;
   const ctx=label.getContext('2d');ctx.fillStyle='#122433';ctx.fillRect(0,0,256,48);ctx.fillStyle='#edfff5';ctx.font='bold 21px system-ui';ctx.textAlign='center';ctx.fillText(name,128,31,244);
@@ -81,15 +81,20 @@ export function createPuzzleMap(canvas,name,en,interact){
  function clearPlayer(actor){actor.removeFromParent();actor.label.material.map.dispose();actor.label.material.dispose()}
  function sync(next){
   if(state?.floor!==next.floor){
-   pos={x:50,z:80};yaw=pitch=vy=0;height=eyeHeight;keys.clear();
+   pos={x:50,z:80};nearby=-1;yaw=pitch=vy=0;height=eyeHeight;keys.clear();
    for(const station of stations)clearPlayer(station);
    stations.length=0;
    for(let i=0;i<(next.dials?.length||0);i++){
-    const station=new T.Group();station.position.set((14+72*(i+.5)/next.dials.length)*scale,0,6.5);
+    const station=new T.Group();station.position.set(3.8+(i%5)*4.35,0,6+Math.floor(i/5)*1.46);
+    const bankIndex=next.banks.findIndex(b=>i>=b.start&&i<b.start+b.count);
+    const bank=next.banks[bankIndex],color=[0x61b6e0,0xcdb45c,0x85cc88,0xb48bdd,0xe89a72][bankIndex%5];
+    station.bank=bankIndex;
+    if(bank.timed)box(station,0,1.54,0,.24,.45,.24,0xf6a25e);
+    else for(const side of [-1,1])box(station,side*.54,1.42,0,.18,.34,.32,color);
     box(station,0,.6,0,1.35,1.2,.85,0x466976);
     box(station,0,.12,0,1.65,.24,1.15,0x20333d);
     box(station,0,1.18,0,1.48,.12,1,0xb18a52);
-    station.gauge=box(station,0,1.29,.08,.86,.16,.5,0x6adcc1);
+    station.gauge=box(station,0,1.29,.08,.86,.16,.5,color);
     box(station,0,.68,.44,.82,.4,.08,0x152934);
     for(const x of [-.25,0,.25])box(station,x,.68,.49,.105,.075,.05,0x81eacf).material=jade;
     const label=badge((i+1)+' · '+next.dials[i].label[en()?1:0]);label.position.y=1.65;label.scale.set(1.45,.32,1);station.add(label);station.label=label;
@@ -97,7 +102,10 @@ export function createPuzzleMap(canvas,name,en,interact){
    }
   }
   state=next;
-  for(let i=0;i<stations.length;i++)stations[i].gauge.scale.x=.14+.72*(next.timed?Number(i<next.sequence):next.values[i]/next.dials[i].max);
+  for(let i=0;i<stations.length;i++){
+   const station=stations[i],bank=next.banks[station.bank];
+   station.gauge.scale.x=.14+.72*(bank.timed?Number(bank.done):next.values[i]/next.dials[i].max);
+  }
   const remote=new Set();
   for(const p of next.players){
    if(p.name===name())continue;remote.add(p.name);
@@ -116,8 +124,11 @@ export function createPuzzleMap(canvas,name,en,interact){
   const next=slideAncientMove({x:pos.x*scale,y:height,z:pos.z*scale},
    (side*Math.cos(yaw)-forward*Math.sin(yaw))*step,(-side*Math.sin(yaw)-forward*Math.cos(yaw))*step,blocked,()=>0);
   pos.x=next.x/scale;pos.z=next.z/scale;
-  const near=stations.some(o=>Math.hypot(next.x-o.position.x,next.z-o.position.z)<=3);
-  nearby=near;
+  let distance=2;nearby=-1;
+  for(let i=0;i<stations.length;i++){
+   const station=stations[i],gap=Math.hypot(next.x-station.position.x,next.z-station.position.z);
+   if(gap<distance){distance=gap;nearby=i;}
+  }
   vy-=19*dt;height=Math.max(eyeHeight,height+vy*dt);if(height===eyeHeight)vy=0;
   camera.position.set(pos.x*scale,height,pos.z*scale);camera.rotation.set(pitch,yaw,0,'YXZ');
   for(const actor of players.values())actor.position.lerp(actor.target,Math.min(1,dt*6));

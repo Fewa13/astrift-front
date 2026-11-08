@@ -1,16 +1,20 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {createPuzzleMap} from './ancient-puzzle-map.js';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
- let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='';
+ let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',selected=-1;
  const L=(a,b)=>en()?b:a;
  const make=(parent,tag,text='')=>{const node=document.createElement(tag);node.textContent=text;parent.append(node);return node};
  function button(parent,text,run){const node=make(parent,'button',text);node.type='button';node.onclick=run;return node;}
  function apply(r){
   onProfile(r.profile);const next=r.puzzle;
   if(!next||state&&(next.revision<state.revision||next.revision===state.revision&&next.serverTime<state.serverTime))return;
+  if(state&&state.floor!==next.floor){
+   selected=-1;
+   room.querySelector('.ancientPuzzlePanel').close();
+  }
   state=next;map?.sync(next);draw();
 
-  room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5';
+  room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+next.dials.length+L(' 个机关',' mechanisms');
   const history=room?.querySelector('.ancientPuzzleChatHistory');
   if(history&&history.dataset.last!==String(next.chat.at(-1)?.id||0)){
    history.dataset.last=String(next.chat.at(-1)?.id||0);history.replaceChildren();
@@ -33,31 +37,28 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
  function operate(control,data={}){void update('puzzleOperate',{floor:state.floor,revision:state.revision,control,...data});}
  function draw(){
   if(!room||!state)return;
-  const view=room.querySelector('main'),key=JSON.stringify([state.revision,state.floor,state.claimed,state.players.map(p=>p.name),feedback,en()]);
+  const view=room.querySelector('main'),key=JSON.stringify([state.revision,state.floor,state.claimed,selected,state.players.map(p=>p.name),feedback,en()]);
   if(key===signature)return;signature=key;view.replaceChildren();
   const active=make(view,'section');active.className='ancientPuzzleMachine';
   if(state.complete)make(active,'h2',L('全服已解开全部 '+state.total+' 层','All '+state.total+' floors cleared'));
-  else {
-   make(active,'small',L('第 ','Floor ')+state.floor+' / '+state.total+' · '+L('难度 ','Difficulty ')+state.difficulty+'/5');
-   make(active,'h2',state.name[en()?1:0]);
-   const read=make(active,'div',state.timed?L('已触发 ','Contacts ')+state.sequence+' / '+state.dials.length:
-    L('读数 ','Reading ')+Number(state.reading.toFixed(3))+' → '+L('目标 ','Target ')+Number(state.target.toFixed(3))+' '+state.unit);
-   read.className='ancientPuzzleReading';
-   if(state.calibration){const c=state.calibration;make(active,'p',c.label[en()?1:0]+' · '+Number(c.reading.toFixed(3))+' → '+Number(c.target.toFixed(3))+' '+c.unit).className='ancientPuzzleReading';}
-
-   const controls=make(active,'div');controls.className='ancientPuzzleControls';
-   for(const [index,dial] of state.dials.entries()){
-    const label=dial.label[en()?1:0];
-    if(state.timed){button(controls,label,()=>operate('pulse',{index}));continue;}
-    const cell=make(controls,'section');make(cell,'strong',label);
-    const meter=make(cell,'meter');meter.max=dial.max;meter.value=state.values[index];meter.setAttribute('aria-label',label);
-    make(cell,'output',state.values[index]+' / '+dial.max);
-    const dials=make(cell,'div');
-    button(dials,'−',()=>operate('dial',{index,delta:-1})).disabled=state.values[index]===0;
-    button(dials,'+',()=>operate('dial',{index,delta:1})).disabled=state.values[index]===dial.max;
+  else if(selected>=0){
+   const bank=state.banks.find(b=>selected>=b.start&&selected<b.start+b.count),dial=state.dials[selected];
+   make(active,'small',L('机关 ','Station ')+(selected+1)+' / '+state.dials.length);
+   make(active,'h2',bank.name[en()?1:0]+' · '+dial.label[en()?1:0]);
+   if(bank.timed){
+    make(active,'p',bank.cables[selected-bank.start]+' m · '+bank.window.map(ms=>ms/1000).join('–')+' s').className='ancientPuzzleReading';
+    make(active,'p',bank.reading+' / '+bank.count);
+    button(active,L('触发','Activate'),()=>operate('pulse',{index:selected})).disabled=bank.done;
+   }else{
+    if(bank.plate)make(active,'small',bank.plate);
+    make(active,'p',L('读数 ','Reading ')+Number(bank.reading.toFixed(3))+' / '+Number(bank.target.toFixed(3))+' '+bank.unit).className='ancientPuzzleReading';
+    const controls=make(active,'div');controls.className='ancientPuzzleControls';
+    const value=state.values[selected];
+    button(controls,'−',()=>operate('dial',{index:selected,delta:-1})).disabled=value===0;
+    make(controls,'output',value+' / '+dial.max);
+    button(controls,'+',()=>operate('dial',{index:selected,delta:1})).disabled=value===dial.max;
    }
-   if(!state.timed)button(active,L('检验机关','Test mechanism'),()=>operate('check'));
-   make(active,'p',L('本层奖励 ','Floor reward ')+state.reward.coins+L(' 金币',' gold')+(state.reward.cores?' · '+state.reward.cores+L(' 相位核心',' Phase Cores'):''));
+   button(active,L('检验整层','Test floor'),()=>operate('check'));
   }
   const status=make(view,'p',feedback);status.setAttribute('role','status');
   const count=Math.min(state.total,state.floor-1)-state.claimed;
@@ -85,10 +86,10 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   button(panelTop,L('关闭','Close'),()=>panel.close());
   panel.addEventListener('close',()=>{if(room?.isConnected)canvas.focus({preventScroll:true});});
   panel.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();panel.close();});
-  function focusControls(){
+  function focusControls(index){
    if(panel.open)return;
    if(document.pointerLockElement===canvas)document.exitPointerLock();
-   panel.showModal();
+   selected=index;feedback='';draw();panel.showModal();
   }
   try{map=createPuzzleMap(canvas,()=>name().toLowerCase(),en,focusControls);}
   catch(error){close();throw error;}
