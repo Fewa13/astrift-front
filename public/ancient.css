@@ -88,3 +88,29 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 @media(max-height:500px){.ancientBossVictory .ancientNoticeTitle:first-line{font-size:15px}}
 
 .ancientQuestSummary .ancientQuestLocation{margin:6px 0;color:#94dbea;font-size:12px;font-weight:600;line-height:1.4}
+
+.ancientPuzzleRoom{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;color:#e9f5f4;background:radial-gradient(ellipse at 50% 0%,#234956,#111d2a 58%,#0c121c);overflow:auto}
+.ancientPuzzleRoom header{position:sticky;top:0;display:flex;justify-content:flex-end;z-index:1;padding:12px 18px;background:#0c1722ed}
+.ancientPuzzleRoom main{width:min(900px,92vw);margin:0 auto;padding:18px 0 55px}
+.ancientPuzzleEyebrow{color:#9cddd4;letter-spacing:.08em}
+.ancientPuzzleMachine{background:linear-gradient(155deg,#1c3442,#11232e);border:1px solid #416572;border-radius:16px;padding:clamp(14px,4vw,30px);box-shadow:0 12px 35px #07111a8a;margin:18px 0}
+.ancientPuzzleLevels,.ancientPuzzleControls{display:flex;gap:10px;flex-wrap:wrap}
+.ancientPuzzleLevels span,.ancientPuzzleControls section{padding:8px 12px;background:#0c1a25;border:1px solid #40606b;border-radius:8px}
+.ancientPuzzleLevels .current{color:#9fffea;border-color:#7de9c7}
+.ancientPuzzleControls section{display:grid;flex:1 1 120px;gap:7px}
+.ancientPuzzleControls section div{display:flex;gap:8px}
+.ancientPuzzleControls section button{flex:1}
+.ancientPuzzleRoom button{min-height:42px;color:#ebffff;border:1px solid #527d86;background:#1a3848;border-radius:8px;padding:7px 13px;cursor:pointer}
+.ancientPuzzleRoom button:disabled{opacity:.5;cursor:default}
+.ancientPuzzleReading{margin:18px 0;color:#affff0;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.ancientPuzzleRoom progress{width:100%;margin-bottom:12px}
+.ancientPuzzleMachine>button{margin-top:14px}
+
+.ancientPuzzleRoom main{padding-bottom:15px}
+.ancientPuzzleChat{width:min(900px,92vw);margin:0 auto 36px}
+.ancientPuzzleChatHistory{max-height:135px;overflow:auto;background:#101d29;border:1px solid #31515d;border-radius:8px;padding:4px 12px;overflow-wrap:anywhere}
+.ancientPuzzleChatHistory p{margin:8px 0}
+.ancientPuzzleChat form{display:flex;gap:8px;margin-top:8px}
+.ancientPuzzleChat input{flex:1;min-width:0;padding:8px;color:#e9f5f4;background:#102330;border:1px solid #527d86;border-radius:7px}
+.ancientPuzzleMap{display:block;width:min(900px,92vw);height:auto;margin:14px auto 0;border:1px solid #507b87;border-radius:12px;cursor:crosshair}
+.ancientPuzzleMap:focus-visible{outline:2px solid #8af4c7}

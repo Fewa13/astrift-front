@@ -204,14 +204,34 @@ export function ancientBossGearWeights(map:string):number[]{
  if(map==='frostcourt'||map==='skyreach'||map==='dunes'){weights[5]-=.35;weights[6]=.3;weights[7]=.05}
  return weights;
 }
+const gearBossMaps:Record<string,string>={buried_marshal:'dunes',hourglass_regent:'dunes',chief:'tribe',lord:'tribe',rootwarden:'forest',oathknight:'city',emptyking:'city',blight_lord:'blight',immaculate_judge:'sanctum',starbound_heart:'starfall',frost_crowned:'frostcourt',furnace_regent:'frostcourt',sky_sovereign:'skyreach',thunder_warden:'skyreach'};
 export function ancientGearLoot(kind:string,random=Math.random,level=0,map?:string){
  if(map?.startsWith('community:'))return [];
- const maps:Record<string,string>={buried_marshal:'dunes',hourglass_regent:'dunes',chief:'tribe',lord:'tribe',rootwarden:'forest',oathknight:'city',emptyking:'city',blight_lord:'blight',immaculate_judge:'sanctum',starbound_heart:'starfall',frost_crowned:'frostcourt',furnace_regent:'frostcourt',sky_sovereign:'skyreach',thunder_warden:'skyreach'};
- const home=maps[kind]||(['metal','wood','water','fire','earth'].some(e=>kind==='crystal_'+e)?'forest':'');if(!home)return [];
+ const home=gearBossMaps[kind]||(['metal','wood','water','fire','earth'].some(e=>kind==='crystal_'+e)?'forest':'');if(!home)return [];
  const weights=ancientBossGearWeights(map||home),result:AncientGear[]=[];
  const quality=()=>{let r=Math.max(0,Math.min(.999999999,random()))*100;for(let i=0;i<weights.length;i++){r-=weights[i];if(r<0)return i+1}return 6};
  for(const slot of ['weapon','equipment'])if(random()<.5){const q=quality(),pool=Object.entries(GEAR).filter(([key,d])=>!Object.hasOwn(ANCIENT_FORGE,key)&&d.quality===q&&(slot==='weapon'?d.slot==='weapon':d.slot!=='weapon'));const setPool=Object.entries(GEAR).filter(([key,d])=>!Object.hasOwn(ANCIENT_FORGE,key)&&d.set&&d.quality===q);const choices=slot==='equipment'&&setPool.length>0&&q>=2&&random()<.35?setPool:pool;if(choices.length)result.push(rollGearItem(choices[Math.min(choices.length-1,Math.floor(random()*choices.length))][0],random))}
  return result;
+}
+export const GEAR_HUNT_SOURCES:Record<string,string>=Object.fromEntries([...Object.entries(gearBossMaps),...['metal','wood','water','fire','earth'].map(e=>['crystal_'+e,'forest'])]);
+export const gearHuntQuota=(key:string)=>8+4*(gearDefinition(key)?.quality||1);
+export function gearHuntEligible(key:string){
+ const d=gearDefinition(key);
+ return !!d?.set&&d.slot!=='weapon'&&Object.values(GEAR_HUNT_SOURCES).some(map=>ancientBossGearWeights(map)[d.quality-1]>0);
+}
+export function gearHuntCounts(key:string,kind:string,map:string,level:number){
+ const d=gearDefinition(key);
+ return gearHuntEligible(key)&&GEAR_HUNT_SOURCES[kind]===map&&level>=GEAR_LEVELS[d!.quality-1]-10&&ancientBossGearWeights(map)[d!.quality-1]>0;
+}
+export function gearRerollQuote(item:AncientGear,index:number,random=Math.random){
+ const d=gearDefinition(item.key),old=item.affixes?.[index],rule=old&&GEAR_AFFIXES[old.key];
+ if(!d||!old||!rule)return;
+ const pool=Object.entries(GEAR_AFFIXES).filter(([key,a])=>a.slots.includes(d.slot)&&!!a.quality===!!rule.quality
+  &&(!a.quality||a.quality===d.quality||key==='starHunter'&&d.quality>=7)
+  &&(d.quality<7||key!=='cooldown')&&!item.affixes!.some((line,i)=>i!==index&&line.key===key));
+ if(!pool.length)return;
+ const [key,a]=pool[Math.floor(random()*pool.length)];
+ return {candidate:{key,value:Math.round((a.min+(a.max-a.min)*random())*10000)/10000},material:GROWTH_MATERIALS[Math.min(d.quality,3)-1],cost:3+d.quality*2};
 }
 export function gearName(key:string,en=false){const d=gearDefinition(key);return d?`[${GEAR_QUALITIES[d.quality-1][en?1:0]}] ${en?d.en:d.name}`:key}
 export function gearDescription(key:string,en=false){const d=gearDefinition(key);if(!d)return '';const parts=[`${en?'Required level':'穿戴等级'} ${GEAR_LEVELS[d.quality-1]}`];for(const [k,zh,eng]of [['damage','普攻伤害','Melee damage'],['skillPower','技能强度','Skill power'],['hpPercent','最大生命','Max HP'],['cooldown','技能冷却缩减','Skill cooldown reduction'],['health','生命','HP'],['reduction','减伤','Damage reduction'],['speed','移速','Speed'],['bonus','所有伤害','All damage'],['lifesteal','吸血','Lifesteal']] as const){const n=(d[k]||0)*(k==='cooldown'?.8:1);if(n)parts.push(`${en?eng:zh} +${k==='damage'||k==='health'?n.toLocaleString():+(n*100).toFixed(2)+'%'}`)}if(d.combo){const c=GROWTH_COMBOS[d.combo];parts.push(growthComboText(d.combo,en))}if(d.slow)parts.push(en?`Hits slow ${Math.round(d.slow*100)}% for 2s (half on bosses)`:`命中减速${Math.round(d.slow*100)}%，2秒（头目减半）`);if(d.execute)parts.push(en?`+${Math.round(d.execute*100)}% damage below 30% enemy HP`:`敌人血量低于30%时伤害+${Math.round(d.execute*100)}%`);if(d.interval)parts.push(`${en?'Attack interval':'攻击间隔'} ${d.interval/1000}s`);return parts.join(' · ')}

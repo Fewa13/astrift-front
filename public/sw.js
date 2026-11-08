@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261107-client-version-1';
-const ASSETS=['/client-version.js',
+const CACHE_NAME='astrift-offline-20261108-archive-1';
+const ASSETS=['/ancient-puzzle-ui.js','/ancient-puzzle-map.js','/ancient-gear-workshop.js','/client-version.js',
  '/ancient-community-optics.js',
  '/ancient-community-amenities.js','/ancient-community-uses.js','/ancient-amenity-defs.js',
  '/ancient-community-gameplay.js','/ancient-map-gameplay.js','/ancient-community-script-ui.js','/codehelp.html','/codehelp.js','/codehelp-data.js','/codehelp.css',

@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {renderGearReroll} from './ancient-gear-workshop.js';
 import {renderEquipmentComparison} from './ancient-equipment-compare.js';
 import {gearDefinition,gearName,gearDescription,gearAffixDescription,GEAR_LEVELS,GEAR_SETS,ancientMeleeDamage,ancientProfileHealth,GROWTH_MATERIALS,FORGE_MATERIAL_NAMES} from './ancient-gear.js?v=20261021-skyreach-market-1';
 import {appendGearIcon} from './ancient-gear-icons.js?v=20261012-home-icons-1';
@@ -12,6 +13,7 @@ export function createAncientGearBrowser({getProfile,en,action,refresh}){
    if(!filtered.length)el('p',L('暂无匹配装备','No matching equipment'),list);if(pages>1){btn(L('上一页','Previous'),()=>{page--;chosen='';draw()},pager).disabled=page===0;el('span',(page+1)+' / '+pages,pager);btn(L('下一页','Next'),()=>{page++;chosen='';draw()},pager).disabled=page===pages-1;}
    const item=filtered.find(i=>i.id===chosen);if(!item){el('p',L('选择装备查看详情','Select equipment for details'),detail);return}const d=gearDefinition(item.key);const heading=el('div','',detail);heading.className='ancientGearDetailHeading';appendGearIcon(heading,item.key);el('h3',gearName(item.key,en()),heading);renderEquipmentComparison(detail,p,item,en());const info=el('details','',detail);el('summary',L('属性与词条','Stats & affixes'),info);el('p',gearDescription(item.key,en()),info);const affix=gearAffixDescription(item,en());if(affix)el('p',affix,info);const set=GEAR_SETS[d.set];if(set)el('p',L(set.name,set.en)+' · 2: '+set.two[en()?1:0]+' · 3: '+set.three[en()?1:0],info);
    const equipped=p.gearEquipped?.[d.slot]===item.id,locked=p.level<GEAR_LEVELS[d.quality-1],actions=el('div','',detail);actions.className='ancientInventoryDetailActions';const equip=btn(equipped?L('卸下','Unequip'):locked?L('需要等级 ','Requires Lv. ')+GEAR_LEVELS[d.quality-1]:L('穿戴','Equip'),()=>void action('equipGear',{slot:d.slot,id:equipped?'':item.id}),actions);equip.disabled=locked;btn(item.locked?L('解锁','Unlock'):L('锁定','Lock'),()=>void action('lockGear',{id:item.id,locked:!item.locked}),actions);if(d.quality<=3){const amount=[2,3,4][d.quality-1],material=FORGE_MATERIAL_NAMES[GROWTH_MATERIALS[d.quality-1]][en()?1:0],salvage=btn(L('分解','Salvage')+' → '+material+' ×'+amount,()=>{if(salvage.dataset.confirm==='yes'){salvage.disabled=true;void action('salvageGear',{id:item.id});}else{salvage.dataset.confirm='yes';salvage.textContent=L('确认分解（无法撤销）','Confirm salvage (irreversible)');}},actions);salvage.disabled=equipped||item.locked;}
+   renderGearReroll(detail,p,item,en(),action);
   }search.oninput=()=>{query=search.value;page=0;chosen='';draw()};draw();
  }
  return {render};

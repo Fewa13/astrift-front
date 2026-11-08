@@ -443,10 +443,10 @@ function ancientBossGearWeights(map) {
   }
   return weights;
 }
+const gearBossMaps = { buried_marshal: "dunes", hourglass_regent: "dunes", chief: "tribe", lord: "tribe", rootwarden: "forest", oathknight: "city", emptyking: "city", blight_lord: "blight", immaculate_judge: "sanctum", starbound_heart: "starfall", frost_crowned: "frostcourt", furnace_regent: "frostcourt", sky_sovereign: "skyreach", thunder_warden: "skyreach" };
 function ancientGearLoot(kind, random = Math.random, level = 0, map) {
   if (map?.startsWith("community:")) return [];
-  const maps = { buried_marshal: "dunes", hourglass_regent: "dunes", chief: "tribe", lord: "tribe", rootwarden: "forest", oathknight: "city", emptyking: "city", blight_lord: "blight", immaculate_judge: "sanctum", starbound_heart: "starfall", frost_crowned: "frostcourt", furnace_regent: "frostcourt", sky_sovereign: "skyreach", thunder_warden: "skyreach" };
-  const home = maps[kind] || (["metal", "wood", "water", "fire", "earth"].some((e) => kind === "crystal_" + e) ? "forest" : "");
+  const home = gearBossMaps[kind] || (["metal", "wood", "water", "fire", "earth"].some((e) => kind === "crystal_" + e) ? "forest" : "");
   if (!home) return [];
   const weights = ancientBossGearWeights(map || home), result = [];
   const quality = () => {
@@ -464,6 +464,24 @@ function ancientGearLoot(kind, random = Math.random, level = 0, map) {
     if (choices.length) result.push(rollGearItem(choices[Math.min(choices.length - 1, Math.floor(random() * choices.length))][0], random));
   }
   return result;
+}
+const GEAR_HUNT_SOURCES = Object.fromEntries([...Object.entries(gearBossMaps), ...["metal", "wood", "water", "fire", "earth"].map((e) => ["crystal_" + e, "forest"])]);
+const gearHuntQuota = (key) => 8 + 4 * (gearDefinition(key)?.quality || 1);
+function gearHuntEligible(key) {
+  const d = gearDefinition(key);
+  return !!d?.set && d.slot !== "weapon" && Object.values(GEAR_HUNT_SOURCES).some((map) => ancientBossGearWeights(map)[d.quality - 1] > 0);
+}
+function gearHuntCounts(key, kind, map, level) {
+  const d = gearDefinition(key);
+  return gearHuntEligible(key) && GEAR_HUNT_SOURCES[kind] === map && level >= GEAR_LEVELS[d.quality - 1] - 10 && ancientBossGearWeights(map)[d.quality - 1] > 0;
+}
+function gearRerollQuote(item, index, random = Math.random) {
+  const d = gearDefinition(item.key), old = item.affixes?.[index], rule = old && GEAR_AFFIXES[old.key];
+  if (!d || !old || !rule) return;
+  const pool = Object.entries(GEAR_AFFIXES).filter(([key2, a2]) => a2.slots.includes(d.slot) && !!a2.quality === !!rule.quality && (!a2.quality || a2.quality === d.quality || key2 === "starHunter" && d.quality >= 7) && (d.quality < 7 || key2 !== "cooldown") && !item.affixes.some((line, i) => i !== index && line.key === key2));
+  if (!pool.length) return;
+  const [key, a] = pool[Math.floor(random() * pool.length)];
+  return { candidate: { key, value: Math.round((a.min + (a.max - a.min) * random()) * 1e4) / 1e4 }, material: GROWTH_MATERIALS[Math.min(d.quality, 3) - 1], cost: 3 + d.quality * 2 };
 }
 function gearName(key, en = false) {
   const d = gearDefinition(key);
@@ -492,6 +510,7 @@ export {
   FORGE_MATERIAL_NAMES,
   GEAR,
   GEAR_AFFIXES,
+  GEAR_HUNT_SOURCES,
   GEAR_LEVELS,
   GEAR_QUALITIES,
   GEAR_SETS,
@@ -518,8 +537,12 @@ export {
   gearAffixDescription,
   gearDefinition,
   gearDescription,
+  gearHuntCounts,
+  gearHuntEligible,
+  gearHuntQuota,
   gearKeys,
   gearName,
+  gearRerollQuote,
   grantGearBonusAffix,
   growthComboText,
   growthTier,
