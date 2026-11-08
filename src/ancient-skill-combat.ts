@@ -9,7 +9,7 @@ import {rayAncientHitbox,ancientHitbox} from './ancient-hitboxes';
 import {bossBodyPathBlocked} from './ancient-boss-collision';
 import {isHoly,holyPower} from './ancient-ascension';
 import {ancientSkillDamage,ancientProfileHealth,ancientGearStats,equippedGear,GROWTH_COMBOS} from './ancient-gear';
-import {SKILLS,skillRadius,curseHitMultiplier,runtime,activeSkill,skillCooldown,skillDamageMultiplier,skillHealth,type SkillActor} from './ancient-skills';
+import {SKILLS,skillCastRange,skillRadius,curseHitMultiplier,runtime,activeSkill,skillCooldown,skillDamageMultiplier,skillHealth,type SkillActor} from './ancient-skills';
 import {ancientMaxHealth,weaponDamage,blocked,lineClear,ancientMapHeight,type AncientProfile} from './ancient-rules';
 import {ANCIENT_KINDS as FOREST_KINDS} from './ancient-rules';
 import {forestPath} from './ancient-forest';
@@ -42,9 +42,9 @@ export function skillTargetError(a:SkillActor,dir:unknown,range:number,c:SkillCo
 
 export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now=Date.now()){
  const d=equippedGear(p,'weapon'),combo=d?.combo&&d.combo===p.profession?GROWTH_COMBOS[d.combo]:undefined,r=runtime(a),ready=!!combo&&!!r.gearChain&&r.gearChain.key===d!.combo&&r.gearChain.until>now&&id===combo.to;
- const start={x:a.x,z:a.z},relic=activeRelic(p),target=['icebolt','stoneprison','storm'].includes(id)?selectSkillTarget(a,direction,30,c):undefined;
+ const start={x:a.x,z:a.z},relic=activeRelic(p),range=skillCastRange(id,p.skills?.[id]||1),target=['icebolt','stoneprison','storm'].includes(id)?selectSkillTarget(a,direction,range,c):undefined;
  const error=castSkillImpl(a,p,id,direction,relicCastContext(a,p,id,branchContext(a,p,id,skillSourceContext(c,id),now),now),now,ready?1+combo!.bonus:1);
- if(!error){if(r.cooldowns[id]>now)r.cooldowns[id]=now+(r.cooldowns[id]-now)*branchCooldown(p,id);if(id!=='weaken')queueBranchFinisher(a,p,id,target??selectSkillTarget(a,direction,30,c)??c.monsters.find(m=>m.hp>0&&Math.hypot(m.x-a.x,m.z-a.z)<=6&&lineClear(a.x,a.y,a.z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map)),now);const body=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p);
+ if(!error){if(r.cooldowns[id]>now)r.cooldowns[id]=now+(r.cooldowns[id]-now)*branchCooldown(p,id);if(id!=='weaken')queueBranchFinisher(a,p,id,target??selectSkillTarget(a,direction,range||30,c)??c.monsters.find(m=>m.hp>0&&Math.hypot(m.x-a.x,m.z-a.z)<=6&&lineClear(a.x,a.y,a.z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map)),now);const body=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p);
   if(relic==='ice'&&id==='icebolt'&&target)for(let i=0;i<3;i++)queueRelic(a,p,{at:now+1000+i*1000,x:target.x,z:target.z,radius:4,damage:body*.15,fx:'icebolt',slow:true});
   if(relic==='shadowblade'&&id==='shadowstep')queueRelic(a,p,{at:now+800,...start,radius:4,damage:body*.5,fx:'riftblade'});
   if(relic==='stonewright'&&id==='stoneprison'&&target)queueRelic(a,p,{at:now+1500,x:target.x,z:target.z,radius:5,damage:body*.6,fx:'faultline'});
@@ -56,7 +56,9 @@ export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,directi
 function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now:number,gearPower:number){
  const s=Object.hasOwn(SKILLS,id)?SKILLS[id]:undefined,n=p.skills?.[id]||0,r=runtime(a);if(a.hp<=0)return '请在存活时使用技能';if(!s||s.job!==p.profession||n<=0||p.level<s.unlock)return '技能尚未修炼';if(id==='transform'&&activeBossForm(a,now))return '变身期间不能使用变身卡';if((r.cooldowns[id]||0)>now&&!(id==='shadowreturn'&&shadowRecallReady(a,now)))return '技能冷却中';if(activeSkill(a,'transform',now))return '变身期间只能使用爪子';
  if(id==='weaken'){r.mode=r.summon?3:2;return null}
- const gear=ancientGearStats(p),body=gearPower*ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p),target=['riftblade','stonefist','faultline','stoneprison','mountainfall','frostburst','swordwave','triplecut','swordrain','phantomblade','slash','soulbolt','icebolt','blizzard','chain','storm','hex','drain','doom'].includes(id)?selectSkillTarget(a,direction,id==='triplecut'?15:id==='slash'?12:['drain','riftblade','stonefist'].includes(id)?20:['faultline','stoneprison','mountainfall'].includes(id)?25:30,c):undefined;if(['riftblade','stonefist','faultline','stoneprison','mountainfall','frostburst','swordwave','triplecut','swordrain','phantomblade','slash','soulbolt','icebolt','blizzard','chain','storm','hex','drain','doom'].includes(id)&&!target)return skillTargetError(a,direction,id==='triplecut'?15:id==='slash'?12:['drain','riftblade','stonefist'].includes(id)?20:['faultline','stoneprison','mountainfall'].includes(id)?25:30,c);
+ const gear=ancientGearStats(p),body=gearPower*ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p);
+ const range=skillCastRange(id,n),target=range?selectSkillTarget(a,direction,range,c):undefined;
+ if(range&&!target)return skillTargetError(a,direction,range,c);
  if(EXPANSION_SKILLS.includes(id)){return castExpansionSkill(a,p,id,direction,c,now,body,target);}
  if(id==='summon'){if(r.summon)return '召唤兽已经在场';let point:{x:number;z:number}|undefined;for(const [dx,dz]of [[2,0],[-2,0],[0,2],[0,-2],[0,0]])if(!blocked(a.x+dx,a.z+dz,.8,c.map)){point={x:a.x+dx,z:a.z+dz};break}if(!point)return '没有召唤空间';const scale=.75+.05*n,hp=Math.floor(ancientProfileHealth(p)*scale*(1+gear.petHealth)*(isHoly(p)?1.5:1));r.summon={...point,hp:Math.floor(hp*(activeBranch(p)==='beastlord'?1.3:1)),maxHp:Math.floor(hp*(activeBranch(p)==='beastlord'?1.3:1)),damage:Math.max(1,Math.floor(ancientSkillDamage(p)*scale*(1+gear.pet)*holyPower(p))),until:now+100000,attackAt:0,target:'',level:n};r.mode=1;c.fx(id,point.x,point.z,2);return null}
  if(id==='haste'&&(!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite)||Math.hypot(direction[0],direction[2])<.001))return '请朝前方使用技能';
