@@ -1,8 +1,11 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
+import {ancientInputCode,ancientSensitivity} from './ancient-input-settings.js';
+import {slideAncientMove} from './ancient-control-feel.js';
 
-export function createPuzzleMap(canvas,name,en,interact){
+export function createPuzzleMap(canvas,name,en,interact,onNearby){
  const renderer=new T.WebGLRenderer({canvas,antialias:true});
+ renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
  const scene=new T.Scene(),camera=new T.PerspectiveCamera(75,1,.06,70);
  scene.background=new T.Color(0x142633);
@@ -26,21 +29,38 @@ export function createPuzzleMap(canvas,name,en,interact){
   box(scene,x,2.8,z,.6,.24,.75,0xc59a60).material=jade;
  }
  for(const x of [10.8,14.2])box(scene,x,.025,13.75,.06,.04,19,0xb18a52);
+ for(let i=0;i<10;i++){
+  const z=5+i*1.9;
+  for(const x of [2.1,22.9]){
+   box(scene,x,.38,z,.55,.76,1.75,0x1d2d36);
+   box(scene,x,3.5,z,.24,1.05,1.56,0x45616b);
+   box(scene,x,3.5,z+.55,.29,.83,.06,0xa77f4e);
+  }
+  box(scene,12.5,4.77,z,21,.3,.38,0x263640);
+  box(scene,12.5,4.58,z,4.6,.07,.1,0x81eacf).material=jade;
+  box(scene,12.5,.027,z,.58,.025,.13,0x81eacf).material=jade;
+ }
+ for(const x of [10.45,14.55]){
+  box(scene,x,2.15,4.05,.32,4.3,.36,0xa37a4d);
+  box(scene,x,1.85,4.26,.11,2.7,.12,0x81eacf).material=jade;
+ }
+ const stick={x:0,y:0};
+ let nearby=false;
  let state=null,pos={x:50,z:80},yaw=0,pitch=0,height=eyeHeight,vy=0,frame=0,last=0,drag=null;
  const moveKeys={KeyW:'w',ArrowUp:'w',KeyS:'s',ArrowDown:'s',KeyA:'a',ArrowLeft:'a',KeyD:'d',ArrowRight:'d',ShiftLeft:'sprint',ShiftRight:'sprint'};
  function jump(){if(height<=eyeHeight+.01)vy=6.5}
  function turn(dx,dy,sensitivity){yaw-=dx*sensitivity;pitch=T.MathUtils.clamp(pitch-dy*sensitivity,-1.5,1.5)}
  const locked=()=>document.pointerLockElement===canvas;
- function mouseMove(event){if(locked())turn(event.movementX,event.movementY,.002)}
- function release(){keys.clear();drag=null}
+ function mouseMove(event){if(locked())turn(event.movementX,event.movementY,.002*ancientSensitivity(false))}
+ function release(){keys.clear();stick.x=stick.y=0;drag=null}
  document.addEventListener('mousemove',mouseMove);
  window.addEventListener('blur',release);
  canvas.addEventListener('keydown',event=>{
-  const key=event.code;
-  if(key==='KeyF'||key==='Space'){event.preventDefault();if(!event.repeat)(key==='KeyF'?interact:jump)();return}
+  const key=ancientInputCode(event.code);
+  if(key==='KeyF'||key==='Space'){event.preventDefault();if(!event.repeat)(key==='KeyF'?tryInteract:jump)();return}
   if(moveKeys[key]){event.preventDefault();keys.add(moveKeys[key]);}
  });
- canvas.addEventListener('keyup',event=>keys.delete(moveKeys[event.code]));
+ canvas.addEventListener('keyup',event=>keys.delete(moveKeys[ancientInputCode(event.code)]));
  canvas.addEventListener('blur',release);
  canvas.addEventListener('pointerdown',event=>{
   canvas.focus();drag={id:event.pointerId,x:event.clientX,y:event.clientY};
@@ -49,9 +69,10 @@ export function createPuzzleMap(canvas,name,en,interact){
  });
  canvas.addEventListener('pointermove',event=>{
   if(locked()||drag?.id!==event.pointerId)return;
-  turn(event.clientX-drag.x,event.clientY-drag.y,.004);drag.x=event.clientX;drag.y=event.clientY;
+  turn(event.clientX-drag.x,event.clientY-drag.y,(event.pointerType==='touch'?.004*ancientSensitivity(true):.002*ancientSensitivity(false)));drag.x=event.clientX;drag.y=event.clientY;
  });
  for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>drag=null);
+ function tryInteract(){if(nearby||state?.complete)interact();}
  function badge(name){
   const label=document.createElement('canvas');label.width=256;label.height=48;
   const ctx=label.getContext('2d');ctx.fillStyle='#122433';ctx.fillRect(0,0,256,48);ctx.fillStyle='#edfff5';ctx.font='bold 21px system-ui';ctx.textAlign='center';ctx.fillText(name,128,31,244);
@@ -64,12 +85,14 @@ export function createPuzzleMap(canvas,name,en,interact){
    for(const station of stations)clearPlayer(station);
    stations.length=0;
    for(let i=0;i<(next.dials?.length||0);i++){
-    const station=new T.Group();station.position.set((14+72*(i+.5)/next.dials.length)*scale,0,5.4);
+    const station=new T.Group();station.position.set((14+72*(i+.5)/next.dials.length)*scale,0,6.5);
     box(station,0,.6,0,1.35,1.2,.85,0x466976);
     box(station,0,.12,0,1.65,.24,1.15,0x20333d);
     box(station,0,1.18,0,1.48,.12,1,0xb18a52);
     station.gauge=box(station,0,1.29,.08,.86,.16,.5,0x6adcc1);
-    const label=badge(String(i+1));label.position.y=1.65;label.scale.set(.72,.28,1);station.add(label);station.label=label;
+    box(station,0,.68,.44,.82,.4,.08,0x152934);
+    for(const x of [-.25,0,.25])box(station,x,.68,.49,.105,.075,.05,0x81eacf).material=jade;
+    const label=badge((i+1)+' · '+next.dials[i].label[en()?1:0]);label.position.y=1.65;label.scale.set(1.45,.32,1);station.add(label);station.label=label;
     stations.push(station);scene.add(station);
    }
   }
@@ -87,21 +110,25 @@ export function createPuzzleMap(canvas,name,en,interact){
  function draw(time){
   frame=requestAnimationFrame(draw);
   const dt=Math.min(.05,last?(time-last)/1000:0);last=time;if(!state)return;
-  const side=Number(keys.has('d'))-Number(keys.has('a')),forward=Number(keys.has('w'))-Number(keys.has('s'));
-  const step=(keys.has('sprint')?9:6)*dt/(scale*Math.max(1,Math.hypot(side,forward)));
-  pos.x=T.MathUtils.clamp(pos.x+(side*Math.cos(yaw)-forward*Math.sin(yaw))*step,8,92);
-  pos.z=T.MathUtils.clamp(pos.z+(-side*Math.sin(yaw)-forward*Math.cos(yaw))*step,20,90);
+  const side=Number(keys.has('d'))-Number(keys.has('a'))+stick.x,forward=Number(keys.has('w'))-Number(keys.has('s'))-stick.y;
+  const step=(keys.has('sprint')?9:6)*dt/Math.max(1,Math.hypot(side,forward));
+  const blocked=(x,z)=>x<2||x>23||z<5||z>22.5||stations.some(o=>Math.abs(x-o.position.x)<1.05&&Math.abs(z-o.position.z)<.8);
+  const next=slideAncientMove({x:pos.x*scale,y:height,z:pos.z*scale},
+   (side*Math.cos(yaw)-forward*Math.sin(yaw))*step,(-side*Math.sin(yaw)-forward*Math.cos(yaw))*step,blocked,()=>0);
+  pos.x=next.x/scale;pos.z=next.z/scale;
+  const near=stations.some(o=>Math.hypot(next.x-o.position.x,next.z-o.position.z)<=3);
+  if(near!==nearby){nearby=near;onNearby(near);}
   vy-=19*dt;height=Math.max(eyeHeight,height+vy*dt);if(height===eyeHeight)vy=0;
   camera.position.set(pos.x*scale,height,pos.z*scale);camera.rotation.set(pitch,yaw,0,'YXZ');
   for(const actor of players.values())actor.position.lerp(actor.target,Math.min(1,dt*6));
-  const width=canvas.clientWidth,height=canvas.clientHeight;
-  if(width&&height&&(camera.aspect!==width/height||canvas.width!==Math.floor(width*renderer.getPixelRatio())||canvas.height!==Math.floor(height*renderer.getPixelRatio()))){
-   renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();
+  const width=canvas.clientWidth,viewHeight=canvas.clientHeight;
+  if(width&&viewHeight&&(camera.aspect!==width/viewHeight||canvas.width!==Math.floor(width*renderer.getPixelRatio())||canvas.height!==Math.floor(viewHeight*renderer.getPixelRatio()))){
+   renderer.setSize(width,viewHeight,false);camera.aspect=width/viewHeight;camera.updateProjectionMatrix();
   }
   renderer.render(scene,camera);
  }
  frame=requestAnimationFrame(draw);
- return {position:()=>({...pos}),sync,jump,move(key,down){if(down)keys.add(key);else keys.delete(key)},dispose(){
+ return {position:()=>({...pos}),sync,jump,interact:tryInteract,stick(x,y){stick.x=x;stick.y=y},dispose(){
   cancelAnimationFrame(frame);if(locked())document.exitPointerLock();document.removeEventListener('mousemove',mouseMove);window.removeEventListener('blur',release);
   for(const actor of [...players.values(),...stations])clearPlayer(actor);
   geometry.dispose();jade.dispose();for(const mat of materials.values())mat.dispose();renderer.dispose();

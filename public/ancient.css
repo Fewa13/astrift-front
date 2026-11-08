@@ -123,3 +123,6 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 @media(pointer:coarse){.ancientPuzzleMovePad{position:absolute;display:grid;grid-template-columns:repeat(3,44px);gap:4px;bottom:44px;left:12px;touch-action:none}.ancientPuzzleMovePad button:first-child{grid-column:2}.ancientPuzzleMovePad button:nth-child(2){grid-column:1}}
 
 .ancientPuzzleRoom header{gap:8px;flex-wrap:wrap;align-items:center}.ancientPuzzleFloorLabel{margin-inline-end:auto}
+.ancientPuzzleInteract{position:absolute;top:calc(50% + 30px);left:50%;transform:translateX(-50%);max-width:85%;padding:7px 11px;text-align:center;background:#102330e8;color:#ccfff0;border:1px solid #5b9d8e;border-radius:6px;pointer-events:none}
+.ancientPuzzleTutorial{border-inline-start:3px solid #70d8bc;padding:.5rem .75rem;background:#16343e}
+@media(pointer:coarse){.ancientPuzzleMovePad{display:flex;align-items:flex-end;gap:10px;left:14px;right:14px;bottom:48px;pointer-events:none}.ancientPuzzleMovePad button{pointer-events:auto;touch-action:none}.ancientPuzzleMovePad button:first-child{width:82px;height:82px;border-radius:50%;margin-inline-end:auto}.ancientPuzzleViewHelp{display:none}}
