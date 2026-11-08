@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {CLIENT_RELEASE} from '../src/client-release.ts';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import vm from 'node:vm';
@@ -20,7 +21,7 @@ setDungeonGeometry('dungeon:999',[],162,s);assert(dungeonBlocked(0,164,.6,'dunge
 const db=new DatabaseSync(':memory:'),sql={exec(q,...args){const rows=db.prepare(q).all(...args);return {toArray:()=>rows,one:()=>rows[0]}}};let now=Date.now();class Clock extends Date{static now(){return now}}
 const compiled=await build({entryPoints:['src/ancient-world.ts'],bundle:true,write:false,format:'cjs',platform:'node',external:['cloudflare:workers']}),module={exports:{}},sockets=[];
 const ctx={storage:{sql,setAlarm:async()=>{},transactionSync:f=>f()},getWebSockets:()=>sockets};vm.runInNewContext(compiled.outputFiles[0].text,{module,exports:module.exports,Date:Clock,crypto,Math,structuredClone,require:()=>({DurableObject:class{constructor(ctx){this.ctx=ctx}}})});const server=new module.exports.AncientWorld(ctx,{});
-const p=server.read('tester');p.level=80;server.save('tester',p);let actor={name:'tester',map:'tribe',tribeLayout:2,x:0,z:10,y:1.7,hp:1e8,maxHp:1e8,seen:now,weapon:p.weapons[0],lastShot:0,deadAt:0};const ws={deserializeAttachment:()=>structuredClone(actor),serializeAttachment:a=>actor=structuredClone(a),send(){},close(){}};sockets.push(ws);
+const p=server.read('tester');p.level=80;server.save('tester',p);let actor={clientVersion:CLIENT_RELEASE,name:'tester',map:'tribe',tribeLayout:2,x:0,z:10,y:1.7,hp:1e8,maxHp:1e8,seen:now,weapon:p.weapons[0],lastShot:0,deadAt:0};const ws={deserializeAttachment:()=>structuredClone(actor),serializeAttachment:a=>actor=structuredClone(a),send(){},close(){}};sockets.push(ws);
 await server.command('tester','dungeonCreate',{tier:'burrow'});await server.command('tester','dungeonReady',{});let run=server.dungeons().get('tester');assert(run.mechanisms);run.joined=['tester'];actor.map=run.map;server.dungeons().save(run);
 async function press(id){const before=run.mechanisms.revision,c=DUNGEON_CONTROLS.find(c=>c.id===id);Object.assign(actor,{x:c.x+2.8,z:c.z,seen:now+=400});await server.webSocketMessage(ws,JSON.stringify({type:'dungeonMechanism',id}));run=server.dungeons().get('tester');assert(run.mechanisms.revision>before,'F interaction must succeed: '+id)}
 for(const [i,m]of DUNGEON_MIRRORS.entries())while(run.mechanisms.angles[m.id]!==[1,3,1][i])await press(m.id);assert.equal(run.gateZ,62,'puzzle alone does not bypass living enemies');

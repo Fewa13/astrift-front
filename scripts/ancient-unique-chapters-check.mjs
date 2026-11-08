@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {CLIENT_RELEASE} from '../src/client-release.ts';
 import assert from 'node:assert/strict';import{DatabaseSync}from'node:sqlite';import vm from'node:vm';import{build}from'esbuild';import{createHash}from'node:crypto';
 import{CHAPTER_ROUTES,CHAPTER_SCENERY,chapterPoint,chapterSafe,chapterBlocked,chapterPath,chapterHeight,chapterDistance,setChapterState,chapterMovementScale}from'../public/ancient-geography.js';
 import{CHAPTER_FEATURES,useChapterFeature,DIAL_TARGETS}from'../public/ancient-chapter-features.js';
@@ -33,10 +34,15 @@ for(const[map,id]of [['starfall',11],['frostcourt',13],['skyreach',15]]){const l
 const world=server.world('dunes');assert.equal(world.monsters.length,30);assert(world.monsters.every(m=>DUNES_KINDS[m.kind]&&Number.isFinite(m.hp)&&m.hp>0));assert.equal(server.world('dunes').monsters.length,30);
 console.log('PASS: 4 distinct wide layouts, every NPC/spawn reachable, slopes <0.5, old populations retained, drain/thermal/dial data, preserved quest continuation, level-normalized balance, and idempotent monster/player migrations.');
 // Feature commands use authored destinations and require proximity on the correct map.
-let actor={name:'feature-qa',connectionId:'qa',map:'skyreach',x:0,y:1.7,z:0,hp:100,maxHp:100,lastMove:Date.now(),seen:Date.now(),yaw:0,chapterLayout:2},packets=[];
+let actor={clientVersion:CLIENT_RELEASE,name:'feature-qa',connectionId:'qa',map:'skyreach',x:0,y:1.7,z:0,hp:100,maxHp:100,lastMove:Date.now(),seen:Date.now(),yaw:0,chapterLayout:2},packets=[];
 const ws={readyState:1,deserializeAttachment:()=>structuredClone(actor),serializeAttachment:a=>actor=structuredClone(a),send:raw=>packets.push(JSON.parse(raw))};sockets.push(ws);
 const wind=CHAPTER_FEATURES.find(f=>f.kind==='wind');await server.webSocketMessage(ws,JSON.stringify({type:'chapterFeature',id:wind.id}));assert(!actor.forcedMotion,'distant use denied');
 actor.x=wind.x;actor.z=wind.z;actor.y=chapterHeight('skyreach',wind.x,wind.z)+1.7;await server.webSocketMessage(ws,JSON.stringify({type:'chapterFeature',id:'tide-drain'}));assert(!actor.forcedMotion,'different-map feature denied');
+actor.clientVersion='old';
+await server.webSocketMessage(ws,JSON.stringify({type:'chapterFeature',id:wind.id}));
+assert(!actor.forcedMotion,'A socket from the previous release cannot use a map mechanism');
+assert(packets.some(p=>p.code==='CLIENT_UPDATE_REQUIRED'));
+actor.clientVersion=CLIENT_RELEASE;
 await server.webSocketMessage(ws,JSON.stringify({type:'chapterFeature',id:wind.id,to:{x:999,z:999}}));assert(actor.forcedMotion?.aerial);assert.equal(actor.forcedMotion.to.x,wind.to.x);assert.equal(actor.forcedMotion.to.z,wind.to.z);const motion=actor.forcedMotion;assert(motionPoint(motion,motion.started+1100).y>Math.max(motion.from.y,motion.to.y)+8);server.persistPosition(actor);const saved=JSON.parse(sql.exec('SELECT data FROM ancient_positions WHERE name=? AND map=?',actor.name,actor.map).one().data);assert.equal(saved.x,motion.from.x,'reconnect resumes from safe launch point');tickForcedMotion(actor,motion.started+2200,()=>true);assert(!actor.forcedMotion);assert.equal(actor.x,wind.to.x);assert.equal(actor.z,wind.to.z);assert(!chapterBlocked('skyreach',actor.x,actor.z));
 const {skillDrops}=await import('../public/ancient-skills.js');for(const k of ['buried_marshal','hourglass_regent'])assert.equal(Object.values(skillDrops(k,()=>.5))[0],1);
 console.log('PASS: distant/spoofed feature commands rejected, wind follows server-authored smooth arc, reconnect saves safe landing source, new bosses drop a skill book.');

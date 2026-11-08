@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {CLIENT_RELEASE} from '../src/client-release.ts';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import vm from 'node:vm';
@@ -15,7 +16,7 @@ class TestPair{constructor(){this[0]={};let actor;this[1]={deserializeAttachment
 ctx.acceptWebSocket=ws=>sockets.push(ws);
 vm.runInNewContext(compiled.outputFiles[0].text,{module,exports:module.exports,Date:class extends Date{constructor(...args){super(...(args.length?args:[now]))}static now(){return now}},AbortController,structuredClone,crypto,Math,Response:TestResponse,WebSocketPair:TestPair,URL,require:()=>({DurableObject:class{constructor(ctx,env){this.ctx=ctx;this.env=env}}})});
 const server=new module.exports.AncientWorld(ctx,{ACCOUNT_SESSIONS:{getByName:()=>({banState:async()=>null})}}),cmd=(n,a,d={})=>server.command(n,a,d);
-function add(name,level=20){const p=server.read(name);p.level=level;server.save(name,p);let actor={name,map:'tribe',tribeLayout:2,x:0,y:1.7,z:50,hp:50000,maxHp:50000,seen:now,weapon:p.weapons[0],skills:{},lastShot:0,lastMove:now,moveCredit:2,deadAt:0};messages.set(name,[]);const ws={deserializeAttachment:()=>structuredClone(actor),serializeAttachment:a=>actor=structuredClone(a),send:s=>messages.get(name).push(JSON.parse(s)),close(){this.closed=true}};sockets.push(ws);return ws}
+function add(name,level=20){const p=server.read(name);p.level=level;server.save(name,p);let actor={clientVersion:CLIENT_RELEASE,name,map:'tribe',tribeLayout:2,x:0,y:1.7,z:50,hp:50000,maxHp:50000,seen:now,weapon:p.weapons[0],skills:{},lastShot:0,lastMove:now,moveCredit:2,deadAt:0};messages.set(name,[]);const ws={deserializeAttachment:()=>structuredClone(actor),serializeAttachment:a=>actor=structuredClone(a),send:s=>messages.get(name).push(JSON.parse(s)),close(){this.closed=true}};sockets.push(ws);return ws}
 
 const map={id:91,tier:3,owner:'qa',revision:1,name:'QA',boundary:[{x:-40,z:-40},{x:40,z:-40},{x:40,z:40},{x:-40,z:40}],spawn:{x:0,z:0},objects:[],spawns:[],npcs:[],sky:'#829eba',skyArt:[],code:`when join
  checkpoint 0 0 0

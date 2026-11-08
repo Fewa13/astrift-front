@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261107-cast-range-1';
-const ASSETS=[
+const CACHE_NAME='astrift-offline-20261107-client-version-1';
+const ASSETS=['/client-version.js',
  '/ancient-community-optics.js',
  '/ancient-community-amenities.js','/ancient-community-uses.js','/ancient-amenity-defs.js',
  '/ancient-community-gameplay.js','/ancient-map-gameplay.js','/ancient-community-script-ui.js','/codehelp.html','/codehelp.js','/codehelp-data.js','/codehelp.css',
@@ -148,9 +148,9 @@ self.addEventListener('fetch',event=>{
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE_NAME);
     // Shared-world definitions must update together; retain cache only for offline use.
-    if(url.pathname==='/account.js'||url.pathname==='/ancient.css'||url.pathname.startsWith('/ancient-')||url.pathname==='/world-shell.js'||url.pathname==='/world-shell.html'){
+    if((url.pathname.endsWith('.js')&&url.pathname!=='/three.module.js')||url.pathname==='/ancient.css'||url.pathname.startsWith('/ancient-')||url.pathname==='/world-shell.js'||url.pathname==='/world-shell.html'){
       try{
-        const response=await fetch(request);
+        const response=await fetch(request,{cache:'no-cache'});
         if(response.ok){event.waitUntil(cache.put(request,response.clone()));if(url.pathname.startsWith('/world-shell'))event.waitUntil(cache.put(url.pathname,response.clone()));return response}
       }catch{}
       const offlineCopy=await cache.match(request)||await cache.match(request,{ignoreSearch:true});

@@ -1,10 +1,11 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {CLIENT_RELEASE} from '../src/client-release.ts';
 import assert from 'node:assert/strict';import vm from 'node:vm';import {build} from 'esbuild';
 import {newAncientProfile} from '../public/ancient-rules.js';import {sanctumBlocked} from '../public/ancient-sanctum.js';
 const bundle=await build({entryPoints:['src/ancient-world.ts'],bundle:true,write:false,format:'cjs',platform:'node',external:['cloudflare:workers']});
 let now=100000;const rows=new Map(),profiles=new Map(),messages=[];
 const exec=(sql,...args)=>{let found=[];if(sql.startsWith('SELECT')){const table=/FROM (\w+)/.exec(sql)?.[1],v=rows.get(table+':'+args[0]);if(v)found=[v]}else if(sql.startsWith('INSERT INTO ancient_abilities'))rows.set('ancient_abilities:'+args[0],{data:args[1]});else if(sql.startsWith('INSERT INTO ancient_world'))rows.set('ancient_world:'+args[0],{data:args[1],tick:args[2]});return {toArray:()=>found}};
-const peers=['a','b'].map(name=>{const profile=newAncientProfile();profile.level=150;profiles.set(name,profile);let a={name,map:'sanctum',x:2,z:270,y:9.7,yaw:0,hp:100000,maxHp:100000,deadAt:0,weapon:profile.weapons[0],ammo:10,lastShot:0,lastMove:now,seen:now};return {deserializeAttachment:()=>structuredClone(a),serializeAttachment:v=>a=structuredClone(v),send:s=>messages.push({name,...JSON.parse(s)}),close(){}}});
+const peers=['a','b'].map(name=>{const profile=newAncientProfile();profile.level=150;profiles.set(name,profile);let a={clientVersion:CLIENT_RELEASE,name,map:'sanctum',x:2,z:270,y:9.7,yaw:0,hp:100000,maxHp:100000,deadAt:0,weapon:profile.weapons[0],ammo:10,lastShot:0,lastMove:now,seen:now};return {deserializeAttachment:()=>structuredClone(a),serializeAttachment:v=>a=structuredClone(v),send:s=>messages.push({name,...JSON.parse(s)}),close(){}}});
 const ctx={getWebSockets:()=>peers,storage:{sql:{exec},setAlarm:async()=>{},transactionSync:fn=>fn()}},module={exports:{}};
 vm.runInNewContext(bundle.outputFiles[0].text,{module,exports:module.exports,crypto,structuredClone,Date:{now:()=>now},Math,require:()=>({DurableObject:class{constructor(ctx){this.ctx=ctx}}})});
 const server=new module.exports.AncientWorld(ctx,{});server.read=name=>structuredClone(profiles.get(name));server.save=(name,p)=>profiles.set(name,structuredClone(p));server.parties=()=>({recipients:()=>[],online:()=>new Map()});

@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {requiresClientVersion,currentClient,clientVersionResponse} from './client-version';
 import {adminAPI} from './admin-api';
 import {normalizeAccountEmail,emailDigest} from './account-email';
 import {worldEntry} from './world-entry';
@@ -355,6 +356,15 @@ export class GameRoom extends DurableObject<Env> {
 
 async function handleRequest(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    if(request.headers.get('Upgrade')==='websocket'&&!currentClient(url.searchParams.get('clientVersion')))return clientVersionResponse();
+
+    if(url.pathname==='/api/client-version'&&request.method==='POST'){
+      if(Number(request.headers.get('Content-Length'))>256)return clientVersionResponse();
+      let raw:string;try{raw=await request.text()}catch{return clientVersionResponse()}
+      if(raw.length>256)return clientVersionResponse();
+      let version:unknown;try{version=JSON.parse(raw)?.clientVersion}catch{return clientVersionResponse()}
+      return currentClient(version)?Response.json({ok:true},{headers:{'Cache-Control':'no-store'}}):clientVersionResponse();
+    }
     if(url.pathname==='/api/admin'){
       const origin=request.headers.get('Origin');if(!origin||origin==='null'||!allowedApiOrigin(origin,url.origin)||googleEmbedOrigin(origin)||canvaEmbedOrigin(origin))return Response.json({error:'管理请求来源无效'},{status:403});return adminAPI(request,env);
     }
@@ -374,6 +384,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       if(url.pathname!=='/api/ancient/profile'||request.method!=='POST')return json({error:'请求无效'},405);
       if(Number(request.headers.get('Content-Length'))>800000)return json({error:'请求过大'},413);
       let body:Record<string,unknown>;try{const text=await request.text();if(text.length>800000)return json({error:'请求过大'},413);body=JSON.parse(text);if(text.length>350000&&body?.action!=='communitySave')return json({error:'请求过大'},413);if(!body||Array.isArray(body)||typeof body!=='object')throw Error()}catch{return json({error:'请求格式无效'},400)}
+      if(requiresClientVersion(url.pathname,String(body?.action||''))&&!currentClient(body?.clientVersion))return clientVersionResponse();
       const name=String(body.name||'').toLowerCase();if(!/^[-_\p{L}\p{N}]{2,14}$/u.test(name)||!await env.PLAYER_ACCOUNTS.getByName('account:'+name).validate(String(body.token||''),String(body.device||'')))return json({error:'请先登录账号'},401);
       const result=await world.command(name,String(body.action||'profile'),body);return json(result,result.ok?200:409);
     }
@@ -385,6 +396,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       }
       if(request.method!=='POST'||url.pathname!=='/api/extraction/squad')return json({error:'请求无效'},405);
       let body:Record<string,unknown>;try{const raw=await request.text();if(raw.length>12000)return json({error:'请求过大'},413);body=JSON.parse(raw)}catch{return json({error:'请求格式无效'},400)}
+      if(requiresClientVersion(url.pathname,String(body?.action||''))&&!currentClient(body?.clientVersion))return clientVersionResponse();
       const name=String(body.name||'').toLowerCase(),token=String(body.token||''),device=String(body.device||'');if(!/^[-_\p{L}\p{N}]{2,14}$/u.test(name)||!await env.PLAYER_ACCOUNTS.getByName('account:'+name).validate(token,device))return json({error:'请先登录账号'},401);
       const action=String(body.action||''),room=body.room?String(body.room):action==='create'?'X'+crypto.randomUUID().replaceAll('-','').slice(0,20):'';if(!/^X[a-f0-9]{20}$/i.test(room)||!['create','join','state','ready','unready','leave','finish'].includes(action))return json({error:'队伍无效'},400);
       const profile=await env.PLAYER_ACCOUNTS.getByName('account:'+name).read(token,device),level=profile?.season.level||1;
@@ -517,6 +529,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       if(Number(request.headers.get('Content-Length')||0)>400000)return json({error:'请求过大'},413);
       let body:Record<string,unknown>;
       try{const raw=await request.text();if(raw.length>400000)return json({error:'请求过大'},413);body=JSON.parse(raw);if(!body||typeof body!=='object'||Array.isArray(body))throw Error()}catch{return json({error:'请求格式无效'},400)}
+      if(requiresClientVersion(url.pathname,String(body?.action||''))&&!currentClient(body?.clientVersion))return clientVersionResponse();
       let name=typeof body.name==='string'?body.name.trim().normalize('NFKC'):'';
       const device=typeof body.device==='string'?body.device:'',email=normalizeAccountEmail(body.email),code=typeof body.code==='string'?body.code:'',registry=env.ACCOUNT_SESSIONS.getByName('global-v1');
       if(url.pathname==='/api/account/problem-report'){
@@ -592,6 +605,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       if(!request.headers.get('Content-Type')?.startsWith('application/json'))return json({error:'请求格式无效'},415);
       let body:Record<string,unknown>;
       try{const raw=await request.text();if(raw.length>2048)return json({error:'请求过大'},413);body=JSON.parse(raw);if(!body||typeof body!=='object'||Array.isArray(body))throw Error()}catch{return json({error:'请求格式无效'},400)}
+      if(requiresClientVersion(url.pathname,String(body?.action||''))&&!currentClient(body?.clientVersion))return clientVersionResponse();
       const accountName=typeof body.name==='string'?body.name.trim().normalize('NFKC'):'';
       const token=typeof body.token==='string'?body.token:'',device=typeof body.device==='string'?body.device:'';
       if(!accountName||Array.from(accountName).length>14||!/^[-_\p{L}\p{N}]+$/u.test(accountName))return json({error:'账号无效'},400);
@@ -632,7 +646,8 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       if(request.method==='POST'){
         if(!await rateLimit('duel-match',12))return limited();
         if(!request.headers.get('Content-Type')?.startsWith('application/json'))return json({error:'请求格式无效'},415);
-        let body:{player?:unknown};try{body=await request.json() as typeof body}catch{return json({error:'请求格式无效'},400)}
+        let body:{player?:unknown;clientVersion?:unknown};try{body=await request.json() as typeof body}catch{return json({error:'请求格式无效'},400)}
+        if(!currentClient(body?.clientVersion))return clientVersionResponse();
         if(typeof body.player!=='string'||!/^[0-9a-f-]{36}$/i.test(body.player))return json({error:'玩家标识无效'},400);
         return json(await queue.join(body.player));
       }
@@ -768,7 +783,7 @@ function allowedApiOrigin(origin:string|null,workerOrigin:string){return origin=
 function googleEmbedPath(path:string){return /^\/api\/(account|ancient|social)\//.test(path)}
 // Opaque origins cannot identify a particular file. Treat these as public,
 // credentialless clients; protected actions still require explicit account tokens.
-function localFilePath(path:string){return googleEmbedPath(path)||/^\/api\/(extraction|room|duel|tri|quad|gunmaster|challenge|ranked|tournament|ctf|hardpoint|survival|bomb)\//.test(path)||['/api/loadout-codes','/api/matchmaking/ranked','/api/matchmaking/duel','/api/forum','/api/forum/post'].includes(path)}
+function localFilePath(path:string){return path==='/api/client-version'||googleEmbedPath(path)||/^\/api\/(extraction|room|duel|tri|quad|gunmaster|challenge|ranked|tournament|ctf|hardpoint|survival|bomb)\//.test(path)||['/api/loadout-codes','/api/matchmaking/ranked','/api/matchmaking/duel','/api/forum','/api/forum/post'].includes(path)}
 
 export default {
   async fetch(request,env):Promise<Response>{

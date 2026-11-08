@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {clientVersion,clientUpdateRequired,requireClientUpdate} from './client-version.js';
 export function createAncientConnection({session,map,origin,onSocket,onMessage,onStatus:statusSink,onDisconnect,onReady=()=>{},fetchImpl=fetch,socketFactory=url=>new WebSocket(url),setTimer=setTimeout,clearTimer=clearTimeout,now=Date.now,staleAfter=5500,disconnectAfter=8000,ackTimeout=6000,online=()=>typeof navigator==='undefined'||navigator.onLine!==false}){
  let enabled=false,generation=0,socket=null,request=null,retryTimer=0,watchdog=0,healthTimer=0,attempts=0,ready=false,welcomed=false,lastStateAt=0,lastServerTime=0;const outstanding=new Map();
  function onStatus(state,error,details={}){statusSink(state,error,{attempts,...details})}
@@ -15,20 +16,22 @@ export function createAncientConnection({session,map,origin,onSocket,onMessage,o
  }
  function monitor(ws){clearTimer(healthTimer);healthTimer=setTimer(()=>{healthTimer=0;checkHealth(ws);if(enabled&&socket===ws)monitor(ws)},1000)}
  async function connect(reconnect){
-  const epoch=++generation,current=session();if(!enabled)return;if(!online()){onStatus('offline');return}if(!current){enabled=false;setReady(false);onStatus('auth');return}
+  const epoch=++generation,current=session();if(!enabled||clientUpdateRequired())return;if(!online()){onStatus('offline');return}if(!current){enabled=false;setReady(false);onStatus('auth');return}
   const controller=new AbortController();request=controller;const timeout=setTimer(()=>controller.abort(),12000);
   try{
    onStatus(reconnect?(attempts<=2?'recovering':'retrying'):'connecting',undefined,{busy:true});
-   const response=await fetchImpl('/api/ancient/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...current,action:'ticket',map:map()}),cache:'no-store',signal:controller.signal});
+   const response=await fetchImpl('/api/ancient/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...current,action:'ticket',map:map(),clientVersion}),cache:'no-store',signal:controller.signal});
    if(epoch!==generation||!enabled)return;
    if(response.status===401||response.status===403){enabled=false;setReady(false);onStatus('auth');return}
    let data;try{data=await response.json()}catch{throw Error('Invalid server response')}
+   if(data?.code==='CLIENT_UPDATE_REQUIRED'){stop();requireClientUpdate(data);onStatus('error',data.error);return}
    if(!response.ok||!data?.ok||typeof data.ticket!=='string'){if(response.status===409){enabled=false;onStatus('error',data?.error);return}throw Error('Ticket request failed')}
    if(epoch!==generation||!enabled)return;
-   const url=new URL('/api/ancient/connect',origin());url.protocol=url.protocol==='https:'?'wss:':'ws:';url.searchParams.set('ticket',data.ticket);url.searchParams.set('map',map());url.searchParams.set('resume',reconnect?'1':'0');
+   const url=new URL('/api/ancient/connect',origin());url.protocol=url.protocol==='https:'?'wss:':'ws:';url.searchParams.set('ticket',data.ticket);url.searchParams.set('map',map());url.searchParams.set('resume',reconnect?'1':'0');url.searchParams.set('clientVersion',clientVersion);
    const ws=socketFactory(url);socket=ws;welcomed=false;lastServerTime=0;outstanding.clear();onSocket(ws);guard(ws,12000);
    ws.onmessage=event=>{
     if(socket!==ws||epoch!==generation||!enabled)return;let data;try{data=JSON.parse(event.data)}catch{return}
+    if(data.type==='clientUpdateRequired'){stop();requireClientUpdate(data);onStatus('error',data.error);return}
     if(data.type==='sessionEnded'){stop();onDisconnect();onStatus('auth');return}
     const authoritative=data.type==='welcome'||data.type==='state';
     if(data.type==='state'&&Number.isFinite(data.time)&&lastServerTime&&data.time<=lastServerTime)return;

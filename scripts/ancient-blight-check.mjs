@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {CLIENT_RELEASE} from '../src/client-release.ts';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {build} from 'esbuild';
@@ -21,7 +22,7 @@ const bundle=await build({entryPoints:['src/ancient-world.ts'],bundle:true,write
 let now=100000,random=.1;const records=new Map(),profiles=new Map(),messages=[];
 const exec=(sql,...args)=>{let rows=[];if(sql.startsWith('SELECT')){const table=/FROM (\w+)/.exec(sql)?.[1],value=records.get(table+':'+args[0]);if(value)rows=[value]}else if(sql.startsWith('INSERT INTO ancient_abilities'))records.set('ancient_abilities:'+args[0],{data:args[1]});else if(sql.startsWith('INSERT INTO ancient_world'))records.set('ancient_world:'+args[0],{data:args[1],tick:args[2]});else if(sql.startsWith('INSERT INTO ancient_health'))records.set('ancient_health:'+args[0],{hp:args[1],maxHp:args[2],deadAt:args[3]});return {toArray:()=>rows}};
 const c=BLIGHT_CRYSTALS[0];
-const actor=name=>({name,map:'blight',x:c.x,z:c.z-2,y:blightHeight(c.x,c.z-2)+1.7,yaw:Math.PI,hp:100000,maxHp:100000,deadAt:0,weapon:newAncientProfile().weapons[0],ammo:10,lastShot:0,lastMove:now,seen:now});
+const actor=name=>({clientVersion:CLIENT_RELEASE,name,map:'blight',x:c.x,z:c.z-2,y:blightHeight(c.x,c.z-2)+1.7,yaw:Math.PI,hp:100000,maxHp:100000,deadAt:0,weapon:newAncientProfile().weapons[0],ammo:10,lastShot:0,lastMove:now,seen:now});
 const peers=['a','b'].map(name=>{let p=actor(name);const profile=newAncientProfile();profile.level=name==='a'?100:150;profile.boosts={experience:now+3600000};profile.quest={revision:7,step:MAIN_QUESTS.findIndex(q=>q.id==='blight-crystals'),count:0};profiles.set(name,profile);return {deserializeAttachment:()=>structuredClone(p),serializeAttachment:a=>{p=structuredClone(a)},send:s=>messages.push({name,...JSON.parse(s)}),close(){}}});
 const ctx={getWebSockets:()=>peers,storage:{sql:{exec},setAlarm:async()=>{},transactionSync:fn=>fn()}},module={exports:{}};
 vm.runInNewContext(bundle.outputFiles[0].text,{module,exports:module.exports,crypto,Date:{now:()=>now},Math:Object.assign(Object.create(Math),{random:()=>random}),require:()=>({DurableObject:class{constructor(ctx){this.ctx=ctx}}})});

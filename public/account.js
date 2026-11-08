@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {clientVersion,assertClientAvailable,requireClientUpdate} from './client-version.js';
 import {accountPageLease} from './account-page-lease.js';
 import {createAnnouncementPoll} from './official-announcements.js';
 import {diagnosticFetch,apiURL} from './network-diagnostics.js?v=20261027-backend-fallback-1';
@@ -21,9 +22,11 @@ export function accountSession(){return session}
 export function localSave(){const data={};for(const key of CLOUD_KEYS){const value=localStorage.getItem(key);if(value!==null)data[key]=value}if(session)data['astrift.callsign']=session.name;return data}
 function applyCloudSave(data,name){for(const key of CLOUD_KEYS){if(typeof data[key]==='string')localStorage.setItem(key,data[key]);else localStorage.removeItem(key)}localStorage.setItem('astrift.callsign',name)}
 export async function accountApi(path,body){
+  assertClientAvailable();
   if(!await accountPageLease())throw Error('此设备已有游戏页面打开，请先关闭另一个页面。 / Another game page is open on this device. Close it first.');
-  const response=await diagnosticFetch(apiURL('/api/'+path),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,device}),cache:'no-store'});
+  const response=await diagnosticFetch(apiURL('/api/'+path),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,device,clientVersion}),cache:'no-store'});
   let result;try{result=await response.json()}catch{throw Error('服务器响应无效')}
+  requireClientUpdate(result,path==='account/save');
   if(response.status===401&&session&&body?.token===session.token){clearSession();window.dispatchEvent(new CustomEvent('astrift:account-reset'))}
   if(!response.ok||!result?.ok){if(String(result?.error||'').startsWith('账号已被')){clearSession();window.dispatchEvent(new CustomEvent('astrift:account-banned'));window.dispatchEvent(new CustomEvent('astrift:account-reset'))}throw Error(result?.error||'请求失败');}
   return result;
@@ -104,7 +107,7 @@ export function initAccountUI(){
   setInterval(()=>{if(session&&!document.hidden)void refreshAccountProfile().catch(()=>{})},60000);
   addEventListener('focus',()=>{void checkSession()});
   addEventListener('online',()=>{void syncCloud()});
-  addEventListener('pagehide',()=>{if(session&&JSON.stringify(localSave())!==lastUploaded)void fetch(apiURL('/api/account/save'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...session,snapshot:localSave()}),keepalive:true}).catch(()=>{})});
+  addEventListener('pagehide',()=>{if(session&&JSON.stringify(localSave())!==lastUploaded)void fetch(apiURL('/api/account/save'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...session,snapshot:localSave(),clientVersion}),keepalive:true}).catch(()=>{})});
 }
 function panelError(message){$('seasonDetails').textContent=message}
 

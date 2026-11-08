@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {CLIENT_OUTDATED,currentClient} from './client-version';
 import {DurableObject} from 'cloudflare:workers';
 type Member={name:string;host:boolean;ready:boolean;level:number;loadout:Record<string,unknown>|null;finished:boolean};
 type Party={room:string;phase:'lobby'|'running';members:Member[];started:number;ends:number};
@@ -24,7 +25,7 @@ export class ExtractionRoom extends DurableObject<Env>{
     if(action==='leave'&&me){p.members=p.members.filter(m=>m!==me);if(p.members.length){if(me.host)p.members[0].host=true;for(const m of p.members)m.ready=false;this.write(p)}else this.ctx.storage.sql.exec('DELETE FROM extraction_state');this.broadcast({type:'extractionParty',party:p})}
     return {ok:true,party:p};
   }
-  async fetch(request:Request){if(request.headers.get('Upgrade')!=='websocket')return Response.json({error:'需要WebSocket'}, {status:426});const pair=new WebSocketPair();this.ctx.acceptWebSocket(pair[1],request.headers.get('X-Astrift-Account')?['account:'+request.headers.get('X-Astrift-Account')]:[]);return new Response(null,{status:101,webSocket:pair[0]})}
+  async fetch(request:Request){if(request.headers.get('Upgrade')!=='websocket')return Response.json({error:'需要WebSocket'}, {status:426});const pair=new WebSocketPair();const account=request.headers.get('X-Astrift-Account'),release=new URL(request.url).searchParams.get('clientVersion')||'';this.ctx.acceptWebSocket(pair[1],[...(account?['account:'+account]:[]),'release:'+release]);return new Response(null,{status:101,webSocket:pair[0]})}
   async webSocketMessage(ws:WebSocket,raw:string|ArrayBuffer){
     if(typeof raw!=='string'||raw.length>60000)return;let d:Record<string,unknown>;try{d=JSON.parse(raw)}catch{return}if(!d||typeof d!=='object'||Array.isArray(d))return;
     if(d.type==='join'){
@@ -33,6 +34,10 @@ export class ExtractionRoom extends DurableObject<Env>{
       const world=this.ctx.storage.sql.exec<{data:string}>('SELECT data FROM extraction_world WHERE id=1').toArray()[0];ws.send(JSON.stringify({type:'extractionWelcome',party:p,world:world?JSON.parse(world.data):null}));return;
     }
     const who=ws.deserializeAttachment() as Identity|null,p=this.read();if(!who||!p||p.phase!=='running')return;const member=p.members.find(m=>m.name===who.name);if(!member)return;
+    if(['extractionRequest','extractionTransfer','extractionDrop'].includes(String(d.type))&&!currentClient(this.ctx.getTags(ws).find(tag=>tag.startsWith('release:'))?.slice(8))){
+      ws.send(JSON.stringify({type:'clientUpdateRequired',...CLIENT_OUTDATED}));return;
+    }
+
     if(d.type==='extractionDeath'){
       if(!Array.isArray(d.position)||d.position.length!==3||!d.position.every(v=>Number.isFinite(v)&&Math.abs(v)<200)||!Array.isArray(d.items)||d.items.length>80)return;
       const row=this.ctx.storage.sql.exec<{data:string}>('SELECT data FROM extraction_world WHERE id=1').toArray()[0],world=row?JSON.parse(row.data):{bots:[],drops:[]},id='death:'+who.name+':'+p.started;
