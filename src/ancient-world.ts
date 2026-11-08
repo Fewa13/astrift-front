@@ -266,7 +266,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
     const position=data.position as {x?:unknown;z?:unknown}|undefined;
     const valid=action==='puzzleState'&&data.floor===state.floor&&typeof position?.x==='number'&&typeof position.z==='number'&&Number.isFinite(position.x+position.z);
     const x=valid?Math.max(8,Math.min(92,position.x as number)):presence?.floor===state.floor?presence.x:50;
-    const z=valid?Math.max(20,Math.min(90,position.z as number)):presence?.floor===state.floor?presence.z:80;
+    const z=valid?Math.max(-1200,Math.min(90,position.z as number)):presence?.floor===state.floor?presence.z:80;
     sql.exec('INSERT INTO ancient_puzzle_presence VALUES(?,?,?,?,?) ON CONFLICT(name) DO UPDATE SET seen=excluded.seen,floor=excluded.floor,x=excluded.x,z=excluded.z',name,now,state.floor,x,z);
     sql.exec('DELETE FROM ancient_puzzle_presence WHERE seen<?',now-15000);
     const players=sql.exec<{name:string;x:number;z:number}>('SELECT name,x,z FROM ancient_puzzle_presence WHERE floor=? ORDER BY name LIMIT 40',state.floor).toArray();

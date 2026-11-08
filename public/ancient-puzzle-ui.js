@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-5';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-6';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',selected=-1;
  const L=(a,b)=>en()?b:a;
@@ -22,7 +22,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   state=next;map?.sync(next);draw();
 
   room.querySelector('.ancientPuzzleFeedback').textContent=feedback;
-  room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+next.banks.filter(bank=>bank.done).length+' / '+next.banks.length+L(' 组已完成',' groups complete');
+  room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+L('房间 ','Room ')+(next.banks.findIndex(bank=>!bank.done)+1)+' / '+next.banks.length+' · '+L('打开出口','Open the exit');
   const history=room?.querySelector('.ancientPuzzleChatHistory');
   if(history&&history.dataset.last!==String(next.chat.at(-1)?.id||0)){
    history.dataset.last=String(next.chat.at(-1)?.id||0);history.replaceChildren();
@@ -111,6 +111,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   function focusControls(index){
    if(panel.open)return;
    const bank=state.banks?.find(b=>index>=b.start&&index<b.start+b.count);
+   if(bank?.done)return;
    const direct={2:'shiftGear',3:'pump',5:'pulse'}[bank?.kind];
    if(direct){if(!bank.done)operate(direct,{index});return;}
    if(document.pointerLockElement===canvas)document.exitPointerLock();

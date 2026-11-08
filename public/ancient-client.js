@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createAncientPuzzleUI} from './ancient-puzzle-ui.js?v=20261108-room-5';
+import {createAncientPuzzleUI} from './ancient-puzzle-ui.js?v=20261108-room-6';
 import {clientUpdateRequired} from './client-version.js';
 import {poseCommunityFurniture} from './ancient-community-amenities.js';
 import {setChapterState,chapterMovementScale} from './ancient-geography.js';

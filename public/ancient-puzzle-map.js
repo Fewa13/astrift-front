@@ -3,18 +3,20 @@ import * as T from './three.module.js';
 import {ancientInputCode,ancientSensitivity} from './ancient-input-settings.js';
 import {slideAncientMove} from './ancient-control-feel.js';
 
-function stationPositions(floor,count){
- let seed=floor*2654435761|0;
- const random=()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return (seed>>>0)/4294967296};
- // Leave a clear central route from the entrance and keep every station reachable.
- const columns=[3.7,7.5,10.1,15,17.6,21.3];
- const rows=Array.from({length:9},(_,row)=>columns.map(x=>({x,z:6+row*1.48})));
- const slots=rows.flat();
- for(let i=slots.length-1;i>0;i--){
-  const j=Math.floor(random()*(i+1));
-  [slots[i],slots[j]]=[slots[j],slots[i]];
- }
- return slots.slice(0,count).map(({x,z})=>({x:x+(random()-.5)*.24,z:z+(random()-.5)*.16}));
+const ROOM_DEPTH=12;
+const gateAt=index=>16-(index+1)*ROOM_DEPTH;
+
+function stationPositions(floor,banks){
+ return banks.flatMap((bank,room)=>{
+  const slots=[6,10,15,19].flatMap(x=>[4,8].map(depth=>({x,z:gateAt(room)+depth})));
+  let seed=Math.imul(floor*31+room+1,2654435761);
+  for(let i=slots.length-1;i>0;i--){
+   seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;
+   const j=(seed>>>0)%(i+1);
+   [slots[i],slots[j]]=[slots[j],slots[i]];
+  }
+  return slots.slice(0,bank.count);
+ });
 }
 
 export function createPuzzleMap(canvas,name,en,interact){
@@ -30,33 +32,27 @@ export function createPuzzleMap(canvas,name,en,interact){
  function box(parent,x,y,z,w,h,d,color){const mesh=new T.Mesh(geometry,material(color));mesh.position.set(x,y,z);mesh.scale.set(w,h,d);parent.add(mesh);return mesh}
  const scale=.25,eyeHeight=1.7;
  const jade=new T.MeshStandardMaterial({color:0x81eacf,emissive:0x218e78,emissiveIntensity:.65});
- box(scene,12.5,-.3,13.75,22,.6,20,0x304855);
- box(scene,12.5,5,13.75,22,.2,20,0x293d47);
- for(const x of [1.5,23.5])box(scene,x,2.4,13.75,.3,5,20,0x27404c);
- for(const z of [3.75,23.75])box(scene,12.5,2.4,z,22,5,.3,0x294550);
- for(let x=2;x<=23;x+=1.5)box(scene,x,.012,13.75,.026,.022,20,0x47727b);
- for(let z=4;z<=23;z+=1.5)box(scene,12.5,.012,z,22,.022,.026,0x47727b);
- box(scene,12.5,2,3.93,3.7,4,.2,0x142532);
- box(scene,12.5,4.08,4.04,3.9,.19,.28,0x73d2b5);
- for(const x of [2,23])for(const z of [5,10,15,20]){
-  box(scene,x,2.4,z,.55,4.8,.7,0x1d3038);
-  box(scene,x,2.8,z,.6,.24,.75,0xc59a60).material=jade;
- }
- for(const x of [10.8,14.2])box(scene,x,.025,13.75,.06,.04,19,0xb18a52);
- for(let i=0;i<10;i++){
-  const z=5+i*1.9;
-  for(const x of [2.1,22.9]){
-   box(scene,x,.38,z,.55,.76,1.75,0x1d2d36);
-   box(scene,x,3.5,z,.24,1.05,1.56,0x45616b);
-   box(scene,x,3.5,z+.55,.29,.83,.06,0xa77f4e);
+ const stonework=new T.Group();scene.add(stonework);
+ let doors=[];
+ function buildRooms(banks){
+  stonework.clear();doors=[];
+  const count=Math.max(1,banks.length),end=gateAt(count-1),length=24-end;
+  const stone=0x554638,trim=0x8e7350;
+  box(stonework,12.5,-.32,24-length/2,22,.64,length,0x534737);
+  box(stonework,12.5,5,24-length/2,22,.3,length,0x3c342b);
+  for(const x of [1.5,23.5])box(stonework,x,2.45,24-length/2,.4,5,length,stone);
+  box(stonework,12.5,2.45,24,22,5,.5,stone);
+  for(let i=0;i<count;i++){
+   const z=gateAt(i),tint=i%2?stone:0x615240;
+   for(const x of [6,19])box(stonework,x,2.45,z,9,5,.65,tint);
+   box(stonework,12.5,4.3,z,4.2,1.4,.85,trim);
+   doors.push(box(stonework,12.5,1.85,z,4.1,3.7,.64,0x70604a));
+   for(const x of [10.45,14.55]){
+    box(stonework,x,1.9,z+.38,.45,3.8,.44,trim);
+    box(stonework,x,2.6,z+.65,.26,.52,.19,trim).material=jade;
+   }
+   for(let k=1;k<6;k++)box(stonework,12.5,.018,z+k*1.75,2.6,.036,.08,trim);
   }
-  box(scene,12.5,4.77,z,21,.3,.38,0x263640);
-  box(scene,12.5,4.58,z,4.6,.07,.1,0x81eacf).material=jade;
-  box(scene,12.5,.027,z,.58,.025,.13,0x81eacf).material=jade;
- }
- for(const x of [10.45,14.55]){
-  box(scene,x,2.15,4.05,.32,4.3,.36,0xa37a4d);
-  box(scene,x,1.85,4.26,.11,2.7,.12,0x81eacf).material=jade;
  }
  const stick={x:0,y:0};
  let nearby=-1;
@@ -95,10 +91,12 @@ export function createPuzzleMap(canvas,name,en,interact){
  function clearPlayer(actor){actor.removeFromParent();actor.label.material.map.dispose();actor.label.material.dispose()}
  function sync(next){
   if(state?.floor!==next.floor){
-   pos={x:50,z:80};nearby=-1;yaw=pitch=vy=0;height=eyeHeight;keys.clear();
+   const room=Math.max(0,(next.banks||[]).findIndex(bank=>!bank.done));
+   pos={x:50,z:room===0?80:(gateAt(room-1)-2)/scale};nearby=-1;yaw=pitch=vy=0;height=eyeHeight;keys.clear();
    for(const station of stations)clearPlayer(station);
    stations.length=0;
-   const positions=stationPositions(next.floor,next.dials?.length||0);
+   buildRooms(next.banks||[]);
+   const positions=stationPositions(next.floor,next.banks||[]);
    for(const [i,{x,z}] of positions.entries()){
     const station=new T.Group();station.position.set(x,0,z);
     const bankIndex=next.banks.findIndex(b=>i>=b.start&&i<b.start+b.count);
@@ -147,6 +145,7 @@ export function createPuzzleMap(canvas,name,en,interact){
    }
   }
   state=next;
+  doors.forEach((door,i)=>{door.visible=!next.banks?.[i]?.done;});
   for(let i=0;i<stations.length;i++){
    const station=stations[i],bank=next.banks[station.bank];
    const value=next.values[i],kind=bank.kind,dial=next.dials[i];
@@ -181,7 +180,7 @@ export function createPuzzleMap(canvas,name,en,interact){
   const dt=Math.min(.05,last?(time-last)/1000:0);last=time;if(!state)return;
   const side=Number(keys.has('d'))-Number(keys.has('a'))+stick.x,forward=Number(keys.has('w'))-Number(keys.has('s'))-stick.y;
   const step=(keys.has('sprint')?9:6)*dt/Math.max(1,Math.hypot(side,forward));
-  const blocked=(x,z)=>x<2||x>23||z<5||z>22.5||stations.some(o=>Math.abs(x-o.position.x)<1.05&&Math.abs(z-o.position.z)<.8);
+  const blocked=(x,z)=>x<2||x>23||z<gateAt(doors.length-1)+.2||z>22.5||doors.some((door,i)=>Math.abs(z-gateAt(i))<.62&&(door.visible||Math.abs(x-12.5)>1.65))||stations.some(o=>Math.abs(x-o.position.x)<1.05&&Math.abs(z-o.position.z)<.8);
   const next=slideAncientMove({x:pos.x*scale,y:height,z:pos.z*scale},
    (side*Math.cos(yaw)-forward*Math.sin(yaw))*step,(-side*Math.sin(yaw)-forward*Math.cos(yaw))*step,blocked,()=>0);
   pos.x=next.x/scale;pos.z=next.z/scale;

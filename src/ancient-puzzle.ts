@@ -7,7 +7,7 @@ type Stage={
  kind:number;name:Text;dials:Dial[];target:number;measure:(values:number[])=>number;unit:string;
  plate?:string;order?:number[];cables?:number[];window?:[number,number];
 };
-export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,values:[],sequence:0,lastPulse:0,layout:2});
+export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,values:[],sequence:0,lastPulse:0,layout:3});
 
 function buildStage(difficulty:number,n:number,kind:number,relay=false):Stage{
  const max=8+difficulty*2,extra=difficulty>=3;
@@ -25,6 +25,7 @@ function buildStage(difficulty:number,n:number,kind:number,relay=false):Stage{
  }
  if(kind===0){
   const left=2+n%6,right=5+n%7,trim=extra?3+n%4:0;
+  if(left*solution[0]-right*solution[1]+trim*solution[2]===0)solution[0]++;
   return machine(['力矩平衡','Torque balance'],[dial('左载荷','Left load'),dial('右载荷','Right load'),...(extra?[dial('微调载荷','Trim load')]:[])],
    'N·m',[left+' m',right+' m',...(extra?[trim+' m']:[])].join(' / '),v=>left*v[0]-right*v[1]+trim*(v[2]||0));
  }
@@ -51,11 +52,11 @@ const sameReading=(a:number,b:number)=>Math.round(a*1000)===Math.round(b*1000);
 const difficultyFor=(floor:number)=>Math.min(5,Math.ceil(floor/24));
 
 function roomLayout(floor:number){
- const difficulty=difficultyFor(floor),count=5+Math.floor(12*(floor-1)/(PUZZLE_FLOORS-1));
+ const difficulty=difficultyFor(floor),count=8+Math.floor(16*(floor-1)/(PUZZLE_FLOORS-1));
  const hasRelay=difficulty>=4&&floor%5===0;
  const banks:Stage[]=[];
- for(let i=0;i<count-(hasRelay?(count===17?3:2):0);i++){
-  banks.push(buildStage(count===17&&!hasRelay&&i===16?2:difficulty,floor*17+i*13,(floor-1+i)%5));
+ for(let i=0;i<count-(hasRelay?1:0);i++){
+  banks.push(buildStage(difficulty,floor*17+i*13,(floor-1+i)%5));
  }
  if(hasRelay)banks.push(buildStage(difficulty,floor,4,true));
  let start=0;
@@ -63,7 +64,11 @@ function roomLayout(floor:number){
 }
 
 export function upgradePuzzleState(state:PuzzleState){
- return state.layout===2?state:newPuzzleState(state.floor,state.revision+1);
+ return state.layout===3?state:newPuzzleState(state.floor,state.revision+1);
+}
+
+function bankDone(stage:Stage,start:number,values:number[],relayDone?:boolean){
+ return stage.order?!!relayDone:sameReading(stage.measure(values.slice(start,start+stage.dials.length)),stage.target);
 }
 
 function roomReadings(state:PuzzleState){
@@ -80,7 +85,7 @@ export function puzzleView(state:PuzzleState){
   banks:banks.map(({stage,start})=>({
    start,kind:stage.kind,count:stage.dials.length,name:stage.name,target:stage.target,unit:stage.unit,plate:stage.plate,
    reading:stage.order?state.sequence:stage.measure(values.slice(start,start+stage.dials.length)),
-   timed:!!stage.order,done:stage.order?!!state.relayDone:sameReading(stage.measure(values.slice(start,start+stage.dials.length)),stage.target),
+   timed:!!stage.order,done:bankDone(stage,start,values,state.relayDone),
    cables:stage.cables,
    window:stage.window,
   }))};
@@ -91,12 +96,14 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
  const {banks,dials,values}=roomReadings(state);
  const next={...state,revision:state.revision+1,values};
  function finish(notice:string){
-  const ready=banks.every(({stage,start})=>stage.order?next.relayDone:sameReading(stage.measure(next.values.slice(start,start+stage.dials.length)),stage.target));
+  const ready=banks.every(({stage,start})=>bankDone(stage,start,next.values,next.relayDone));
   return ready?{state:newPuzzleState(state.floor+1,next.revision),notice:'clear'}:{state:next,notice};
  }
  const index=input.index;
  if(typeof index!=='number'||!Number.isInteger(index)||index<0||index>=dials.length)return {state,notice:'invalid'};
- const {stage,start}=banks.find(({stage,start})=>index>=start&&index<start+stage.dials.length)!;
+ const active=banks.find(({stage,start})=>!bankDone(stage,start,values,state.relayDone));
+ if(!active||index<active.start||index>=active.start+active.stage.dials.length)return {state,notice:'locked'};
+ const {stage,start}=active;
  if(stage.order){
   if(input.control!=='pulse'||state.relayDone)return {state,notice:'invalid'};
   const delay=now-state.lastPulse;
