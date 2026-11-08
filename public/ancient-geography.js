@@ -34,9 +34,17 @@ function chapterDistance(map, x, z) {
   for (const e of CHAPTER_EXTRAS[map] || []) d = Math.max(d, Math.min(e.w / 2 - Math.abs(x - e.x), e.d / 2 - Math.abs(z - e.z)));
   return d;
 }
+const DUNES_OASIS = { x: 15, z: 180, rx: 12, rz: 7, water: -0.42 };
+function dunesOasisRadius(x, z) {
+  const o = DUNES_OASIS;
+  return Math.hypot((x - o.x) / o.rx, (z - o.z) / o.rz);
+}
 function chapterHeight(map, x, z) {
   if (map === "frostcourt") return 8 * smooth((z - 245) / 45) + 4 * smooth((-x - 65) / 40) * (1 - smooth((z - 190) / 30)) - 6 * smooth((x - 55) / 40) * (1 - smooth((z - 200) / 35));
-  if (map === "dunes") return 10 * smooth((z - 265) / 60) + Math.sin(x * 0.026) * Math.sin(z * 0.028) * 2.4 * (1 - smooth((z - 300) / 25));
+  if (map === "dunes") {
+    const r = dunesOasisRadius(x, z);
+    return 10 * smooth((z - 265) / 60) + Math.sin(x * 0.026) * Math.sin(z * 0.028) * 2.4 * (1 - smooth((z - 300) / 25)) * smooth((r - 1.2) / 0.65) - (1 - smooth((r - 0.48) / 0.83)) * 1.45;
+  }
   let total = 0, sum = 0;
   const route = CHAPTER_ROUTES[map] || [];
   for (let i = 1; i < route.length; i++) {
@@ -137,6 +145,7 @@ export {
   CHAPTER_GATES,
   CHAPTER_PROPS,
   CHAPTER_ROUTES,
+  DUNES_OASIS,
   chapterBlocked,
   chapterClear,
   chapterDistance,
@@ -147,6 +156,7 @@ export {
   chapterPoint,
   chapterProjection,
   chapterSafe,
+  dunesOasisRadius,
   getChapterState,
   mapChapterNPCs,
   setChapterState

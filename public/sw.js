@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261107-chapter-ground-1';
+const CACHE_NAME='astrift-offline-20261107-chapter-ground-2';
 const ASSETS=[
  '/ancient-community-optics.js',
  '/ancient-community-amenities.js','/ancient-community-uses.js','/ancient-amenity-defs.js',
