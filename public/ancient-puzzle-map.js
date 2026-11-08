@@ -4,14 +4,15 @@ import * as T from './three.module.js';
 export function createPuzzleMap(canvas,name,en,interact){
  const renderer=new T.WebGLRenderer({canvas,antialias:true});
  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
- const scene=new T.Scene(),camera=new T.PerspectiveCamera(70,1,.06,70);
+ const scene=new T.Scene(),camera=new T.PerspectiveCamera(75,1,.06,70);
  scene.background=new T.Color(0x142633);
  scene.add(new T.HemisphereLight(0xbde9eb,0x3b3041,2));
  const light=new T.DirectionalLight(0xffe5b9,2);light.position.set(4,8,6);scene.add(light);
  const geometry=new T.BoxGeometry(),materials=new Map(),stations=[],players=new Map(),keys=new Set();
  const material=color=>{if(!materials.has(color))materials.set(color,new T.MeshStandardMaterial({color}));return materials.get(color)};
  function box(parent,x,y,z,w,h,d,color){const mesh=new T.Mesh(geometry,material(color));mesh.position.set(x,y,z);mesh.scale.set(w,h,d);parent.add(mesh);return mesh}
- const scale=.25;
+ const scale=.25,eyeHeight=1.7;
+ const jade=new T.MeshStandardMaterial({color:0x81eacf,emissive:0x218e78,emissiveIntensity:.65});
  box(scene,12.5,-.3,13.75,22,.6,20,0x304855);
  box(scene,12.5,5,13.75,22,.2,20,0x293d47);
  for(const x of [1.5,23.5])box(scene,x,2.4,13.75,.3,5,20,0x27404c);
@@ -20,20 +21,26 @@ export function createPuzzleMap(canvas,name,en,interact){
  for(let z=4;z<=23;z+=1.5)box(scene,12.5,.012,z,22,.022,.026,0x47727b);
  box(scene,12.5,2,3.93,3.7,4,.2,0x142532);
  box(scene,12.5,4.08,4.04,3.9,.19,.28,0x73d2b5);
- let state=null,pos={x:50,z:80},yaw=0,pitch=0,frame=0,last=0,drag=null;
- const moveKeys={w:'w',arrowup:'w',s:'s',arrowdown:'s',a:'a',arrowleft:'a',d:'d',arrowright:'d'};
- function turn(dx,dy){yaw-=dx*.003;pitch=T.MathUtils.clamp(pitch-dy*.003,-1.35,1.35)}
+ for(const x of [2,23])for(const z of [5,10,15,20]){
+  box(scene,x,2.4,z,.55,4.8,.7,0x1d3038);
+  box(scene,x,2.8,z,.6,.24,.75,0xc59a60).material=jade;
+ }
+ for(const x of [10.8,14.2])box(scene,x,.025,13.75,.06,.04,19,0xb18a52);
+ let state=null,pos={x:50,z:80},yaw=0,pitch=0,height=eyeHeight,vy=0,frame=0,last=0,drag=null;
+ const moveKeys={KeyW:'w',ArrowUp:'w',KeyS:'s',ArrowDown:'s',KeyA:'a',ArrowLeft:'a',KeyD:'d',ArrowRight:'d',ShiftLeft:'sprint',ShiftRight:'sprint'};
+ function jump(){if(height<=eyeHeight+.01)vy=6.5}
+ function turn(dx,dy,sensitivity){yaw-=dx*sensitivity;pitch=T.MathUtils.clamp(pitch-dy*sensitivity,-1.5,1.5)}
  const locked=()=>document.pointerLockElement===canvas;
- function mouseMove(event){if(locked())turn(event.movementX,event.movementY)}
+ function mouseMove(event){if(locked())turn(event.movementX,event.movementY,.002)}
  function release(){keys.clear();drag=null}
  document.addEventListener('mousemove',mouseMove);
  window.addEventListener('blur',release);
  canvas.addEventListener('keydown',event=>{
-  const key=event.key.toLowerCase();
-  if(key==='e'){event.preventDefault();interact();return}
+  const key=event.code;
+  if(key==='KeyF'||key==='Space'){event.preventDefault();if(!event.repeat)(key==='KeyF'?interact:jump)();return}
   if(moveKeys[key]){event.preventDefault();keys.add(moveKeys[key]);}
  });
- canvas.addEventListener('keyup',event=>keys.delete(moveKeys[event.key.toLowerCase()]));
+ canvas.addEventListener('keyup',event=>keys.delete(moveKeys[event.code]));
  canvas.addEventListener('blur',release);
  canvas.addEventListener('pointerdown',event=>{
   canvas.focus();drag={id:event.pointerId,x:event.clientX,y:event.clientY};
@@ -42,7 +49,7 @@ export function createPuzzleMap(canvas,name,en,interact){
  });
  canvas.addEventListener('pointermove',event=>{
   if(locked()||drag?.id!==event.pointerId)return;
-  turn(event.clientX-drag.x,event.clientY-drag.y);drag.x=event.clientX;drag.y=event.clientY;
+  turn(event.clientX-drag.x,event.clientY-drag.y,.004);drag.x=event.clientX;drag.y=event.clientY;
  });
  for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>drag=null);
  function badge(name){
@@ -53,12 +60,14 @@ export function createPuzzleMap(canvas,name,en,interact){
  function clearPlayer(actor){actor.removeFromParent();actor.label.material.map.dispose();actor.label.material.dispose()}
  function sync(next){
   if(state?.floor!==next.floor){
-   pos={x:50,z:80};yaw=pitch=0;keys.clear();
+   pos={x:50,z:80};yaw=pitch=vy=0;height=eyeHeight;keys.clear();
    for(const station of stations)clearPlayer(station);
    stations.length=0;
    for(let i=0;i<(next.dials?.length||0);i++){
     const station=new T.Group();station.position.set((14+72*(i+.5)/next.dials.length)*scale,0,5.4);
     box(station,0,.6,0,1.35,1.2,.85,0x466976);
+    box(station,0,.12,0,1.65,.24,1.15,0x20333d);
+    box(station,0,1.18,0,1.48,.12,1,0xb18a52);
     station.gauge=box(station,0,1.29,.08,.86,.16,.5,0x6adcc1);
     const label=badge(String(i+1));label.position.y=1.65;label.scale.set(.72,.28,1);station.add(label);station.label=label;
     stations.push(station);scene.add(station);
@@ -79,10 +88,11 @@ export function createPuzzleMap(canvas,name,en,interact){
   frame=requestAnimationFrame(draw);
   const dt=Math.min(.05,last?(time-last)/1000:0);last=time;if(!state)return;
   const side=Number(keys.has('d'))-Number(keys.has('a')),forward=Number(keys.has('w'))-Number(keys.has('s'));
-  const step=18*dt/Math.max(1,Math.hypot(side,forward));
+  const step=(keys.has('sprint')?9:6)*dt/(scale*Math.max(1,Math.hypot(side,forward)));
   pos.x=T.MathUtils.clamp(pos.x+(side*Math.cos(yaw)-forward*Math.sin(yaw))*step,8,92);
   pos.z=T.MathUtils.clamp(pos.z+(-side*Math.sin(yaw)-forward*Math.cos(yaw))*step,20,90);
-  camera.position.set(pos.x*scale,1.65,pos.z*scale);camera.rotation.set(pitch,yaw,0,'YXZ');
+  vy-=19*dt;height=Math.max(eyeHeight,height+vy*dt);if(height===eyeHeight)vy=0;
+  camera.position.set(pos.x*scale,height,pos.z*scale);camera.rotation.set(pitch,yaw,0,'YXZ');
   for(const actor of players.values())actor.position.lerp(actor.target,Math.min(1,dt*6));
   const width=canvas.clientWidth,height=canvas.clientHeight;
   if(width&&height&&(camera.aspect!==width/height||canvas.width!==Math.floor(width*renderer.getPixelRatio())||canvas.height!==Math.floor(height*renderer.getPixelRatio()))){
@@ -91,9 +101,9 @@ export function createPuzzleMap(canvas,name,en,interact){
   renderer.render(scene,camera);
  }
  frame=requestAnimationFrame(draw);
- return {position:()=>({...pos}),sync,move(key,down){if(down)keys.add(key);else keys.delete(key)},dispose(){
+ return {position:()=>({...pos}),sync,jump,move(key,down){if(down)keys.add(key);else keys.delete(key)},dispose(){
   cancelAnimationFrame(frame);if(locked())document.exitPointerLock();document.removeEventListener('mousemove',mouseMove);window.removeEventListener('blur',release);
   for(const actor of [...players.values(),...stations])clearPlayer(actor);
-  geometry.dispose();for(const mat of materials.values())mat.dispose();renderer.dispose();
+  geometry.dispose();jade.dispose();for(const mat of materials.values())mat.dispose();renderer.dispose();
  }};
 }

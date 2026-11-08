@@ -47,6 +47,9 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   else {
    make(active,'small',L('第 ','Floor ')+state.floor+' / '+state.total+' · '+L('难度 ','Difficulty ')+state.difficulty+'/5');
    make(active,'h2',state.name[en()?1:0]);make(active,'p',state.hint[en()?1:0]);
+   make(active,'p',state.timed
+    ?L('先读本层线索，再按提示的顺序和节奏点击触点。','Read the floor clue, then activate the contacts in the indicated order and rhythm.')
+    :L('用 ＋／− 调节各个旋钮，观察读数。对准目标后，点「检验机关」。','Adjust the dials with + and −. Match the target reading, then select Test mechanism.')).className='ancientPuzzleEyebrow';
    if(state.formula)make(active,'small',state.formula[en()?1:0]);
    const read=make(active,'div',state.timed?L('已触发 ','Contacts ')+state.sequence+' / '+state.dials.length:
     L('读数 ','Reading ')+Number(state.reading.toFixed(3))+' → '+L('目标 ','Target ')+Number(state.target.toFixed(3))+' '+state.unit);
@@ -90,9 +93,9 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   button(top,L('机关控制台','Mechanism controls'),focusControls);
   const viewport=make(room,'section');viewport.className='ancientPuzzleViewport';
   const canvas=make(viewport,'canvas');canvas.tabIndex=0;canvas.className='ancientPuzzleMap';
-  canvas.setAttribute('aria-label',L('第一人称机关室，WASD 移动，鼠标或拖动转向，E 打开机关控制台','First-person chamber. WASD to move, mouse or drag to look, E for mechanism controls.'));
+  canvas.setAttribute('aria-label',L('第一人称机关室，WASD 移动，空格跳跃，F 打开机关控制台','First-person chamber. WASD to move, Space to jump, F for mechanism controls.'));
   make(viewport,'span','+').className='ancientPuzzleReticle';
-  const help=make(viewport,'small',L('WASD 移动 · 拖动转向 · E 操作机关','WASD move · drag to look · E for controls'));help.className='ancientPuzzleViewHelp';
+  const help=make(viewport,'small',L('WASD 移动 · Shift 奔跑 · 空格跳跃 · 点击后用鼠标转向 · F 交互','WASD Move · Shift Sprint · Space Jump · Click for mouse look · F Interact'));help.className='ancientPuzzleViewHelp';
   try{map=createPuzzleMap(canvas,()=>name().toLowerCase(),en,focusControls);}
   catch(error){close();throw error;}
   onEnter();
@@ -102,6 +105,8 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
    control.onpointerdown=event=>{event.preventDefault();control.setPointerCapture(event.pointerId);map.move(key,true);};
    control.onpointerup=control.onpointercancel=control.onlostpointercapture=()=>map?.move(key,false);
   }
+  button(pad,L('跳','Jump'),()=>map?.jump());
+  button(pad,L('交互','Interact'),focusControls);
   make(room,'main').tabIndex=-1;
   const chat=make(room,'aside');chat.className='ancientPuzzleChat';make(chat,'h2',L('解谜频道','Puzzle chat'));
   make(chat,'div').className='ancientPuzzleChatHistory';
