@@ -22,6 +22,6 @@ export function requiresClientVersion(path:string,action:string){
  if(path==='/api/ranked/result')return true;
  return path==='/api/matchmaking/ranked'&&['join','finishAi'].includes(action);
 }
-const worldProtected=new Set(['communityAction','chapterFeature','dungeonMechanism','rotateMirror','absorbCrystal','blightDefend','mapInteract','branchMentor','questTalk','questAccept']);
+const worldProtected=new Set(['communityAction','chapterFeature','dungeonMechanism','towerRune','rotateMirror','absorbCrystal','blightDefend','mapInteract','branchMentor','questTalk','questAccept']);
 export const worldActionRequiresVersion=(type:unknown,action:unknown)=>
  typeof type==='string'&&(worldProtected.has(type)||type==='communityUI'&&(action==='click'||action==='input'));

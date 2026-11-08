@@ -39,7 +39,29 @@ export function dungeonPath(ax:number,az:number,bx:number,bz:number,map?:string)
 }
 export const dungeonHealthScale=(players:number)=>1+.65*(Math.max(1,Math.min(3,players))-1);
 export const dungeonDamageScale=(players:number)=>1+.05*(Math.max(1,Math.min(3,players))-1);
-export type DungeonRun={tower?:{floor:number;nextAt?:number};revision?:number;hunt?:import('./ancient-hunts').HuntRun;mechanisms?:DungeonMechanisms;ascensionJob?:string;id:number;map:string;leader:string;members:string[];ready:string[];tier:string;level:number;stage:number;gateZ?:number;status:'preparing'|'active'|'complete'|'failed';created:number;expires:number;started:number;finished?:number;rewarded?:boolean;joined:string[];fallen:string[];abandoned?:string[];positions:Record<string,{x:number;y:number;z:number;hp:number}>;seed:number;traps:{x:number;z:number;hitAt:number;started:number}[];trapAt:number;collapsed:number[];collapse?:{index:number;hitAt:number};reason?:string};
+export const TOWER_RUNE_RANGE=3.4;
+const towerRuneLayouts=new Map<number,readonly {x:number;z:number;target:number}[]>();
+export function towerRunes(floor:number){
+ const cached=towerRuneLayouts.get(floor);if(cached)return cached;
+ const count=5+Math.floor((floor-1)*15/99);
+ const runes=Array.from({length:count},(_,i)=>({
+  x:(i%2===0?-1:1)*(7+Math.floor(i/2)%3*4),
+  z:11+Math.floor(i/2)*4.2,
+  target:1+((Math.imul(floor+i+1,2654435761)>>>16)%3),
+ }));
+ towerRuneLayouts.set(floor,runes);return runes;
+}
+export function towerRuneAligned(value:number|undefined,target:number){return (value||0)===target}
+export function turnTowerRune(tower:NonNullable<DungeonRun['tower']>,floor:unknown,index:unknown,x:number,z:number){
+ if(tower.floor!==floor||tower.nextAt||typeof index!=='number'||!Number.isInteger(index))return false;
+ const rune=towerRunes(tower.floor)[index];
+ if(!rune||Math.hypot(rune.x-x,rune.z-z)>TOWER_RUNE_RANGE)return false;
+ const values=tower.runes??=[];
+ if(towerRuneAligned(values[index],rune.target))return false;
+ values[index]=((values[index]||0)+1)%4;
+ return true;
+}
+export type DungeonRun={tower?:{floor:number;nextAt?:number;runes?:number[]};revision?:number;hunt?:import('./ancient-hunts').HuntRun;mechanisms?:DungeonMechanisms;ascensionJob?:string;id:number;map:string;leader:string;members:string[];ready:string[];tier:string;level:number;stage:number;gateZ?:number;status:'preparing'|'active'|'complete'|'failed';created:number;expires:number;started:number;finished?:number;rewarded?:boolean;joined:string[];fallen:string[];abandoned?:string[];positions:Record<string,{x:number;y:number;z:number;hp:number}>;seed:number;traps:{x:number;z:number;hitAt:number;started:number}[];trapAt:number;collapsed:number[];collapse?:{index:number;hitAt:number};reason?:string};
 export function dungeonObstacles(run:Pick<DungeonRun,'collapsed'>){return run.collapsed.map(i=>{const p=DUNGEON_PILLARS[i];return {x:p.x+(p.x<0?4:-4),z:p.z,w:10,d:3,h:1.5}})}
 export function dungeonRubbleBlocked(run:Pick<DungeonRun,'collapsed'>,x:number,z:number,r=.6){return dungeonObstacles(run).some(o=>Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)}
 export function dungeonTraps(seed:number){let n=seed>>>0;const rand=()=>{n=(1664525*n+1013904223)>>>0;return n/4294967296};return [82,98,114].map(z=>({x:Math.round((rand()-.5)*24),z:z+Math.round(rand()*4)}))}

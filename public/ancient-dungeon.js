@@ -80,6 +80,32 @@ function dungeonPath(ax, az, bx, bz, map) {
 }
 const dungeonHealthScale = (players) => 1 + 0.65 * (Math.max(1, Math.min(3, players)) - 1);
 const dungeonDamageScale = (players) => 1 + 0.05 * (Math.max(1, Math.min(3, players)) - 1);
+const TOWER_RUNE_RANGE = 3.4;
+const towerRuneLayouts = /* @__PURE__ */ new Map();
+function towerRunes(floor) {
+  const cached = towerRuneLayouts.get(floor);
+  if (cached) return cached;
+  const count = 5 + Math.floor((floor - 1) * 15 / 99);
+  const runes = Array.from({ length: count }, (_, i) => ({
+    x: (i % 2 === 0 ? -1 : 1) * (7 + Math.floor(i / 2) % 3 * 4),
+    z: 11 + Math.floor(i / 2) * 4.2,
+    target: 1 + (Math.imul(floor + i + 1, 2654435761) >>> 16) % 3
+  }));
+  towerRuneLayouts.set(floor, runes);
+  return runes;
+}
+function towerRuneAligned(value, target) {
+  return (value || 0) === target;
+}
+function turnTowerRune(tower, floor, index, x, z) {
+  if (tower.floor !== floor || tower.nextAt || typeof index !== "number" || !Number.isInteger(index)) return false;
+  const rune = towerRunes(tower.floor)[index];
+  if (!rune || Math.hypot(rune.x - x, rune.z - z) > TOWER_RUNE_RANGE) return false;
+  const values = tower.runes ??= [];
+  if (towerRuneAligned(values[index], rune.target)) return false;
+  values[index] = ((values[index] || 0) + 1) % 4;
+  return true;
+}
 function dungeonObstacles(run) {
   return run.collapsed.map((i) => {
     const p = DUNGEON_PILLARS[i];
@@ -105,6 +131,7 @@ export {
   DUNGEON_BLOCKS,
   DUNGEON_PILLARS,
   DUNGEON_TIERS,
+  TOWER_RUNE_RANGE,
   dungeonBlocked,
   dungeonControlClear,
   dungeonDamageScale,
@@ -117,5 +144,8 @@ export {
   dungeonRubbleBlocked,
   dungeonTraps,
   isDungeonMap,
-  setDungeonGeometry
+  setDungeonGeometry,
+  towerRuneAligned,
+  towerRunes,
+  turnTowerRune
 };

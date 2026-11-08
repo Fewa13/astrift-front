@@ -13,6 +13,7 @@ export class AncientDungeonStore{
  get(name:string){const row=this.sql.exec<{run:number}>('SELECT run FROM ancient_dungeon_members WHERE name=?',name).toArray()[0];return row?this.read(row.run):undefined}
  save(r:DungeonRun){r.revision=(r.revision||0)+1;this.sql.exec('UPDATE ancient_dungeon_runs SET data=? WHERE id=?',JSON.stringify(r),r.id)}
  createTower(name:string){
+  if((this.profile(name).tower?.best||0)>=100)return "试炼之塔已登顶 / Trial Tower already completed";
   const old=this.get(name);if(old?.tower&&old.status==='active'&&!old.fallen.includes(name)&&!old.abandoned?.includes(name))return null;
   if(old&&['active','preparing'].includes(old.status))return 'Finish or abandon the current challenge first.';
   if(!this.alive(name))return 'Revive in camp before starting.';

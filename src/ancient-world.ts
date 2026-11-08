@@ -52,7 +52,7 @@ import {tickWander,wanderAllowed,type Wanderer} from './ancient-wander';
 import {roomChat} from './content-safety';
 import {ancientMobHP} from './ancient-mob-stats';
 import {AncientDungeonStore} from './ancient-dungeon-store';
-import {dungeonId,isDungeonMap,DUNGEON_TIERS,DUNGEON_PILLARS,setDungeonGeometry,dungeonHealthScale,dungeonDamageScale,dungeonTraps,dungeonPath,dungeonRubbleBlocked,dungeonControlClear,type DungeonRun} from './ancient-dungeon';
+import {dungeonId,isDungeonMap,DUNGEON_TIERS,DUNGEON_PILLARS,setDungeonGeometry,dungeonHealthScale,dungeonDamageScale,dungeonTraps,dungeonPath,dungeonRubbleBlocked,dungeonControlClear,type DungeonRun,towerRunes,towerRuneAligned,turnTowerRune} from './ancient-dungeon';
 import {ancientBossHP} from './ancient-boss-stats';
 import {AncientTrade} from './ancient-trade';
 import {splitContribution,contributionOwner,topContributor,type Contribution} from './ancient-contribution';
@@ -147,6 +147,7 @@ export class AncientWorld extends DurableObject<Env>{
  private towerTick(run:DungeonRun,world:{map?:string;monsters:Monster[];tick:number},pairs:{ws:WebSocket;p:Player}[],now:number){
   if(!run.tower||run.status!=='active'||!pairs.some(v=>v.p.hp>0)||world.monsters.some(m=>m.hp>0))return;
   if(!run.tower.nextAt){
+   if(!towerRunes(run.tower.floor).every((rune,i)=>towerRuneAligned(run.tower!.runes?.[i],rune.target)))return;
    const floor=run.tower.floor;let notice:Record<string,unknown>|undefined;
    this.ctx.storage.transactionSync(()=>{
     const p=this.read(run.leader);p.tower??={best:0,books:0};
@@ -159,7 +160,7 @@ export class AncientWorld extends DurableObject<Env>{
    if(notice)for(const {ws}of pairs)this.send(ws,notice);return;
   }
   if(now<run.tower.nextAt)return;
-  this.ctx.storage.transactionSync(()=>{run.tower!.floor++;delete run.tower!.nextAt;run.level=run.tower!.floor*5;world.monsters=this.dungeonSpawn(run,0);this.ctx.storage.sql.exec('DELETE FROM ancient_world WHERE id=?',cityWorldId(run.map)+1);for(const {p}of pairs){p.x=0;p.y=1.7;p.z=9;p.yaw=Math.PI;p.moveCredit=0;delete p.forcedMotion;delete p.movementStall;if(p.skillRuntime){delete p.skillRuntime.summon;delete p.skillRuntime.branch;delete p.skillRuntime.relic;delete p.skillRuntime.gearChain;}run.positions[p.name]={x:p.x,y:p.y,z:p.z,hp:p.hp}}this.dungeons().save(run);this.persist(world)});
+  this.ctx.storage.transactionSync(()=>{run.tower!.floor++;delete run.tower!.nextAt;delete run.tower!.runes;run.level=run.tower!.floor*5;world.monsters=this.dungeonSpawn(run,0);this.ctx.storage.sql.exec('DELETE FROM ancient_world WHERE id=?',cityWorldId(run.map)+1);for(const {p}of pairs){p.x=0;p.y=1.7;p.z=9;p.yaw=Math.PI;p.moveCredit=0;delete p.forcedMotion;delete p.movementStall;if(p.skillRuntime){delete p.skillRuntime.summon;delete p.skillRuntime.branch;delete p.skillRuntime.relic;delete p.skillRuntime.gearChain;}run.positions[p.name]={x:p.x,y:p.y,z:p.z,hp:p.hp}}this.dungeons().save(run);this.persist(world)});
   for(const {ws,p}of pairs){ws.serializeAttachment(p);this.send(ws,{type:'mapResize',x:p.x,y:p.y,z:p.z});this.send(ws,{type:'towerFloor',floor:run.tower!.floor})}
  }
  private dungeonTick(run:DungeonRun,world:{map?:string;monsters:Monster[];tick:number},pairs:{ws:WebSocket;p:Player}[],now:number){
@@ -533,6 +534,11 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
    ws.serializeAttachment(a);this.send(ws,{type:'leisureState',session:leisureView(a.leisure)||null,ready:state.ready});
    if(result.animation)for(const peer of this.connections())if((peer.deserializeAttachment() as Player).map===map)this.send(peer,{type:'leisureAnimation',name:a.name,node:d.id,animation:result.animation,fish:result.reward,weight:result.weight});
    if(result.changed)for(const peer of this.connections())if((peer.deserializeAttachment() as Player).map===map)this.send(peer,{type:'leisureNodes',ready:state.ready});
+   return;
+  }
+  if(d.type==='towerRune'){
+   if(!dungeon?.tower||dungeon.status!=='active'||dungeon.leader!==a.name||a.hp<=0||a.drinking||a.forcedMotion)return;
+   if(turnTowerRune(dungeon.tower,d.floor,d.index,a.x,a.z))this.dungeons().save(dungeon);
    return;
   }
   if(d.type==='dungeonMechanism'){
