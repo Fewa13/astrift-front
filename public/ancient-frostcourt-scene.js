@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {buildDistinctFrostcourt} from './ancient-chapter-worlds.js?v=20261101-unique-chapters-3';
+import {buildDistinctFrostcourt} from './ancient-chapter-worlds.js?v=20261107-chapter-ground-1';
 import {FROSTCOURT_SOLIDS,FROSTCOURT_KINDS,frostcourtHeight,frostcourtSurface} from './ancient-frostcourt.js?v=20261020-frostcourt-1';
 import {mergeEnvironment,environmentTexture} from './ancient-environment-detail.js?v=20261012-new-player-flow-1';
 const G={box:new T.BoxGeometry(1,1,1),column:new T.CylinderGeometry(1,1,1,10),cone:new T.ConeGeometry(1,1,8),orb:new T.IcosahedronGeometry(1,1),crystal:new T.OctahedronGeometry(1),ring:new T.TorusGeometry(1,.055,6,28),arch:new T.TorusGeometry(1,.045,6,32,Math.PI)};

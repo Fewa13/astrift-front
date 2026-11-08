@@ -70,7 +70,7 @@ for(const [map,spots]of Object.entries({
 for(const n of LEISURE_NODES)if(n.kind==='mine'){n.material='roughStone';n.name='原石';n.en='Rough Stone';}
 for(const key of ['roughStone','roughDark','roughMoon']){LEISURE_ITEMS[key].name='原石';LEISURE_ITEMS[key].en='Rough Stone';}
 const LEISURE_POSTS=Object.entries(PASSAGE_RECTS).flatMap(([map])=>{const x=map==='tribe'?74:-55,start=map==='tribe'?82:40,end=map==='tribe'?134:85,out:{map:string;x:number;z:number;r:number}[]=[];for(let z=start;z<=end;z+=7)for(const side of [-1,1])out.push({map,x:x+side*8.5,z,r:.18});for(const z of [start,end])for(const side of [-1,1])out.push({map,x:map==='tribe'?38:-34,z:z+side*4.8,r:.25});return out});
-for(const n of LEISURE_NODES)if(CHAPTER_ROUTES[n.map]){const p=chapterPoint(n.map,n.x,n.z);Object.assign(n,chapterSafe(n.map,p.x,p.z),{y:chapterHeight(n.map,p.x,p.z)});}
+for(const n of LEISURE_NODES)if(CHAPTER_ROUTES[n.map]){const p=chapterPoint(n.map,n.x,n.z),safe=chapterSafe(n.map,p.x,p.z);Object.assign(n,safe,{y:chapterHeight(n.map,safe.x,safe.z)});}
 export function leisureSolid(map:string,x:number,z:number,r=.6){return LEISURE_POSTS.some(p=>p.map===map&&Math.hypot(p.x-x,p.z-z)<p.r+r)}
 export type LeisureSession={node:string;kind:'mine'|'fish';phase:'mining'|'waiting'|'hooked';started:number;nextAt:number;biteAt:number;expires:number;hits:number;progress:number;hp:number;fish?:string;weight?:number;tension?:number;lastAt?:number;controlAt?:number;held?:boolean;strain?:number;seed?:number};
 export type LeisureActor={map?:string;x:number;y:number;z:number;hp:number;leisure?:LeisureSession;leisureAt?:number};

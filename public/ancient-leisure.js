@@ -109,8 +109,8 @@ const LEISURE_POSTS = Object.entries(PASSAGE_RECTS).flatMap(([map]) => {
   return out;
 });
 for (const n of LEISURE_NODES) if (CHAPTER_ROUTES[n.map]) {
-  const p = chapterPoint(n.map, n.x, n.z);
-  Object.assign(n, chapterSafe(n.map, p.x, p.z), { y: chapterHeight(n.map, p.x, p.z) });
+  const p = chapterPoint(n.map, n.x, n.z), safe = chapterSafe(n.map, p.x, p.z);
+  Object.assign(n, safe, { y: chapterHeight(n.map, safe.x, safe.z) });
 }
 function leisureSolid(map, x, z, r = 0.6) {
   return LEISURE_POSTS.some((p) => p.map === map && Math.hypot(p.x - x, p.z - z) < p.r + r);

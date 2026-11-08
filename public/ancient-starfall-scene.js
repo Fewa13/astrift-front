@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {buildDistinctStarfall} from './ancient-chapter-worlds.js?v=20261101-unique-chapters-3';
+import {buildDistinctStarfall} from './ancient-chapter-worlds.js?v=20261107-chapter-ground-1';
 import {STARFALL_SOLIDS,STARFALL_KINDS,starfallHeight,starfallSurface} from './ancient-starfall.js?v=20261015-starfall-1';
 import {mergeEnvironment,environmentTexture} from './ancient-environment-detail.js?v=20261012-new-player-flow-1';
 const G={box:new T.BoxGeometry(1,1,1),column:new T.CylinderGeometry(1,1,1,10),cone:new T.ConeGeometry(1,1,8),orb:new T.IcosahedronGeometry(1,1),crystal:new T.OctahedronGeometry(1),ring:new T.TorusGeometry(1,.065,5,32),wireArch:new T.TorusGeometry(1,.006,5,32,Math.PI),arch:new T.TorusGeometry(1,.03,6,32,Math.PI)};

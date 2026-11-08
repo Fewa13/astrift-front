@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {buildDistinctSkyreach} from './ancient-chapter-worlds.js?v=20261101-unique-chapters-3';
+import {buildDistinctSkyreach} from './ancient-chapter-worlds.js?v=20261107-chapter-ground-1';
 import {SKYREACH_SOLIDS,SKYREACH_KINDS,skyreachHeight,skyreachSurface} from './ancient-skyreach.js?v=20261021-skyreach-market-1';
 import {mergeEnvironment,environmentTexture} from './ancient-environment-detail.js?v=20261012-new-player-flow-1';
 const G={box:new T.BoxGeometry(1,1,1),orb:new T.IcosahedronGeometry(1,1),crystal:new T.OctahedronGeometry(1),column:new T.CylinderGeometry(1,1,1,10),ring:new T.TorusGeometry(1,.045,6,32),cone:new T.ConeGeometry(1,1,8)};
