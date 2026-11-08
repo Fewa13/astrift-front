@@ -25,8 +25,44 @@ export const CHAPTER_PROPS:Record<string,GeoProp[]>={
 };
 for(let z=270;z<340;z+=14)for(const x of [-28,28])CHAPTER_PROPS.frostcourt.push({x,z,w:3,d:3,h:20,kind:'nave-column'});
 for(const x of [-45,45])CHAPTER_PROPS.dunes.push({x,z:350,w:30,d:90,h:30,kind:'temple-wing'});
-export function chapterBlocked(map:string,x:number,z:number,r=.6,feet=chapterHeight(map,x,z)){return !Number.isFinite(x+z)||chapterDistance(map,x,z)<r||[...(CHAPTER_PROPS[map]||[]),...chapterGates(map)].some(o=>feet<chapterHeight(map,o.x,o.z)+o.h-.1&&Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)||false;}
-export function chapterClear(map:string,ax:number,ay:number,az:number,bx:number,by:number,bz:number){const n=Math.max(1,Math.ceil(Math.hypot(bx-ax,bz-az)/.7));for(let i=1;i<n;i++){const t=i/n,x=ax+(bx-ax)*t,z=az+(bz-az)*t,y=ay+(by-ay)*t;if(chapterDistance(map,x,z)<0||y<chapterHeight(map,x,z)-.15||[...(CHAPTER_PROPS[map]||[]),...chapterGates(map)].some(o=>Math.abs(x-o.x)<o.w/2&&Math.abs(z-o.z)<o.d/2&&y<chapterHeight(map,o.x,o.z)+o.h))return false;}return true;}
+export const CHAPTER_SCENERY:Record<string,GeoProp[]>={starfall:[],frostcourt:[],skyreach:[],dunes:[]};
+const scenery=(map:string,kind:string,x:number,z:number,w:number,d:number,h:number)=>{
+ CHAPTER_SCENERY[map].push({kind,x,z,w,d,h});
+};
+for(let u=15;u<390;u+=16){
+ const {x,z}=chapterPoint('starfall',35,u);scenery('starfall','path-plinth',x,z,2.8,2.8,1);
+}
+for(let i=0;i<36;i+=3){
+ const a=i*Math.PI/18,x=Math.sin(a)*35,z=88+Math.cos(a)*35;
+ if(chapterDistance('starfall',x,z)>=4)scenery('starfall','vault-lamp',x,z,2.4,2.4,2.9);
+}
+for(const x of [-31,31])for(let z=106;z<205;z+=14)scenery('frostcourt','court-plinth',x,z,2,5,2.2);
+for(const o of CHAPTER_PROPS.frostcourt.filter(o=>o.kind==='ice-bastion'||o.kind==='throne-wing')){
+ for(const side of [-1,1])scenery('frostcourt','bastion-turret',o.x+side*o.w/2,o.z,6,6,o.h*1.25);
+}
+for(const u of [30,115,215,340]){
+ const p=chapterPoint('skyreach',0,u);
+ for(let i=0;i<4;i++){
+  const a=i*Math.PI/2,x=p.x+Math.sin(a)*20,z=p.z+Math.cos(a)*20;
+  if(chapterDistance('skyreach',x,z)>4&&chapterProjection('skyreach',x,z).distance>=6)scenery('skyreach','island-rock',x,z,i%2?3.2:5,i%2?5:3.2,.9);
+ }
+}
+for(let i=0;i<13;i++){
+ const a=i*2.399,x=15+Math.sin(a)*(18+i%3*2),z=180+Math.cos(a)*(12+i%3*3);
+ scenery('dunes','palm-trunk',x,z,.75,.75,4);
+}
+for(let i=0;i<12;i++){
+ const x=-20+(i%4)*15,z=145+Math.floor(i/4)*16;
+ if(dunesOasisRadius(x,z)<1.55)continue;
+ scenery('dunes','market-counter',x,z,3,2,1.4);
+ if(i%2)for(const side of [-1,1])scenery('dunes','canopy-post',x+side*3,z,.2,.2,4);
+}
+for(let z=320;z<390;z+=14)for(const x of [-24,24])scenery('dunes','temple-column',x,z,4,4,22);
+const chapterSolids=Object.fromEntries(Object.entries(CHAPTER_PROPS).map(([map,props])=>[
+ map,[...props.flatMap(o=>o.kind==='sunken-arch'?[-1,1].map(side=>({...o,x:o.x+side*8,w:5,d:5,h:16})): [o]),...CHAPTER_SCENERY[map]]
+]));
+export function chapterBlocked(map:string,x:number,z:number,r=.6,feet=chapterHeight(map,x,z)){return !Number.isFinite(x+z)||chapterDistance(map,x,z)<r||[...(chapterSolids[map]||[]),...chapterGates(map)].some(o=>feet<chapterHeight(map,o.x,o.z)+o.h-.1&&Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)||false;}
+export function chapterClear(map:string,ax:number,ay:number,az:number,bx:number,by:number,bz:number){const n=Math.max(1,Math.ceil(Math.hypot(bx-ax,bz-az)/.7));for(let i=1;i<n;i++){const t=i/n,x=ax+(bx-ax)*t,z=az+(bz-az)*t,y=ay+(by-ay)*t;if(chapterDistance(map,x,z)<0||y<chapterHeight(map,x,z)-.15||[...(chapterSolids[map]||[]),...chapterGates(map)].some(o=>Math.abs(x-o.x)<o.w/2&&Math.abs(z-o.z)<o.d/2&&y<chapterHeight(map,o.x,o.z)+o.h))return false;}return true;}
 export function chapterPath(map:string,ax:number,az:number,bx:number,bz:number){
  const clear=(x:number,z:number,tx:number,tz:number)=>{const n=Math.max(1,Math.ceil(Math.hypot(tx-x,tz-z)/1));for(let i=0;i<=n;i++)if(chapterBlocked(map,x+(tx-x)*i/n,z+(tz-z)*i/n,1))return false;return true};if(clear(ax,az,bx,bz))return [{x:bx,z:bz}];
  const step=4,first={x:Math.round(ax/step)*step,z:Math.round(az/step)*step},key=(p:{x:number;z:number})=>p.x+','+p.z;if(!clear(ax,az,first.x,first.z))return [];const queue=[first],parent=new Map([[key(first),'']]),nodes=new Map([[key(first),first]]);let head=0;

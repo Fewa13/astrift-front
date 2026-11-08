@@ -23,11 +23,19 @@ export const BLIGHT_SOLIDS:BlightSolid[]=[];
 for(const b of BLIGHT_HOUSES){const front=b.x-b.side*b.w/2;for(const s of [-1,1])BLIGHT_SOLIDS.push({x:front,z:b.z+s*8,w:1,d:8,h:8,kind:'wall'});BLIGHT_SOLIDS.push({x:front,z:b.z,w:1,d:8,h:8,bottom:5,kind:'wall'},{x:b.x+b.side*b.w/2,z:b.z,w:1,d:24,h:8,kind:'wall'},{x:b.x,z:b.z-12,w:18,d:1,h:8,kind:'wall'},{x:b.x,z:b.z+12,w:18,d:1,h:8,kind:'wall'},{x:b.x,z:b.z,w:18,d:24,h:8,bottom:7.65,kind:'roof'})}
 for(let i=0;i<28;i++){const z=65+i*18,x=(i%2?1:-1)*(42+(i*7%11));BLIGHT_SOLIDS.push({x,z,w:5+(i%3),d:7,h:6+(i%4),kind:'rock'})}
 for(const z of [70,120,170])for(const s of [-1,1])BLIGHT_SOLIDS.push({x:s*22,z,w:1.8,d:1.8,h:12,kind:'tree'});
+// These fixtures are drawn in the village and camp scene.
+export const BLIGHT_FIXTURES:BlightSolid[]=[
+ ...[-26,26].flatMap(x=>[{x,z:22,w:10,d:9,h:3,kind:'tent'},{x,z:31,w:6,d:2,h:1.125,kind:'shelf'}]),
+ ...BLIGHT_HOUSES.flatMap(b=>[-5,5].map(dz=>({x:b.x-b.side*11,z:b.z+dz,w:1.5,d:1.5,h:2,kind:'barrel'}))),
+ ...[180,390].flatMap(z=>[-10,10].map(x=>({x,z,w:2.2,d:2.2,h:10,kind:'pillar'}))),
+ {x:0,z:275,w:5,d:5,h:.9,kind:'purifier'},
+];
+const blightColliders=[...BLIGHT_SOLIDS,...BLIGHT_FIXTURES];
 export function blightHeight(_x:number,z:number){return z<=400?0:-Math.min(16,(z-400)*.12)}
 export function blightSurface(x:number,z:number,feet=0){for(const b of BLIGHT_HOUSES)if(feet>=b.h-.5&&Math.abs(x-b.x)<b.w/2+.5&&Math.abs(z-b.z)<b.d/2+.5)return b.h;const r=Math.hypot(x,z-600);return blightHeight(x,z)+(r<=11?.4:r<=12?.3:r<=13?.2:0)}
-export function blightBlocked(x:number,z:number,r=.6,feet=blightHeight(x,z)){return Math.abs(x)>55-r||z<3+r||z>635-r||BLIGHT_SOLIDS.some(o=>feet<blightHeight(o.x,o.z)+o.h-.05&&feet+1.8>blightHeight(o.x,o.z)+(o.bottom||0)+.02&&Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)}
+export function blightBlocked(x:number,z:number,r=.6,feet=blightHeight(x,z)){return Math.abs(x)>55-r||z<3+r||z>635-r||blightColliders.some(o=>feet<blightHeight(o.x,o.z)+o.h-.05&&feet+1.8>blightHeight(o.x,o.z)+(o.bottom||0)+.02&&Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)}
 export function blightLineClear(ax:number,ay:number,az:number,bx:number,by:number,bz:number){
- for(const o of BLIGHT_SOLIDS){let lo=0,hi=1;const base=blightHeight(o.x,o.z);for(const [a,b,min,max]of [[ax,bx,o.x-o.w/2,o.x+o.w/2],[ay,by,base+(o.bottom||0),base+o.h],[az,bz,o.z-o.d/2,o.z+o.d/2]]){const d=b-a;if(Math.abs(d)<1e-8){if(a<min||a>max){lo=2;break}}else{const t1=(min-a)/d,t2=(max-a)/d;lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));if(lo>hi)break}}if(lo<=hi&&hi>0&&lo<1)return false}
+ for(const o of blightColliders){let lo=0,hi=1;const base=blightHeight(o.x,o.z);for(const [a,b,min,max]of [[ax,bx,o.x-o.w/2,o.x+o.w/2],[ay,by,base+(o.bottom||0),base+o.h],[az,bz,o.z-o.d/2,o.z+o.d/2]]){const d=b-a;if(Math.abs(d)<1e-8){if(a<min||a>max){lo=2;break}}else{const t1=(min-a)/d,t2=(max-a)/d;lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));if(lo>hi)break}}if(lo<=hi&&hi>0&&lo<1)return false}
  const n=Math.ceil(Math.hypot(bx-ax,bz-az)/.5);for(let i=1;i<n;i++){const t=i/n;if(ay+(by-ay)*t<blightHeight(ax+(bx-ax)*t,az+(bz-az)*t)-.1)return false}return true;
 }
 export function blightMonsterHP(kind:string,level:number){return BLIGHT_KINDS[kind]?Math.round(kind==='blight_lord'?ancientBossHealth(level,8,1.5,6):ancientMobHealth(level,ancientBaseAttack(level)*12*(kind==='rift_maw'?1.5:kind==='blight_stalker'?1.25:1))):0}

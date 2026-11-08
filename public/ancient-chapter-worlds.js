@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {CHAPTER_ROUTES,CHAPTER_PROPS,CHAPTER_EXTRAS,chapterDistance,chapterHeight,chapterPoint,chapterProjection,DUNES_OASIS,dunesOasisRadius} from './ancient-geography.js';
+import {CHAPTER_ROUTES,CHAPTER_PROPS,CHAPTER_SCENERY,CHAPTER_EXTRAS,chapterDistance,chapterHeight,chapterPoint,chapterProjection,DUNES_OASIS,dunesOasisRadius} from './ancient-geography.js';
 import {mergeEnvironment,environmentTexture} from './ancient-environment-detail.js';
 const geom={box:new T.BoxGeometry(1,1,1),rock:new T.IcosahedronGeometry(1,1),ball:new T.SphereGeometry(1,12,8),cyl:new T.CylinderGeometry(1,1,1,10),cone:new T.ConeGeometry(1,1,8),crystal:new T.OctahedronGeometry(1),ring:new T.TorusGeometry(1,.07,5,40),arch:new T.TorusGeometry(1,.10,5,24,Math.PI)};
 const palettes={starfall:{floor:0x6b908b,wall:0x193f48,stone:0x537f7e,metal:0xa99869,glow:0x82e4ca,accent:0xb57b98,dark:0x112f3c},frostcourt:{floor:0x9a9e9f,wall:0x4c555e,stone:0x8b8d8b,metal:0x9f7755,glow:0xf2b26c,accent:0x9dd8e4,dark:0x293840},skyreach:{floor:0xc2bea5,wall:0x272d48,stone:0x69738e,metal:0xc0a562,glow:0x91e8ff,accent:0x648ec5,dark:0x17243c},dunes:{floor:0xcaaa72,wall:0x886541,stone:0xb58b5d,metal:0x9c6f3f,glow:0xffd481,accent:0x367d82,dark:0x453f43}};
@@ -29,14 +29,14 @@ function chapterSurroundings(map,add,rod){
  }
  if(map==='starfall'){
   for(let i=0;i<36;i++){const a=i*Math.PI*2/36,x=Math.sin(a)*35,z=88+Math.cos(a)*35,y=chapterHeight(map,x,z);if(chapterDistance(map,x,z)<4)continue;add('box','metal',x,y+.03,z,1,.04,5,0,-a);if(i%3===0){add('cyl','stone',x,y+1.2,z,1.2,2.4,1.2);add('ball','glow',x,y+2.5,z,.4,.4,.4)}}
-  for(let u=15;u<390;u+=16){const p=chapterPoint(map,35,u),y=chapterHeight(map,p.x,p.z);add('cyl','stone',p.x,y+.5,p.z,1.4,1,1.4);add('ring','metal',p.x,y+1.02,p.z,1.4,1.4,1.4,Math.PI/2);}
+  for(const p of CHAPTER_SCENERY[map].filter(p=>p.kind==='path-plinth')){const y=chapterHeight(map,p.x,p.z);add('cyl','stone',p.x,y+.5,p.z,1.4,1,1.4);add('ring','metal',p.x,y+1.02,p.z,1.4,1.4,1.4,Math.PI/2);}
  }else if(map==='frostcourt'){
-  for(const x of [-31,31])for(let z=106;z<205;z+=14){const y=chapterHeight(map,x,z);add('box','stone',x,y+1,z,2,2,5);add('box','metal',x,y+2.2,z,2.5,.3,5.5);add('cone','accent',x,y+3,z,1,2,1)}
+  for(const {x,z} of CHAPTER_SCENERY[map].filter(p=>p.kind==='court-plinth')){const y=chapterHeight(map,x,z);add('box','stone',x,y+1,z,2,2,5);add('box','metal',x,y+2.2,z,2.5,.3,5.5);add('cone','accent',x,y+3,z,1,2,1)}
   for(let z=275;z<340;z+=9)for(const x of [-20,20]){const y=chapterHeight(map,x,z);add('box','dark',x,y+.025,z,4,.04,6);add('box','metal',x,y+.055,z,3.5,.015,.15)}
   for(const x of [119,126,133]){const y=chapterHeight(map,x,165);rod([x,y+3,140],[x,y+3,192],.6,'metal');for(let z=140;z<193;z+=13)add('ring','dark',x,y+3,z,1,1,1,0,Math.PI/2)}
  }else if(map==='skyreach'){
   for(let u=8;u<380;u+=12){const center=chapterPoint(map,0,u);if(chapterProjection(map,center.x,center.z).width<20)continue;const p=chapterPoint(map,36,u),y=chapterHeight(map,p.x,p.z);add('cyl','metal',p.x,y+.6,p.z,.35,1.2,.35);add('crystal','glow',p.x,y+1.5,p.z,.25,.6,.25);}
-  for(const u of [30,115,215,340]){const p=chapterPoint(map,0,u);for(let i=0;i<16;i++){const a=i*Math.PI/8,x=p.x+Math.sin(a)*17,z=p.z+Math.cos(a)*17;add('box','metal',x,chapterHeight(map,x,z)+.045,z,2,.04,.45,0,a)}for(let i=0;i<4;i++){const a=i*Math.PI/2,x=p.x+Math.sin(a)*20,z=p.z+Math.cos(a)*20;if(chapterDistance(map,x,z)>4)add('rock','accent',x,chapterHeight(map,x,z)+.35,z,3,.6,2,0,a);}}
+  for(const u of [30,115,215,340]){const p=chapterPoint(map,0,u);for(let i=0;i<16;i++){const a=i*Math.PI/8,x=p.x+Math.sin(a)*17,z=p.z+Math.cos(a)*17;add('box','metal',x,chapterHeight(map,x,z)+.045,z,2,.04,.45,0,a)}}for(const {x,z,w,d} of CHAPTER_SCENERY[map].filter(p=>p.kind==='island-rock'))add('rock','accent',x,chapterHeight(map,x,z)+.35,z,w/2,.6,d/2);
  }else{
   for(let i=0;i<13;i++){const a=i*2.399,x=15+Math.sin(a)*(18+i%3*2),z=180+Math.cos(a)*(12+i%3*3),y=chapterHeight(map,x,z);rod([x,y,z],[x+1,y+9,z],.35,'metal');for(let j=0;j<7;j++){const b=j*Math.PI*2/7;rod([x+1,y+9,z],[x+1+Math.sin(b)*5,y+8,z+Math.cos(b)*5],.14,'accent');add('cloth','accent',x+1+Math.sin(b)*3,y+8.6,z+Math.cos(b)*3,1,.16,5,0,b,.12)}}
   for(let z=300;z<385;z+=7){const y=chapterHeight(map,0,z);add('box','metal',0,y+.03,z,12,.04,.3);for(const x of [-18,18]){add('cyl','metal',x,chapterHeight(map,x,z)+.5,z,.6,1,.6);add('ball','glow',x,chapterHeight(map,x,z)+1.1,z,.4,.4,.4)}}

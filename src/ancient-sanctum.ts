@@ -26,12 +26,16 @@ for(const x of [-30,30])SANCTUM_SOLIDS.push({x,z:410,w:44,d:2,h:16,kind:'wall'})
 export const SANCTUM_MIRRORS=[{id:'mirror-a',x:0,z:270},{id:'mirror-b',x:0,z:320},{id:'mirror-c',x:20,z:320}];
 for(const m of SANCTUM_MIRRORS)SANCTUM_SOLIDS.push({...m,w:1.6,d:1.6,h:1.4,kind:'mirrorBase'});
 export const SANCTUM_RECEIVER={x:20,z:380};
+const sanctumColliders=[...SANCTUM_SOLIDS,
+ {...SANCTUM_RECEIVER,w:2.6,d:2.6,h:6,kind:'receiver'},
+ ...[-1,1].flatMap(s=>Array.from({length:5},(_,j)=>({x:s*(22+j*2.5),z:555,w:2,d:32,h:2+j*1.4,kind:'dais-wing'}))),
+];
 export function sanctumInside(x:number,z:number,r=0){return z>=3+r&&z<=606-r&&Math.abs(x)<(z>=185&&z<=235?9.3:49)-r}
-export function sanctumBlocked(x:number,z:number,r=.6,feet=sanctumHeight(x,z)){return !sanctumInside(x,z,r)||SANCTUM_SOLIDS.some(o=>feet<sanctumHeight(o.x,o.z)+o.h-.06&&feet+1.8>sanctumHeight(o.x,o.z)+(o.bottom||0)+.01&&Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)}
+export function sanctumBlocked(x:number,z:number,r=.6,feet=sanctumHeight(x,z)){return !sanctumInside(x,z,r)||sanctumColliders.some(o=>feet<sanctumHeight(o.x,o.z)+o.h-.06&&feet+1.8>sanctumHeight(o.x,o.z)+(o.bottom||0)+.01&&Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)}
 export function sanctumGateBlocks(x:number,z:number,r=.6){return Math.abs(z-410)<1+r&&Math.abs(x)<49+r}
 export function sanctumGateCrosses(ax:number,az:number,bx:number,bz:number){return (az<410&&bz>=410)||(az>410&&bz<=410)||sanctumGateBlocks(bx,bz,.2)}
 export function sanctumLineClear(ax:number,ay:number,az:number,bx:number,by:number,bz:number){
- for(const o of SANCTUM_SOLIDS){let lo=0,hi=1;const y=sanctumHeight(o.x,o.z);for(const [a,b,min,max]of [[ax,bx,o.x-o.w/2,o.x+o.w/2],[ay,by,y+(o.bottom||0),y+o.h],[az,bz,o.z-o.d/2,o.z+o.d/2]]){const d=b-a;if(Math.abs(d)<1e-8){if(a<min||a>max){lo=2;break}}else{const t1=(min-a)/d,t2=(max-a)/d;lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));if(lo>hi)break}}if(lo<=hi&&hi>0&&lo<1)return false}
+ for(const o of sanctumColliders){let lo=0,hi=1;const y=sanctumHeight(o.x,o.z);for(const [a,b,min,max]of [[ax,bx,o.x-o.w/2,o.x+o.w/2],[ay,by,y+(o.bottom||0),y+o.h],[az,bz,o.z-o.d/2,o.z+o.d/2]]){const d=b-a;if(Math.abs(d)<1e-8){if(a<min||a>max){lo=2;break}}else{const t1=(min-a)/d,t2=(max-a)/d;lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));if(lo>hi)break}}if(lo<=hi&&hi>0&&lo<1)return false}
  const n=Math.ceil(Math.hypot(bx-ax,bz-az)/.4);for(let i=1;i<n;i++){const t=i/n;if(ay+(by-ay)*t<sanctumHeight(ax+(bx-ax)*t,az+(bz-az)*t)-.1)return false}return true;
 }
 export function sanctumMonsterHP(kind:string,level:number){return SANCTUM_KINDS[kind]?Math.round(kind==='immaculate_judge'?ancientBossHealth(level,8.5,1.5,5.5):ancientMobHealth(level,ancientBaseAttack(level)*12*(kind==='seal_warden'?1.5:kind==='mirror_wraith'?1.1:1.3))):0}

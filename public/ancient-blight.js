@@ -34,6 +34,13 @@ for (let i = 0; i < 28; i++) {
   BLIGHT_SOLIDS.push({ x, z, w: 5 + i % 3, d: 7, h: 6 + i % 4, kind: "rock" });
 }
 for (const z of [70, 120, 170]) for (const s of [-1, 1]) BLIGHT_SOLIDS.push({ x: s * 22, z, w: 1.8, d: 1.8, h: 12, kind: "tree" });
+const BLIGHT_FIXTURES = [
+  ...[-26, 26].flatMap((x) => [{ x, z: 22, w: 10, d: 9, h: 3, kind: "tent" }, { x, z: 31, w: 6, d: 2, h: 1.125, kind: "shelf" }]),
+  ...BLIGHT_HOUSES.flatMap((b) => [-5, 5].map((dz) => ({ x: b.x - b.side * 11, z: b.z + dz, w: 1.5, d: 1.5, h: 2, kind: "barrel" }))),
+  ...[180, 390].flatMap((z) => [-10, 10].map((x) => ({ x, z, w: 2.2, d: 2.2, h: 10, kind: "pillar" }))),
+  { x: 0, z: 275, w: 5, d: 5, h: 0.9, kind: "purifier" }
+];
+const blightColliders = [...BLIGHT_SOLIDS, ...BLIGHT_FIXTURES];
 function blightHeight(_x, z) {
   return z <= 400 ? 0 : -Math.min(16, (z - 400) * 0.12);
 }
@@ -43,10 +50,10 @@ function blightSurface(x, z, feet = 0) {
   return blightHeight(x, z) + (r <= 11 ? 0.4 : r <= 12 ? 0.3 : r <= 13 ? 0.2 : 0);
 }
 function blightBlocked(x, z, r = 0.6, feet = blightHeight(x, z)) {
-  return Math.abs(x) > 55 - r || z < 3 + r || z > 635 - r || BLIGHT_SOLIDS.some((o) => feet < blightHeight(o.x, o.z) + o.h - 0.05 && feet + 1.8 > blightHeight(o.x, o.z) + (o.bottom || 0) + 0.02 && Math.abs(x - o.x) < o.w / 2 + r && Math.abs(z - o.z) < o.d / 2 + r);
+  return Math.abs(x) > 55 - r || z < 3 + r || z > 635 - r || blightColliders.some((o) => feet < blightHeight(o.x, o.z) + o.h - 0.05 && feet + 1.8 > blightHeight(o.x, o.z) + (o.bottom || 0) + 0.02 && Math.abs(x - o.x) < o.w / 2 + r && Math.abs(z - o.z) < o.d / 2 + r);
 }
 function blightLineClear(ax, ay, az, bx, by, bz) {
-  for (const o of BLIGHT_SOLIDS) {
+  for (const o of blightColliders) {
     let lo = 0, hi = 1;
     const base = blightHeight(o.x, o.z);
     for (const [a, b, min, max] of [[ax, bx, o.x - o.w / 2, o.x + o.w / 2], [ay, by, base + (o.bottom || 0), base + o.h], [az, bz, o.z - o.d / 2, o.z + o.d / 2]]) {
@@ -123,6 +130,7 @@ function blightPath(ax, az, bx, bz) {
 export {
   BLIGHT_CRYSTALS,
   BLIGHT_CRYSTAL_XP,
+  BLIGHT_FIXTURES,
   BLIGHT_HOUSES,
   BLIGHT_KINDS,
   BLIGHT_LEVEL,

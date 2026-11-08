@@ -1,16 +1,25 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import assert from 'node:assert/strict';import{DatabaseSync}from'node:sqlite';import vm from'node:vm';import{build}from'esbuild';import{createHash}from'node:crypto';
-import{CHAPTER_ROUTES,chapterPoint,chapterSafe,chapterBlocked,chapterPath,chapterHeight,chapterDistance,setChapterState,chapterMovementScale}from'../public/ancient-geography.js';
+import{CHAPTER_ROUTES,CHAPTER_SCENERY,chapterPoint,chapterSafe,chapterBlocked,chapterPath,chapterHeight,chapterDistance,setChapterState,chapterMovementScale}from'../public/ancient-geography.js';
 import{CHAPTER_FEATURES,useChapterFeature,DIAL_TARGETS}from'../public/ancient-chapter-features.js';
 import{DUNES_SPAWNS,DUNES_BOSSES,DUNES_KINDS,dunesMonsterHP,dunesMonsterDamage}from'../public/ancient-dunes.js';
 import{SKYREACH_SPAWNS,skyreachMonsterHP,skyreachMonsterDamage}from'../public/ancient-skyreach.js';
 import{STARFALL_SPAWNS}from'../public/ancient-starfall.js';import{FROSTCOURT_SPAWNS}from'../public/ancient-frostcourt.js';
-import{QUEST_NPCS,MAIN_QUESTS,advanceQuest,currentQuest}from'../public/ancient-quests.js';import{newAncientProfile,ancientMonsterXP,xpNeeded,ancientMonsterDamage,ANCIENT_KINDS}from'../public/ancient-rules.js';import{ancientBossGearWeights}from'../public/ancient-gear.js';import{motionPoint,tickForcedMotion}from'../public/ancient-forced-motion.js';
+import{QUEST_NPCS,MAIN_QUESTS,advanceQuest,currentQuest}from'../public/ancient-quests.js';import{ancientMovementPath,newAncientProfile,ancientMonsterXP,xpNeeded,ancientMonsterDamage,ANCIENT_KINDS}from'../public/ancient-rules.js';import{ancientBossGearWeights}from'../public/ancient-gear.js';import{motionPoint,tickForcedMotion}from'../public/ancient-forced-motion.js';
 const oldMaps={starfall:STARFALL_SPAWNS,frostcourt:FROSTCOURT_SPAWNS,skyreach:SKYREACH_SPAWNS,dunes:DUNES_SPAWNS},hashes=new Set();
 for(const[map,spawns]of Object.entries(oldMaps)){
  const start=chapterPoint(map,0,10),route=CHAPTER_ROUTES[map];assert(Math.max(...route.map(p=>p[1]))-Math.min(...route.map(p=>p[1]))>100,'not a long narrow corridor');hashes.add(createHash('sha256').update(JSON.stringify(route.map(p=>p.slice(1)))).digest('hex'));
  for(const n of [...Object.values(QUEST_NPCS).filter(n=>n.map===map),...spawns,...(map==='dunes'?DUNES_BOSSES:[])]){assert(!chapterBlocked(map,n.x,n.z,.8),`${map}: blocked ${n.name||n.kind}`);assert(chapterPath(map,start.x,start.z,n.x,n.z).length,`${map}: unreachable ${n.name||n.kind}`)}
  for(let u=1;u<380;u++){const p=chapterPoint(map,0,u),q=chapterPoint(map,0,u+.1),slope=Math.abs(chapterHeight(map,p.x,p.z)-chapterHeight(map,q.x,q.z))/Math.max(.001,Math.hypot(p.x-q.x,p.z-q.z));assert(slope<.5,`${map}: unsafe ramp ${u}`)}
+}
+for(const [map,props] of Object.entries(CHAPTER_SCENERY)){
+ assert(props.length>0);
+ for(const o of props)assert(chapterBlocked(map,o.x,o.z,.25,chapterHeight(map,o.x,o.z)),map+': missing '+o.kind+' collision');
+}
+for(const [map,x,z,feet] of [['blight',19,230,0],['sanctum',20,380,8],['starfall',0,0,0],['frostcourt',31,106,0],['skyreach',0,0,0],['dunes',-20,145,chapterHeight('dunes',-20,145)]]){
+ const prop=CHAPTER_SCENERY[map]?.[0];
+ const [px,pz,py]=prop?[prop.x,prop.z,chapterHeight(map,prop.x,prop.z)]:[x,z,feet];
+ assert(!ancientMovementPath(px-4,pz,px+4,pz,map,py),map+': movement crosses solid scenery');
 }
 assert.equal(hashes.size,4);assert.equal(STARFALL_SPAWNS.length,24);assert.equal(FROSTCOURT_SPAWNS.length,28);assert.equal(SKYREACH_SPAWNS.length,28);
 let water={};useChapterFeature(water,CHAPTER_FEATURES.find(f=>f.kind==='drain'));setChapterState('starfall',water);assert.equal(chapterMovementScale('starfall',...Object.values(chapterPoint('starfall',0,300))),1);
