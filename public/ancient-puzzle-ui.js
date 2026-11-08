@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-3';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-4';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',selected=-1;
  const L=(a,b)=>en()?b:a;
@@ -21,6 +21,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   }
   state=next;map?.sync(next);draw();
 
+  room.querySelector('.ancientPuzzleFeedback').textContent=feedback;
   room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+next.dials.length+L(' 个机关',' mechanisms');
   const history=room?.querySelector('.ancientPuzzleChatHistory');
   if(history&&history.dataset.last!==String(next.chat.at(-1)?.id||0)){
@@ -52,18 +53,31 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
    const bank=state.banks.find(b=>selected>=b.start&&selected<b.start+b.count),dial=state.dials[selected];
    make(active,'small',L('机关 ','Station ')+(selected+1)+' / '+state.dials.length);
    make(active,'h2',bank.name[en()?1:0]+' · '+dial.label[en()?1:0]);
-   if(bank.timed){
-    make(active,'p',bank.cables[selected-bank.start]+' m · '+bank.window.map(ms=>ms/1000).join('–')+' s').className='ancientPuzzleReading';
-    make(active,'p',bank.reading+' / '+bank.count);
-    button(active,L('触发','Activate'),()=>operate('pulse',{index:selected})).disabled=bank.done;
-   }else{
-    if(bank.plate)make(active,'small',bank.plate);
-    make(active,'p',L('读数 ','Reading ')+Number(bank.reading.toFixed(3))+' / '+Number(bank.target.toFixed(3))+' '+bank.unit).className='ancientPuzzleReading';
-    const controls=make(active,'div');controls.className='ancientPuzzleControls';
-    const value=state.values[selected];
-    button(controls,'−',()=>operate('dial',{index:selected,delta:-1})).disabled=value===0;
-    make(controls,'output',value+' / '+dial.max);
-    button(controls,'+',()=>operate('dial',{index:selected,delta:1})).disabled=value===dial.max;
+   if(bank.plate)make(active,'small',bank.plate);
+   make(active,'p',L('读数 ','Reading ')+Number(bank.reading.toFixed(3))+' / '+Number(bank.target.toFixed(3))+' '+bank.unit).className='ancientPuzzleReading';
+   const value=state.values[selected],index=selected;
+   if(bank.kind===0){
+    const rack=make(active,'div');rack.className='ancientPuzzleWeights';
+    for(let weight=0;weight<=dial.max;weight++){
+     const pick=button(rack,weight+' N',()=>operate('weight',{index,value:weight}));
+     pick.setAttribute('aria-pressed',String(value===weight));
+    }
+   }else if(bank.kind===1){
+    const board=make(active,'div');board.className='ancientPuzzleSockets';
+    for(const resistor of [1,2,4,8,16].filter(v=>v<=dial.max)){
+     const plug=button(board,resistor+' Ω',()=>operate('socket',{index,value:resistor}));
+     plug.disabled=(value^resistor)>dial.max;plug.setAttribute('aria-pressed',String(!!(value&resistor)));
+    }
+   }else if(bank.kind===4){
+    const scope=make(active,'canvas');scope.className='ancientPuzzleScope';scope.width=480;scope.height=100;
+    const ctx=scope.getContext('2d');ctx.strokeStyle='#91f4bd';ctx.lineWidth=3;ctx.beginPath();
+    for(let x=0;x<=480;x++)ctx.lineTo(x,50+Math.sin(x/480*Math.PI*2*(value+1))*30);
+    ctx.stroke();
+    const tuning=make(active,'input');tuning.type='range';tuning.min=0;tuning.max=dial.max;tuning.value=value;
+    tuning.setAttribute('aria-label',dial.label[en()?1:0]);
+    const readout=make(active,'output',String(value));
+    tuning.oninput=()=>{readout.textContent=tuning.value;};
+    tuning.onchange=()=>operate('tune',{index,value:Number(tuning.value)});
    }
    button(active,L('检验整层','Test floor'),()=>operate('check'));
   }
@@ -83,7 +97,10 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   generation++;signature='';feedback='';
   room=make(document.body,'dialog');room.className='ancientPuzzleRoom';
   const top=make(room,'header');make(top,'strong').className='ancientPuzzleFloorLabel';
+  button(top,L('检验整层','Test floor'),()=>{if(!state?.complete)operate('check');});
+  button(top,L('奖励','Rewards'),()=>focusControls(-1));
   button(top,L('离开解谜地图','Leave puzzle map'),close);
+  const notice=make(top,'small');notice.className='ancientPuzzleFeedback';notice.setAttribute('role','status');
   const viewport=make(room,'section');viewport.className='ancientPuzzleViewport';
   const canvas=make(viewport,'canvas');canvas.tabIndex=0;canvas.className='ancientPuzzleMap';
   canvas.setAttribute('aria-label',L('第一人称机关室','First-person chamber'));
@@ -95,6 +112,9 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   panel.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();panel.close();});
   function focusControls(index){
    if(panel.open)return;
+   const bank=state.banks?.find(b=>index>=b.start&&index<b.start+b.count);
+   const direct={2:'shiftGear',3:'pump',5:'pulse'}[bank?.kind];
+   if(direct){if(!bank.done)operate(direct,{index});return;}
    if(document.pointerLockElement===canvas)document.exitPointerLock();
    selected=index;feedback='';draw();panel.showModal();
   }

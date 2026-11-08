@@ -132,3 +132,9 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientPuzzlePanel main,.ancientPuzzlePanel .ancientPuzzleChat{width:auto;margin:0;padding:12px 18px}
 .ancientPuzzlePanel .ancientPuzzleMachine{margin:0 0 12px;padding:16px}
 .ancientPuzzlePanel .ancientPuzzleChat{border-top:1px solid #31515d}
+.ancientPuzzleWeights,.ancientPuzzleSockets{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.ancientPuzzleWeights button{border-radius:5px 5px 12px 12px;background:#413626;border-color:#a78b61}
+.ancientPuzzleSockets button{border-radius:22px;background:#172029;border:2px dashed #688f9e}
+.ancientPuzzleWeights button[aria-pressed=true],.ancientPuzzleSockets button[aria-pressed=true]{background:#236251;border-color:#8de8c4;border-style:solid}
+.ancientPuzzleScope{display:block;width:100%;background:#101e19;border:1px solid #487a60;margin:12px 0}
+.ancientPuzzleMachine input[type=range]{width:85%;margin-inline-end:8px}

@@ -4,7 +4,7 @@ export type PuzzleState={floor:number;revision:number;values:number[];sequence:n
 type Text=[string,string];
 type Dial={label:Text;max:number};
 type Stage={
- name:Text;dials:Dial[];target:number;measure:(values:number[])=>number;unit:string;
+ kind:number;name:Text;dials:Dial[];target:number;measure:(values:number[])=>number;unit:string;
  plate?:string;order?:number[];cables?:number[];window?:[number,number];
 };
 export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,values:[],sequence:0,lastPulse:0,layout:2});
@@ -17,11 +17,11 @@ function buildStage(difficulty:number,n:number,kind:number,relay=false):Stage{
   const count=difficulty===5?8:6;
   const order=Array.from({length:count},(_,i)=>i).sort((a,b)=>Math.sin(a*13.4+n*9.1)-Math.sin(b*13.4+n*9.1)||a-b);
   const cables=Array.from({length:count},(_,i)=>12+order.indexOf(i)*7+(n+i)%5);
-  return {name:['信号接力','Signal relay'],dials:cables.map((_,i)=>({label:['触点 '+(i+1),'Contact '+(i+1)],max:0})),
+  return {kind:5,name:['信号接力','Signal relay'],dials:cables.map((_,i)=>({label:['触点 '+(i+1),'Contact '+(i+1)],max:0})),
    target:count,measure:()=>0,unit:'',order,cables,window:difficulty===5?[1000,12000]:[1000,16000]};
  }
  function machine(name:Text,dials:Dial[],unit:string,plate:string,measure:Stage['measure']):Stage{
-  return {name,dials,unit,plate,measure,target:measure(solution)};
+  return {kind,name,dials,unit,plate,measure,target:measure(solution)};
  }
  if(kind===0){
   const left=2+n%6,right=5+n%7,trim=extra?3+n%4:0;
@@ -78,7 +78,7 @@ export function puzzleView(state:PuzzleState){
  const {banks,dials,values}=roomReadings(state);
  return {floor:state.floor,revision:state.revision,complete:false as const,difficulty:difficultyFor(state.floor),dials,values,
   banks:banks.map(({stage,start})=>({
-   start,count:stage.dials.length,name:stage.name,target:stage.target,unit:stage.unit,plate:stage.plate,
+   start,kind:stage.kind,count:stage.dials.length,name:stage.name,target:stage.target,unit:stage.unit,plate:stage.plate,
    reading:stage.order?state.sequence:stage.measure(values.slice(start,start+stage.dials.length)),
    timed:!!stage.order,done:!!stage.order&&!!state.relayDone,
    cables:stage.cables,
@@ -105,9 +105,31 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
   next.sequence++;next.lastPulse=now;next.relayDone=next.sequence===stage.order.length;
   return {state:next,notice:'pulse'};
  }
- const delta=input.delta;
- if(input.control!=='dial'||delta!==1&&delta!==-1)return {state,notice:'invalid'};
- next.values[index]=Math.max(0,Math.min(dials[index].max,next.values[index]+delta));
+ const value=values[index],max=dials[index].max;
+ switch(stage.kind){
+  case 0:
+   if(input.control!=='weight'||typeof input.value!=='number'||!Number.isInteger(input.value)||input.value<0||input.value>max)return {state,notice:'invalid'};
+   next.values[index]=input.value;
+   break;
+  case 1: {
+   const resistor=input.value;
+   if(input.control!=='socket'||typeof resistor!=='number'||![1,2,4,8,16].includes(resistor)||(value^resistor)>max)return {state,notice:'invalid'};
+   next.values[index]=value^resistor;
+   break;
+  }
+  case 2:
+   if(input.control!=='shiftGear')return {state,notice:'invalid'};
+   next.values[index]=(value+2)%(max+1);
+   break;
+  case 3:
+   if(input.control!=='pump')return {state,notice:'invalid'};
+   next.values[index]=(value+1)%(max+1);
+   break;
+  case 4:
+   if(input.control!=='tune'||typeof input.value!=='number'||!Number.isInteger(input.value)||input.value<0||input.value>max)return {state,notice:'invalid'};
+   next.values[index]=input.value;
+   break;
+ }
  return {state:next,notice:'dial'};
 }
 export const puzzleReward=(floor:number)=>{const difficulty=difficultyFor(floor);return {coins:40*difficulty*difficulty,cores:difficulty>=3?difficulty-2:0}};

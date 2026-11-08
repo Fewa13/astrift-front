@@ -3,6 +3,20 @@ import * as T from './three.module.js';
 import {ancientInputCode,ancientSensitivity} from './ancient-input-settings.js';
 import {slideAncientMove} from './ancient-control-feel.js';
 
+function stationPositions(floor,count){
+ let seed=floor*2654435761|0;
+ const random=()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return (seed>>>0)/4294967296};
+ // Leave a clear central route from the entrance and keep every station reachable.
+ const columns=[3.7,7.5,10.1,15,17.6,21.3];
+ const rows=Array.from({length:9},(_,row)=>columns.map(x=>({x,z:6+row*1.48})));
+ const slots=rows.flat();
+ for(let i=slots.length-1;i>0;i--){
+  const j=Math.floor(random()*(i+1));
+  [slots[i],slots[j]]=[slots[j],slots[i]];
+ }
+ return slots.slice(0,count).map(({x,z})=>({x:x+(random()-.5)*.24,z:z+(random()-.5)*.16}));
+}
+
 export function createPuzzleMap(canvas,name,en,interact){
  const renderer=new T.WebGLRenderer({canvas,antialias:true});
  renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
@@ -84,27 +98,74 @@ export function createPuzzleMap(canvas,name,en,interact){
    pos={x:50,z:80};nearby=-1;yaw=pitch=vy=0;height=eyeHeight;keys.clear();
    for(const station of stations)clearPlayer(station);
    stations.length=0;
-   for(let i=0;i<(next.dials?.length||0);i++){
-    const station=new T.Group();station.position.set(3.8+(i%5)*4.35,0,6+Math.floor(i/5)*1.46);
+   const positions=stationPositions(next.floor,next.dials?.length||0);
+   for(const [i,{x,z}] of positions.entries()){
+    const station=new T.Group();station.position.set(x,0,z);
     const bankIndex=next.banks.findIndex(b=>i>=b.start&&i<b.start+b.count);
     const bank=next.banks[bankIndex],color=[0x61b6e0,0xcdb45c,0x85cc88,0xb48bdd,0xe89a72][bankIndex%5];
     station.bank=bankIndex;
-    if(bank.timed)box(station,0,1.54,0,.24,.45,.24,0xf6a25e);
-    else for(const side of [-1,1])box(station,side*.54,1.42,0,.18,.34,.32,color);
-    box(station,0,.6,0,1.35,1.2,.85,0x466976);
-    box(station,0,.12,0,1.65,.24,1.15,0x20333d);
-    box(station,0,1.18,0,1.48,.12,1,0xb18a52);
-    station.gauge=box(station,0,1.29,.08,.86,.16,.5,color);
-    box(station,0,.68,.44,.82,.4,.08,0x152934);
-    for(const x of [-.25,0,.25])box(station,x,.68,.49,.105,.075,.05,0x81eacf).material=jade;
-    const label=badge((i+1)+' · '+next.dials[i].label[en()?1:0]);label.position.y=1.65;label.scale.set(1.45,.32,1);station.add(label);station.label=label;
+    const kind=bank.kind;
+    const base=[0x544530,0x253f4c,0x574032,0x203e51,0x253b32,0x54404a][kind];
+    const part=(x,y,z,w,h,d,paint=base)=>box(station,x,y,z,w,h,d,paint);
+    if(kind===0){
+     part(0,.16,0,1.5,.32,.92);part(0,.62,0,.23,.93,.35);
+     station.motion=new T.Group();station.motion.position.y=1.03;station.add(station.motion);
+     box(station.motion,0,0,0,1.62,.12,.24,0xb39661);
+     for(const x of [-.62,.62]){
+      box(station.motion,x,-.18,0,.05,.35,.05,color);
+      box(station.motion,x,-.35,0,.53,.08,.49,0x95815d);
+     }
+    }else if(kind===1){
+     part(0,.66,0,1.35,1.32,.47);part(0,.84,.26,1.19,.79,.08,0x152327);
+     station.lamps=[];
+     for(let bit=0;bit<5;bit++)station.lamps.push(part((bit-2)*.21,.91,.34,.1,.34,.07,color));
+     part(0,.64,.34,1.08,.055,.06,0xb3884d);
+    }else if(kind===2){
+     part(0,.21,0,1.57,.42,.93);part(0,.67,0,.24,.78,.45);
+     station.motion=new T.Group();station.motion.position.set(0,1.01,.24);station.add(station.motion);
+     for(let tooth=0;tooth<8;tooth++){
+      const arm=new T.Group();arm.rotation.z=tooth*Math.PI/4;station.motion.add(arm);
+      box(arm,0,.36,0,.18,.55,.24,tooth===0?color:0xa4875c);
+     }
+     part(0,1.01,.35,.29,.29,.22,0x4a392b);
+    }else if(kind===3){
+     part(0,.21,0,1.55,.42,.89);part(-.43,.74,0,.34,1.2,.48);part(.45,.58,0,.31,.82,.45);
+     part(0,.58,.08,.92,.12,.24,0x57728b);
+     station.motion=part(-.43,1.27,0,.62,.22,.6,color);
+     part(.48,1.04,0,.52,.13,.39,0xa88555);
+    }else if(kind===4){
+     part(0,.21,0,1.34,.42,.9);
+     for(const x of [-.59,.59])part(x,.82,0,.15,1.32,.29);
+     part(0,1.47,0,1.35,.13,.3,0x657f64);
+     station.motion=part(0,.92,0,1.06,.095,.12,0x9adfb2);
+    }else{
+     part(0,.56,0,.49,1.12,.49);part(0,.16,0,1.16,.32,.9);
+     station.motion=part(0,1.22,0,.44,.44,.44,color);station.motion.rotation.z=Math.PI/4;
+    }
+    const label=badge('');label.position.y=1.88;label.scale.set(1.95,.37,1);station.add(label);station.label=label;
     stations.push(station);scene.add(station);
    }
   }
   state=next;
   for(let i=0;i<stations.length;i++){
    const station=stations[i],bank=next.banks[station.bank];
-   station.gauge.scale.x=.14+.72*(bank.timed?Number(bank.done):next.values[i]/next.dials[i].max);
+   const value=next.values[i],kind=bank.kind,dial=next.dials[i];
+   if(kind===0)station.motion.rotation.z=(value/dial.max-.5)*.48;
+   if(kind===1)station.lamps.forEach((lamp,bit)=>lamp.visible=!!(value&(1<<bit)));
+   if(kind===2)station.motion.rotation.z=value*Math.PI/6;
+   if(kind===3)station.motion.position.y=1.05+.57*value/dial.max;
+   if(kind===4)station.motion.position.y=.67+.53*value/dial.max;
+   if(kind===5)station.motion.scale.setScalar(bank.done?.65:.44);
+   const label=(i+1)+' · '+dial.label[en()?1:0];
+   const reading=kind===5?bank.cables[i-bank.start]+' m · '+bank.reading+'/'+bank.count:
+    value+' · '+Number(bank.reading.toFixed(3))+' / '+Number(bank.target.toFixed(3))+' '+bank.unit;
+   const caption=label+'\n'+reading;
+   if(station.caption!==caption){
+    station.caption=caption;
+    const texture=station.label.material.map,ctx=texture.image.getContext('2d');
+    ctx.fillStyle='#122433';ctx.fillRect(0,0,256,48);ctx.fillStyle='#edfff5';ctx.textAlign='center';ctx.font='bold 16px system-ui';
+    ctx.fillText(label,128,19,244);ctx.fillText(reading,128,39,244);texture.needsUpdate=true;
+   }
   }
   const remote=new Set();
   for(const p of next.players){

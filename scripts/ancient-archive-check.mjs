@@ -1,27 +1,42 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import assert from 'node:assert/strict';
-import {PUZZLE_FLOORS,newPuzzleState,puzzleStage,puzzleView,puzzleOperate,puzzleReward} from '../src/ancient-puzzle.ts';
+import {PUZZLE_FLOORS,newPuzzleState,puzzleView,puzzleOperate,puzzleReward} from '../src/ancient-puzzle.ts';
 import {GEAR,GEAR_AFFIXES,gearHuntEligible,gearHuntCounts,gearRerollQuote,rollGearItem} from '../public/ancient-gear.js';
 
 let state=newPuzzleState(),now=20000;
 for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
- const stage=puzzleStage(floor);
- assert.equal(state.floor,floor);
+ const room=puzzleView(state);
+ assert.equal(room.floor,floor);
+ assert(room.dials.length>=10&&room.dials.length<=50);
  const operate=(control,extra={})=>puzzleOperate(state,{floor,revision:state.revision,control,...extra},now);
  const old=state;
- if(stage.order){
-  assert(floor>72);
-  assert(!Object.hasOwn(puzzleView(state),'order'));
-  state=operate('pulse',{index:stage.order[0]}).state;
-  assert.equal(state.sequence,1);
-  state=operate('pulse',{index:stage.order[1]}).state;
-  assert.equal(state.sequence,0,'Early trigger resets the relay');
-  for(const index of stage.order){now+=1000;state=operate('pulse',{index}).state;}
- }else{
-  const n=Math.floor((floor-1)/5),values=[2+n%7,3+n%5,2+n*3%8];
-  for(let index=0;index<stage.dials.length;index++)for(let i=0;i<values[index];i++)state=operate('dial',{index,delta:1}).state;
-  state=operate('check').state;
+ assert.equal(operate('check').notice,'wrong');
+ assert.equal(operate('weight',{index:0,value:999}).notice,'invalid');
+ for(const [i,bank] of room.banks.entries()){
+  if(bank.timed){
+   const order=bank.cables.map((length,index)=>({length,index})).sort((a,b)=>a.length-b.length).map(v=>bank.start+v.index);
+   assert(floor>72);
+   state=operate('pulse',{index:order[0]}).state;
+   assert.equal(state.sequence,1);
+   state=operate('pulse',{index:order[1]}).state;
+   assert.equal(state.sequence,0,'Early trigger resets the relay');
+   for(const index of order){now+=1000;state=operate('pulse',{index}).state;}
+   continue;
+  }
+  const n=floor*17+i*13,solution=[2+n%7,3+n%5,2+n*3%8];
+  for(let j=0;j<bank.count;j++){
+   const index=bank.start+j,value=solution[j];
+   if(bank.kind===0)state=operate('weight',{index,value}).state;
+   else if(bank.kind===1){
+    for(const bit of [1,2,4,8,16])if(value&bit)state=operate('socket',{index,value:bit}).state;
+   }else if(bank.kind===2||bank.kind===3){
+    for(let k=0;k<=room.dials[index].max&&(state.values[index]||0)!==value;k++)
+     state=operate(bank.kind===2?'shiftGear':'pump',{index}).state;
+   }else state=operate('tune',{index,value}).state;
+   assert.equal(state.values[index],value);
+  }
  }
+ state=operate('check').state;
  assert.equal(state.floor,floor+1,'Floor '+floor+' must be solvable');
  assert.equal(puzzleOperate(state,{floor,revision:old.revision,control:'check'},now).notice,'stale');
  if(floor>1)assert(puzzleReward(floor).coins>=puzzleReward(floor-1).coins);
