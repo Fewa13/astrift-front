@@ -114,3 +114,12 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientPuzzleChat input{flex:1;min-width:0;padding:8px;color:#e9f5f4;background:#102330;border:1px solid #527d86;border-radius:7px}
 .ancientPuzzleMap{display:block;width:min(900px,92vw);height:auto;margin:14px auto 0;border:1px solid #507b87;border-radius:12px;cursor:crosshair}
 .ancientPuzzleMap:focus-visible{outline:2px solid #8af4c7}
+.ancientPuzzleViewport{position:relative;width:100%;margin:0}
+.ancientPuzzleViewport .ancientPuzzleMap{width:100%;height:max(270px,calc(100dvh - 78px));margin:0;border-radius:0;scroll-margin-top:76px;touch-action:none;cursor:crosshair}
+.ancientPuzzleReticle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#ecfff4;pointer-events:none;text-shadow:0 1px 3px #000}
+.ancientPuzzleViewHelp{position:absolute;bottom:10px;left:12px;background:#102330df;padding:5px 8px;border-radius:6px;pointer-events:none}
+.ancientPuzzleMovePad{display:none}
+.ancientPuzzleRoom main{scroll-margin-top:75px}
+@media(pointer:coarse){.ancientPuzzleMovePad{position:absolute;display:grid;grid-template-columns:repeat(3,44px);gap:4px;bottom:44px;left:12px;touch-action:none}.ancientPuzzleMovePad button:first-child{grid-column:2}.ancientPuzzleMovePad button:nth-child(2){grid-column:1}}
+
+.ancientPuzzleRoom header{gap:8px;flex-wrap:wrap;align-items:center}.ancientPuzzleFloorLabel{margin-inline-end:auto}

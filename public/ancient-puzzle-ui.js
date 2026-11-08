@@ -10,6 +10,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   if(!next||state&&(next.revision<state.revision||next.revision===state.revision&&next.serverTime<state.serverTime))return;
   offset=next.serverTime-Date.now();
   state=next;map?.sync(next);draw();
+  room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5';
   const history=room?.querySelector('.ancientPuzzleChatHistory');
   if(history&&history.dataset.last!==String(next.chat.at(-1)?.id||0)){
    history.dataset.last=String(next.chat.at(-1)?.id||0);history.replaceChildren();
@@ -80,13 +81,28 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   if(room||working)return;
   working=true;let r;
   try{r=await request('puzzleEnter')}finally{working=false;}
-  onEnter();generation++;signature='';feedback='';
+  generation++;signature='';feedback='';
   room=make(document.body,'dialog');room.className='ancientPuzzleRoom';
-  const top=make(room,'header');button(top,L('离开解谜地图','Leave puzzle map'),close);
-  const canvas=make(room,'canvas');canvas.width=720;canvas.height=210;canvas.tabIndex=0;canvas.className='ancientPuzzleMap';
-  canvas.setAttribute('aria-label',L('机关室平面图，点击或用方向键移动','Chamber map. Click or use arrow keys to move.'));
-  map=createPuzzleMap(canvas,()=>name().toLowerCase(),en);
-  make(room,'main');
+  const top=make(room,'header');make(top,'strong').className='ancientPuzzleFloorLabel';
+  button(top,L('返回视角','Return to view'),()=>{canvas.scrollIntoView({block:'start'});canvas.focus({preventScroll:true});});
+  button(top,L('离开解谜地图','Leave puzzle map'),close);
+  const focusControls=()=>{if(document.pointerLockElement===canvas)document.exitPointerLock();const main=room.querySelector('main');main.scrollIntoView({block:'start'});main.focus();};
+  button(top,L('机关控制台','Mechanism controls'),focusControls);
+  const viewport=make(room,'section');viewport.className='ancientPuzzleViewport';
+  const canvas=make(viewport,'canvas');canvas.tabIndex=0;canvas.className='ancientPuzzleMap';
+  canvas.setAttribute('aria-label',L('第一人称机关室，WASD 移动，鼠标或拖动转向，E 打开机关控制台','First-person chamber. WASD to move, mouse or drag to look, E for mechanism controls.'));
+  make(viewport,'span','+').className='ancientPuzzleReticle';
+  const help=make(viewport,'small',L('WASD 移动 · 拖动转向 · E 操作机关','WASD move · drag to look · E for controls'));help.className='ancientPuzzleViewHelp';
+  try{map=createPuzzleMap(canvas,()=>name().toLowerCase(),en,focusControls);}
+  catch(error){close();throw error;}
+  onEnter();
+  const pad=make(viewport,'div');pad.className='ancientPuzzleMovePad';
+  for(const [key,label] of [['w','↑'],['a','←'],['s','↓'],['d','→']]){
+   const control=button(pad,label,()=>{});
+   control.onpointerdown=event=>{event.preventDefault();control.setPointerCapture(event.pointerId);map.move(key,true);};
+   control.onpointerup=control.onpointercancel=control.onlostpointercapture=()=>map?.move(key,false);
+  }
+  make(room,'main').tabIndex=-1;
   const chat=make(room,'aside');chat.className='ancientPuzzleChat';make(chat,'h2',L('解谜频道','Puzzle chat'));
   make(chat,'div').className='ancientPuzzleChatHistory';
   const form=make(chat,'form'),input=make(form,'input');input.maxLength=120;input.placeholder=L('和大家讨论机关','Discuss the mechanism');
@@ -94,7 +110,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   const submit=make(form,'button',L('发送','Send'));submit.type='submit';
   form.onsubmit=async event=>{event.preventDefault();if(!input.value.trim()||working)return;const value=input.value;await update('puzzleChat',{text:value});if(!feedback&&input.value===value)input.value='';};
   room.addEventListener('cancel',event=>{event.preventDefault();close();});
-  room.addEventListener('keydown',event=>event.stopPropagation());room.showModal();apply(r);
+  room.addEventListener('keydown',event=>event.stopPropagation());room.showModal();apply(r);canvas.focus({preventScroll:true});
   poll=setInterval(()=>void update('puzzleState',{floor:state.floor,position:map.position()}),1300);
   timer=setInterval(()=>{const bar=room?.querySelector('progress');if(bar){const elapsed=state.lastPulse?Date.now()+offset-state.lastPulse:0;bar.value=Math.min(bar.max,elapsed);bar.style.accentColor=elapsed>=state.window[0]&&elapsed<=state.window[1]?'#7de9c7':'#edab69'}},60);
  }
