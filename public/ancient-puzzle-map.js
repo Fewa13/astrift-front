@@ -3,7 +3,7 @@ import * as T from './three.module.js';
 import {ancientInputCode,ancientSensitivity} from './ancient-input-settings.js';
 import {slideAncientMove} from './ancient-control-feel.js';
 
-export function createPuzzleMap(canvas,name,en,interact,onNearby){
+export function createPuzzleMap(canvas,name,en,interact){
  const renderer=new T.WebGLRenderer({canvas,antialias:true});
  renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
@@ -117,7 +117,7 @@ export function createPuzzleMap(canvas,name,en,interact,onNearby){
    (side*Math.cos(yaw)-forward*Math.sin(yaw))*step,(-side*Math.sin(yaw)-forward*Math.cos(yaw))*step,blocked,()=>0);
   pos.x=next.x/scale;pos.z=next.z/scale;
   const near=stations.some(o=>Math.hypot(next.x-o.position.x,next.z-o.position.z)<=3);
-  if(near!==nearby){nearby=near;onNearby(near);}
+  nearby=near;
   vy-=19*dt;height=Math.max(eyeHeight,height+vy*dt);if(height===eyeHeight)vy=0;
   camera.position.set(pos.x*scale,height,pos.z*scale);camera.rotation.set(pitch,yaw,0,'YXZ');
   for(const actor of players.values())actor.position.lerp(actor.target,Math.min(1,dt*6));

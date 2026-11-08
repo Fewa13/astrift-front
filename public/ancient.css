@@ -126,3 +126,9 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientPuzzleInteract{position:absolute;top:calc(50% + 30px);left:50%;transform:translateX(-50%);max-width:85%;padding:7px 11px;text-align:center;background:#102330e8;color:#ccfff0;border:1px solid #5b9d8e;border-radius:6px;pointer-events:none}
 .ancientPuzzleTutorial{border-inline-start:3px solid #70d8bc;padding:.5rem .75rem;background:#16343e}
 @media(pointer:coarse){.ancientPuzzleMovePad{display:flex;align-items:flex-end;gap:10px;left:14px;right:14px;bottom:48px;pointer-events:none}.ancientPuzzleMovePad button{pointer-events:auto;touch-action:none}.ancientPuzzleMovePad button:first-child{width:82px;height:82px;border-radius:50%;margin-inline-end:auto}.ancientPuzzleViewHelp{display:none}}
+
+.ancientPuzzlePanel{width:min(720px,calc(100vw - 24px));max-width:none;max-height:calc(100dvh - 28px);padding:0;color:inherit;background:#111e29;border:1px solid #527d86;border-radius:14px;overflow:auto}
+.ancientPuzzlePanel::backdrop{background:#050b12a8}
+.ancientPuzzlePanel main,.ancientPuzzlePanel .ancientPuzzleChat{width:auto;margin:0;padding:12px 18px}
+.ancientPuzzlePanel .ancientPuzzleMachine{margin:0 0 12px;padding:16px}
+.ancientPuzzlePanel .ancientPuzzleChat{border-top:1px solid #31515d}
