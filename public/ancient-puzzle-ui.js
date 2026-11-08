@@ -1,12 +1,19 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-3';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',selected=-1;
  const L=(a,b)=>en()?b:a;
  const make=(parent,tag,text='')=>{const node=document.createElement(tag);node.textContent=text;parent.append(node);return node};
  function button(parent,text,run){const node=make(parent,'button',text);node.type='button';node.onclick=run;return node;}
+ function roomState(r){
+  const next=r?.puzzle;
+  if(!next||!Array.isArray(next.players)||!Array.isArray(next.chat)||(!next.complete&&(!Array.isArray(next.banks)||!Array.isArray(next.dials)||!Array.isArray(next.values)))){
+   throw new Error(L('解谜房间数据未加载，请刷新页面重试。','Puzzle room could not load. Refresh and try again.'));
+  }
+  return next;
+ }
  function apply(r){
-  onProfile(r.profile);const next=r.puzzle;
+  onProfile(r.profile);const next=roomState(r);
   if(!next||state&&(next.revision<state.revision||next.revision===state.revision&&next.serverTime<state.serverTime))return;
   if(state&&state.floor!==next.floor){
    selected=-1;
@@ -72,7 +79,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
  async function open(){
   if(room||working)return;
   working=true;let r;
-  try{r=await request('puzzleEnter')}finally{working=false;}
+  try{r=await request('puzzleEnter');roomState(r)}finally{working=false;}
   generation++;signature='';feedback='';
   room=make(document.body,'dialog');room.className='ancientPuzzleRoom';
   const top=make(room,'header');make(top,'strong').className='ancientPuzzleFloorLabel';
@@ -110,7 +117,8 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   const submit=make(form,'button',L('发送','Send'));submit.type='submit';
   form.onsubmit=async event=>{event.preventDefault();if(!input.value.trim()||working)return;const value=input.value;await update('puzzleChat',{text:value});if(!feedback&&input.value===value)input.value='';};
   room.addEventListener('cancel',event=>event.preventDefault());
-  room.addEventListener('keydown',event=>event.stopPropagation());room.showModal();apply(r);canvas.focus({preventScroll:true});
+  room.addEventListener('keydown',event=>event.stopPropagation());try{room.showModal();apply(r);canvas.focus({preventScroll:true});}
+  catch(error){close();throw error;}
   poll=setInterval(()=>void update('puzzleState',{floor:state.floor,position:map.position()}),1300);
  }
  return {open,close};
