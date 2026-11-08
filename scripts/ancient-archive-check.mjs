@@ -10,9 +10,9 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
  assert(room.dials.length>=10&&room.dials.length<=50);
  const operate=(control,extra={})=>puzzleOperate(state,{floor,revision:state.revision,control,...extra},now);
  const old=state;
- assert.equal(operate('check').notice,'wrong');
  assert.equal(operate('weight',{index:0,value:999}).notice,'invalid');
  for(const [i,bank] of room.banks.entries()){
+  if(state.floor!==floor)break;
   if(bank.timed){
    const order=bank.cables.map((length,index)=>({length,index})).sort((a,b)=>a.length-b.length).map(v=>bank.start+v.index);
    assert(floor>72);
@@ -24,19 +24,19 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
    continue;
   }
   const n=floor*17+i*13,solution=[2+n%7,3+n%5,2+n*3%8];
-  for(let j=0;j<bank.count;j++){
+  for(let j=0;j<bank.count&&state.floor===floor;j++){
    const index=bank.start+j,value=solution[j];
    if(bank.kind===0)state=operate('weight',{index,value}).state;
    else if(bank.kind===1){
     for(const bit of [1,2,4,8,16])if(value&bit)state=operate('socket',{index,value:bit}).state;
    }else if(bank.kind===2||bank.kind===3){
-    for(let k=0;k<=room.dials[index].max&&(state.values[index]||0)!==value;k++)
+    for(let k=0;k<=room.dials[index].max&&state.floor===floor&&(state.values[index]||0)!==value;k++)
      state=operate(bank.kind===2?'shiftGear':'pump',{index}).state;
    }else state=operate('tune',{index,value}).state;
-   assert.equal(state.values[index],value);
+   if(state.floor===floor)assert.equal(state.values[index],value);
   }
  }
- state=operate('check').state;
+
  assert.equal(state.floor,floor+1,'Floor '+floor+' must be solvable');
  assert.equal(puzzleOperate(state,{floor,revision:old.revision,control:'check'},now).notice,'stale');
  if(floor>1)assert(puzzleReward(floor).coins>=puzzleReward(floor-1).coins);

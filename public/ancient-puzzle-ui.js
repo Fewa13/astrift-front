@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-4';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-5';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',selected=-1;
  const L=(a,b)=>en()?b:a;
@@ -22,7 +22,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   state=next;map?.sync(next);draw();
 
   room.querySelector('.ancientPuzzleFeedback').textContent=feedback;
-  room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+next.dials.length+L(' 个机关',' mechanisms');
+  room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+next.banks.filter(bank=>bank.done).length+' / '+next.banks.length+L(' 组已完成',' groups complete');
   const history=room?.querySelector('.ancientPuzzleChatHistory');
   if(history&&history.dataset.last!==String(next.chat.at(-1)?.id||0)){
    history.dataset.last=String(next.chat.at(-1)?.id||0);history.replaceChildren();
@@ -79,7 +79,6 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
     tuning.oninput=()=>{readout.textContent=tuning.value;};
     tuning.onchange=()=>operate('tune',{index,value:Number(tuning.value)});
    }
-   button(active,L('检验整层','Test floor'),()=>operate('check'));
   }
   const status=make(view,'p',feedback);status.setAttribute('role','status');
   const count=Math.min(state.total,state.floor-1)-state.claimed;
@@ -97,7 +96,6 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   generation++;signature='';feedback='';
   room=make(document.body,'dialog');room.className='ancientPuzzleRoom';
   const top=make(room,'header');make(top,'strong').className='ancientPuzzleFloorLabel';
-  button(top,L('检验整层','Test floor'),()=>{if(!state?.complete)operate('check');});
   button(top,L('奖励','Rewards'),()=>focusControls(-1));
   button(top,L('离开解谜地图','Leave puzzle map'),close);
   const notice=make(top,'small');notice.className='ancientPuzzleFeedback';notice.setAttribute('role','status');

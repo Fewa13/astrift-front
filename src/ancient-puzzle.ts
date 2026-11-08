@@ -80,7 +80,7 @@ export function puzzleView(state:PuzzleState){
   banks:banks.map(({stage,start})=>({
    start,kind:stage.kind,count:stage.dials.length,name:stage.name,target:stage.target,unit:stage.unit,plate:stage.plate,
    reading:stage.order?state.sequence:stage.measure(values.slice(start,start+stage.dials.length)),
-   timed:!!stage.order,done:!!stage.order&&!!state.relayDone,
+   timed:!!stage.order,done:stage.order?!!state.relayDone:sameReading(stage.measure(values.slice(start,start+stage.dials.length)),stage.target),
    cables:stage.cables,
    window:stage.window,
   }))};
@@ -90,9 +90,9 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
  if(state.floor>PUZZLE_FLOORS||input.floor!==state.floor||input.revision!==state.revision)return {state,notice:'stale'};
  const {banks,dials,values}=roomReadings(state);
  const next={...state,revision:state.revision+1,values};
- if(input.control==='check'){
-  const ready=banks.every(({stage,start})=>stage.order?state.relayDone:sameReading(stage.measure(values.slice(start,start+stage.dials.length)),stage.target));
-  return ready?{state:newPuzzleState(state.floor+1,next.revision),notice:'clear'}:{state,notice:'wrong'};
+ function finish(notice:string){
+  const ready=banks.every(({stage,start})=>stage.order?next.relayDone:sameReading(stage.measure(next.values.slice(start,start+stage.dials.length)),stage.target));
+  return ready?{state:newPuzzleState(state.floor+1,next.revision),notice:'clear'}:{state:next,notice};
  }
  const index=input.index;
  if(typeof index!=='number'||!Number.isInteger(index)||index<0||index>=dials.length)return {state,notice:'invalid'};
@@ -103,7 +103,7 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
   const valid=index-start===stage.order[state.sequence]&&(!state.sequence||delay>=stage.window![0]&&delay<=stage.window![1]);
   if(!valid)return {state:{...next,sequence:0,lastPulse:0},notice:'reset'};
   next.sequence++;next.lastPulse=now;next.relayDone=next.sequence===stage.order.length;
-  return {state:next,notice:'pulse'};
+  return finish('pulse');
  }
  const value=values[index],max=dials[index].max;
  switch(stage.kind){
@@ -130,6 +130,6 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
    next.values[index]=input.value;
    break;
  }
- return {state:next,notice:'dial'};
+ return finish('dial');
 }
 export const puzzleReward=(floor:number)=>{const difficulty=difficultyFor(floor);return {coins:40*difficulty*difficulty,cores:difficulty>=3?difficulty-2:0}};

@@ -156,7 +156,7 @@ export function createPuzzleMap(canvas,name,en,interact){
    if(kind===3)station.motion.position.y=1.05+.57*value/dial.max;
    if(kind===4)station.motion.position.y=.67+.53*value/dial.max;
    if(kind===5)station.motion.scale.setScalar(bank.done?.65:.44);
-   const label=(i+1)+' · '+dial.label[en()?1:0];
+   const label=(bank.done?'✓ ':'')+(i+1)+' · '+dial.label[en()?1:0];
    const reading=kind===5?bank.cables[i-bank.start]+' m · '+bank.reading+'/'+bank.count:
     value+' · '+Number(bank.reading.toFixed(3))+' / '+Number(bank.target.toFixed(3))+' '+bank.unit;
    const caption=label+'\n'+reading;
