@@ -3,7 +3,7 @@ import * as THREE from './three.module.js';
 import {createProfessionPlayer} from './ancient-profession-models.js?v=20261014-new-professions-1';
 import {attachHolyRegalia} from './ancient-holy-model.js?v=20261024-elemental-body-1';
 import {createAncientMagicFX} from './ancient-spell-fx.js?v=20261014-new-professions-1';
-import {PROFESSIONS,SKILLS,skillDescription,skillRadius} from './ancient-skills.js?v=20261107-cast-range-1';
+import {PROFESSIONS,SKILLS,skillDescription,skillRadius} from './ancient-skills.js?v=20261109-cast-range-60';
 import {holySkillDetails} from './ancient-ascension.js?v=20261014-new-professions-1';
 let closeActive=null;
 export function previewChainActors(){return [{id:'preview-0',x:2,y:1.2,z:0,height:1.2,hp:100},{id:'preview-1',x:4,y:1.2,z:-3,height:1.2,hp:100},{id:'preview-2',x:-1,y:1.2,z:-5,height:1.2,hp:100}]}

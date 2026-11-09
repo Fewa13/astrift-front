@@ -1,9 +1,9 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ancientKeyLabel,ancientBindingVersion} from './ancient-input-settings.js';
 import {renderBranchPanel} from './ancient-branch-ui.js?v=20261017-guide-position-1';
-import {PROFESSIONS,SKILLS,skillBook,skillTrainingCost,skillDescription,activeSkill} from './ancient-skills.js?v=20261107-cast-range-1';
+import {PROFESSIONS,SKILLS,skillBook,skillTrainingCost,skillDescription,activeSkill} from './ancient-skills.js?v=20261109-cast-range-60';
 import {renderAscensionPanel} from './ancient-ascension-ui.js?v=20261012-ascension-1';
-import {openSkillPreview} from './ancient-skill-preview.js?v=20261107-cast-range-1';
+import {openSkillPreview} from './ancient-skill-preview.js?v=20261109-cast-range-60';
 import {isHoly,holyName,holySkillDetails,ascensionEligible,ascensionProgress,ASCENSION_STEPS} from './ancient-ascension.js?v=20261014-new-professions-1';
 import {currentQuest} from './ancient-quests.js';
 export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,request,join}){

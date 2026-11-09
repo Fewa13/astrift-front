@@ -93,8 +93,8 @@ import * as THREE from './three.module.js';
 import {createMapObjectUI} from './ancient-interactable-ui.js?v=20261012-new-player-flow-1';
 import {createAncientQuestUI} from './ancient-quest-ui.js?v=20261021-skyreach-market-1';
 import {currentQuest} from './ancient-quests.js?v=20261021-skyreach-market-1';
-import {PROFESSIONS,SKILLS,skillBookName,skillDamageMultiplier,activeSkill,skillSpeedMultiplier,skillFireMultiplier} from './ancient-skills.js?v=20261107-cast-range-1';
-import {createAncientSkillUI} from './ancient-skill-ui.js?v=20261107-cast-range-1';
+import {PROFESSIONS,SKILLS,skillBookName,skillDamageMultiplier,activeSkill,skillSpeedMultiplier,skillFireMultiplier} from './ancient-skills.js?v=20261109-cast-range-60';
+import {createAncientSkillUI} from './ancient-skill-ui.js?v=20261109-cast-range-60';
 import {createResearchUI} from './ancient-research-ui.js?v=20261021-skyreach-market-1';
 import {attachTrialBadge} from './ancient-trial-badge.js?v=20261016-activities-1';
 import {createProfessionTrialsUI} from './ancient-trials-ui.js?v=20261017-trial-3d-1';
@@ -190,14 +190,14 @@ const bossKind=k=>['chief','lord','rootwarden','oathknight','emptyking','blight_
 function bossDown(id){const a=monsters.get(id);if(!a||a.deathAt||!bossKind(a.data.kind))return;a.deathAt=performance.now();a.deathOrigin=a.mesh.position.clone();a.deathScale=a.mesh.scale.clone();a.label.visible=false;a.data={...a.data,hp:0};}
 const hitFeedback=createAncientHitFeedback(scene,camera,{en,resolve:id=>monsters.get(id),job:()=>me?.profession||profile?.profession});
 function renderTestSkills(card){
- node('h2',L('玩家等级','Player level'),card);const level=node('input','',card);level.type='number';level.min='1';level.max='10000';level.step='1';level.required=true;level.value=profile.level;level.setAttribute('aria-label',L('玩家等级','Player level'));
+ node('h2',L('玩家等级','Player level'),card);const level=node('input','',card);level.type='number';level.min='1';level.max='1000';level.step='1';level.required=true;level.value=profile.level;level.setAttribute('aria-label',L('玩家等级','Player level'));
  button(L('应用玩家等级','Apply player level'),()=>{if(level.reportValidity())void action('testPlayerLevel',{level:Number(level.value)})},card).disabled=busy;
  button(L('补齐所有BOSS变身卡至999张','Restock all boss cards to 999'),()=>void action('testBossCards'),card).disabled=busy;
  node('h2',L('技能测试','Skill testing'),card);
  const inputs=new Map();
- const batch=node('input','',card);batch.type='number';batch.min='1';batch.max='200';batch.value='6';batch.setAttribute('aria-label',L('统一等级','All skill levels'));
+ const batch=node('input','',card);batch.type='number';batch.min='1';batch.max='400';batch.value='6';batch.setAttribute('aria-label',L('统一等级','All skill levels'));
  button(L('填入全部技能','Set all fields'),()=>{if(batch.checkValidity())for(const input of inputs.values())input.value=batch.value},card);
- for(const d of Object.values(PROFESSIONS)){node('h3',L(d.name,d.en),card);for(const id of d.skills){const s=SKILLS[id],row=node('label','',card);row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:16px;margin:8px 0';node('span',s.key+' · '+L(s.name,s.en),row);const input=node('input','',row);input.type='number';input.min='1';input.max='200';input.step='1';input.required=true;input.value=String(profile.skills?.[id]||1);input.style.width='88px';inputs.set(id,input)}}
+ for(const d of Object.values(PROFESSIONS)){node('h3',L(d.name,d.en),card);for(const id of d.skills){const s=SKILLS[id],row=node('label','',card);row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:16px;margin:8px 0';node('span',s.key+' · '+L(s.name,s.en),row);const input=node('input','',row);input.type='number';input.min='1';input.max='400';input.step='1';input.required=true;input.value=String(profile.skills?.[id]||1);input.style.width='88px';inputs.set(id,input)}}
  button(L('保存等级','Save levels'),async()=>{for(const input of inputs.values())if(!input.reportValidity())return;const r=await action('testSkillLevels',{levels:Object.fromEntries([...inputs].map(([id,input])=>[id,Number(input.value)]))});if(r?.ok)status(L('技能等级已保存','Skill levels saved'))},card).disabled=busy;
 }
 const ascensionTracker=createAscensionTracker({getProfile:()=>profile,en});

@@ -56,7 +56,7 @@ const targetedSkillRanges = new Map([
 ]);
 export function skillCastRange(id:string,level:number){
  const base=targetedSkillRanges.get(id);
- return base===undefined?0:base+Math.min(15,Math.max(0,level-1)*.5);
+ return base===undefined?0:Math.min(60,base+Math.max(0,level-1)*.5);
 }
 export function skillRadius(id:string,level:number,holy=false){const base:Record<string,number>={riftblade:2,shadowstep:2,shadowreturn:3,nightfall:5,stonefist:2,faultline:4,stoneprison:4,mountainfall:6,frostburst:2,slash:4,power:7,rage:7,icearmor:6,blizzard:6,haste:6,storm:5,doom:6,swordwave:2,swordrain:3,phantomblade:5};return base[id]===undefined?0:(base[id]+Math.max(0,level-1)*.5)*(holy?1.5:1)}
 // Shared by authoritative combat and bilingual descriptions. No cooldown or healing amplification.

@@ -21,7 +21,11 @@ for(const [id,base] of [['slash',12],['triplecut',15],['stoneprison',25],['storm
  assert.equal(cast(1,base+1.4),'目标超出技能范围',id);
  assert.equal(cast(6,base+1.4),null,id);
  assert.equal(cast(6,base+4),'目标超出技能范围',id);
+ assert.equal(cast(400,59),null,id);
+ assert.notEqual(cast(400,61),null,id);
  assert(skills.skillDescription(id,6,true).includes((base+2.5)+'m'));
 }
-assert.equal(skills.skillCastRange('storm',200),45);
+assert.equal(skills.skillCastRange('storm',60),59.5);
+assert.equal(skills.skillCastRange('storm',61),60);
+assert.equal(skills.skillCastRange('storm',400),60);
 console.log('PASS: targeted casts gain range with level, reject beyond the new limit, and display the actual range.');

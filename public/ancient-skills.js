@@ -67,7 +67,7 @@ const targetedSkillRanges = new Map([
 ]);
 function skillCastRange(id, level) {
   const base = targetedSkillRanges.get(id);
-  return base === void 0 ? 0 : base + Math.min(15, Math.max(0, level - 1) * 0.5);
+  return base === void 0 ? 0 : Math.min(60, base + Math.max(0, level - 1) * 0.5);
 }
 function skillRadius(id, level, holy = false) {
   const base = { riftblade: 2, shadowstep: 2, shadowreturn: 3, nightfall: 5, stonefist: 2, faultline: 4, stoneprison: 4, mountainfall: 6, frostburst: 2, slash: 4, power: 7, rage: 7, icearmor: 6, blizzard: 6, haste: 6, storm: 5, doom: 6, swordwave: 2, swordrain: 3, phantomblade: 5 };
