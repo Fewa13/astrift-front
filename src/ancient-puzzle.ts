@@ -1,142 +1,69 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 export const PUZZLE_FLOORS=120;
-export type PuzzleState={floor:number;revision:number;values:number[];sequence:number;lastPulse:number;layout?:number;relayDone?:boolean};
+export type PuzzleState={floor:number;revision:number;values:number[];layout?:number};
 type Text=[string,string];
-type Dial={label:Text;max:number};
-type Stage={
- kind:number;name:Text;dials:Dial[];target:number;measure:(values:number[])=>number;unit:string;
- plate?:string;order?:number[];cables?:number[];window?:[number,number];
-};
-export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,values:[],sequence:0,lastPulse:0,layout:3});
-
-function buildStage(difficulty:number,n:number,kind:number,relay=false):Stage{
- const max=8+difficulty*2,extra=difficulty>=3;
- const dial=(zh:string,en:string):Dial=>({label:[zh,en],max});
- const solution=[2+n%7,3+n%5,2+n*3%8];
- if(relay){
-  const count=difficulty===5?8:6;
-  const order=Array.from({length:count},(_,i)=>i).sort((a,b)=>Math.sin(a*13.4+n*9.1)-Math.sin(b*13.4+n*9.1)||a-b);
-  const cables=Array.from({length:count},(_,i)=>12+order.indexOf(i)*7+(n+i)%5);
-  return {kind:5,name:['信号接力','Signal relay'],dials:cables.map((_,i)=>({label:['触点 '+(i+1),'Contact '+(i+1)],max:0})),
-   target:count,measure:()=>0,unit:'',order,cables,window:difficulty===5?[1000,12000]:[1000,16000]};
- }
- function machine(name:Text,dials:Dial[],unit:string,plate:string,measure:Stage['measure']):Stage{
-  return {kind,name,dials,unit,plate,measure,target:measure(solution)};
- }
- if(kind===0){
-  const left=2+n%6,right=5+n%7,trim=extra?3+n%4:0;
-  if(left*solution[0]-right*solution[1]+trim*solution[2]===0)solution[0]++;
-  return machine(['力矩平衡','Torque balance'],[dial('左载荷','Left load'),dial('右载荷','Right load'),...(extra?[dial('微调载荷','Trim load')]:[])],
-   'N·m',[left+' m',right+' m',...(extra?[trim+' m']:[])].join(' / '),v=>left*v[0]-right*v[1]+trim*(v[2]||0));
- }
- if(kind===1){
-  const supply=12+n%7,shunt=extra?2+n%3:0;
-  return machine(['电阻桥','Resistance bridge'],[dial('电阻 A','Resistor A'),dial('电阻 B','Resistor B'),...(extra?[dial('末级电阻','Last resistor')]:[])],
-   'A',supply+' V · 1 Ω'+(shunt?' · '+shunt+' Ω':''),v=>supply/(1+v[0]+v[1]+(shunt?(v[2]+1)*shunt/(v[2]+1+shunt):0)));
- }
- if(kind===2){
-  const motor=60+12*(n%9),final=16+n*5%7;
-  return machine(['传动齿轮','Gear train'],[dial('主动轮','Driver'),dial('从动轮','Driven gear'),...(extra?[dial('二级主动轮','Second driver')]:[])],
-   'rpm',motor+' rpm'+(extra?' · '+final+'T':''),v=>motor*(v[0]+8)/(v[1]+12)*(extra?(v[2]+8)/final:1));
- }
- if(kind===3){
-  const piston=2+n%4,load=4+n*5%7;
-  return machine(['液压升降','Hydraulic lift'],[dial('输入力','Input force'),dial('输出面积','Output area'),...(extra?[dial('副缸','Counter-cylinder')]:[])],
-   'N',piston+' cm²'+(extra?' · '+load+' N':''),v=>(v[0]+1)/piston*(v[1]+1)-(extra?load*(v[2]+1):0));
- }
- const frequency=2+n%7;
- return machine(['驻波共振','Standing wave'],[dial('长度','Length'),dial('谐波','Harmonic'),...(extra?[dial('频率','Frequency')]:[])],
-  'm/s',frequency+' Hz',v=>2*(v[0]+1)*(frequency+(extra?v[2]:0))/(v[1]+1));
-}
-const sameReading=(a:number,b:number)=>Math.round(a*1000)===Math.round(b*1000);
+const glyphs=['○','△','◇','✦','☾','☀','✚','□'];
+const rules:{name:Text;clue:Text}[]=[
+ {name:['拉杆门','Lever gate'],clue:['走到拉杆旁，按 F 开门。','Walk to the lever and press F to open the gate.']},
+ {name:['符文门','Rune gate'],clue:['按 F 转动符文，把它们对准门上的图案。','Press F to turn each rune. Match the pattern above the gate.']},
+ {name:['火盆门','Brazier gate'],clue:['按门上的图案顺序，用 F 点亮火盆。顺序错了，火会熄灭。','Light the braziers with F in the order shown above the gate. A wrong turn extinguishes them.']},
+ {name:['脚印门','Footstep gate'],clue:['按门上的图案顺序，踩过地上的石板。','Step on the floor plates in the order shown above the gate.']},
+ {name:['联动门','Linked gate'],clue:['按 F 翻动石柱，同时翻动编号紧随其后的一根。让所有石柱亮起来。','Press F to flip a pillar and the next numbered pillar. Light them all.']},
+ {name:['石印门','Seal gate'],clue:['找到和门上图案相同的石印，走近按 F。','Find the seal that matches the gate symbol and press F beside it.']},
+];
 const difficultyFor=(floor:number)=>Math.min(5,Math.ceil(floor/24));
-
+export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,values:[],layout:4});
+export function upgradePuzzleState(state:PuzzleState){
+ return state.layout===4?state:newPuzzleState(state.floor,state.revision+1);
+}
 function roomLayout(floor:number){
  const difficulty=difficultyFor(floor),count=8+Math.floor(16*(floor-1)/(PUZZLE_FLOORS-1));
- const hasRelay=difficulty>=4&&floor%5===0;
- const banks:Stage[]=[];
- for(let i=0;i<count-(hasRelay?1:0);i++){
-  banks.push(buildStage(difficulty,floor*17+i*13,(floor-1+i)%5));
- }
- if(hasRelay)banks.push(buildStage(difficulty,floor,4,true));
  let start=0;
- return banks.map(stage=>{const bank={stage,start};start+=stage.dials.length;return bank});
+ return Array.from({length:count},(_,room)=>{
+  const kind=floor===1&&room===0?0:1+(floor+room-2+5)%5;
+  const size=kind===0?1:Math.min(8,3+difficulty+(room%2));
+  const symbols=glyphs.slice(0,size);
+  const seed=(floor*31+room*17)>>>0;
+  const order=Array.from({length:size},(_,i)=>i).sort((a,b)=>(Math.imul(a+seed,2654435761)>>>0)-(Math.imul(b+seed,2654435761)>>>0));
+  const target=kind===1?symbols.map((_,i)=>1+(seed+i*3)%3):kind===5?[order[0]]:order;
+  const bank={...rules[kind],kind,start,count:size,symbols,target};
+  start+=size;
+  return bank;
+ });
 }
-
-export function upgradePuzzleState(state:PuzzleState){
- return state.layout===3?state:newPuzzleState(state.floor,state.revision+1);
+type Bank=ReturnType<typeof roomLayout>[number];
+function done(bank:Bank,values:number[]){
+ return bank.kind===1?bank.target.every((v,i)=>values[bank.start+i]===v):
+  bank.kind===4?bank.symbols.every((_,i)=>values[bank.start+i]===1):
+  (values[bank.start]||0)===(bank.kind===2||bank.kind===3?bank.count:1);
 }
-
-function bankDone(stage:Stage,start:number,values:number[],relayDone?:boolean){
- return stage.order?!!relayDone:sameReading(stage.measure(values.slice(start,start+stage.dials.length)),stage.target);
-}
-
-function roomReadings(state:PuzzleState){
- const banks=roomLayout(state.floor);
- const dials=banks.flatMap(({stage})=>stage.dials);
- const values=dials.map((_,i)=>state.values[i]||0);
- return {banks,dials,values};
-}
-
 export function puzzleView(state:PuzzleState){
  if(state.floor>PUZZLE_FLOORS)return {floor:state.floor,revision:state.revision,complete:true as const};
- const {banks,dials,values}=roomReadings(state);
- return {floor:state.floor,revision:state.revision,complete:false as const,difficulty:difficultyFor(state.floor),dials,values,
-  banks:banks.map(({stage,start})=>({
-   start,kind:stage.kind,count:stage.dials.length,name:stage.name,target:stage.target,unit:stage.unit,plate:stage.plate,
-   reading:stage.order?state.sequence:stage.measure(values.slice(start,start+stage.dials.length)),
-   timed:!!stage.order,done:bankDone(stage,start,values,state.relayDone),
-   cables:stage.cables,
-   window:stage.window,
-  }))};
+ const banks=roomLayout(state.floor);
+ return {floor:state.floor,revision:state.revision,complete:false as const,difficulty:difficultyFor(state.floor),
+  banks:banks.map(bank=>({...bank,done:done(bank,state.values)})),
+  values:Array.from({length:banks.reduce((sum,bank)=>sum+bank.count,0)},(_,i)=>state.values[i]||0)};
 }
-
-export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now:number){
+export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,_now:number){
  if(state.floor>PUZZLE_FLOORS||input.floor!==state.floor||input.revision!==state.revision)return {state,notice:'stale'};
- const {banks,dials,values}=roomReadings(state);
- const next={...state,revision:state.revision+1,values};
- function finish(notice:string){
-  const ready=banks.every(({stage,start})=>bankDone(stage,start,next.values,next.relayDone));
-  return ready?{state:newPuzzleState(state.floor+1,next.revision),notice:'clear'}:{state:next,notice};
- }
- const index=input.index;
- if(typeof index!=='number'||!Number.isInteger(index)||index<0||index>=dials.length)return {state,notice:'invalid'};
- const active=banks.find(({stage,start})=>!bankDone(stage,start,values,state.relayDone));
- if(!active||index<active.start||index>=active.start+active.stage.dials.length)return {state,notice:'locked'};
- const {stage,start}=active;
- if(stage.order){
-  if(input.control!=='pulse'||state.relayDone)return {state,notice:'invalid'};
-  const delay=now-state.lastPulse;
-  const valid=index-start===stage.order[state.sequence]&&(!state.sequence||delay>=stage.window![0]&&delay<=stage.window![1]);
-  if(!valid)return {state:{...next,sequence:0,lastPulse:0},notice:'reset'};
-  next.sequence++;next.lastPulse=now;next.relayDone=next.sequence===stage.order.length;
-  return finish('pulse');
- }
- const value=values[index],max=dials[index].max;
- switch(stage.kind){
-  case 0:
-   if(input.control!=='weight'||typeof input.value!=='number'||!Number.isInteger(input.value)||input.value<0||input.value>max)return {state,notice:'invalid'};
-   next.values[index]=input.value;
-   break;
-  case 1: {
-   const resistor=input.value;
-   if(input.control!=='socket'||typeof resistor!=='number'||![1,2,4,8,16].includes(resistor)||(value^resistor)>max)return {state,notice:'invalid'};
-   next.values[index]=value^resistor;
-   break;
-  }
-  case 2:
-   if(input.control!=='shiftGear')return {state,notice:'invalid'};
-   next.values[index]=(value+2)%(max+1);
-   break;
-  case 3:
-   if(input.control!=='pump')return {state,notice:'invalid'};
-   next.values[index]=(value+1)%(max+1);
-   break;
-  case 4:
-   if(input.control!=='tune'||typeof input.value!=='number'||!Number.isInteger(input.value)||input.value<0||input.value>max)return {state,notice:'invalid'};
-   next.values[index]=input.value;
-   break;
- }
- return finish('dial');
+ const banks=roomLayout(state.floor),active=banks.find(bank=>!done(bank,state.values)),index=input.index;
+ if(input.control!=='activate'||typeof index!=='number'||!Number.isInteger(index))return {state,notice:'invalid'};
+ if(!active||index<active.start||index>=active.start+active.count)return {state,notice:'locked'};
+ const {kind,start,count,target}=active,local=index-start,values=state.values.slice();
+ let notice='activate';
+ if(kind===1)values[index]=((values[index]||0)+1)%4;
+ else if(kind===2||kind===3){
+  const step=values[start]||0;
+  values[start]=target[step]===local?step+1:Number(target[0]===local);
+  if(target[step]!==local)notice='reset';
+ }else if(kind===4){
+  values[index]=1-(values[index]||0);
+  if(local+1<count)values[index+1]=1-(values[index+1]||0);
+ }else if(kind===0||target[0]===local)values[start]=1;
+ else return {state,notice:'wrong'};
+ const revision=state.revision+1;
+ if(banks.every(bank=>done(bank,values)))return {state:newPuzzleState(state.floor+1,revision),notice:'clear'};
+ if(done(active,values))notice='open';
+ return {state:{...state,values,revision},notice};
 }
 export const puzzleReward=(floor:number)=>{const difficulty=difficultyFor(floor);return {coins:40*difficulty*difficulty,cores:difficulty>=3?difficulty-2:0}};

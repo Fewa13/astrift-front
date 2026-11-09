@@ -8,44 +8,29 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
  const room=puzzleView(state);
  assert.equal(room.floor,floor);
  assert(room.banks.length>=8&&room.banks.length<=24);
- const operate=(control,extra={})=>puzzleOperate(state,{floor,revision:state.revision,control,...extra},now);
+ const activate=index=>puzzleOperate(state,{floor,revision:state.revision,control:'activate',index},now);
  const old=state;
- const first=room.banks.find(bank=>!bank.done);
- assert.equal(operate('weight',{index:first.start,value:999}).notice,'invalid');
- assert.equal(operate('weight',{index:room.banks.at(-1).start,value:1}).notice,'locked');
- for(const [i,bank] of room.banks.entries()){
-  if(state.floor!==floor)break;
-  if(puzzleView(state).banks[i].done)continue;
-  if(bank.timed){
-   const order=bank.cables.map((length,index)=>({length,index})).sort((a,b)=>a.length-b.length).map(v=>bank.start+v.index);
-   assert(floor>72);
-   state=operate('pulse',{index:order[0]}).state;
-   assert.equal(state.sequence,1);
-   state=operate('pulse',{index:order[1]}).state;
-   assert.equal(state.sequence,0,'Early trigger resets the relay');
-   for(const index of order){now+=1000;state=operate('pulse',{index}).state;}
-   continue;
+ assert.equal(activate(-1).notice,'locked');
+ assert.equal(activate(room.banks.at(-1).start).notice,'locked');
+ for(const bank of room.banks){
+  let steps;
+  if(bank.kind===1)steps=bank.target.flatMap((turns,index)=>Array(turns).fill(index));
+  else if(bank.kind===4)steps=bank.symbols.flatMap((_,index)=>index%2===0?[index]:[]);
+  else if(bank.kind===0)steps=[0];
+  else steps=bank.target;
+  if(bank.kind===2||bank.kind===3){
+   const wrong=(steps[0]+1)%bank.count;
+   assert.equal(activate(bank.start+wrong).notice,'reset');
   }
-  const n=floor*17+i*13,solution=[2+n%7,3+n%5,2+n*3%8];
-  if(bank.kind===0){
-   const [left,right,trim=0]=bank.plate.split(" / ").map(parseFloat);
-   if(left*solution[0]-right*solution[1]+trim*solution[2]===0)solution[0]++;
+  for(const index of steps){
+   const result=activate(bank.start+index);
+   assert.notEqual(result.state,state);
+   state=result.state;
   }
-  for(let j=0;j<bank.count&&state.floor===floor&&!puzzleView(state).banks[i].done;j++){
-   const index=bank.start+j,value=solution[j];
-   if(bank.kind===0)state=operate('weight',{index,value}).state;
-   else if(bank.kind===1){
-    for(const bit of [1,2,4,8,16])if(value&bit)state=operate('socket',{index,value:bit}).state;
-   }else if(bank.kind===2||bank.kind===3){
-    for(let k=0;k<=room.dials[index].max&&state.floor===floor&&!puzzleView(state).banks[i].done&&(state.values[index]||0)!==value;k++)
-     state=operate(bank.kind===2?'shiftGear':'pump',{index}).state;
-   }else state=operate('tune',{index,value}).state;
-   if(state.floor===floor&&!puzzleView(state).banks[i].done)assert.equal(state.values[index],value);
-  }
+  if(state.floor===floor)assert(puzzleView(state).banks.find(item=>item.start===bank.start).done);
  }
-
  assert.equal(state.floor,floor+1,'Floor '+floor+' must be solvable');
- assert.equal(puzzleOperate(state,{floor,revision:old.revision,control:'check'},now).notice,'stale');
+ assert.equal(puzzleOperate(state,{floor,revision:old.revision,control:'activate',index:0},now).notice,'stale');
  if(floor>1)assert(puzzleReward(floor).coins>=puzzleReward(floor-1).coins);
 }
 assert.equal(PUZZLE_FLOORS,120);
@@ -64,7 +49,7 @@ for(const key of [...targets,'skyArmor']){
  }
  assert.deepEqual(item,snapshot);
 }
-console.log('PASS: all 120 floors solvable; timing and stale input checks; rewards scale; eligible hunt sources; rerolls preserve unrelated affixes.');
+console.log('PASS: all 120 floors solvable; sequence and stale input checks; rewards scale; eligible hunt sources; rerolls preserve unrelated affixes.');
 
 const {DatabaseSync}=await import('node:sqlite'),{build}=await import('esbuild'),vm=await import('node:vm');
 const db=new DatabaseSync(':memory:'),sql={exec(query,...args){const rows=db.prepare(query).all(...args);return {toArray:()=>rows}}};

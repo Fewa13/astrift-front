@@ -15,7 +15,7 @@ function stationPositions(floor,banks){
    const j=(seed>>>0)%(i+1);
    [slots[i],slots[j]]=[slots[j],slots[i]];
   }
-  return slots.slice(0,bank.count);
+  return bank.kind===0?[{x:12.5,z:13}]:slots.slice(0,bank.count);
  });
 }
 
@@ -33,9 +33,10 @@ export function createPuzzleMap(canvas,name,en,interact){
  const scale=.25,eyeHeight=1.7;
  const jade=new T.MeshStandardMaterial({color:0x81eacf,emissive:0x218e78,emissiveIntensity:.65});
  const stonework=new T.Group();scene.add(stonework);
- let doors=[];
+ let doors=[],signs=[];
  function buildRooms(banks){
-  stonework.clear();doors=[];
+  for(const sign of signs){sign.material.map.dispose();sign.material.dispose();}
+  stonework.clear();doors=[];signs=[];
   const count=Math.max(1,banks.length),end=gateAt(count-1),length=24-end;
   const stone=0x554638,trim=0x8e7350;
   box(stonework,12.5,-.32,24-length/2,22,.64,length,0x534737);
@@ -46,6 +47,14 @@ export function createPuzzleMap(canvas,name,en,interact){
    const z=gateAt(i),tint=i%2?stone:0x615240;
    for(const x of [6,19])box(stonework,x,2.45,z,9,5,.65,tint);
    box(stonework,12.5,4.3,z,4.2,1.4,.85,trim);
+   const bank=banks[i];
+   if(bank){
+    const pattern=bank.kind===1?bank.target.map(value=>['○','△','◇','✦'][value]):
+     bank.kind===0?['↑']:bank.kind===4?['✦']:bank.target.map(index=>bank.symbols[index]);
+    const sign=badge(pattern.join(bank.kind===2||bank.kind===3?' › ':'   '));
+    sign.position.set(12.5,3.35,z+.42);sign.scale.set(4.5,.72,1);
+    signs.push(sign);stonework.add(sign);
+   }
    doors.push(box(stonework,12.5,1.85,z,4.1,3.7,.64,0x70604a));
    for(const x of [10.45,14.55]){
     box(stonework,x,1.9,z+.38,.45,3.8,.44,trim);
@@ -55,7 +64,7 @@ export function createPuzzleMap(canvas,name,en,interact){
   }
  }
  const stick={x:0,y:0};
- let nearby=-1;
+ let nearby=-1,lastPlate=-1;
  let state=null,pos={x:50,z:80},yaw=0,pitch=0,height=eyeHeight,vy=0,frame=0,last=0,drag=null;
  const moveKeys={KeyW:'w',ArrowUp:'w',KeyS:'s',ArrowDown:'s',KeyA:'a',ArrowLeft:'a',KeyD:'d',ArrowRight:'d',ShiftLeft:'sprint',ShiftRight:'sprint'};
  function jump(){if(height<=eyeHeight+.01)vy=6.5}
@@ -92,7 +101,7 @@ export function createPuzzleMap(canvas,name,en,interact){
  function sync(next){
   if(state?.floor!==next.floor){
    const room=Math.max(0,(next.banks||[]).findIndex(bank=>!bank.done));
-   pos={x:50,z:room===0?80:(gateAt(room-1)-2)/scale};nearby=-1;yaw=pitch=vy=0;height=eyeHeight;keys.clear();
+   pos={x:50,z:room===0?80:(gateAt(room-1)-2)/scale};nearby=-1;lastPlate=-1;yaw=pitch=vy=0;height=eyeHeight;keys.clear();
    for(const station of stations)clearPlayer(station);
    stations.length=0;
    buildRooms(next.banks||[]);
@@ -103,42 +112,25 @@ export function createPuzzleMap(canvas,name,en,interact){
     const bank=next.banks[bankIndex],color=[0x61b6e0,0xcdb45c,0x85cc88,0xb48bdd,0xe89a72][bankIndex%5];
     station.bank=bankIndex;
     const kind=bank.kind;
-    const base=[0x544530,0x253f4c,0x574032,0x203e51,0x253b32,0x54404a][kind];
-    const part=(x,y,z,w,h,d,paint=base)=>box(station,x,y,z,w,h,d,paint);
-    if(kind===0){
-     part(0,.16,0,1.5,.32,.92);part(0,.62,0,.23,.93,.35);
-     station.motion=new T.Group();station.motion.position.y=1.03;station.add(station.motion);
-     box(station.motion,0,0,0,1.62,.12,.24,0xb39661);
-     for(const x of [-.62,.62]){
-      box(station.motion,x,-.18,0,.05,.35,.05,color);
-      box(station.motion,x,-.35,0,.53,.08,.49,0x95815d);
-     }
-    }else if(kind===1){
-     part(0,.66,0,1.35,1.32,.47);part(0,.84,.26,1.19,.79,.08,0x152327);
-     station.lamps=[];
-     for(let bit=0;bit<5;bit++)station.lamps.push(part((bit-2)*.21,.91,.34,.1,.34,.07,color));
-     part(0,.64,.34,1.08,.055,.06,0xb3884d);
-    }else if(kind===2){
-     part(0,.21,0,1.57,.42,.93);part(0,.67,0,.24,.78,.45);
-     station.motion=new T.Group();station.motion.position.set(0,1.01,.24);station.add(station.motion);
-     for(let tooth=0;tooth<8;tooth++){
-      const arm=new T.Group();arm.rotation.z=tooth*Math.PI/4;station.motion.add(arm);
-      box(arm,0,.36,0,.18,.55,.24,tooth===0?color:0xa4875c);
-     }
-     part(0,1.01,.35,.29,.29,.22,0x4a392b);
-    }else if(kind===3){
-     part(0,.21,0,1.55,.42,.89);part(-.43,.74,0,.34,1.2,.48);part(.45,.58,0,.31,.82,.45);
-     part(0,.58,.08,.92,.12,.24,0x57728b);
-     station.motion=part(-.43,1.27,0,.62,.22,.6,color);
-     part(.48,1.04,0,.52,.13,.39,0xa88555);
-    }else if(kind===4){
-     part(0,.21,0,1.34,.42,.9);
-     for(const x of [-.59,.59])part(x,.82,0,.15,1.32,.29);
-     part(0,1.47,0,1.35,.13,.3,0x657f64);
-     station.motion=part(0,.92,0,1.06,.095,.12,0x9adfb2);
+    const part=(x,y,z,w,h,d,paint=0x635342)=>box(station,x,y,z,w,h,d,paint);
+    if(kind===3){
+     part(0,.045,0,1.8,.09,1.8);
+     station.mark=part(0,.1,0,1.4,.06,1.4,color);
     }else{
-     part(0,.56,0,.49,1.12,.49);part(0,.16,0,1.16,.32,.9);
-     station.motion=part(0,1.22,0,.44,.44,.44,color);station.motion.rotation.z=Math.PI/4;
+     part(0,.14,0,1.5,.28,1.1);
+     part(0,.62,0,kind===2?.35:.75,.88,.62);
+     if(kind===0){
+      station.mark=part(0,1.26,0,.17,.64,.18,0xbd8845);
+      station.mark.rotation.x=-.55;
+      part(0,1.55,-.15,.33,.2,.32,0xd6a568);
+     }else if(kind===2){
+      part(0,1.14,0,1.18,.25,.91);
+      station.mark=part(0,1.44,0,.25,.58,.25,0xffa248);
+      station.mark.rotation.z=.25;
+     }else{
+      station.mark=part(0,1.21,0,kind===4?.45:.73,.48,.36,color);
+      if(kind===5)station.mark.rotation.z=Math.PI/4;
+     }
     }
     const label=badge('');label.position.y=1.88;label.scale.set(1.95,.37,1);station.add(label);station.label=label;
     stations.push(station);scene.add(station);
@@ -148,16 +140,16 @@ export function createPuzzleMap(canvas,name,en,interact){
   doors.forEach((door,i)=>{door.visible=!next.banks?.[i]?.done;});
   for(let i=0;i<stations.length;i++){
    const station=stations[i],bank=next.banks[station.bank];
-   const value=next.values[i],kind=bank.kind,dial=next.dials[i];
-   if(kind===0)station.motion.rotation.z=(value/dial.max-.5)*.48;
-   if(kind===1)station.lamps.forEach((lamp,bit)=>lamp.visible=!!(value&(1<<bit)));
-   if(kind===2)station.motion.rotation.z=value*Math.PI/6;
-   if(kind===3)station.motion.position.y=1.05+.57*value/dial.max;
-   if(kind===4)station.motion.position.y=.67+.53*value/dial.max;
-   if(kind===5)station.motion.scale.setScalar(bank.done?.65:.44);
-   const label=(bank.done?'✓ ':'')+(i+1)+' · '+dial.label[en()?1:0];
-   const reading=kind===5?bank.cables[i-bank.start]+' m · '+bank.reading+'/'+bank.count:
-    value+' · '+Number(bank.reading.toFixed(3))+' / '+Number(bank.target.toFixed(3))+' '+bank.unit;
+   const local=i-bank.start,value=next.values[i],kind=bank.kind;
+   const progress=next.values[bank.start]||0;
+   const lit=bank.done||(kind===1?value===bank.target[local]:kind===4?value===1:
+    (kind===2||kind===3)&&bank.target.slice(0,progress).includes(local));
+   station.mark.material=lit?jade:material(kind===2?0x57402f:0x96754e);
+   if(kind===0)station.mark.rotation.x=lit?.55:-.55;
+   const label=kind===0?(en()?'Lever':'拉杆'):kind===4?String(local+1):
+    kind===1?['○','△','◇','✦'][value]:bank.symbols[local];
+   const reading=kind===1?'#'+(local+1)+' · '+(en()?'Match':'对准')+' '+['○','△','◇','✦'][bank.target[local]]:
+    lit?'✓':kind===3?(en()?'Step here':'踩上石板'):'F';
    const caption=label+'\n'+reading;
    if(station.caption!==caption){
     station.caption=caption;
@@ -180,15 +172,21 @@ export function createPuzzleMap(canvas,name,en,interact){
   const dt=Math.min(.05,last?(time-last)/1000:0);last=time;if(!state)return;
   const side=Number(keys.has('d'))-Number(keys.has('a'))+stick.x,forward=Number(keys.has('w'))-Number(keys.has('s'))-stick.y;
   const step=(keys.has('sprint')?9:6)*dt/Math.max(1,Math.hypot(side,forward));
-  const blocked=(x,z)=>x<2||x>23||z<gateAt(doors.length-1)+.2||z>22.5||doors.some((door,i)=>Math.abs(z-gateAt(i))<.62&&(door.visible||Math.abs(x-12.5)>1.65))||stations.some(o=>Math.abs(x-o.position.x)<1.05&&Math.abs(z-o.position.z)<.8);
+  const blocked=(x,z)=>x<2||x>23||z<gateAt(doors.length-1)+.2||z>22.5||doors.some((door,i)=>Math.abs(z-gateAt(i))<.62&&(door.visible||Math.abs(x-12.5)>1.65))||stations.some(o=>state.banks[o.bank].kind!==3&&Math.abs(x-o.position.x)<1.05&&Math.abs(z-o.position.z)<.8);
   const next=slideAncientMove({x:pos.x*scale,y:height,z:pos.z*scale},
    (side*Math.cos(yaw)-forward*Math.sin(yaw))*step,(-side*Math.sin(yaw)-forward*Math.cos(yaw))*step,blocked,()=>0);
   pos.x=next.x/scale;pos.z=next.z/scale;
-  let distance=2;nearby=-1;
+  const active=state.banks?.findIndex(bank=>!bank.done);
+  let distance=2,plate=-1;nearby=-1;
   for(let i=0;i<stations.length;i++){
    const station=stations[i],gap=Math.hypot(next.x-station.position.x,next.z-station.position.z);
-   if(gap<distance){distance=gap;nearby=i;}
+   if(station.bank!==active)continue;
+   if(state.banks[active].kind===3){
+    if(gap<.82&&height<eyeHeight+.16)plate=i;
+   }else if(gap<distance){distance=gap;nearby=i;}
   }
+  if(plate>=0&&plate!==lastPlate)interact(plate);
+  lastPlate=plate;
   vy-=19*dt;height=Math.max(eyeHeight,height+vy*dt);if(height===eyeHeight)vy=0;
   camera.position.set(pos.x*scale,height,pos.z*scale);camera.rotation.set(pitch,yaw,0,'YXZ');
   for(const actor of players.values())actor.position.lerp(actor.target,Math.min(1,dt*6));
@@ -202,6 +200,7 @@ export function createPuzzleMap(canvas,name,en,interact){
  return {position:()=>({...pos}),sync,jump,interact:tryInteract,stick(x,y){stick.x=x;stick.y=y},dispose(){
   cancelAnimationFrame(frame);if(locked())document.exitPointerLock();document.removeEventListener('mousemove',mouseMove);window.removeEventListener('blur',release);
   for(const actor of [...players.values(),...stations])clearPlayer(actor);
+  for(const sign of signs){sign.material.map.dispose();sign.material.dispose();}
   geometry.dispose();jade.dispose();for(const mat of materials.values())mat.dispose();renderer.dispose();
  }};
 }

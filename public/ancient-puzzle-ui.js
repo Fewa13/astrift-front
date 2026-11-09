@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-6';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-7';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',selected=-1;
  const L=(a,b)=>en()?b:a;
@@ -7,7 +7,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
  function button(parent,text,run){const node=make(parent,'button',text);node.type='button';node.onclick=run;return node;}
  function roomState(r){
   const next=r?.puzzle;
-  if(!next||!Array.isArray(next.players)||!Array.isArray(next.chat)||(!next.complete&&(!Array.isArray(next.banks)||!Array.isArray(next.dials)||!Array.isArray(next.values)))){
+  if(!next||!Array.isArray(next.players)||!Array.isArray(next.chat)||(!next.complete&&(!Array.isArray(next.banks)||!next.banks.every(bank=>Array.isArray(bank.symbols))||!Array.isArray(next.values)))){
    throw new Error(L('解谜房间数据未加载，请刷新页面重试。','Puzzle room could not load. Refresh and try again.'));
   }
   return next;
@@ -23,6 +23,8 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
 
   room.querySelector('.ancientPuzzleFeedback').textContent=feedback;
   room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+L('房间 ','Room ')+(next.banks.findIndex(bank=>!bank.done)+1)+' / '+next.banks.length+' · '+L('打开出口','Open the exit');
+  const active=next.banks?.find(bank=>!bank.done);
+  room.querySelector('.ancientPuzzleClue').textContent=active?.clue[en()?1:0]||'';
   const history=room?.querySelector('.ancientPuzzleChatHistory');
   if(history&&history.dataset.last!==String(next.chat.at(-1)?.id||0)){
    history.dataset.last=String(next.chat.at(-1)?.id||0);history.replaceChildren();
@@ -36,7 +38,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   const id=generation;if(passive)polling=true;else working=true;
   try{
    const r=await request(action,body);if(id!==generation)return;
-   const messages={clear:L('全服已通关本层！','Floor cleared for everyone!'),wrong:L('读数不符。','Reading mismatch.'),reset:L('顺序或节奏不符，接力已重置。','Wrong order or timing. Relay reset.'),stale:L('机关已更新。','Controls updated.')};
+   const messages={clear:L('全服已通关本层！','Floor cleared for everyone!'),open:L('石门已打开。','The gate is open.'),wrong:L('这个石印对不上。','That seal does not match.'),reset:L('顺序错了，重新开始。','Wrong order. Start again.'),stale:L('机关已更新。','Controls updated.')};
    if(action!=='puzzleState')feedback=action==='puzzleClaim'?L('奖励已入账。','Rewards credited.'):messages[r.puzzle?.notice]||'';
    apply(r);
   }catch(error){if(id===generation){feedback=error.message;draw();}}
@@ -49,37 +51,6 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   if(key===signature)return;signature=key;view.replaceChildren();
   const active=make(view,'section');active.className='ancientPuzzleMachine';
   if(state.complete)make(active,'h2',L('全服已解开全部 '+state.total+' 层','All '+state.total+' floors cleared'));
-  else if(selected>=0){
-   const bank=state.banks.find(b=>selected>=b.start&&selected<b.start+b.count),dial=state.dials[selected];
-   make(active,'small',L('机关 ','Station ')+(selected+1)+' / '+state.dials.length);
-   make(active,'h2',bank.name[en()?1:0]+' · '+dial.label[en()?1:0]);
-   if(bank.plate)make(active,'small',bank.plate);
-   make(active,'p',L('读数 ','Reading ')+Number(bank.reading.toFixed(3))+' / '+Number(bank.target.toFixed(3))+' '+bank.unit).className='ancientPuzzleReading';
-   const value=state.values[selected],index=selected;
-   if(bank.kind===0){
-    const rack=make(active,'div');rack.className='ancientPuzzleWeights';
-    for(let weight=0;weight<=dial.max;weight++){
-     const pick=button(rack,weight+' N',()=>operate('weight',{index,value:weight}));
-     pick.setAttribute('aria-pressed',String(value===weight));
-    }
-   }else if(bank.kind===1){
-    const board=make(active,'div');board.className='ancientPuzzleSockets';
-    for(const resistor of [1,2,4,8,16].filter(v=>v<=dial.max)){
-     const plug=button(board,resistor+' Ω',()=>operate('socket',{index,value:resistor}));
-     plug.disabled=(value^resistor)>dial.max;plug.setAttribute('aria-pressed',String(!!(value&resistor)));
-    }
-   }else if(bank.kind===4){
-    const scope=make(active,'canvas');scope.className='ancientPuzzleScope';scope.width=480;scope.height=100;
-    const ctx=scope.getContext('2d');ctx.strokeStyle='#91f4bd';ctx.lineWidth=3;ctx.beginPath();
-    for(let x=0;x<=480;x++)ctx.lineTo(x,50+Math.sin(x/480*Math.PI*2*(value+1))*30);
-    ctx.stroke();
-    const tuning=make(active,'input');tuning.type='range';tuning.min=0;tuning.max=dial.max;tuning.value=value;
-    tuning.setAttribute('aria-label',dial.label[en()?1:0]);
-    const readout=make(active,'output',String(value));
-    tuning.oninput=()=>{readout.textContent=tuning.value;};
-    tuning.onchange=()=>operate('tune',{index,value:Number(tuning.value)});
-   }
-  }
   const status=make(view,'p',feedback);status.setAttribute('role','status');
   const count=Math.min(state.total,state.floor-1)-state.claimed;
   button(view,L('领取已通关楼层奖励','Claim cleared-floor rewards')+' · '+Math.max(0,count),()=>void update('puzzleClaim')).disabled=count<=0;
@@ -100,6 +71,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   button(top,L('离开解谜地图','Leave puzzle map'),close);
   const notice=make(top,'small');notice.className='ancientPuzzleFeedback';notice.setAttribute('role','status');
   const viewport=make(room,'section');viewport.className='ancientPuzzleViewport';
+  const clue=make(viewport,'p');clue.className='ancientPuzzleClue';
   const canvas=make(viewport,'canvas');canvas.tabIndex=0;canvas.className='ancientPuzzleMap';
   canvas.setAttribute('aria-label',L('第一人称机关室','First-person chamber'));
   make(viewport,'span','+').className='ancientPuzzleReticle';
@@ -110,10 +82,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   panel.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();panel.close();});
   function focusControls(index){
    if(panel.open)return;
-   const bank=state.banks?.find(b=>index>=b.start&&index<b.start+b.count);
-   if(bank?.done)return;
-   const direct={2:'shiftGear',3:'pump',5:'pulse'}[bank?.kind];
-   if(direct){if(!bank.done)operate(direct,{index});return;}
+   if(index>=0){operate('activate',{index});return;}
    if(document.pointerLockElement===canvas)document.exitPointerLock();
    selected=index;feedback='';draw();panel.showModal();
   }
