@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261109-mechanisms-1';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261109-scenery-1';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',queuedPlates=[];
  const L=(a,b)=>en()?b:a;
@@ -32,10 +32,15 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
  }
  async function update(action,body={}){
   const passive=action==='puzzleState';
-  if(!room||(passive?polling:working))return;
+  if(!room||(passive?polling||working:working))return;
   const id=generation,started=Date.now();if(passive)polling=true;else working=true;
   try{
    const r=await request(action,body);if(id!==generation)return;
+   if(action==='puzzleOperate'&&r.puzzle?.notice==='clear'){
+    map?.finishFloor();
+    await new Promise(resolve=>setTimeout(resolve,700));
+    if(id!==generation)return;
+   }
    const messages={clear:L('本层已通关！','Floor cleared!'),blocked:L('只能滑动空格旁的砖。','Only a tile beside the gap can slide.'),wrongPair:L('图案不同，第二枚石印保持翻开。','No match. The second seal stays revealed.'),open:L('石门已打开。','The gate is open.'),wrong:L('这个石印对不上。','That seal does not match.'),reset:L('顺序错了，重新开始。','Wrong order. Start again.'),stale:L('机关已更新。','Controls updated.')};
    if(action!=='puzzleState')feedback=action==='puzzleClaim'?L('奖励已入账。','Rewards credited.'):messages[r.puzzle?.notice]||'';
    apply(r,started);
