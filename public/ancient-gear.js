@@ -25,6 +25,7 @@ function rollGearItem(key, random = Math.random) {
   const item = { id: crypto.randomUUID(), key };
   rollGearAffixes(item, random);
   grantGearBonusAffix(item, random);
+  item.hiddenAffixes = rollHiddenAffixes(item);
   return item;
 }
 function rollGearAffixes(item, random = Math.random) {
@@ -238,8 +239,29 @@ function ancientCraftMaterials(kind, random = Math.random) {
   if (random() < 0.35) drops.core = kind === "lord" ? 120 : kind === "rootwarden" ? 100 : 250;
   return drops;
 }
+function rollHiddenAffixes(item) {
+  const slot = gearDefinition(item.key)?.slot;
+  const pool = Object.entries(GEAR_AFFIXES).filter(([key, def]) => slot && def.slots.includes(slot) && !def.quality && key !== "cooldown");
+  let seed = 2166136261;
+  for (const ch of item.id) seed = Math.imul(seed ^ ch.charCodeAt(0), 16777619);
+  const random = () => {
+    seed = Math.imul(seed, 1664525) + 1013904223 >>> 0;
+    return seed / 4294967296;
+  };
+  return Array.from({ length: Math.min(3, pool.length) }, () => {
+    const [key, def] = pool.splice(Math.floor(random() * pool.length), 1)[0];
+    const roll = random(), rarity = [0.44, 0.68, 0.82, 0.91, 0.96, 0.985, 0.997, 1].findIndex((cut) => roll < cut) + 1;
+    return { key, rarity, value: Math.round((def.min + (def.max - def.min) * (rarity - 1 + random()) / 8) * 1e4) / 1e4 };
+  });
+}
+function gearPromotion(item, random = Math.random) {
+  const def = gearDefinition(item.key);
+  if (!def || def.quality < 6 || def.quality >= 8 || random() >= (def.quality === 6 ? 0.01 : 5e-3)) return;
+  const quality = def.quality + 1;
+  return (def.slot === "weapon" ? "blade" : def.slot) + quality;
+}
 function ensureAncientGear(p) {
-  if (p.gear !== void 0 && p.gearAffixVersion === 2 && p.gear.every((i) => i.affixBonusVersion === 1)) return false;
+  if (p.gear !== void 0 && p.gearAffixVersion === 2 && p.gear.every((i) => i.affixBonusVersion === 1 && i.hiddenAffixes !== void 0)) return false;
   let changed = p.gearAffixVersion !== 2;
   if (p.gear === void 0) {
     const starter = rollGearItem("stoneRough");
@@ -247,7 +269,13 @@ function ensureAncientGear(p) {
     p.gearEquipped = { weapon: starter.id };
     changed = true;
   }
-  for (const item of p.gear) changed = grantGearBonusAffix(item) || changed;
+  for (const item of p.gear) {
+    changed = grantGearBonusAffix(item) || changed;
+    if (!item.hiddenAffixes) {
+      item.hiddenAffixes = rollHiddenAffixes(item);
+      changed = true;
+    }
+  }
   p.gearAffixVersion = 2;
   return changed;
 }
@@ -279,7 +307,7 @@ function ancientGearStats(p) {
       if (d.set) sets[d.set] = (sets[d.set] || 0) + 1;
     }
     const item = p.gear?.find((i) => i.id === p.gearEquipped?.[slot]);
-    for (const v of item?.affixes || []) {
+    for (const v of [...item?.affixes || [], ...(item?.hiddenAffixes || []).slice(0, Math.max(0, d.quality - 5))]) {
       const def = GEAR_AFFIXES[v.key];
       if (!def?.slots.includes(slot) || !Number.isFinite(v.value) || (def.quality || 0) > d.quality) continue;
       const n = Math.max(0, Math.min(def.max, v.value));
@@ -542,6 +570,7 @@ export {
   gearHuntQuota,
   gearKeys,
   gearName,
+  gearPromotion,
   gearRerollQuote,
   grantGearBonusAffix,
   growthComboText,

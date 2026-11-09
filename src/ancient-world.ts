@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {PUZZLE_FLOORS,newPuzzleState,upgradePuzzleState,puzzleOperate,puzzleReward,puzzleView,type PuzzleState} from './ancient-puzzle';
-import {gearHuntEligible,gearHuntCounts,gearHuntQuota,gearRerollQuote,GEAR_LEVELS} from './ancient-gear';
+import {gearHuntEligible,gearHuntCounts,gearHuntQuota,gearRerollQuote,gearPromotion,GEAR_LEVELS} from './ancient-gear';
 import {CLIENT_OUTDATED,currentClient,worldActionRequiresVersion} from './client-version';
 import {traceCommunityLight} from './ancient-community-optics';
 import {CommunityAmenities} from './ancient-community-amenities';
@@ -443,7 +443,15 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
      if(typeof index!=='number'||!Number.isSafeInteger(index)||index<0)return fail('词条无效 / Invalid affix');
      const quote=gearRerollQuote(item,index);if(!quote)return fail('没有可改造的词条 / No eligible affix');
      if((p.materials[quote.material]||0)<quote.cost)return fail('分解残材不足 / Insufficient salvage');
-     p.materials[quote.material]-=quote.cost;p.gearReroll={id,index,original:{...item.affixes![index]},candidate:quote.candidate};
+     const promoted=gearPromotion(item);
+     p.materials[quote.material]-=quote.cost;
+     p.gearReroll={id,index,original:{...item.affixes![index]},candidate:quote.candidate,...(promoted?{promoted}:{})};
+     if(promoted){
+      item.key=promoted;
+      const definition=gearDefinition(promoted)!;
+      if(p.gearEquipped?.[definition.slot]===id&&p.level<GEAR_LEVELS[definition.quality-1])delete p.gearEquipped[definition.slot];
+      for(const peer of this.connections()){const actor=peer.deserializeAttachment() as Player|null;if(actor?.name===name){this.syncQuestHealth(actor,p);peer.serializeAttachment(actor);}}
+     }
     }else{
      const line=pending&&item.affixes?.[pending.index];
      if(!pending||pending.id!==id||data.replace!==true||!line||line.key!==pending.original.key||line.value!==pending.original.value)return fail('装备词条已经变化 / Affix changed');

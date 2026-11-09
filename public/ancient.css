@@ -140,3 +140,9 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientPuzzleMachine input[type=range]{width:85%;margin-inline-end:8px}
 .ancientPuzzleClue{position:absolute;z-index:1;top:14px;left:50%;transform:translateX(-50%);width:max-content;max-width:88%;margin:0;padding:9px 14px;background:#251d13ed;color:#ffe9be;border:1px solid #987855;border-radius:6px;text-align:center;pointer-events:none}
 .ancientPuzzleClue:empty{display:none}
+.ancientRefineWorkshop{display:grid;gap:10px;margin-top:12px}
+.ancientRefineWorkshop h4,.ancientRefineWorkshop p{margin:0}
+.ancientRefineSeals{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,126px),1fr));gap:8px}
+.ancientRefineSeals article{display:grid;gap:6px;padding:12px;border:1px solid #594f44;border-top:2px solid currentColor;border-radius:8px;background:linear-gradient(155deg,#352c26,#191718);color:#e4dfd8}
+.ancientRefineSeals small{color:#d4c4ae}
+.ancientRefineSeals [data-rarity="2"]{color:#5bb8df}.ancientRefineSeals [data-rarity="3"]{color:#ac75ec}.ancientRefineSeals [data-rarity="4"]{color:#ffca5b}.ancientRefineSeals [data-rarity="5"]{color:#ee6b99}.ancientRefineSeals [data-rarity="6"]{color:#e7f9ff}.ancientRefineSeals [data-rarity="7"]{color:#84efff}.ancientRefineSeals [data-rarity="8"]{color:#ffd2fa}

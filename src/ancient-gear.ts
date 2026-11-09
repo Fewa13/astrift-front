@@ -2,7 +2,8 @@
 import {jadeBonuses} from './ancient-jade-wear.js';
 import type {AncientProfile} from './ancient-rules';
 export type GearSlot='weapon'|'helmet'|'armor'|'wings';
-export type AncientGear={id:string;key:string;affixBonusVersion?:number;affixes?:{key:string;value:number}[];locked?:boolean};
+type HiddenAffix={key:string;value:number;rarity:number};
+export type AncientGear={id:string;key:string;affixBonusVersion?:number;affixes?:{key:string;value:number}[];locked?:boolean;hiddenAffixes?:HiddenAffix[]};
 export type GearDefinition={name:string;en:string;slot:GearSlot;quality:number;set?:string;damage?:number;health?:number;reduction?:number;speed?:number;bonus?:number;lifesteal?:number;slow?:number;execute?:number;interval?:number;skillPower?:number;hpPercent?:number;cooldown?:number;combo?:string};
 export const GEAR_SETS:Record<string,{name:string;en:string;two:[string,string];three:[string,string]}>={
  thunder:{name:'雷鸣',en:'Thunder',two:['技能伤害+5%','Skill damage +5%'],three:['连锁闪电目标+1，技能伤害再+3%','Chain Lightning +1 target; another +3% skill damage']},
@@ -25,7 +26,7 @@ export const GEAR_AFFIXES:Record<string,{name:string;en:string;min:number;max:nu
  pet:{name:'召唤兽伤害',en:'Summon damage',min:.03,max:.06,slots:['weapon','helmet','armor','wings']},
  slow:{name:'减速强化',en:'Slow strength',min:.02,max:.04,slots:['weapon','helmet','armor','wings']}
 };
-export function rollGearItem(key:string,random=Math.random):AncientGear {const item:AncientGear={id:crypto.randomUUID(),key};rollGearAffixes(item,random);grantGearBonusAffix(item,random);return item}
+export function rollGearItem(key:string,random=Math.random):AncientGear {const item:AncientGear={id:crypto.randomUUID(),key};rollGearAffixes(item,random);grantGearBonusAffix(item,random);item.hiddenAffixes=rollHiddenAffixes(item);return item}
 function rollGearAffixes(item:AncientGear,random=Math.random){const d=gearDefinition(item.key);item.affixes=[];if(!d)return;const pool=Object.entries(GEAR_AFFIXES).filter(([key,a])=>a.slots.includes(d.slot)&&!a.quality&&(d.quality<7||key!=='cooldown'));if(d.quality>=7){const exclusive=d.quality===7?['astralTempo','starHunter']:['primalTempo','starHunter','primalVerdict'],key=exclusive[Math.min(exclusive.length-1,Math.floor(random()*exclusive.length))],a=GEAR_AFFIXES[key];item.affixes.push({key,value:Math.round((a.min+(a.max-a.min)*Math.max(0,Math.min(1,random())))*10000)/10000});}const count=d.quality===1?0:Math.min(3,d.quality-1);for(let i=0;i<count-(d.quality>=7?1:0)&&pool.length;i++){const index=Math.max(0,Math.min(pool.length-1,Math.floor(random()*pool.length))),[key,a]=pool.splice(index,1)[0];item.affixes.push({key,value:Math.round((a.min+(a.max-a.min)*Math.max(0,Math.min(1,random())))*10000)/10000})}}
 // The item marker travels through trades/market, so the one-time bonus cannot be farmed.
 export function grantGearBonusAffix(item:AncientGear,random=Math.random){
@@ -143,16 +144,37 @@ for(const [q,blade,zh,en,seal]of [[2,'fangBlade','兽骨','Bonebound','hollowSea
  FORGE_MATERIAL_NAMES[seal]=[zh+'地穴印记',en+' Hollow Seal'];
 }
 export function ancientCraftMaterials(kind:string,random=Math.random){if(kind==='hourglass_regent')return {core:700};if(kind==='buried_marshal')return {core:330};if(kind==='sky_sovereign')return {skyCore:1,core:650};if(kind==='thunder_warden')return {stormSigil:1,core:450};if(kind==='frost_crowned')return {edictCore:1,core:550};if(kind==='furnace_regent')return {forgeSigil:1,core:350};if(kind==='starbound_heart')return {starCore:1,core:550};if(kind==='immaculate_judge')return {verdictShard:1,core:550};if(kind==='blight_lord')return {blightHeart:1,core:500};if(kind==='oathknight'||kind==='emptyking'){const drops:Record<string,number>={};if(random()<.8)drops[kind==='oathknight'?'royalSeal':'emptyCrown']=1;if(random()<.35)drops.core=kind==='emptyking'?400:250;return drops}const boss=kind==='lord'||kind==='rootwarden'||['metal','wood','water','fire','earth'].some(e=>kind==='crystal_'+e);const drops:Record<string,number>={};if(!boss)return drops;const scale=kind==='lord'?1:kind==='rootwarden'?2:3;for(const k of ['bone','wood','stone'])if(random()<.6)drops[k]=10*scale;if(random()<.8){if(kind==='lord')Object.assign(drops,{crown:1,totem:1,fang:2,spear:2});else if(kind==='rootwarden')Object.assign(drops,{rootHeart:1,mossHide:2,thornSeed:2});else{drops[kind.slice(8)+'Crystal']=1;drops.crystalShard=1}}if(random()<.35)drops.core=kind==='lord'?120:kind==='rootwarden'?100:250;return drops}
+function rollHiddenAffixes(item:AncientGear):HiddenAffix[]{
+ const slot=gearDefinition(item.key)?.slot;
+ const pool=Object.entries(GEAR_AFFIXES).filter(([key,def])=>slot&&def.slots.includes(slot)&&!def.quality&&key!=='cooldown');
+ let seed=2166136261;
+ for(const ch of item.id)seed=Math.imul(seed^ch.charCodeAt(0),16777619);
+ const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+ return Array.from({length:Math.min(3,pool.length)},()=>{
+  const [key,def]=pool.splice(Math.floor(random()*pool.length),1)[0];
+  const roll=random(),rarity=[.44,.68,.82,.91,.96,.985,.997,1].findIndex(cut=>roll<cut)+1;
+  return {key,rarity,value:Math.round((def.min+(def.max-def.min)*(rarity-1+random())/8)*10000)/10000};
+ });
+}
+export function gearPromotion(item:AncientGear,random=Math.random){
+ const def=gearDefinition(item.key);
+ if(!def||def.quality<6||def.quality>=8||random()>=(def.quality===6?.01:.005))return;
+ const quality=def.quality+1;
+ return (def.slot==='weapon'?'blade':def.slot)+quality;
+}
 export function ensureAncientGear(p:AncientProfile){
- if(p.gear!==undefined&&p.gearAffixVersion===2&&p.gear.every(i=>i.affixBonusVersion===1))return false;
+ if(p.gear!==undefined&&p.gearAffixVersion===2&&p.gear.every(i=>i.affixBonusVersion===1&&i.hiddenAffixes!==undefined))return false;
  let changed=p.gearAffixVersion!==2;
  if(p.gear===undefined){const starter=rollGearItem('stoneRough');p.gear=[starter];p.gearEquipped={weapon:starter.id};changed=true}
- for(const item of p.gear)changed=grantGearBonusAffix(item)||changed;
+ for(const item of p.gear){
+  changed=grantGearBonusAffix(item)||changed;
+  if(!item.hiddenAffixes){item.hiddenAffixes=rollHiddenAffixes(item);changed=true;}
+ }
  p.gearAffixVersion=2;return changed;
 }
 export function equippedGear(p:AncientProfile,slot:GearSlot){const item=p.gear?.find(i=>i.id===p.gearEquipped?.[slot]),d=item&&gearDefinition(item.key);return d?.slot===slot&&p.level>=GEAR_LEVELS[d.quality-1]?d:undefined}
 export function gearKeys(p:AncientProfile){return Object.fromEntries(Object.keys(GEAR_SLOTS).map(slot=>{const id=p.gearEquipped?.[slot as GearSlot],item=p.gear?.find(i=>i.id===id);return [slot,item&&equippedGear(p,slot as GearSlot)?item.key:'']}))}
-export function ancientGearStats(p:AncientProfile){let health=0,reduction=0,speed=0,bonus=0,hpPercent=0,haste=0,lifesteal=0,cooldown=0,pet=0,slow=0,skillBonus=0,chainTargets=0,slowedBonus=0,petHealth=0,tempo=0,tempoCapacity=0,bossSkill=0,finisherSkill=0;const sets:Record<string,number>={};for(const slot of Object.keys(GEAR_SLOTS) as GearSlot[]){const d=equippedGear(p,slot);if(!d)continue;if(d.quality>=7)tempoCapacity+=(d.quality===8?.5:.45)/4;skillBonus+=d.skillPower||0;hpPercent+=d.hpPercent||0;cooldown+=d.cooldown||0;if(slot!=='weapon'){health+=d.health||0;reduction+=d.reduction||0;speed+=d.speed||0;bonus+=d.bonus||0;if(d.set)sets[d.set]=(sets[d.set]||0)+1}const item=p.gear?.find(i=>i.id===p.gearEquipped?.[slot]);for(const v of item?.affixes||[]){const def=GEAR_AFFIXES[v.key];if(!def?.slots.includes(slot)||!Number.isFinite(v.value)||(def.quality||0)>d.quality)continue;const n=Math.max(0,Math.min(def.max,v.value));switch(v.key){case 'astralTempo':case 'primalTempo':tempo+=n;break;case 'starHunter':bossSkill+=n;break;case 'primalVerdict':finisherSkill+=n;break;case 'health':hpPercent+=n;break;case 'reduction':reduction+=n;break;case 'speed':speed+=n;break;case 'haste':haste+=n;break;case 'lifesteal':lifesteal+=n;break;case 'cooldown':cooldown+=n;break;case 'pet':pet+=n;break;case 'slow':slow+=n;break}}}if(sets.thunder>=2)skillBonus+=.05;if(sets.thunder>=3){skillBonus+=.03;chainTargets=1}if(sets.frost>=2)slow+=.08;if(sets.frost>=3)slowedBonus=.12;if(sets.blood>=2)haste+=.08;if(sets.blood>=3)lifesteal+=.03;if(sets.beast>=2)pet+=.12;if(sets.beast>=3){pet+=.08;petHealth=.2}if(sets.arcane>=2)cooldown+=.06;if(sets.arcane>=3){cooldown+=.04;hpPercent+=.05}health+=Math.floor(ancientBaseHealth(p.level)*Math.min(.6,hpPercent));const jade=jadeBonuses(p);health+=Math.floor((ancientBaseHealth(p.level)+health)*jade.health);return {health,jadeAttack:jade.attack,reduction:Math.min(.6,reduction)+(1-Math.min(.6,reduction))*jade.reduction,speed:Math.min(.3,speed),bonus,haste:Math.min(.2,haste),lifesteal:Math.min(.05,lifesteal),cooldown:Math.min(.5,Math.min(.16,cooldown*.8)+Math.min(tempoCapacity,tempo)),bossSkill,finisherSkill,pet:Math.min(.4,pet),slow:Math.min(.2,slow),skillBonus,chainTargets,slowedBonus,petHealth,sets}}
+export function ancientGearStats(p:AncientProfile){let health=0,reduction=0,speed=0,bonus=0,hpPercent=0,haste=0,lifesteal=0,cooldown=0,pet=0,slow=0,skillBonus=0,chainTargets=0,slowedBonus=0,petHealth=0,tempo=0,tempoCapacity=0,bossSkill=0,finisherSkill=0;const sets:Record<string,number>={};for(const slot of Object.keys(GEAR_SLOTS) as GearSlot[]){const d=equippedGear(p,slot);if(!d)continue;if(d.quality>=7)tempoCapacity+=(d.quality===8?.5:.45)/4;skillBonus+=d.skillPower||0;hpPercent+=d.hpPercent||0;cooldown+=d.cooldown||0;if(slot!=='weapon'){health+=d.health||0;reduction+=d.reduction||0;speed+=d.speed||0;bonus+=d.bonus||0;if(d.set)sets[d.set]=(sets[d.set]||0)+1}const item=p.gear?.find(i=>i.id===p.gearEquipped?.[slot]);for(const v of [...(item?.affixes||[]),...(item?.hiddenAffixes||[]).slice(0,Math.max(0,d.quality-5))]){const def=GEAR_AFFIXES[v.key];if(!def?.slots.includes(slot)||!Number.isFinite(v.value)||(def.quality||0)>d.quality)continue;const n=Math.max(0,Math.min(def.max,v.value));switch(v.key){case 'astralTempo':case 'primalTempo':tempo+=n;break;case 'starHunter':bossSkill+=n;break;case 'primalVerdict':finisherSkill+=n;break;case 'health':hpPercent+=n;break;case 'reduction':reduction+=n;break;case 'speed':speed+=n;break;case 'haste':haste+=n;break;case 'lifesteal':lifesteal+=n;break;case 'cooldown':cooldown+=n;break;case 'pet':pet+=n;break;case 'slow':slow+=n;break}}}if(sets.thunder>=2)skillBonus+=.05;if(sets.thunder>=3){skillBonus+=.03;chainTargets=1}if(sets.frost>=2)slow+=.08;if(sets.frost>=3)slowedBonus=.12;if(sets.blood>=2)haste+=.08;if(sets.blood>=3)lifesteal+=.03;if(sets.beast>=2)pet+=.12;if(sets.beast>=3){pet+=.08;petHealth=.2}if(sets.arcane>=2)cooldown+=.06;if(sets.arcane>=3){cooldown+=.04;hpPercent+=.05}health+=Math.floor(ancientBaseHealth(p.level)*Math.min(.6,hpPercent));const jade=jadeBonuses(p);health+=Math.floor((ancientBaseHealth(p.level)+health)*jade.health);return {health,jadeAttack:jade.attack,reduction:Math.min(.6,reduction)+(1-Math.min(.6,reduction))*jade.reduction,speed:Math.min(.3,speed),bonus,haste:Math.min(.2,haste),lifesteal:Math.min(.05,lifesteal),cooldown:Math.min(.5,Math.min(.16,cooldown*.8)+Math.min(tempoCapacity,tempo)),bossSkill,finisherSkill,pet:Math.min(.4,pet),slow:Math.min(.2,slow),skillBonus,chainTargets,slowedBonus,petHealth,sets}}
 export function ancientBaseHealth(level:number){
  const l=Math.max(1,Number.isFinite(level)?level:1),anchors=[[1,100],[5,3000],[10,12000],[30,90000],[50,250000],[60,320000],[80,470000],[100,650000]];
  for(let i=1;i<anchors.length;i++){const [a,h]=anchors[i-1],[b,k]=anchors[i];if(l<=b)return Math.round(h*(l/a)**(Math.log(k/h)/Math.log(b/a)))}

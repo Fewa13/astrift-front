@@ -1,10 +1,10 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {GEAR,GEAR_LEVELS,GEAR_AFFIXES,GEAR_HUNT_SOURCES,FORGE_MATERIAL_NAMES,gearName,gearHuntEligible,gearHuntCounts,gearHuntQuota,gearRerollQuote,gearAffixDescription} from './ancient-gear.js';
+import {GEAR,GEAR_LEVELS,GEAR_QUALITIES,GEAR_AFFIXES,GEAR_HUNT_SOURCES,FORGE_MATERIAL_NAMES,gearName,gearHuntEligible,gearHuntCounts,gearHuntQuota,gearRerollQuote,gearAffixDescription} from './ancient-gear.js';
 import {ANCIENT_KINDS} from './ancient-rules.js';
 const el=(parent,tag,value)=>{const node=document.createElement(tag);node.textContent=value;parent.append(node);return node};
 const button=(parent,value,handler)=>{const b=el(parent,'button',value);b.type='button';b.onclick=handler;return b};
 export function renderGearHunt(parent,p,en,action){
- const L=(zh,eng)=>en?eng:zh,box=el(parent,'details','');box.className='ancientGrowthGoal';
+ const L=(zh,eng)=>en?eng:zh,box=el(parent,'section','');box.className='ancientGrowthGoal';
  el(box,'summary',L('定向狩猎','Targeted hunt')+(p.gearHunt?' · '+p.gearHunt.count+'/'+gearHuntQuota(p.gearHunt.key):''));
  el(box,'p',L('选择一件套装装备。在下列官方地图对符合条件的头目打出最高贡献，攒满后兑换该装备，词条随机。更换目标会重置进度。','Choose a set piece. Earn top damage contribution against eligible official bosses. Redeem the piece with random affixes. Switching targets resets progress.'));
  const select=el(box,'select','');select.setAttribute('aria-label',L('选择狩猎目标','Choose hunt target'));
@@ -25,9 +25,19 @@ export function renderGearHunt(parent,p,en,action){
  if(p.gearHunt){el(box,'p',gearName(p.gearHunt.key,en)+' · '+p.gearHunt.count+'/'+gearHuntQuota(p.gearHunt.key));button(box,L('兑换装备','Redeem gear'),()=>void action('gearHuntClaim')).disabled=p.gearHunt.count<gearHuntQuota(p.gearHunt.key);}
 }
 export function renderGearReroll(parent,p,item,en,action){
- const L=(zh,eng)=>en?eng:zh,box=el(parent,'details',''),pending=p.gearReroll;
- box.className='ancientGrowthGoal';el(box,'summary',L('词条改造台','Affix workshop'));box.open=!!pending;
+ const L=(zh,eng)=>en?eng:zh,box=el(parent,'section',''),pending=p.gearReroll;
+ box.className='ancientRefineWorkshop';
+ const quality=GEAR[item.key].quality;
+ const hidden=el(box,'div','');hidden.className='ancientRefineSeals';
+ for(const [index,line] of (item.hiddenAffixes||[]).entries()){
+  const unlocked=quality>=index+6,affix=GEAR_AFFIXES[line.key];
+  const tile=el(hidden,'article','');tile.dataset.rarity=line.rarity;
+  el(tile,'small',GEAR_QUALITIES[index+5][en?1:0]+' · '+(unlocked?L('已解锁','Unlocked'):L('未解锁','Locked')));
+  el(tile,'strong',unlocked?gearAffixDescription({affixes:[line]},en):en?affix.en:affix.name);
+  el(tile,'span',GEAR_QUALITIES[line.rarity-1][en?1:0]);
+ }
  if(pending){
+  if(pending.promoted)el(box,'strong',L('升阶成功 · ','Promoted · ')+gearName(pending.promoted,en));
   el(box,'p',gearName(p.gear?.find(v=>v.id===pending.id)?.key||'',en));
   const line=v=>gearAffixDescription({affixes:[v]},en);
   el(box,'p',L('原词条 · ','Original · ')+line(pending.original));el(box,'p',L('新词条 · ','Candidate · ')+line(pending.candidate));
@@ -35,7 +45,8 @@ export function renderGearReroll(parent,p,item,en,action){
   button(box,L('换成新词条','Use candidate'),()=>void action('gearRerollChoose',{id:pending.id,replace:true})).disabled=!p.gear?.some(v=>v.id===pending.id&&!v.locked);
   return;
  }
- el(box,'p',L('选择一条词条改造。生成候选时扣除残材，可以保留旧词条。','Choose one affix. Salvage is spent when the candidate is rolled. You may keep the original.'));
+ el(box,'h4',L('洗炼词条','Refine affix'));
+ if(quality===6||quality===7)el(box,'small',L('升阶概率 ','Promotion chance ')+(quality===6?'1%':'0.5%'));
  for(const [index,affix] of (item.affixes||[]).entries()){
   const quote=gearRerollQuote(item,index,()=>0);if(!quote)continue;
   const label=gearAffixDescription({affixes:[affix]},en)||GEAR_AFFIXES[affix.key]?.[en?'en':'name'];
