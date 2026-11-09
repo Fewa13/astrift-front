@@ -153,3 +153,9 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientHuntPicker input,.ancientHuntPicker select{width:100%;min-width:0}
 .ancientHuntPicker ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:7px;margin:0;padding:0;list-style:none}
 .ancientHuntPicker li{display:grid;gap:3px;padding:9px;background:#101c17;border-radius:6px}
+.ancientHiddenAffixRows{grid-template-columns:1fr}
+.ancientHiddenAffixRows article{grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:8px 10px}
+.ancientHiddenAffixRows article small{grid-column:1/-1}
+.ancientRefineSeals article{position:relative}
+.ancientHiddenAffixTip{position:absolute;z-index:3;inset-inline:0;top:100%;padding:8px 10px;background:#191718;color:inherit;border:1px solid currentColor;border-radius:6px;visibility:hidden;pointer-events:none}
+.ancientRefineSeals article:is(:hover,:focus-visible)>.ancientHiddenAffixTip{visibility:visible;transition:visibility 0s 1s}

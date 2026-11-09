@@ -60,19 +60,37 @@ export function renderGearHunt(parent,p,en,action){
  search.oninput=()=>{fill();change();};select.onchange=change;change();
 
 }
-export function renderGearReroll(parent,p,item,en,action){
- const L=(zh,eng)=>en?eng:zh,box=el(parent,'section',''),pending=p.gearReroll;
- box.className='ancientRefineWorkshop';
- const quality=GEAR[item.key].quality;
+const effects={
+ health:['增加最大生命值。','Increases maximum health.'],
+ reduction:['降低受到的伤害。','Reduces damage taken.'],
+ speed:['提高移动速度。','Increases movement speed.'],
+ haste:['缩短近战攻击间隔。','Shortens the interval between melee attacks.'],
+ lifesteal:['武器命中时，按伤害的一定比例回复生命。','Weapon hits restore health based on damage dealt.'],
+ pet:['提高召唤兽造成的伤害。','Increases damage dealt by summons.'],
+ slow:['增强你施加的减速效果。','Strengthens the slows you apply.'],
+};
+export function renderHiddenAffixes(box,item,en,compact=false){
+ const L=(zh,eng)=>en?eng:zh,quality=GEAR[item.key].quality;
  el(box,'h4',L('隐藏词条','Hidden Affixes'));
- const hidden=el(box,'div','');hidden.className='ancientRefineSeals';
+ const hidden=el(box,'div','');hidden.className='ancientRefineSeals'+(compact?' ancientHiddenAffixRows':'');
  for(const [index,line] of (item.hiddenAffixes||[]).entries()){
   const unlocked=quality>=index+6,affix=GEAR_AFFIXES[line.key];
   const tile=el(hidden,'article','');tile.dataset.rarity=line.rarity;
   el(tile,'small',GEAR_QUALITIES[index+5][en?1:0]+' · '+(unlocked?L('已解锁','Unlocked'):L('未解锁','Locked')));
   el(tile,'strong',unlocked?gearAffixDescription({affixes:[line]},en):en?affix.en:affix.name);
   el(tile,'span',GEAR_QUALITIES[line.rarity-1][en?1:0]);
+  const description=effects[line.key];
+  if(description){
+   tile.tabIndex=0;
+   const tooltip=el(tile,'div',description[en?1:0]);tooltip.className='ancientHiddenAffixTip';tooltip.role='tooltip';
+  }
  }
+}
+export function renderGearReroll(parent,p,item,en,action){
+ const L=(zh,eng)=>en?eng:zh,box=el(parent,'section',''),pending=p.gearReroll;
+ box.className='ancientRefineWorkshop';
+ const quality=GEAR[item.key].quality;
+ renderHiddenAffixes(box,item,en);
  if(pending){
   if(pending.promoted)el(box,'strong',L('升阶成功 · ','Promoted · ')+gearName(pending.promoted,en));
   el(box,'p',gearName(p.gear?.find(v=>v.id===pending.id)?.key||'',en));
