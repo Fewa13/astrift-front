@@ -60,7 +60,7 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
  if(kind===1)values[index]=((values[index]||0)+1)%4;
  else if(kind===2||kind===3||kind===8){
   const step=values[start]||0;
-  values[start]=target[step]===local?step+1:Number(target[0]===local);
+  values[start]=target[step]===local?step+1:0;
   if(target[step]!==local)notice='reset';
  }else if(kind===4){
   values[index]=1-(values[index]||0);

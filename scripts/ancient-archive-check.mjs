@@ -36,6 +36,12 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
   if([2,3,8].includes(bank.kind)){
    const wrong=(steps[0]+1)%bank.count;
    assert.equal(activate(bank.start+wrong).notice,'reset');
+   state=activate(bank.start+steps[0]).state;
+   assert.equal(state.values[bank.start],1);
+   const restarted=activate(bank.start+steps[0]);
+   assert.equal(restarted.notice,'reset');
+   assert.equal(restarted.state.values[bank.start],0);
+   state=restarted.state;
   }
   if(bank.kind===6){
    state=activate(bank.start).state;
