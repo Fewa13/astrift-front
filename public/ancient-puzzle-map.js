@@ -32,6 +32,7 @@ export function createPuzzleMap(canvas,name,en,interact){
  function box(parent,x,y,z,w,h,d,color){const mesh=new T.Mesh(geometry,material(color));mesh.position.set(x,y,z);mesh.scale.set(w,h,d);parent.add(mesh);return mesh}
  const scale=.25,eyeHeight=1.7;
  const jade=new T.MeshStandardMaterial({color:0x81eacf,emissive:0x218e78,emissiveIntensity:.65});
+ const signGeometry=new T.PlaneGeometry(1,1);
  const stonework=new T.Group();scene.add(stonework);
  let doors=[],signs=[];
  function buildRooms(banks){
@@ -51,8 +52,8 @@ export function createPuzzleMap(canvas,name,en,interact){
    if(bank){
     const pattern=bank.kind===1?bank.target.map(value=>['○','△','◇','✦'][value]):
      bank.kind===0?['↑']:bank.kind===4?['✦']:bank.target.map(index=>bank.symbols[index]);
-    const sign=badge(pattern.join(bank.kind===2||bank.kind===3?' › ':'   '));
-    sign.position.set(12.5,3.35,z+.42);sign.scale.set(4.5,.72,1);
+    const sign=badge(pattern.join(bank.kind===2||bank.kind===3?' › ':'   '),true);
+    sign.position.set(12.5,3.35,z+1.1);sign.scale.set(4.5,.72,1);
     signs.push(sign);stonework.add(sign);
    }
    doors.push(box(stonework,12.5,1.85,z,4.1,3.7,.64,0x70604a));
@@ -92,10 +93,13 @@ export function createPuzzleMap(canvas,name,en,interact){
  });
  for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>drag=null);
  function tryInteract(){if(nearby>=0||state?.complete)interact(nearby);}
- function badge(name){
+ function badge(name,fixed=false){
   const label=document.createElement('canvas');label.width=256;label.height=48;
   const ctx=label.getContext('2d');ctx.fillStyle='#122433';ctx.fillRect(0,0,256,48);ctx.fillStyle='#edfff5';ctx.font='bold 21px system-ui';ctx.textAlign='center';ctx.fillText(name,128,31,244);
-  const texture=new T.CanvasTexture(label),sprite=new T.Sprite(new T.SpriteMaterial({map:texture}));sprite.position.y=2.2;sprite.scale.set(2.3,.43,1);return sprite;
+  const texture=new T.CanvasTexture(label);
+  if(fixed)return new T.Mesh(signGeometry,new T.MeshBasicMaterial({map:texture}));
+  const sprite=new T.Sprite(new T.SpriteMaterial({map:texture}));
+  sprite.position.y=2.2;sprite.scale.set(2.3,.43,1);return sprite;
  }
  function clearPlayer(actor){actor.removeFromParent();actor.label.material.map.dispose();actor.label.material.dispose()}
  function sync(next){
@@ -201,6 +205,6 @@ export function createPuzzleMap(canvas,name,en,interact){
   cancelAnimationFrame(frame);if(locked())document.exitPointerLock();document.removeEventListener('mousemove',mouseMove);window.removeEventListener('blur',release);
   for(const actor of [...players.values(),...stations])clearPlayer(actor);
   for(const sign of signs){sign.material.map.dispose();sign.material.dispose();}
-  geometry.dispose();jade.dispose();for(const mat of materials.values())mat.dispose();renderer.dispose();
+  signGeometry.dispose();geometry.dispose();jade.dispose();for(const mat of materials.values())mat.dispose();renderer.dispose();
  }};
 }

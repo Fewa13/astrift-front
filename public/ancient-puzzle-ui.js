@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-7';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-8';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',selected=-1;
  const L=(a,b)=>en()?b:a;
