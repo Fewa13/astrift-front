@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-8';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-9';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',selected=-1;
  const L=(a,b)=>en()?b:a;
@@ -24,7 +24,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   room.querySelector('.ancientPuzzleFeedback').textContent=feedback;
   room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('全服已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+L('房间 ','Room ')+(next.banks.findIndex(bank=>!bank.done)+1)+' / '+next.banks.length+' · '+L('打开出口','Open the exit');
   const active=next.banks?.find(bank=>!bank.done);
-  room.querySelector('.ancientPuzzleClue').textContent=active?.clue[en()?1:0]||'';
+  room.querySelector('.ancientPuzzleClue').textContent=(active?.clue[en()?1:0]||'')+(active?.kind===6&&next.deadline?' · '+Math.max(0,Math.ceil((next.deadline-next.serverTime)/1000))+' s':'');
   const history=room?.querySelector('.ancientPuzzleChatHistory');
   if(history&&history.dataset.last!==String(next.chat.at(-1)?.id||0)){
    history.dataset.last=String(next.chat.at(-1)?.id||0);history.replaceChildren();
@@ -38,7 +38,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   const id=generation;if(passive)polling=true;else working=true;
   try{
    const r=await request(action,body);if(id!==generation)return;
-   const messages={clear:L('全服已通关本层！','Floor cleared for everyone!'),open:L('石门已打开。','The gate is open.'),wrong:L('这个石印对不上。','That seal does not match.'),reset:L('顺序错了，重新开始。','Wrong order. Start again.'),stale:L('机关已更新。','Controls updated.')};
+   const messages={clear:L('全服已通关本层！','Floor cleared for everyone!'),wrongPair:L('图案不同，第二枚石印保持翻开。','No match. The second seal stays revealed.'),open:L('石门已打开。','The gate is open.'),wrong:L('这个石印对不上。','That seal does not match.'),reset:L('顺序错了，重新开始。','Wrong order. Start again.'),stale:L('机关已更新。','Controls updated.')};
    if(action!=='puzzleState')feedback=action==='puzzleClaim'?L('奖励已入账。','Rewards credited.'):messages[r.puzzle?.notice]||'';
    apply(r);
   }catch(error){if(id===generation){feedback=error.message;draw();}}

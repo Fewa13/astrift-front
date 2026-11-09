@@ -51,8 +51,8 @@ export function createPuzzleMap(canvas,name,en,interact){
    const bank=banks[i];
    if(bank){
     const pattern=bank.kind===1?bank.target.map(value=>['○','△','◇','✦'][value]):
-     bank.kind===0?['↑']:bank.kind===4?['✦']:bank.target.map(index=>bank.symbols[index]);
-    const sign=badge(pattern.join(bank.kind===2||bank.kind===3?' › ':'   '),true);
+     bank.kind===0?['↑']:[4,6,7].includes(bank.kind)?[{4:'✦',6:'⌛',7:'◇ ◇'}[bank.kind]]:bank.target.map(index=>bank.symbols[index]);
+    const sign=badge(pattern.join([2,3,8].includes(bank.kind)?' › ':'   '),true);
     sign.position.set(12.5,3.35,z+1.1);sign.scale.set(4.5,.72,1);
     signs.push(sign);stonework.add(sign);
    }
@@ -123,7 +123,15 @@ export function createPuzzleMap(canvas,name,en,interact){
     }else{
      part(0,.14,0,1.5,.28,1.1);
      part(0,.62,0,kind===2?.35:.75,.88,.62);
-     if(kind===0){
+     if(kind===6){
+      part(0,1.12,0,.75,.16,.75);
+      station.mark=part(0,1.41,0,.34,.42,.34,0xffa248);
+     }else if(kind===7){
+      station.mark=part(0,1.2,0,.82,.16,.66,0xa48563);
+      station.mark.rotation.x=.35;
+     }else if(kind===8){
+      station.mark=part(0,1.23,0,.35,.7,.35,0x806d99);
+     }else if(kind===0){
       station.mark=part(0,1.26,0,.17,.64,.18,0xbd8845);
       station.mark.rotation.x=-.55;
       part(0,1.55,-.15,.33,.2,.32,0xd6a568);
@@ -141,17 +149,21 @@ export function createPuzzleMap(canvas,name,en,interact){
    }
   }
   state=next;
-  doors.forEach((door,i)=>{door.visible=!next.banks?.[i]?.done;});
+  doors.forEach((door,i)=>{
+   const bank=next.banks?.[i];
+   door.visible=!bank?.done;
+   if(signs[i])signs[i].visible=bank?.kind!==8||!next.values[bank.start]||bank.done;
+  });
   for(let i=0;i<stations.length;i++){
    const station=stations[i],bank=next.banks[station.bank];
    const local=i-bank.start,value=next.values[i],kind=bank.kind;
    const progress=next.values[bank.start]||0;
-   const lit=bank.done||(kind===1?value===bank.target[local]:kind===4?value===1:
-    (kind===2||kind===3)&&bank.target.slice(0,progress).includes(local));
+   const lit=bank.done||(kind===1?value===bank.target[local]:[4,6,7].includes(kind)?value===1:
+    [2,3,8].includes(kind)&&bank.target.slice(0,progress).includes(local));
    station.mark.material=lit?jade:material(kind===2?0x57402f:0x96754e);
    if(kind===0)station.mark.rotation.x=lit?.55:-.55;
    const label=kind===0?(en()?'Lever':'拉杆'):kind===4?String(local+1):
-    kind===1?['○','△','◇','✦'][value]:bank.symbols[local];
+    kind===1?['○','△','◇','✦'][value]:kind===7?(bank.symbols[bank.target[local]]||'?'):bank.symbols[local];
    const reading=kind===1?'#'+(local+1)+' · '+(en()?'Match':'对准')+' '+['○','△','◇','✦'][bank.target[local]]:
     lit?'✓':kind===3?(en()?'Step here':'踩上石板'):'F';
    const caption=label+'\n'+reading;

@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261108-puzzle-room-8';
+const CACHE_NAME='astrift-offline-20261108-puzzle-room-9';
 const ASSETS=['/ancient-puzzle-ui.js','/ancient-puzzle-map.js','/ancient-gear-workshop.js','/client-version.js',
  '/ancient-community-optics.js',
  '/ancient-community-amenities.js','/ancient-community-uses.js','/ancient-amenity-defs.js',

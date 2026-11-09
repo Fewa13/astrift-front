@@ -13,16 +13,38 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
  assert.equal(activate(-1).notice,'locked');
  assert.equal(activate(room.banks.at(-1).start).notice,'locked');
  for(const bank of room.banks){
+  if(bank.kind===7){
+   for(let first=0;first<bank.count;first++){
+    if(state.floor!==floor)break;
+    if(state.values[bank.start+first])continue;
+    if(state.pair!==bank.start+first)state=activate(bank.start+first).state;
+    for(let second=first+1;second<bank.count;second++){
+     if(state.values[bank.start+second])continue;
+     const result=activate(bank.start+second);state=result.state;
+     if(result.notice!=='wrongPair')break;
+     state=activate(bank.start+first).state;
+    }
+   }
+   if(state.floor===floor)assert(puzzleView(state).banks.find(item=>item.start===bank.start).done);
+   continue;
+  }
   let steps;
   if(bank.kind===1)steps=bank.target.flatMap((turns,index)=>Array(turns).fill(index));
   else if(bank.kind===4)steps=bank.symbols.flatMap((_,index)=>index%2===0?[index]:[]);
   else if(bank.kind===0)steps=[0];
   else steps=bank.target;
-  if(bank.kind===2||bank.kind===3){
+  if([2,3,8].includes(bank.kind)){
    const wrong=(steps[0]+1)%bank.count;
    assert.equal(activate(bank.start+wrong).notice,'reset');
   }
+  if(bank.kind===6){
+   state=activate(bank.start).state;
+   now=state.deadline;
+   state=activate(bank.start+1).state;
+   assert.equal(state.values[bank.start],0,'expired lamps reset');
+  }
   for(const index of steps){
+   if(state.floor!==floor||puzzleView(state).banks.find(item=>item.start===bank.start).done)break;
    const result=activate(bank.start+index);
    assert.notEqual(result.state,state);
    state=result.state;
