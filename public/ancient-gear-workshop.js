@@ -64,6 +64,7 @@ export function renderGearReroll(parent,p,item,en,action){
  const L=(zh,eng)=>en?eng:zh,box=el(parent,'section',''),pending=p.gearReroll;
  box.className='ancientRefineWorkshop';
  const quality=GEAR[item.key].quality;
+ el(box,'h4',L('隐藏词条','Hidden Affixes'));
  const hidden=el(box,'div','');hidden.className='ancientRefineSeals';
  for(const [index,line] of (item.hiddenAffixes||[]).entries()){
   const unlocked=quality>=index+6,affix=GEAR_AFFIXES[line.key];
