@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 export const ANCIENT_NAV_GROUPS=[
  ['成长与物品','Character & Items',[['skills','技能','Skills'],['bag','背包','Inventory'],['skins','皮肤','Skins'],['collections','藏品','Collections'],['stones','原石','Stones']]],
- ['冒险与记录','Adventure',[['dungeon','副本','Dungeons'],['hunts','狩猎','Hunts'],['gearHunt','定向狩猎','Targeted Hunt'],['trials','试炼','Trials'],['research','图鉴','Codex']]],
+ ['冒险与记录','Adventure',[['dungeon','副本','Dungeons'],['hunts','狩猎','Hunts'],['gearHunt','定向狩猎','Targeted Hunt'],['trials','试炼','Trials'],['research','图鉴','Codex'],['titles','称号','Titles']]],
  ['玩家与社交','Players & Social',[['online','在线','Players'],['friends','好友','Friends'],['invite','邀请','Invite'],['party','组队','Party'],['trade','交易','Trade'],['chat','聊天','Chat']]],
  ['商店与服务','Shop & Services',[['shop','商店','Shop'],['market','市场','Market'],['guide','游戏助手','Game guide'],['mail','邮件','Mail'],['leaderboard','排行','Ranking']]]
 ];

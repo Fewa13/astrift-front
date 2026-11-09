@@ -181,6 +181,8 @@ const board=(await server.command('puzzle-b','puzzleLeaderboard',{})).leaderboar
 assert.equal(board.players.length,1);
 assert.equal(board.players[0].rooms,1);
 sql.exec('INSERT INTO ancient_puzzle_titles VALUES(?,?,?,?)','puzzle-a',1,Date.now()+60000,0);
+assert.equal((await server.command('puzzle-a','puzzleTitle',{})).title.rank,1);
+assert.equal((await server.command('puzzle-b','puzzleTitle',{})).title,undefined);
 assert.equal((await server.command('puzzle-a','equipPuzzleTitle',{worn:true})).profile.puzzleTitle.worn,true);
 assert.equal((await server.command('puzzle-a','equipPuzzleTitle',{worn:false})).profile.puzzleTitle.worn,false);
 assert.equal((await server.command('puzzle-b','equipPuzzleTitle',{worn:true})).ok,false);

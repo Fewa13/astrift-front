@@ -7,7 +7,7 @@ export const clientVersionResponse=()=>Response.json(CLIENT_OUTDATED,{status:409
 
 // Reads, chat, cleanup and routine combat stay available until a protected operation is attempted.
 const ancientUnversioned=new Set([
- 'profile','puzzleLeaderboard','puzzleState','puzzleLeave','puzzleChat','leaveWorld','onlinePlayers','levelLeaderboard','dailyLeaderboard','tradeState','tradeCancel',
+ 'profile','puzzleTitle','puzzleLeaderboard','puzzleState','puzzleLeave','puzzleChat','leaveWorld','onlinePlayers','levelLeaderboard','dailyLeaderboard','tradeState','tradeCancel',
  'mailList','mailRead','researchList','dailyShopList','roughShopList','roughShopProbe',
  'marketList','marketInspect','marketRoughInventory','marketRoughProbe','collectionList','stoneList','stoneProbe',
  'communityAccess','communityGet','communityList','communityModelList','communityModelGet','communityEditorSync',

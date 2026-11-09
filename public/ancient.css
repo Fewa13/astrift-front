@@ -157,3 +157,13 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientRefineSeals article{position:relative}
 .ancientHiddenAffixTip{position:absolute;z-index:3;inset-inline:0;top:100%;padding:8px 10px;background:#191718;color:inherit;border:1px solid currentColor;border-radius:6px;visibility:hidden;pointer-events:none}
 .ancientRefineSeals article:is(:hover,:focus-visible)>.ancientHiddenAffixTip{visibility:visible;transition:visibility 0s 1s}
+
+.ancientTitles .ancientTitleList{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}
+.ancientTitles>p:empty{display:none}
+.ancientTitleList article{padding:14px;display:grid;gap:10px;border:1px solid color-mix(in srgb,var(--title-accent) 27%,transparent);border-radius:10px;background:linear-gradient(145deg,color-mix(in srgb,var(--title-accent) 11%,#101923),#101923 65%)}
+.ancientTitleList article.equipped{border-color:var(--title-accent)}
+.ancientTitleList header,.ancientTitleList footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.ancientTitleList header strong{color:var(--title-accent)}
+.ancientTitleList header span,.ancientTitlePerks span{padding:4px 7px;border-radius:4px;background:#0b1420;color:#dbe5ee;font-size:.78rem}
+.ancientTitleList canvas{width:100%;display:block}
+.ancientTitlePerks{display:flex;flex-wrap:wrap;gap:5px}

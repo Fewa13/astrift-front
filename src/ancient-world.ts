@@ -240,10 +240,11 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
   const p=this.read(name);const fail=(error:string)=>({ok:false,error});if(this.previewId(name)&&!['profile','ticket','leaveWorld','usePotion','useBossCard','communityBag','communityNPC','communityInteract','communityAmenity','communityMeal','communityPreviewEnd'].includes(action))return fail('试玩中请先返回编辑器 / Return to the editor first');if(action==='communityPreviewEnd'){const peer=this.connections().find(ws=>(ws.deserializeAttachment() as Player|null)?.name===name),actor=peer?.deserializeAttachment() as Player|null;if(actor&&communityId(actor.map)>=50000000)await this.disconnect(name,actor.connectionId);return {ok:true,profile:this.read(name)}}
   if(['usePotion','useBossCard'].includes(action)){const peer=this.connections().find(ws=>(ws.deserializeAttachment() as Player|null)?.name===name),actor=peer?.deserializeAttachment() as Player|undefined;if(peer&&actor?.amenityPose){this.standAmenity(peer,actor);peer.serializeAttachment(actor)}}
   if(!['profile','leaveWorld'].includes(action)&&this.connections().some(ws=>{const a=ws.deserializeAttachment() as Player|null;return a?.name===name&&!!a.drinking}))return fail('正在喝药');
-  if(action==='puzzleLeaderboard'||action==='puzzleEnter'){
+  if(action==='puzzleLeaderboard'||action==='puzzleEnter'||action==='puzzleTitle'){
    const now=Date.now();
    if(await this.ctx.storage.getAlarm()===null)await this.ctx.storage.setAlarm(nextIrvineMidnight(now));
    this.settlePuzzleDay(now);
+   if(action==='puzzleTitle')return {ok:true,title:readPuzzleTitle(this.ctx.storage.sql,name,now)};
    if(action==='puzzleLeaderboard')return {ok:true,leaderboard:puzzleLeaderboard(this.ctx.storage.sql,data.page,now),title:readPuzzleTitle(this.ctx.storage.sql,name,now)};
   }
   if(action==='equipPuzzleTitle'){
