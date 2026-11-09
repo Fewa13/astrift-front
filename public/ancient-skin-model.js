@@ -97,6 +97,75 @@ function makeModel(skin){
   b('box',accent,0,1.1,-.195,.36,.23,.085);
   if(crest)for(const x of [-.31,.31])b('box',accent,x,1.5,.11,.23,.25,.39,x);
  }
+ if(skin.rarity>=2&&skin.rarity<=4){
+  const tier=skin.rarity;
+  const trim=new T.Color(accent).lerp(new T.Color(cloth),.35).getHex();
+  for(const [i,side] of [-1,1].entries()){
+   const arm=root.getObjectByName('arm'+i),knee=root.getObjectByName('knee'+i);
+   for(let layer=0;layer<tier-1;layer++){
+    part(arm,'box',layer===0?accent:trim,0,-.32+layer*.055,-.019,.195,.045,.205,side*.09);
+    part(knee,'box',trim,0,-.08-layer*.073,-.111,.171,.053,.054);
+   }
+  }
+  if(style==='thorn'){
+   for(const side of [-1,1])for(let i=0;i<3;i++)
+    b('gem',i%2?trim:accent,side*(.13+i*.056),1.18+i*.087,.22,.095,.31,.083,side*.49);
+  }else if(style==='coat'){
+   for(const side of [-1,1]){
+    b('box',trim,side*.17,.83,.235,.24,.57,.075,side*.16);
+    b('box',accent,side*.27,.82,.272,.028,.55,.025,side*.16);
+    for(let i=0;i<3;i++)b('gem',accent,side*.095,1.39-i*.095,-.184,.045,.059,.033);
+   }
+  }else if(style==='smith'){
+   b('box',trim,0,.85,-.225,.37,.095,.08);
+   for(const [i,x]of [-.12,.015,.13].entries()){
+    b('box',boots,x,.78,-.24,.036,.26,.043,i*.17-.16);
+    b('box',accent,x,.91,-.265,.072,.05,.062,i*.17-.16);
+   }
+  }else if(style==='sun'){
+   for(let i=0;i<8;i++){
+    const angle=i*Math.PI/4;
+    b('gem',accent,Math.cos(angle)*.42,1.84+Math.sin(angle)*.42,.38,.09,.23,.082,angle-Math.PI/2);
+   }
+   b('ring',trim,0,1.84,.375,.63,.63,.7);
+   b('gem',accent,0,1.31,-.215,.24,.28,.093);
+  }else if(style==='crystal'){
+   for(const side of [-1,1])for(let i=0;i<4;i++){
+    b('gem',i%2?trim:accent,side*(.14+.103*i),1.1+.17*i,.26,.126,.53,.11,side*(.21+.12*i));
+   }
+   b('gem',accent,0,1.92,.034,.17,.25,.12);
+  }else if(style==='jackal'){
+   for(const side of [-1,1]){
+    b('box',trim,side*.202,1.78,0,.12,.28,.43,side*.2);
+    for(let i=0;i<4;i++)b('box',i%2?accent:trim,side*.16,1.46-i*.09,.19,.19,.058,.26,side*.2);
+    b('gem',accent,side*.095,1.8,-.255,.047,.065,.033);
+   }
+  }else if(style==='moon'){
+   b('ring',trim,0,1.87,.38,1.16,1.16,1.15);
+   b('ring',accent,0,1.87,.414,.97,.97,.72);
+   for(let i=0;i<9;i++){
+    const angle=Math.PI*.22+i*Math.PI*.17;
+    b('gem',i%2?accent:trim,Math.cos(angle)*.49,1.87+Math.sin(angle)*.49,.44,.08,.19,.09,angle-Math.PI/2);
+   }
+   for(const side of [-1,1])b('gem',accent,side*.27,.94,.31,.11,.82,.1,side*.2);
+  }else if(style==='feather'){
+   for(const side of [-1,1])for(let i=0;i<5;i++){
+    const x=side*(.31+i*.085),y=1.15+.17*i;
+    b('gem',trim,x,y,.31,.17,.68,.13,side*(.36+i*.13));
+    b('gem',accent,x,y+.045,.366,.08,.55,.077,side*(.36+i*.13));
+   }
+   b('gem',accent,0,2.05,.057,.127,.39,.11);
+  }else if(style==='crown'){
+   for(const side of [-1,1]){
+    for(let i=0;i<5;i++){
+     b('gem',i%2?accent:trim,side*(.27+i*.071),1.24+.103*i,.24,.13,.49,.118,side*(.44+i*.16));
+     b('box',i%2?trim:cloth,side*.156,1.12-i*.10,.29,.24,.085,.062,side*.17);
+    }
+    b('gem',accent,side*.22,2.04,.037,.113,.32,.14,side*.37);
+   }
+   b('gem',accent,0,2.09,-.061,.135,.33,.115);
+  }
+ }
  if(skin.rarity===5){
   const light=new T.Group();
   light.name='skin-inlay';body.add(light);
@@ -188,6 +257,6 @@ export function createAncientSkinModel(id,profession){
  if(!templates.has(key))templates.set(key,makeModel(skin));
  const root=templates.get(key).clone(true);
  const joints=prefix=>[0,1].map(i=>root.getObjectByName(prefix+i));
- root.userData={height:skin.rarity===5?2.67:2.06,body:root.getObjectByName('body'),arms:joints('arm'),legs:joints('leg'),knees:joints('knee')};
+ root.userData={height:skin.rarity===5?2.67:skin.rarity===4?2.46:skin.rarity===3?2.28:2.06,body:root.getObjectByName('body'),arms:joints('arm'),legs:joints('leg'),knees:joints('knee')};
  return root;
 }
