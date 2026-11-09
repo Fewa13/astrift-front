@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261108-room-10';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261109-mechanisms-1';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
- let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',selected=-1;
+ let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',queuedPlates=[];
  const L=(a,b)=>en()?b:a;
  const make=(parent,tag,text='')=>{const node=document.createElement(tag);node.textContent=text;parent.append(node);return node};
  function button(parent,text,run){const node=make(parent,'button',text);node.type='button';node.onclick=run;return node;}
@@ -12,17 +12,17 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   }
   return next;
  }
- function apply(r){
+ function apply(r,started=Date.now()){
   onProfile(r.profile);const next=roomState(r);
   if(!next||state&&(next.revision<state.revision||next.revision===state.revision&&next.serverTime<state.serverTime))return;
   if(state&&state.floor!==next.floor){
-   selected=-1;
+   queuedPlates=[];
    room.querySelector('.ancientPuzzlePanel').close();
   }
-  state=next;map?.sync(next);draw();
+  state=next;map?.sync(next,started);draw();
 
   room.querySelector('.ancientPuzzleFeedback').textContent=feedback;
-  room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+L('房间 ','Room ')+(next.banks.findIndex(bank=>!bank.done)+1)+' / '+next.banks.length+' · '+L('打开出口','Open the exit');
+  room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+L('房间 ','Room ')+(next.banks.findIndex(bank=>!bank.done)+1)+' / '+next.banks.length+' · '+next.banks.find(bank=>!bank.done)?.name[en()?1:0];
   const history=room?.querySelector('.ancientPuzzleChatHistory');
   if(history&&history.dataset.last!==String(next.chat.at(-1)?.id||0)){
    history.dataset.last=String(next.chat.at(-1)?.id||0);history.replaceChildren();
@@ -33,19 +33,25 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
  async function update(action,body={}){
   const passive=action==='puzzleState';
   if(!room||(passive?polling:working))return;
-  const id=generation;if(passive)polling=true;else working=true;
+  const id=generation,started=Date.now();if(passive)polling=true;else working=true;
   try{
    const r=await request(action,body);if(id!==generation)return;
    const messages={clear:L('本层已通关！','Floor cleared!'),blocked:L('只能滑动空格旁的砖。','Only a tile beside the gap can slide.'),wrongPair:L('图案不同，第二枚石印保持翻开。','No match. The second seal stays revealed.'),open:L('石门已打开。','The gate is open.'),wrong:L('这个石印对不上。','That seal does not match.'),reset:L('顺序错了，重新开始。','Wrong order. Start again.'),stale:L('机关已更新。','Controls updated.')};
    if(action!=='puzzleState')feedback=action==='puzzleClaim'?L('奖励已入账。','Rewards credited.'):messages[r.puzzle?.notice]||'';
-   apply(r);
-  }catch(error){if(id===generation){feedback=error.message;draw();}}
-  finally{if(id===generation){if(passive)polling=false;else working=false;}}
+   apply(r,started);
+  }catch(error){if(id===generation){feedback=error.message;room.querySelector('.ancientPuzzleFeedback').textContent=feedback;draw();}}
+  finally{if(id===generation){if(passive)polling=false;else{working=false;while(queuedPlates.length&&!working){const pending=queuedPlates.shift();if(pending.floor===state?.floor)operate(pending.index,true);}}}}
  }
- function operate(control,data={}){void update('puzzleOperate',{floor:state.floor,revision:state.revision,control,...data});}
+ function operate(index,step=false){
+  if(!state||state.complete)return;
+  const active=state.banks.find(bank=>!bank.done);
+  if(!active||index<active.start||index>=active.start+active.count)return;
+  if(working){if(step&&queuedPlates.length<8)queuedPlates.push({floor:state.floor,index});return;}
+  void update('puzzleOperate',{floor:state.floor,revision:state.revision,control:'activate',index});
+ }
  function draw(){
   if(!room||!state)return;
-  const view=room.querySelector('main'),key=JSON.stringify([state.revision,state.floor,state.claimed,selected,state.players.map(p=>p.name),feedback,en()]);
+  const view=room.querySelector('main'),key=JSON.stringify([state.revision,state.floor,state.claimed,feedback,en()]);
   if(key===signature)return;signature=key;view.replaceChildren();
   const active=make(view,'section');active.className='ancientPuzzleMachine';
   if(state.complete)make(active,'h2',L('已解开全部 '+state.total+' 层','All '+state.total+' floors cleared'));
@@ -54,12 +60,12 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   button(view,L('领取已通关楼层奖励','Claim cleared-floor rewards')+' · '+Math.max(0,count),()=>void update('puzzleClaim')).disabled=count<=0;
  }
  function close(){
-  if(!room)return;generation++;clearInterval(poll);map?.dispose();map=null;room.querySelector('.ancientPuzzlePanel')?.close();room.close();room.remove();room=null;state=null;working=polling=false;
+  if(!room)return;generation++;clearInterval(poll);map?.dispose();map=null;room.querySelector('.ancientPuzzlePanel')?.close();room.close();room.remove();room=null;state=null;queuedPlates=[];working=polling=false;
   void request('puzzleLeave').catch(()=>{});onExit();
  }
  async function open(){
   if(room||working)return;
-  working=true;let r;
+  working=true;let r;const started=Date.now();
   try{r=await request('puzzleEnter');roomState(r)}finally{working=false;}
   generation++;signature='';feedback='';
   room=make(document.body,'dialog');room.className='ancientPuzzleRoom';
@@ -76,11 +82,11 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   button(panelTop,L('关闭','Close'),()=>panel.close());
   panel.addEventListener('close',()=>{if(room?.isConnected)canvas.focus({preventScroll:true});});
   panel.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();panel.close();});
-  function focusControls(index){
+  function focusControls(index,step=false){
    if(panel.open)return;
-   if(index>=0){operate('activate',{index});return;}
+   if(index>=0){operate(index,step);return;}
    if(document.pointerLockElement===canvas)document.exitPointerLock();
-   selected=index;feedback='';draw();panel.showModal();
+   feedback='';draw();panel.showModal();
   }
   try{map=createPuzzleMap(canvas,()=>name().toLowerCase(),en,focusControls);}
   catch(error){close();throw error;}
@@ -101,7 +107,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   const submit=make(form,'button',L('发送','Send'));submit.type='submit';
   form.onsubmit=async event=>{event.preventDefault();if(!input.value.trim()||working)return;const value=input.value;await update('puzzleChat',{text:value});if(!feedback&&input.value===value)input.value='';};
   room.addEventListener('cancel',event=>event.preventDefault());
-  room.addEventListener('keydown',event=>event.stopPropagation());try{room.showModal();apply(r);canvas.focus({preventScroll:true});}
+  room.addEventListener('keydown',event=>event.stopPropagation());try{room.showModal();apply(r,started);canvas.focus({preventScroll:true});}
   catch(error){close();throw error;}
   poll=setInterval(()=>void update('puzzleState',{floor:state.floor,position:map.position()}),1300);
  }

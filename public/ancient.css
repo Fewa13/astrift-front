@@ -167,3 +167,4 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientTitleList header span,.ancientTitlePerks span{padding:4px 7px;border-radius:4px;background:#0b1420;color:#dbe5ee;font-size:.78rem}
 .ancientTitleList canvas{width:100%;display:block}
 .ancientTitlePerks{display:flex;flex-wrap:wrap;gap:5px}
+.puzzleTargeted .ancientPuzzleReticle{color:#8af4c7;text-shadow:0 0 7px #218e78,0 1px 3px #000}

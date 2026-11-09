@@ -62,7 +62,10 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
    }else if(bank.kind===15){
     for(const i of bank.target){now=(Math.floor(now/(950*bank.count))*bank.count+bank.count+i)*950+475;press(i);}
    }else if(bank.kind===16){
-    press(0);now+=6500;press(bank.count-1);
+    press(0);now+=6500;
+    assert.equal(puzzleView(state,now).deadline,undefined);
+    assert.equal(puzzleView(state,now).values[bank.start],0);
+    press(bank.count-1);
     assert.equal(state.values[bank.start],0);
     press(0);now+=3200;press(bank.count-1);
    }else{
@@ -95,6 +98,8 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
   if(bank.kind===6){
    state=activate(bank.start).state;
    now=state.deadline;
+   assert.equal(puzzleView(state,now).deadline,undefined);
+   assert.equal(puzzleView(state,now).values[bank.start],0);
    state=activate(bank.start+1).state;
    assert.equal(state.values[bank.start],0,'expired lamps reset');
   }

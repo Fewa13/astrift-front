@@ -4,14 +4,14 @@ export type PuzzleState={floor:number;revision:number;values:number[];layout?:nu
 type Text=[string,string];
 const glyphs=['○','△','◇','✦','☾','☀','✚','□'];
 const CHAMBER_RULES:{name:Text;clue:Text}[]=[
- {name:['折光镜','Mirror path'],clue:['让光经过门上刻着的编号，至少反射一次双格，最后抵达宝石。','Route light through the carved numbers. Use a two-step reflection before reaching the gem.']},
- {name:['水渠','Water channels'],clue:['转动闸板，让两个石盆都接到门上刻着的水量。','Turn the sluices to deliver the carved amounts to both basins.']},
- {name:['影子墙','Shadow wall'],clue:['转动石雕，让叠起来的影子和墙上轮廓一致。','Turn the carvings until their combined shadows match the wall.']},
- {name:['压重板','Balance plates'],clue:['挪动石块，让左右两边重量相等。','Move the stones until both sides weigh the same.']},
+ {name:['折光镜','Mirror path'],clue:['光束须经过门刻编号和至少一半镜子，至少跨两格一次，最后抵达宝石。','Reach the gem via the carved numbers and at least half the mirrors. Jump two spaces at least once.']},
+ {name:['水渠','Water channels'],clue:['转动闸板，切换左流、均分和右流，使两边水量符合门刻。','Turn each sluice left, split, or right to match both carved amounts.']},
+ {name:['影子墙','Shadow wall'],clue:['转动石雕，至少让一座向右投影，使叠影和墙上的轮廓一致。','Match the wall silhouette using at least one carving angled to the right.']},
+ {name:['压重板','Balance plates'],clue:['把每块石头放到左边或右边，使两边等重。','Place every stone on either side and balance their weights.']},
  {name:['机关桥','Bridge route'],clue:['第一块横放。每道接缝的 ═ 表示和上一块同向，╳ 表示转向。','Start with a straight plank. At each joint, ═ keeps the previous direction and ╳ turns it.']},
- {name:['拼图壁画','Sliding mural'],clue:['把空格旁的石砖滑进去，拼出门上刻的图案。','Slide tiles into the empty space to match the gate carving.']},
+ {name:['拼图壁画','Sliding mural'],clue:['按 F 将空格上下左右相邻的砖滑进去，拼成门刻的两行图案。','Press F on a tile next to the gap. Match both rows on the gate.']},
  {name:['追光柱','Moving light'],clue:['光经过门刻对应的柱子时按 F，按门刻顺序捕捉。','Catch the light with F on each carved pillar, in order.']},
- {name:['双闸门','Twin gates'],clue:['拉下近处闸杆，再沿刻痕路线赶到另一根。','Pull the near lever, then follow the marked route to the far lever.']},
+ {name:['双闸门','Twin gates'],clue:['先拉Ⅰ，再在计时结束前拉Ⅱ。','Pull lever I, then reach lever II before the timer ends.']},
  {name:['遗物归位','Relic niches'],clue:['按 F 拿起遗物，再按 F 交换。按门刻把遗物归位。','Press F to pick up or swap relics. Match the carved order.']},
 ];
 const rules:{name:Text;clue:Text}[]=[
@@ -23,7 +23,7 @@ const rules:{name:Text;clue:Text}[]=[
  {name:['石印门','Seal gate'],clue:['找到和门上图案相同的石印，走近按 F。','Find the seal that matches the gate symbol and press F beside it.']},
  {name:['沙漏门','Hourglass gate'],clue:['点亮第一盏灯后开始倒计时，熄灭前点亮其余的灯。顺序不限。','The first lamp starts the timer. Light every lamp before time runs out, in any order.']},
  {name:['双印门','Twin seals'],clue:['按 F 翻看石印。每次找出两个相同图案，配对后会亮起。','Press F to reveal a seal. Find matching pairs to keep them lit.']},
- {name:['回声门','Echo gate'],clue:['先记住门上的顺序。触碰第一块石碑后，提示会消失。','Memorize the gate pattern. It vanishes when you touch the first stone.']},
+ {name:['回声门','Echo gate'],clue:['记住门刻顺序。输入第一枚正确图案后门刻隐藏，输错重新显示。','Memorize the gate pattern. It hides after the first correct input and returns on a mistake.']},
  ...CHAMBER_RULES,
 ];
 const difficultyFor=(floor:number)=>Math.min(5,Math.ceil(floor/24));
@@ -68,13 +68,16 @@ function done(bank:Bank,values:number[]){
   [4,6,7].includes(bank.kind)?bank.symbols.every((_,i)=>values[bank.start+i]===1):
   (values[bank.start]||0)===([2,3,8].includes(bank.kind)?bank.count:bank.kind===5?bank.target.length:1);
 }
-export function puzzleView(state:PuzzleState){
+export function puzzleView(state:PuzzleState,now?:number){
  if(state.floor>PUZZLE_FLOORS)return {floor:state.floor,revision:state.revision,complete:true as const};
  const banks=roomLayout(state.floor,state.layout);
+ const active=banks.find(bank=>!done(bank,state.values));
+ const expired=now!==undefined&&state.deadline!==undefined&&now>=state.deadline&&active&&(active.kind===6||active.kind===16);
+ const values=banks.flatMap(bank=>bank.initial.map((value,i)=>expired&&bank===active?value:state.values[bank.start+i]??value));
  return {floor:state.floor,revision:state.revision,complete:false as const,difficulty:difficultyFor(state.floor),
-  deadline:state.deadline,pair:state.pair,held:state.held,
+  deadline:expired?undefined:state.deadline,pair:state.pair,held:state.held,
   banks:banks.map(bank=>({...bank,target:bank.kind===7?bank.target.map((v,i)=>state.pair===bank.start+i||state.values[bank.start+i]===1?v:-1):bank.target,done:done(bank,state.values)})),
-  values:banks.flatMap(bank=>bank.initial.map((value,i)=>state.values[bank.start+i]??value))};
+  values};
 }
 export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now:number){
  if(state.floor>PUZZLE_FLOORS||input.floor!==state.floor||input.revision!==state.revision)return {state,notice:'stale'};
@@ -198,7 +201,7 @@ export function advanceChamber(kind:number,values:number[],index:number,target:n
  let notice='activate';
  if(kind===14){
   const empty=values.indexOf(0);
-  if(!TILE_NEIGHBORS[empty].includes(index))return {notice:'blocked'};
+  if(!TILE_NEIGHBORS[empty]?.includes(index))return {notice:'blocked'};
   [values[index],values[empty]]=[values[empty],values[index]];
  }else if(kind===15){
   const progress=values[0];
