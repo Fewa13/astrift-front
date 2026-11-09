@@ -23,6 +23,7 @@ import {createCollectionsUI} from './ancient-collections-ui.js?v=20261025-jade-f
 import {collectionName,collectionError} from './ancient-collection-label.js?v=20261021-jade-wear-1';
 import {createJadeWearVisuals} from './ancient-jade-wear-visuals.js?v=20261022-world-fixes-1';
 import {createCollectionDisplay} from './ancient-collection-display.js?v=20261021-jade-wear-1';
+import {renderGearHunt} from './ancient-gear-workshop.js';
 import {createHuntsUI} from './ancient-hunts-ui.js?v=20261018-cast-hands-1';
 import {createAncientLeisure} from './ancient-leisure-ui.js?v=20261022-world-fixes-1';
 import {createGrowthHud} from './ancient-growth-hud.js?v=20261016-growth-1';
@@ -216,6 +217,7 @@ function drawPanel(){marketUI.dispose();collectionUI.dispose();stoneworkUI.dispo
  else if(view==='leaderboard'){leaderboardUI.render(card)}
  else if(view==='mail'){mailUI.render(card);void mailUI.poll()}
  else if(view==='friends'||view==='invite'){friendUI.render(card,view==='invite');void friendUI.poll()}
+ else if(view==='gearHunt'){renderGearHunt(card,profile,en(),action)}
  else if(view==='hunts'){huntsUI.render(card);void dungeonUI.poll()} else if(view==='dungeon'){dungeonUI.render(card);void dungeonUI.poll()} else if(view==='trade'){tradeUI.render(card);void tradeUI.poll()} else if(view==='party'){partyUI.render(card);void partyUI.poll()}
  else if(view==='online'){node('h2',L('本地图在线玩家','Players in this map'),card);const list=node('div','',card);list.className='ancientOnlinePlayers';for(const p of onlineRoster){const row=node('div','',list);row.className='ancientPartyRow';node('strong',p.name,row);node('span',L('等级 ','Lv. ')+p.level,row);}if(!onlineRoster.length)node('p',rosterLoading?L('加载中…','Loading…'):L('暂无在线玩家','No players online'),list);button(L('刷新','Refresh'),()=>void loadOnlineRoster(),card).disabled=rosterLoading;}
  else if(view==='testSkills'&&accountSession()?.name?.toLowerCase()==='admintest'){renderTestSkills(card)}

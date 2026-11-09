@@ -146,3 +146,10 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientRefineSeals article{display:grid;gap:6px;padding:12px;border:1px solid #594f44;border-top:2px solid currentColor;border-radius:8px;background:linear-gradient(155deg,#352c26,#191718);color:#e4dfd8}
 .ancientRefineSeals small{color:#d4c4ae}
 .ancientRefineSeals [data-rarity="2"]{color:#5bb8df}.ancientRefineSeals [data-rarity="3"]{color:#ac75ec}.ancientRefineSeals [data-rarity="4"]{color:#ffca5b}.ancientRefineSeals [data-rarity="5"]{color:#ee6b99}.ancientRefineSeals [data-rarity="6"]{color:#e7f9ff}.ancientRefineSeals [data-rarity="7"]{color:#84efff}.ancientRefineSeals [data-rarity="8"]{color:#ffd2fa}
+.ancientTargetHunt{display:grid;gap:12px}
+.ancientHuntProgress,.ancientHuntPicker{display:grid;gap:9px;padding:14px;border:1px solid #586e64;border-radius:10px;background:linear-gradient(135deg,#21332c,#19231f)}
+.ancientHuntProgress progress{width:100%;accent-color:#9dd6a2}
+.ancientHuntPicker label{display:grid;gap:6px}
+.ancientHuntPicker input,.ancientHuntPicker select{width:100%;min-width:0}
+.ancientHuntPicker ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:7px;margin:0;padding:0;list-style:none}
+.ancientHuntPicker li{display:grid;gap:3px;padding:9px;background:#101c17;border-radius:6px}
