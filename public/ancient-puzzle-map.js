@@ -15,6 +15,8 @@ function stationPositions(floor,banks){
    const j=(seed>>>0)%(i+1);
    [slots[i],slots[j]]=[slots[j],slots[i]];
   }
+  if(bank.kind===14)return [8,12.5,17,8,12.5,17].map((x,i)=>({x,z:gateAt(room)+(i<3?4:8)}));
+  if(bank.kind===16)return [0,1,2,3,4,5,6,7].slice(0,bank.count).map((_,i)=>({x:i===0?9:i===bank.count-1?16:6+(i%3)*5,z:gateAt(room)+(i===0?10:i===bank.count-1?2:4+Math.floor(i/3)*3)}));
   return bank.kind===0?[{x:12.5,z:13}]:slots.slice(0,bank.count);
  });
 }
@@ -34,10 +36,10 @@ export function createPuzzleMap(canvas,name,en,interact){
  const jade=new T.MeshStandardMaterial({color:0x81eacf,emissive:0x218e78,emissiveIntensity:.65});
  const signGeometry=new T.PlaneGeometry(1,1);
  const stonework=new T.Group();scene.add(stonework);
- let doors=[],signs=[];
+ let doors=[],signs=[],plaques=[],readouts=[];
  function buildRooms(banks){
-  for(const sign of signs){sign.material.map.dispose();sign.material.dispose();}
-  stonework.clear();doors=[];signs=[];
+  for(const sign of [...signs,...plaques,...readouts.filter(Boolean)]){sign.material.map.dispose();sign.material.dispose();}
+  stonework.clear();doors=[];signs=[];plaques=[];readouts=[];
   const count=Math.max(1,banks.length),end=gateAt(count-1),length=24-end;
   const stone=0x554638,trim=0x8e7350;
   box(stonework,12.5,-.32,24-length/2,22,.64,length,0x534737);
@@ -50,11 +52,36 @@ export function createPuzzleMap(canvas,name,en,interact){
    box(stonework,12.5,4.3,z,4.2,1.4,.85,trim);
    const bank=banks[i];
    if(bank){
-    const pattern=bank.kind===1?bank.target.map(value=>['○','△','◇','✦'][value]):
-     bank.kind===0?['↑']:[4,6,7].includes(bank.kind)?[{4:'✦',6:'⌛',7:'◇ ◇'}[bank.kind]]:bank.target.map(index=>bank.symbols[index]);
-    const sign=badge(pattern.join([2,3,8].includes(bank.kind)?' › ':'   '),true);
+    const glyph=value=>bank.symbols[value];
+    let pattern;
+    if(bank.kind===1)pattern=bank.target.map(value=>['○','△','◇','✦'][value]).join('   ');
+    else if(bank.kind===5)pattern=glyph(bank.target[0]);
+    else if(bank.kind===14||bank.kind===17)pattern=bank.target.map(value=>value?glyph(value-1):'＿').join(' ');
+    else if(bank.kind===15||[2,3,8].includes(bank.kind))pattern=bank.target.map(glyph).join(' › ');
+    else if(bank.kind===13)pattern=['━',...bank.target.slice(1).map(value=>value?'╳':'═')].join(' ');
+    else if(bank.kind===11)pattern=bank.symbols.map((glyph,i)=>bank.target[i]?glyph:'·').join(' ');
+    else if(bank.kind===10||bank.kind===12){
+     const total=bank.target.reduce((a,b)=>a+b,0),left=(total+(bank.kind===10?bank.target[0]:0))/2;
+     pattern=left+'  ║  '+(total-left);
+    }
+    else if(bank.kind===9)pattern='☀  '+bank.target.map(i=>i+1).join(' · ')+'  ◇';
+    else pattern=({0:'↑',4:'✦',6:'⌛',7:'◇ ◇',9:'☀ → ◇',16:'Ⅰ → Ⅱ'})[bank.kind]||'';
+    const sign=badge(pattern,true);
     sign.position.set(12.5,3.35,z+1.1);sign.scale.set(4.5,.72,1);
+    const plaque=badge(bank.clue[en()?1:0],true,true);
+    plaque.position.set(12.5,2.38,z+1.05);plaque.scale.set(4.2,.68,1);
+    plaques.push(plaque);stonework.add(plaque);
+    if(bank.kind===5&&bank.target.length===2){
+     const side=badge(glyph(bank.target[1]),true);
+     side.position.set(5.5,2,z+.55);side.scale.set(1.1,.6,1);
+     plaques.push(side);stonework.add(side);
+    }
     signs.push(sign);stonework.add(sign);
+    if([6,9,10,11,12,15,16].includes(bank.kind)){
+     const readout=badge('',true);
+     readout.position.set(12.5,1.64,z+1.04);readout.scale.set(4.2,.65,1);
+     readouts[i]=readout;stonework.add(readout);
+    }
    }
    doors.push(box(stonework,12.5,1.85,z,4.1,3.7,.64,0x70604a));
    for(const x of [10.45,14.55]){
@@ -65,7 +92,7 @@ export function createPuzzleMap(canvas,name,en,interact){
   }
  }
  const stick={x:0,y:0};
- let nearby=-1,lastPlate=-1;
+ let nearby=-1,lastPlate=-1,clockOffset=0;
  let state=null,pos={x:50,z:80},yaw=0,pitch=0,height=eyeHeight,vy=0,frame=0,last=0,drag=null;
  const moveKeys={KeyW:'w',ArrowUp:'w',KeyS:'s',ArrowDown:'s',KeyA:'a',ArrowLeft:'a',KeyD:'d',ArrowRight:'d',ShiftLeft:'sprint',ShiftRight:'sprint'};
  function jump(){if(height<=eyeHeight+.01)vy=6.5}
@@ -93,9 +120,19 @@ export function createPuzzleMap(canvas,name,en,interact){
  });
  for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>drag=null);
  function tryInteract(){if(nearby>=0||state?.complete)interact(nearby);}
- function badge(name,fixed=false){
+ function badge(name,fixed=false,wrap=false){
   const label=document.createElement('canvas');label.width=256;label.height=48;
-  const ctx=label.getContext('2d');ctx.fillStyle='#122433';ctx.fillRect(0,0,256,48);ctx.fillStyle='#edfff5';ctx.font='bold 21px system-ui';ctx.textAlign='center';ctx.fillText(name,128,31,244);
+  const ctx=label.getContext('2d');ctx.fillStyle='#302719';ctx.fillRect(0,0,256,48);ctx.fillStyle='#fff0ce';ctx.font=(wrap?'12':'21')+'px system-ui';ctx.textAlign='center';
+  if(wrap){
+   const tokens=name.includes(' ')?name.split(/(?<= )/):Array.from(name);
+   const lines=[''];
+   for(const token of tokens){
+    const i=lines.length-1;
+    if(ctx.measureText(lines[i]+token).width>240)lines.push(token);
+    else lines[i]+=token;
+   }
+   lines.slice(0,3).forEach((line,i)=>ctx.fillText(line,128,15+i*13,244));
+  }else ctx.fillText(name,128,31,244);
   const texture=new T.CanvasTexture(label);
   if(fixed)return new T.Mesh(signGeometry,new T.MeshBasicMaterial({map:texture}));
   const sprite=new T.Sprite(new T.SpriteMaterial({map:texture}));
@@ -123,7 +160,13 @@ export function createPuzzleMap(canvas,name,en,interact){
     }else{
      part(0,.14,0,1.5,.28,1.1);
      part(0,.62,0,kind===2?.35:.75,.88,.62);
-     if(kind===6){
+     if(kind>=9){
+      const colors=[0xb3d6d9,0x508ca5,0x564767,0x927048,0x8a7663,0xc4a073,0xd4aa5f,0x837052,0xa58e65];
+      const tint=colors[kind-9];
+      if([10,12,14].includes(kind))part(0,1.08,0,1.1,.19,.78,tint);
+      station.mark=part(0,1.27,0,kind===9?1:.58,kind===16?.75:.45,kind===9?.1:.43,tint);
+      station.tint=tint;
+     }else if(kind===6){
       part(0,1.12,0,.75,.16,.75);
       station.mark=part(0,1.41,0,.34,.42,.34,0xffa248);
      }else if(kind===7){
@@ -148,10 +191,11 @@ export function createPuzzleMap(canvas,name,en,interact){
     stations.push(station);scene.add(station);
    }
   }
-  state=next;
+  state=next;clockOffset=next.serverTime-Date.now();
   doors.forEach((door,i)=>{
    const bank=next.banks?.[i];
    door.visible=!bank?.done;
+   if(readouts[i])readouts[i].visible=door.visible;
    if(signs[i])signs[i].visible=bank?.kind!==8||!next.values[bank.start]||bank.done;
   });
   for(let i=0;i<stations.length;i++){
@@ -160,12 +204,23 @@ export function createPuzzleMap(canvas,name,en,interact){
    const progress=next.values[bank.start]||0;
    const lit=bank.done||(kind===1?value===bank.target[local]:[4,6,7].includes(kind)?value===1:
     [2,3,8].includes(kind)&&bank.target.slice(0,progress).includes(local));
-   station.mark.material=lit?jade:material(kind===2?0x57402f:0x96754e);
+   station.mark.material=lit?jade:material(station.tint??(kind===2?0x57402f:0x96754e));
+   if(kind>=9&&kind<=13)station.mark.rotation.y=value*Math.PI/3;
+   if(kind===14||kind===17)station.mark.visible=!!value;
    if(kind===0)station.mark.rotation.x=lit?.55:-.55;
-   const label=kind===0?(en()?'Lever':'拉杆'):kind===4?String(local+1):
+   let label=kind===0?(en()?'Lever':'拉杆'):kind===4?String(local+1):
     kind===1?['○','△','◇','✦'][value]:kind===7?(bank.symbols[bank.target[local]]||'?'):bank.symbols[local];
-   const reading=kind===1?'#'+(local+1)+' · '+(en()?'Match':'对准')+' '+['○','△','◇','✦'][bank.target[local]]:
+   let reading=kind===1?'#'+(local+1)+' · '+(en()?'Match':'对准')+' '+['○','△','◇','✦'][bank.target[local]]:
     lit?'✓':kind===3?(en()?'Step here':'踩上石板'):'F';
+   if(kind>=9){
+    if(kind===9){label=String(local+1);reading=value?'→ '+(local+value>=bank.count?local+value===bank.count?'◇':'1':local+value+1):'☀ ×';}
+    if(kind===10||kind===12){label=String(bank.target[local]);reading=(kind===10?['←','↔','→']:['—','←','→'])[value];}
+    if(kind===11){label=bank.symbols[local];reading=value?bank.symbols[(local+value-1)%bank.count]:'—';}
+    if(kind===13){label=String(local+1);reading=['·','━','┃'][value];}
+    if(kind===14||kind===17){label=value?bank.symbols[value-1]:'＿';reading=kind===17&&next.held?(en()?'Held ':'手持 ')+bank.symbols[next.held-1]:'F';}
+    if(kind===15){label=bank.symbols[local];reading='F';}
+    if(kind===16){label=local===0?'Ⅰ':local===bank.count-1?'Ⅱ':'·';reading=local===0||local===bank.count-1?'F':'';}
+   }
    const caption=label+'\n'+reading;
    if(station.caption!==caption){
     station.caption=caption;
@@ -193,6 +248,39 @@ export function createPuzzleMap(canvas,name,en,interact){
    (side*Math.cos(yaw)-forward*Math.sin(yaw))*step,(-side*Math.sin(yaw)-forward*Math.cos(yaw))*step,blocked,()=>0);
   pos.x=next.x/scale;pos.z=next.z/scale;
   const active=state.banks?.findIndex(bank=>!bank.done);
+  const currentBank=state.banks?.[active],readout=readouts[active];
+  if(readout&&currentBank){
+   const {start,count,kind,target,symbols}=currentBank;
+   const values=state.values.slice(start,start+count);
+   const seconds=Math.max(0,Math.ceil(((state.deadline||0)-Date.now()-clockOffset)/1000));
+   let message='';
+   if(kind===6||kind===16)message=state.deadline?seconds+' s':'⌛';
+   if(kind===9){
+    const path=[0];
+    while(path.at(-1)<count&&values[path.at(-1)]){
+     const next=(path.at(-1)+values[path.at(-1)])%(count+1);
+     if(path.includes(next)){message='↻';break;}
+     path.push(next);
+    }
+    message=path.map(i=>i===count?'◇':i+1).join(' → ')+(message?' '+message:'');
+   }
+   if(kind===10||kind===12){
+    const left=values.reduce((sum,v,i)=>sum+(kind===10?v===0?target[i]:v===1?target[i]/2:0:v===1?target[i]:0),0);
+    const right=kind===10?target.reduce((a,b)=>a+b,0)-left:values.reduce((sum,v,i)=>sum+(v===2?target[i]:0),0);
+    message=left+'  ║  '+right;
+   }
+   if(kind===11){
+    const shadow=new Set(values.flatMap((v,i)=>v?[(i+v-1)%count]:[]));
+    message=symbols.map((symbol,i)=>shadow.has(i)?symbol:'·').join(' ');
+   }
+   if(kind===15)message=target.map((i,j)=>j<values[0]?'✓':symbols[i]).join(' ');
+   if(readout.caption!==message){
+    readout.caption=message;
+    const texture=readout.material.map,ctx=texture.image.getContext('2d');
+    ctx.fillStyle='#302719';ctx.fillRect(0,0,256,48);ctx.fillStyle='#fff0ce';ctx.font='bold 19px system-ui';ctx.textAlign='center';
+    ctx.fillText(message,128,31,244);texture.needsUpdate=true;
+   }
+  }
   let distance=2,plate=-1;nearby=-1;
   for(let i=0;i<stations.length;i++){
    const station=stations[i],gap=Math.hypot(next.x-station.position.x,next.z-station.position.z);
@@ -203,6 +291,11 @@ export function createPuzzleMap(canvas,name,en,interact){
   }
   if(plate>=0&&plate!==lastPlate)interact(plate);
   lastPlate=plate;
+  const bank=state.banks?.[active];
+  if(bank?.kind===15){
+   const phase=Math.floor((Date.now()+clockOffset)/950)%bank.count;
+   for(let i=0;i<bank.count;i++)stations[bank.start+i].mark.material=i===phase?jade:material(stations[bank.start+i].tint);
+  }
   vy-=19*dt;height=Math.max(eyeHeight,height+vy*dt);if(height===eyeHeight)vy=0;
   camera.position.set(pos.x*scale,height,pos.z*scale);camera.rotation.set(pitch,yaw,0,'YXZ');
   for(const actor of players.values())actor.position.lerp(actor.target,Math.min(1,dt*6));
@@ -216,7 +309,7 @@ export function createPuzzleMap(canvas,name,en,interact){
  return {position:()=>({...pos}),sync,jump,interact:tryInteract,stick(x,y){stick.x=x;stick.y=y},dispose(){
   cancelAnimationFrame(frame);if(locked())document.exitPointerLock();document.removeEventListener('mousemove',mouseMove);window.removeEventListener('blur',release);
   for(const actor of [...players.values(),...stations])clearPlayer(actor);
-  for(const sign of signs){sign.material.map.dispose();sign.material.dispose();}
+  for(const sign of [...signs,...plaques,...readouts.filter(Boolean)]){sign.material.map.dispose();sign.material.dispose();}
   signGeometry.dispose();geometry.dispose();jade.dispose();for(const mat of materials.values())mat.dispose();renderer.dispose();
  }};
 }

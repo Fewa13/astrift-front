@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import assert from 'node:assert/strict';
-import {PUZZLE_FLOORS,newPuzzleState,puzzleView,puzzleOperate,puzzleReward} from '../src/ancient-puzzle.ts';
+import {PUZZLE_FLOORS,newPuzzleState,puzzleView,puzzleOperate,puzzleReward,TILE_NEIGHBORS} from '../src/ancient-puzzle.ts';
 import {GEAR,GEAR_AFFIXES,gearHuntEligible,gearHuntCounts,gearRerollQuote,rollGearItem} from '../public/ancient-gear.js';
 
 let state=newPuzzleState(),now=20000;
@@ -26,6 +26,55 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
     }
    }
    if(state.floor===floor)assert(puzzleView(state).banks.find(item=>item.start===bank.start).done);
+   continue;
+  }
+  if(bank.kind>=9){
+   const press=i=>{const result=activate(bank.start+i);assert.notEqual(result.state,state);state=result.state;};
+   if(bank.kind===9){
+    press(0);press(0);for(let i=2;i<bank.count;i++)press(i);
+   }else if(bank.kind===10){
+    for(let i=1;i<bank.count;i++)press(i);
+   }else if(bank.kind===11){
+    press(0);press(0);for(let i=2;i<bank.count;i++)if(bank.target[i])press(i);
+   }else if(bank.kind===12){
+    const total=bank.target.reduce((a,b)=>a+b,0);
+    let split=0;
+    for(let mask=1;mask<1<<bank.count;mask++){
+     if(bank.target.reduce((sum,v,i)=>sum+((mask>>i)&1)*v,0)*2===total){split=mask;break;}
+    }
+    assert(split);
+    for(let i=0;i<bank.count;i++){press(i);if((split>>i)&1)press(i);}
+   }else if(bank.kind===13){
+    let orientation=1;
+    for(let i=0;i<bank.count;i++){if(i&&bank.target[i])orientation=3-orientation;for(let j=0;j<orientation;j++)press(i);}
+   }else if(bank.kind===14){
+    const queue=[{tiles:bank.initial,steps:[]}],seen=new Set([bank.initial.join('')]);
+    for(const {tiles,steps} of queue){
+     if(tiles.every((v,i)=>v===bank.target[i])){steps.forEach(press);break;}
+     const gap=tiles.indexOf(0);
+     for(const i of TILE_NEIGHBORS[gap]){
+      const moved=tiles.slice();
+      [moved[gap],moved[i]]=[moved[i],moved[gap]];
+      const key=moved.join('');
+      if(!seen.has(key)){seen.add(key);queue.push({tiles:moved,steps:[...steps,i]});}
+     }
+    }
+   }else if(bank.kind===15){
+    for(const i of bank.target){now=(Math.floor(now/(950*bank.count))*bank.count+bank.count+i)*950+475;press(i);}
+   }else if(bank.kind===16){
+    press(0);now+=6500;press(bank.count-1);
+    assert.equal(state.values[bank.start],0);
+    press(0);now+=3200;press(bank.count-1);
+   }else{
+    const current=bank.initial.slice();
+    for(let i=0;i<bank.count;i++){
+     if(current[i]===bank.target[i])continue;
+     const j=current.indexOf(bank.target[i]);
+     press(j);press(i);press(j);
+     [current[i],current[j]]=[current[j],current[i]];
+    }
+   }
+   if(state.floor===floor)assert(puzzleView(state).banks.find(item=>item.start===bank.start).done,'chamber '+bank.kind+' on floor '+floor);
    continue;
   }
   let steps;
