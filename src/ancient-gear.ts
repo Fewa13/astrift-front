@@ -181,7 +181,11 @@ export function ancientBaseHealth(level:number){
  // Preserve the early-game anchors; late levels must grant visible durability.
  return Math.round(650000*(l/100)**3);
 }
-export function ancientProfileHealth(p:AncientProfile){return ancientBaseHealth(p.level)+ancientGearStats(p).health}
+export function puzzleTitleBonus(p:{puzzleTitle?:{rank:number;expires:number;worn:boolean}},now=Date.now()){
+ const title=p.puzzleTitle;
+ return title?.worn&&title.expires>now?[0,.15,.10,.05][title.rank]||0:0;
+}
+export function ancientProfileHealth(p:AncientProfile){return Math.floor((ancientBaseHealth(p.level)+ancientGearStats(p).health)*(1+puzzleTitleBonus(p)))}
 export function ancientLevelDamage(level:number){return 1.25**Math.min(300,Math.max(0,level-1))}
 export function ancientBaseAttack(level:number){
  const l=Math.max(1,Number.isFinite(level)?level:1),anchors=[[1,25],[5,125],[10,400],[20,800],[30,2500],[40,6000],[50,10000],[60,20000],[70,40000],[80,60000],[90,90000],[100,130000]];
@@ -191,7 +195,7 @@ export function ancientBaseAttack(level:number){
  // Keep existing encounters through Lv150 unchanged, then widen level gaps.
  return Math.round(l<=150?130000*(l/100)**3:438750*(l/150)**4.5);
 }
-export function ancientSkillDamage(p:AncientProfile){const s=ancientGearStats(p);return Math.floor(ancientBaseAttack(p.level)*(1+s.bonus)*(1+s.skillBonus)*(1+s.jadeAttack))}
+export function ancientSkillDamage(p:AncientProfile){const s=ancientGearStats(p);return Math.floor(ancientBaseAttack(p.level)*(1+s.bonus)*(1+s.skillBonus)*(1+s.jadeAttack)*(1+puzzleTitleBonus(p)))}
 // Upgrade legacy copies in place through definitions, without replacing IDs,
 // affixes, locks, skins, or inventory ownership. Fixed melee bonuses stay separate.
 for(const d of Object.values(GEAR)){
@@ -213,7 +217,7 @@ export function salvageAncientGear(p:AncientProfile,id:string){
  if(!Number.isSafeInteger((p.materials[key]||0)+amount))return '数量已达上限';
  p.gear=p.gear!.filter(i=>i.id!==id);p.materials[key]=(p.materials[key]||0)+amount;return null;
 }
-export function ancientMeleeDamage(p:AncientProfile){const d=equippedGear(p,'weapon');if(!d)return 0;const s=ancientGearStats(p);return Math.floor((ancientBaseAttack(p.level)+(d.damage||0))*(1+s.bonus)*(1+s.jadeAttack))}
+export function ancientMeleeDamage(p:AncientProfile){const d=equippedGear(p,'weapon');if(!d)return 0;const s=ancientGearStats(p);return Math.floor((ancientBaseAttack(p.level)+(d.damage||0))*(1+s.bonus)*(1+s.jadeAttack)*(1+puzzleTitleBonus(p)))}
 export function ancientMeleeInterval(p:AncientProfile){return (equippedGear(p,'weapon')?.interval||600)*(1-ancientGearStats(p).haste)}
 export function equipAncientGear(p:AncientProfile,slot:string,id:string){if(!Object.hasOwn(GEAR_SLOTS,slot))return '装备槽不存在';if(!id){p.gearEquipped??={};delete p.gearEquipped[slot as GearSlot];return null}const item=p.gear?.find(i=>i.id===id),d=item&&gearDefinition(item.key);if(!d||d.slot!==slot)return '装备不存在';if(p.level<GEAR_LEVELS[d.quality-1])return '玩家等级不足';p.gearEquipped??={};p.gearEquipped[slot as GearSlot]=id;return null}
 // Weights are conditional on an equipment drop; map progression, never player level, sets the tier.

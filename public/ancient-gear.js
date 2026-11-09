@@ -381,8 +381,12 @@ function ancientBaseHealth(level) {
   }
   return Math.round(65e4 * (l / 100) ** 3);
 }
+function puzzleTitleBonus(p, now = Date.now()) {
+  const title = p.puzzleTitle;
+  return title?.worn && title.expires > now ? [0, 0.15, 0.1, 0.05][title.rank] || 0 : 0;
+}
 function ancientProfileHealth(p) {
-  return ancientBaseHealth(p.level) + ancientGearStats(p).health;
+  return Math.floor((ancientBaseHealth(p.level) + ancientGearStats(p).health) * (1 + puzzleTitleBonus(p)));
 }
 function ancientLevelDamage(level) {
   return 1.25 ** Math.min(300, Math.max(0, level - 1));
@@ -397,7 +401,7 @@ function ancientBaseAttack(level) {
 }
 function ancientSkillDamage(p) {
   const s = ancientGearStats(p);
-  return Math.floor(ancientBaseAttack(p.level) * (1 + s.bonus) * (1 + s.skillBonus) * (1 + s.jadeAttack));
+  return Math.floor(ancientBaseAttack(p.level) * (1 + s.bonus) * (1 + s.skillBonus) * (1 + s.jadeAttack) * (1 + puzzleTitleBonus(p)));
 }
 for (const d of Object.values(GEAR)) {
   if (d.quality >= 7) continue;
@@ -426,7 +430,7 @@ function ancientMeleeDamage(p) {
   const d = equippedGear(p, "weapon");
   if (!d) return 0;
   const s = ancientGearStats(p);
-  return Math.floor((ancientBaseAttack(p.level) + (d.damage || 0)) * (1 + s.bonus) * (1 + s.jadeAttack));
+  return Math.floor((ancientBaseAttack(p.level) + (d.damage || 0)) * (1 + s.bonus) * (1 + s.jadeAttack) * (1 + puzzleTitleBonus(p)));
 }
 function ancientMeleeInterval(p) {
   return (equippedGear(p, "weapon")?.interval || 600) * (1 - ancientGearStats(p).haste);
@@ -575,6 +579,7 @@ export {
   grantGearBonusAffix,
   growthComboText,
   growthTier,
+  puzzleTitleBonus,
   rollGearItem,
   salvageAncientGear
 };

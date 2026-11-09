@@ -13,7 +13,7 @@ import { ancientMobDamage } from "./ancient-mob-stats.js";
 import { ancientBossDamage } from "./ancient-boss-stats.js";
 import { CITY_KINDS, cityBlocked, cityLineClear, cityMonsterDamage, cityHeight, citySurface } from "./ancient-city.js";
 import { forestBlocked, forestLineClear, forestMonsterDamage, FOREST_KINDS, forestSurface } from "./ancient-forest.js";
-import { ensureAncientGear, ancientBaseHealth } from "./ancient-gear.js";
+import { ensureAncientGear, ancientBaseHealth, puzzleTitleBonus } from "./ancient-gear.js";
 import { forestHeight as forestHeight2, FOREST_TREES, FOREST_ALTARS, FOREST_KINDS as FOREST_KINDS2, forestBlocked as forestBlocked2, forestInside } from "./ancient-forest.js";
 import { CITY_KINDS as CITY_KINDS2, cityHeight as cityHeight2, citySurface as citySurface2 } from "./ancient-city.js";
 const ANCIENT_KINDS = { ...DUNES_KINDS, ...SKYREACH_KINDS, ...FROSTCOURT_KINDS, ...STARFALL_KINDS, ...BESTIARY, ...FOREST_KINDS, ...CITY_KINDS, ...BLIGHT_KINDS, ...SANCTUM_KINDS };
@@ -191,7 +191,7 @@ function xpNeeded(level) {
   return Math.ceil(reward(l) * kills);
 }
 function gainXP(p, amount, applyBoost = true) {
-  const awarded = applyBoost && (p.boosts?.experience || 0) > Date.now() ? Math.floor(amount * 1.5) : amount;
+  const now = Date.now(), boost = applyBoost && (p.boosts?.experience || 0) > now ? 1.5 : 1, title = puzzleTitleBonus(p, now), awarded = boost === 1 && !title ? amount : Math.floor(amount * boost * (1 + title));
   p.xp += awarded;
   while (p.xp >= xpNeeded(p.level)) {
     p.xp -= xpNeeded(p.level);
