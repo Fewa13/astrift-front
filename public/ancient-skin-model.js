@@ -5,6 +5,7 @@ const templates=new Map();
 const skinTone=0xc08d69;
 const shapes={box:new T.BoxGeometry(),head:new T.SphereGeometry(.5,9,6),gem:new T.OctahedronGeometry(.5),ring:new T.TorusGeometry(.5,.055,5,20)};
 const material=new T.MeshStandardMaterial({vertexColors:true,roughness:.86});
+const luminousMaterial=new T.MeshBasicMaterial({vertexColors:true,toneMapped:false});
 function makeModel(skin){
  const root=new T.Group(),body=new T.Group();body.name='body';root.add(body);
  const batch=new Map(),matrix=new T.Object3D();
@@ -96,10 +97,87 @@ function makeModel(skin){
   b('box',accent,0,1.1,-.195,.36,.23,.085);
   if(crest)for(const x of [-.31,.31])b('box',accent,x,1.5,.11,.23,.25,.39,x);
  }
+ if(skin.rarity===5){
+  const light=new T.Group();
+  light.name='skin-inlay';body.add(light);
+  const glint=(shape,x,y,z,w,h,d,angle=0)=>part(light,shape,accent,x,y,z,w,h,d,angle);
+  const pale=style==='ivory'?0xf0e0bc:style==='void'?0x534266:0x73869e;
+  const dark=style==='ivory'?0x62565d:style==='void'?0x251a37:0x253448;
+  // Layered chest, segmented cuffs and boots remain attached to their animated joints.
+  for(let i=0;i<5;i++){
+   const y=1.44-i*.102,width=.47-i*.036;
+   b('box',dark,0,y,-.186,width+.035,.112,.093);
+   b('box',pale,0,y+.012,-.23,width,.058,.045);
+   for(const side of [-1,1])glint('box',side*(width/2-.025),y+.01,-.256,.03,.049,.014,side*.26);
+  }
+  glint('gem',0,1.31,-.293,.165,.23,.085);
+  for(const [i,side] of [-1,1].entries()){
+   const arm=root.getObjectByName('arm'+i),knee=root.getObjectByName('knee'+i);
+   for(let layer=0;layer<3;layer++){
+    part(arm,'box',layer===1?accent:pale,side*layer*.025,.025-layer*.065,.015,.29-layer*.025,.092,.37-layer*.026,side*.24);
+    part(knee,'box',layer===1?accent:pale,0,-.08-layer*.086,-.109,.176-layer*.012,.07,.064);
+   }
+   part(arm,'box',pale,0,-.27,-.05,.212,.18,.23);
+   part(arm,'box',accent,0,-.285,-.172,.14,.035,.016,side*.25);
+   part(knee,'gem',accent,0,.035,-.159,.18,.19,.09);
+  }
+  if(style==='orbit'){
+   b('ring',dark,0,1.85,.405,1.65,1.65,1.4);
+   b('ring',pale,0,1.85,.42,1.44,1.44,.87);
+   b('ring',pale,0,1.85,.45,1.21,1.21,.66);
+   for(let i=0;i<12;i++){
+    const angle=i*Math.PI/6,x=Math.cos(angle)*.72,y=1.85+Math.sin(angle)*.72;
+    b('gem',dark,x,y,.415,.16,.27,.13,angle-Math.PI/2);
+    glint('gem',x,y,.49,.079,.13,.065,angle-Math.PI/2);
+   }
+   for(const side of [-1,1]){
+    b('gem',pale,side*.45,1.37,.18,.17,.52,.17,side*.64);
+    b('gem',dark,side*.35,.93,.3,.19,.65,.11,side*.19);
+    glint('box',side*.26,1.07,.304,.036,.65,.032,side*.19);
+   }
+   glint('gem',0,2.25,.48,.13,.23,.12);
+  }else if(style==='ivory'){
+   for(const side of [-1,1]){
+    b('box',pale,side*.24,1.73,.19,.1,.66,.25,side*.48);
+    for(let layer=0;layer<5;layer++){
+     const x=side*(.32+.105*layer),y=1.39+.115*layer;
+     b('gem',dark,x,y,.32,.16,.92-layer*.045,.13,side*(.42+.14*layer));
+     b('gem',pale,x,y+.026,.34,.105,.83-layer*.045,.13,side*(.42+.14*layer));
+     glint('gem',x,y+.03,.405,.042,.52-layer*.035,.032,side*(.42+.14*layer));
+    }
+    b('gem',accent,side*.23,2.08,.04,.116,.36,.18,side*.4);
+    b('box',pale,side*.18,.94,.24,.25,1.05,.08,side*.08);
+    b('box',accent,side*.3,.94,.294,.038,1.05,.025,side*.08);
+   }
+   glint('gem',0,2.16,-.09,.12,.33,.12);
+  }else{
+   for(const side of [-1,1]){
+    for(let i=0;i<5;i++){
+     const x=side*(.32+i*.105),y=1.26+i*.185;
+     b('gem',dark,x,y,.33,.2,.82-i*.07,.2,side*(.43+i*.14));
+     b('gem',pale,x+side*.055,y+.07,.39,.105,.55-i*.03,.135,side*(.43+i*.14));
+     glint('gem',x+side*.055,y+.07,.457,.04,.34-i*.018,.035,side*(.43+i*.14));
+    }
+    b('gem',pale,side*.19,2.04,.12,.16,.49,.16,side*.45);
+    b('gem',dark,side*.21,.77,.31,.26,.94,.11,side*.23);
+    glint('box',side*.25,.83,.37,.028,.55,.016,side*.23);
+   }
+   glint('ring',0,1.67,.453,.46,.46,.44);
+  }
+  const insignia={
+   warrior:['gem',.3,.19,0],summoner:['ring',.32,.32,0],ice:['gem',.2,.41,0],lightning:['box',.066,.42,.53],
+   curse:['ring',.38,.25,.22],swordsman:['box',.062,.44,-.7],shadowblade:['gem',.28,.16,.45],stonewright:['box',.21,.21,.78],
+  }[profession];
+  if(insignia){
+   const [shape,width,height,angle]=insignia;
+   b(shape,dark,0,1.58,.33,width+.06,height+.06,.12,angle);
+   glint(shape,0,1.58,.408,width,height,.075,angle);
+  }
+ }
  for(const [joint,data]of batch){
   const geometry=new T.BufferGeometry();
   for(const [key,values]of Object.entries(data))geometry.setAttribute(key,new T.Float32BufferAttribute(values,3));
-  geometry.computeBoundingSphere();joint.add(new T.Mesh(geometry,material));
+  geometry.computeBoundingSphere();joint.add(new T.Mesh(geometry,joint.name==='skin-inlay'?luminousMaterial:material));
  }
  return root;
 }
@@ -110,6 +188,6 @@ export function createAncientSkinModel(id,profession){
  if(!templates.has(key))templates.set(key,makeModel(skin));
  const root=templates.get(key).clone(true);
  const joints=prefix=>[0,1].map(i=>root.getObjectByName(prefix+i));
- root.userData={height:2.06,body:root.getObjectByName('body'),arms:joints('arm'),legs:joints('leg'),knees:joints('knee')};
+ root.userData={height:skin.rarity===5?2.67:2.06,body:root.getObjectByName('body'),arms:joints('arm'),legs:joints('leg'),knees:joints('knee')};
  return root;
 }
