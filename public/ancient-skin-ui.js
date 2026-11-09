@@ -1,14 +1,15 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {ANCIENT_SKINS,SKIN_COLORS,SKIN_RARITIES,DEFAULT_SKIN,ownedAncientSkins,equippedAncientSkin} from './ancient-skins.js';
+import {ancientProfessionSkins,SKIN_COLORS,SKIN_RARITIES,DEFAULT_SKIN,ownedAncientSkins,equippedAncientSkin} from './ancient-skins.js';
 import {createAncientSkinModel} from './ancient-skin-model.js';
 
 export function createAncientSkinUI(){
  let disposePreview=()=>{},selected='';
  const el=(parent,tag,value='')=>{const node=document.createElement(tag);node.textContent=value;parent.append(node);return node;};
- function render(parent,{profile={},english=true,action,gallery=false}={}){
+ function render(parent,{profile={},english=true,action,gallery=false,profession=profile.profession}={}){
   disposePreview();
   const lang=english?1:0,own=new Set(ownedAncientSkins(profile)),equipped=equippedAncientSkin(profile);
+  const skins=ancientProfessionSkins(profession);
   selected||=equipped||DEFAULT_SKIN;
   el(parent,'h2',english?'Skins':'皮肤');
   const layout=el(parent,'div');layout.className='ancientSkinLayout';
@@ -59,18 +60,18 @@ export function createAncientSkinUI(){
     equip.type='button';equip.disabled=worn||!unlocked;equip.onclick=()=>void action('equipSkin',{id:skin.id});
    }
    if(actor)scene.remove(actor);
-   actor=createAncientSkinModel(skin.id);scene.add(actor);draw();
+   actor=createAncientSkinModel(skin.id,profession);scene.add(actor);draw();
   }
   for(const [rarity,labels] of SKIN_RARITIES.entries()){
    const group=el(list,'section');group.style.setProperty('--skin-color',SKIN_COLORS[rarity]);
    el(group,'h3',labels[lang]);
-   for(const skin of ANCIENT_SKINS.filter(item=>item.rarity===rarity)){
+   for(const skin of skins.filter(item=>item.rarity===rarity)){
     const button=el(group,'button',english?skin.en:skin.zh);button.type='button';
     if(!gallery)el(button,'small',skin.id===equipped?(english?'Equipped':'已装备'):own.has(skin.id)?'✓':'🔒');
     button.onclick=()=>pick(skin);buttons.push([button,skin]);
    }
   }
-  pick(ANCIENT_SKINS.find(skin=>skin.id===selected)||ANCIENT_SKINS[0]);
+  pick(skins.find(skin=>skin.id===selected)||skins[0]);
  }
  return {render,dispose(){disposePreview();}};
 }

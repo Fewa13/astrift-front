@@ -24,11 +24,33 @@ const designs=[
 
 export const ANCIENT_SKINS=designs.map(([id,zh,en,rarity,cloth,accent,boots,style])=>({id,zh,en,rarity,cloth,accent,boots,style}));
 const towerRewards=['reed','briar','sun','moon','star'];
-type SkinProfile={ancientSkin?:string;ancientSkins?:string[];tower?:{best:number}};
+type SkinProfile={profession?:string;ancientSkin?:string;ancientSkinByJob?:Record<string,string>;ancientSkins?:string[];tower?:{best:number}};
 export function ownedAncientSkins(profile:SkinProfile):string[]{
  const unlocked=new Set([DEFAULT_SKIN,...(profile.ancientSkins||[]),...towerRewards.filter((_,i)=>(profile.tower?.best||0)>=(i+1)*20)]);
  return ANCIENT_SKINS.filter(skin=>unlocked.has(skin.id)).map(skin=>skin.id);
 }
 export function equippedAncientSkin(profile:SkinProfile){
- return profile.ancientSkin&&ownedAncientSkins(profile).includes(profile.ancientSkin)?profile.ancientSkin:DEFAULT_SKIN;
+ const id=profile.ancientSkinByJob?.[profile.profession||'adventurer']||profile.ancientSkin;
+ return id&&ownedAncientSkins(profile).includes(id)?id:DEFAULT_SKIN;
+}
+
+export const SKIN_PROFESSIONS={
+ warrior:{zh:'战士',en:'Warrior',cloth:0x77463b,accent:0xdfa773},
+ summoner:{zh:'召唤师',en:'Summoner',cloth:0x45715e,accent:0x9ee2a3},
+ ice:{zh:'冰雪法师',en:'Frost Mage',cloth:0x447391,accent:0xb8efff},
+ lightning:{zh:'雷电法师',en:'Lightning Mage',cloth:0x493e83,accent:0xffdf78},
+ curse:{zh:'诅咒法师',en:'Curse Mage',cloth:0x563456,accent:0xef90c8},
+ swordsman:{zh:'剑术师',en:'Swordmaster',cloth:0x36675a,accent:0xa5ead0},
+ shadowblade:{zh:'影刃行者',en:'Shadowblade',cloth:0x373948,accent:0xab9fe0},
+ stonewright:{zh:'岩铸师',en:'Stonewright',cloth:0x795b3a,accent:0xffc183},
+};
+export function ancientProfessionSkins(profession?:string){
+ const job=profession&&Object.hasOwn(SKIN_PROFESSIONS,profession)?profession as keyof typeof SKIN_PROFESSIONS:undefined;
+ const theme=job&&SKIN_PROFESSIONS[job];
+ if(!theme)return ANCIENT_SKINS.map(skin=>({...skin,profession:'adventurer'}));
+ return ANCIENT_SKINS.map(skin=>({...skin,profession:job,
+  zh:theme.zh+' · '+(skin.rarity?skin.zh:'学徒服'),
+  en:theme.en+' · '+(skin.rarity?skin.en:'Apprentice'),
+  cloth:theme.cloth,accent:skin.rarity>=2?skin.accent:theme.accent,
+ }));
 }

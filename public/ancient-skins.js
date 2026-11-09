@@ -27,13 +27,39 @@ function ownedAncientSkins(profile) {
   return ANCIENT_SKINS.filter((skin) => unlocked.has(skin.id)).map((skin) => skin.id);
 }
 function equippedAncientSkin(profile) {
-  return profile.ancientSkin && ownedAncientSkins(profile).includes(profile.ancientSkin) ? profile.ancientSkin : DEFAULT_SKIN;
+  const id = profile.ancientSkinByJob?.[profile.profession || "adventurer"] || profile.ancientSkin;
+  return id && ownedAncientSkins(profile).includes(id) ? id : DEFAULT_SKIN;
+}
+const SKIN_PROFESSIONS = {
+  warrior: { zh: "\u6218\u58EB", en: "Warrior", cloth: 7816763, accent: 14657395 },
+  summoner: { zh: "\u53EC\u5524\u5E08", en: "Summoner", cloth: 4551006, accent: 10412707 },
+  ice: { zh: "\u51B0\u96EA\u6CD5\u5E08", en: "Frost Mage", cloth: 4486033, accent: 12120063 },
+  lightning: { zh: "\u96F7\u7535\u6CD5\u5E08", en: "Lightning Mage", cloth: 4800131, accent: 16768888 },
+  curse: { zh: "\u8BC5\u5492\u6CD5\u5E08", en: "Curse Mage", cloth: 5649494, accent: 15700168 },
+  swordsman: { zh: "\u5251\u672F\u5E08", en: "Swordmaster", cloth: 3565402, accent: 10873552 },
+  shadowblade: { zh: "\u5F71\u5203\u884C\u8005", en: "Shadowblade", cloth: 3619144, accent: 11247584 },
+  stonewright: { zh: "\u5CA9\u94F8\u5E08", en: "Stonewright", cloth: 7953210, accent: 16761219 }
+};
+function ancientProfessionSkins(profession) {
+  const job = profession && Object.hasOwn(SKIN_PROFESSIONS, profession) ? profession : void 0;
+  const theme = job && SKIN_PROFESSIONS[job];
+  if (!theme) return ANCIENT_SKINS.map((skin) => ({ ...skin, profession: "adventurer" }));
+  return ANCIENT_SKINS.map((skin) => ({
+    ...skin,
+    profession: job,
+    zh: theme.zh + " \xB7 " + (skin.rarity ? skin.zh : "\u5B66\u5F92\u670D"),
+    en: theme.en + " \xB7 " + (skin.rarity ? skin.en : "Apprentice"),
+    cloth: theme.cloth,
+    accent: skin.rarity >= 2 ? skin.accent : theme.accent
+  }));
 }
 export {
   ANCIENT_SKINS,
   DEFAULT_SKIN,
   SKIN_COLORS,
+  SKIN_PROFESSIONS,
   SKIN_RARITIES,
+  ancientProfessionSkins,
   equippedAncientSkin,
   ownedAncientSkins
 };

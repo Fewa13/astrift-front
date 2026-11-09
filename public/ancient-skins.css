@@ -17,3 +17,5 @@
 .skinGallery header{display:flex;align-items:center;justify-content:space-between}
 .skinGallery header button{background:#22362e;color:#e7eee7;border:1px solid #678074;border-radius:7px;padding:8px 10px}
 @media(max-width:520px){.ancientSkinLayout{grid-template-columns:minmax(100px,.85fr) minmax(0,1.15fr);gap:7px}.ancientSkinList button{padding:6px;font-size:.78rem}.ancientSkinList{max-height:350px}}
+
+.skinGallery select{margin-top:14px;padding:7px 10px;background:#22362e;color:#e7eee7;border:1px solid #678074;border-radius:7px}

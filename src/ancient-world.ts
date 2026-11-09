@@ -416,7 +416,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
   else if(action==='equipSkin'){
    const id=String(data.id||'');
    if(!ownedAncientSkins(p).includes(id))return fail('尚未获得该皮肤 / Skin not owned');
-   p.ancientSkin=id;
+   (p.ancientSkinByJob??={})[p.profession||'adventurer']=id;
   }
   else if(action==='equipGear'){const error=equipAncientGear(p,String(data.slot||''),String(data.id||''));if(error)return fail(error);this.save(name,p)}
   else if(action==='craftPurification'){if(!p.purificationUnlocked)return fail('尚未学会净化');if((p.materials.verdictShard||0)<1||(p.materials.core||0)<30)return fail('合成材料不足');const key='supply:purity';if((p.materials[key]||0)>=999999)return fail('数量已达上限');p.materials.verdictShard--;p.materials.core-=30;p.materials[key]=(p.materials[key]||0)+1;this.save(name,p)}

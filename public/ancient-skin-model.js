@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {ANCIENT_SKINS} from './ancient-skins.js';
+import {ancientProfessionSkins} from './ancient-skins.js';
 const templates=new Map();
 const skinTone=0xc08d69;
 const shapes={box:new T.BoxGeometry(),head:new T.SphereGeometry(.5,9,6),gem:new T.OctahedronGeometry(.5),ring:new T.TorusGeometry(.5,.055,5,20)};
@@ -64,6 +64,38 @@ function makeModel(skin){
  }
  if(style==='scarf')b('box',accent,.33,1.39,.2,.15,.5,.065,.72);
  if(style==='orbit')for(const side of [-1,1])b('gem',accent,side*.51,1.93,.22,.16,.29,.16);
+ const profession=skin.profession,crest=skin.rarity>=3;
+ const silhouette={warrior:1.15,summoner:1.03,ice:.93,lightning:.98,curse:.91,swordsman:1,shadowblade:.89,stonewright:1.22};
+ body.scale.x=silhouette[profession]||1;
+ if(skin.rarity&&['summoner','ice','lightning','curse'].includes(profession)){
+  b('box',cloth,0,.88,.11,.48,.48,.31);
+  b('box',accent,0,.67,.26,.48,.067,.033);
+ }
+ if(profession==='warrior'){
+  b('box',accent,0,1.34,-.188,.48,.22,.09);
+  if(crest)b('gem',accent,0,1.37,-.27,.22,.24,.13);
+ }else if(profession==='summoner'){
+  b('gem',accent,0,1.28,-.23,.14,.24,.13);
+  if(crest)for(const x of [-.49,.49])b('gem',accent,x,1.64,.1,.16,.29,.16);
+ }else if(profession==='ice'){
+  for(const x of [-.16,.16])b('gem',accent,x,1.42,-.2,.12,.22,.11);
+  if(crest)b('gem',accent,0,2.04,.055,.19,.34,.16);
+ }else if(profession==='lightning'){
+  for(const [x,y,angle]of [[-.07,1.35,-.45],[.04,1.2,.7],[-.01,1.06,-.5]])b('box',accent,x,y,-.2,.053,.21,.035,angle);
+  if(crest)for(const x of [-.45,.45])b('gem',accent,x,1.8,.13,.11,.34,.13,x);
+ }else if(profession==='curse'){
+  b('ring',accent,0,1.28,-.21,.26,.26,.15);
+  if(crest)b('gem',accent,0,1.3,-.23,.11,.22,.13);
+ }else if(profession==='swordsman'){
+  b('box',accent,.16,1.17,.23,.085,.82,.08,-.47);
+  if(crest)b('box',accent,-.16,1.17,.25,.085,.82,.08,.47);
+ }else if(profession==='shadowblade'){
+  b('box',cloth,0,1.68,-.177,.31,.115,.09);
+  if(crest)for(const x of [-.19,.19])b('gem',accent,x,1.02,.24,.12,.59,.12,x);
+ }else if(profession==='stonewright'){
+  b('box',accent,0,1.1,-.195,.36,.23,.085);
+  if(crest)for(const x of [-.31,.31])b('box',accent,x,1.5,.11,.23,.25,.39,x);
+ }
  for(const [joint,data]of batch){
   const geometry=new T.BufferGeometry();
   for(const [key,values]of Object.entries(data))geometry.setAttribute(key,new T.Float32BufferAttribute(values,3));
@@ -71,10 +103,12 @@ function makeModel(skin){
  }
  return root;
 }
-export function createAncientSkinModel(id){
- const skin=ANCIENT_SKINS.find(item=>item.id===id)||ANCIENT_SKINS[0];
- if(!templates.has(skin.id))templates.set(skin.id,makeModel(skin));
- const root=templates.get(skin.id).clone(true);
+export function createAncientSkinModel(id,profession){
+ const choices=ancientProfessionSkins(profession);
+ const skin=choices.find(item=>item.id===id)||choices[0];
+ const key=skin.profession+':'+skin.id;
+ if(!templates.has(key))templates.set(key,makeModel(skin));
+ const root=templates.get(key).clone(true);
  const joints=prefix=>[0,1].map(i=>root.getObjectByName(prefix+i));
  root.userData={height:2.06,body:root.getObjectByName('body'),arms:joints('arm'),legs:joints('leg'),knees:joints('knee')};
  return root;
