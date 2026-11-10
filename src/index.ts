@@ -356,6 +356,7 @@ export class GameRoom extends DurableObject<Env> {
 
 async function handleRequest(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    let socketAccount='';
     if(request.headers.get('Upgrade')==='websocket'&&!currentClient(url.searchParams.get('clientVersion')))return clientVersionResponse();
 
     if(url.pathname==='/api/client-version'&&request.method==='POST'){
@@ -372,6 +373,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     if(request.headers.get('Upgrade')==='websocket'&&!url.pathname.startsWith('/api/ancient/')){
       const account=await env.ACCOUNT_SESSIONS.getByName('global-v1').consumeSocketTicket(url.searchParams.get('ticket')||'',url.pathname);
       if(!account)return Response.json({error:'请重新登录 / Please log in again'},{status:401});
+      socketAccount=account;
       await env.ACCOUNT_SESSIONS.getByName('global-v1').rememberSocket(account,url.pathname);
       const headers=new Headers(request.headers);headers.set('X-Astrift-Account',encodeURIComponent(account));request=new Request(request,{headers});
     }
@@ -403,9 +405,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       const loadout=body.loadout&&typeof body.loadout==='object'&&!Array.isArray(body.loadout)?body.loadout as Record<string,unknown>:null;
       const result=await env.EXTRACTION_ROOMS.getByName(room).command(room,name,action,loadout,level);return json(result,result.ok?200:409);
     }
-    const rateLimit = async (action: string, limit: number, windowMs = 60_000) => {
+    const rateLimit = async (action: string, limit: number, windowMs = 60_000, account = '') => {
       const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
-      const ipDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(clientIp));
+      const ipDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(account?'account:'+account:clientIp));
       const ipHash = Array.from(new Uint8Array(ipDigest), byte => byte.toString(16).padStart(2, "0")).join("").slice(0, 24);
       return env.LOADOUT_CODES.getByName(`rate:${ipHash[0]}`).consumeRateLimit(`${ipHash}:${action}`, limit, windowMs);
     };
@@ -740,7 +742,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       }
       return json({ error: "仅支持 GET/POST" }, 405);
     }
-    if (/^\/api\/(?:room\/|duel\/|tri\/|quad\/|gunmaster\/|challenge\/|ranked\/|tournament\/|ctf\/|hardpoint\/|survival\/|bomb\/)/.test(url.pathname) && !await rateLimit("room-connect", 30)) return limited();
+    if (/^\/api\/(?:room\/|duel\/|tri\/|quad\/|gunmaster\/|challenge\/|ranked\/|tournament\/|ctf\/|hardpoint\/|survival\/|bomb\/)/.test(url.pathname) && !await rateLimit("room-connect", 30, 60_000, socketAccount)) return limited();
     const bombMatch=url.pathname.match(/^\/api\/bomb\/([a-zA-Z][0-9][a-zA-Z][0-9][a-zA-Z][0-9])$/);
     if(bombMatch)return env.BOMB_ROOMS.getByName('bomb:'+bombMatch[1].toLowerCase()).fetch(request);
     const objectiveMatch=url.pathname.match(/^\/api\/(ctf|hardpoint)\/([a-zA-Z][0-9][a-zA-Z][0-9][a-zA-Z][0-9])$/);
