@@ -3,17 +3,19 @@ import * as T from './three.module.js';
 import {ancientProfessionSkins} from './ancient-skins.js';
 const templates=new Map();
 const skinTone=0xc08d69;
-const shapes={box:new T.BoxGeometry(),head:new T.SphereGeometry(.5,9,6),gem:new T.OctahedronGeometry(.5),ring:new T.TorusGeometry(.5,.055,5,20)};
+const shapes={box:new T.BoxGeometry(),head:new T.SphereGeometry(.5,14,9),gem:new T.OctahedronGeometry(.5),ring:new T.TorusGeometry(.5,.055,5,20)};
 const material=new T.MeshStandardMaterial({vertexColors:true,roughness:.86});
 const luminousMaterial=new T.MeshBasicMaterial({vertexColors:true,toneMapped:false});
 function makeModel(skin){
  const root=new T.Group(),body=new T.Group();body.name='body';root.add(body);
  const batch=new Map(),matrix=new T.Object3D();
  function part(parent,shape,color,x,y,z,w,h,d,rz=0){
-  const geometry=shapes[shape],source=geometry.index?geometry.toNonIndexed():geometry.clone();
+  const geometry=shapes[shape],source=geometry.clone();
   matrix.position.set(x,y,z);matrix.scale.set(w,h,d);matrix.rotation.set(0,0,rz);matrix.updateMatrix();source.applyMatrix4(matrix.matrix);
-  if(!batch.has(parent))batch.set(parent,{position:[],normal:[],color:[]});
+  if(!batch.has(parent))batch.set(parent,{position:[],normal:[],color:[],indices:[]});
   const data=batch.get(parent),tint=new T.Color(color),positions=source.attributes.position;
+  const vertexOffset=data.position.length/3,index=source.index;
+  for(let i=0;i<(index?.count??positions.count);i++)data.indices.push(vertexOffset+(index?index.getX(i):i));
   data.position.push(...positions.array);data.normal.push(...source.attributes.normal.array);
   for(let i=0;i<positions.count;i++)data.color.push(tint.r,tint.g,tint.b);
   source.dispose();
@@ -27,6 +29,8 @@ function makeModel(skin){
  b('head',skinTone,0,1.76,0,.38,.45,.37);
  b('head',boots,0,1.89,.034,.4,.23,.4);
  for(const x of [-.079,.079])b('box',0x322823,x,1.79,-.173,.04,.035,.016);
+ for(const side of [-1,1])b('box',0x4b362c,side*.081,1.824,-.172,.067,.014,.02,side*.1);
+ b('gem',0xca9979,0,1.74,-.182,.055,.074,.037);
  b('box',0x9b624d,0,1.68,-.17,.07,.02,.02);
  b('box',accent,-.12,1.19,-.174,.065,.56,.04,-.42);
  for(const [i,side]of [-1,1].entries()){
@@ -243,6 +247,20 @@ function makeModel(skin){
    glint(shape,0,1.58,.408,width,height,.075,angle);
   }
  }
+ if(skin.rarity>=3){
+  const enamel=new T.Color(cloth).lerp(new T.Color(accent),.31).getHex();
+  for(const side of [-1,1]){
+   b('gem',boots,side*.15,1.37,-.246,.2,.16,.068,side*.38);
+   b('gem',enamel,side*.146,1.376,-.28,.151,.109,.042,side*.38);
+   b('box',accent,side*.19,1.40,-.304,.082,.012,.013,side*.38);
+   if(['orbit','ivory','void'].includes(style)){
+    for(let i=0;i<3;i++){
+     b('gem',enamel,side*(.21+i*.049),1.03-i*.074,.32,.09,.11,.052,side*.44);
+     b('gem',accent,side*(.21+i*.049),1.038-i*.074,.348,.041,.063,.022,side*.44);
+    }
+   }
+  }
+ }
  if(skin.rarity){
   const edging=new T.Color(accent).lerp(new T.Color(boots),.42).getHex();
   for(const [i,side] of [-1,1].entries()){
@@ -269,7 +287,9 @@ function makeModel(skin){
  }
  for(const [joint,data]of batch){
   const geometry=new T.BufferGeometry();
-  for(const [key,values]of Object.entries(data))geometry.setAttribute(key,new T.Float32BufferAttribute(values,3));
+  const {indices,...attributes}=data;
+  for(const [key,values]of Object.entries(attributes))geometry.setAttribute(key,new T.Float32BufferAttribute(values,3));
+  geometry.setIndex(indices);
   geometry.computeBoundingSphere();joint.add(new T.Mesh(geometry,joint.name==='skin-inlay'?luminousMaterial:material));
  }
  return root;

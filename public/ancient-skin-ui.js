@@ -1,13 +1,12 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {ancientProfessionSkins,SKIN_COLORS,SKIN_RARITIES,DEFAULT_SKIN,SKIN_DRAW_COST,SKIN_DRAW_COUNT,SKIN_DRAW_WEIGHTS,skinFragmentCost,ownedAncientSkins,equippedAncientSkin} from './ancient-skins.js?v=20261111-skin-draw-1';
-import {createAncientSkinModel} from './ancient-skin-model.js?v=20261111-skin-draw-1';
+import {ancientProfessionSkins,SKIN_COLORS,SKIN_RARITIES,DEFAULT_SKIN,SKIN_DRAW_COST,SKIN_DRAW_COUNT,SKIN_DRAW_WEIGHTS,skinFragmentCost,ownedAncientSkins,equippedAncientSkin} from './ancient-skins.js?v=20261111-skin-polish-1';
+import {createAncientSkinModel} from './ancient-skin-model.js?v=20261111-skin-polish-1';
 
 export function createAncientSkinUI(){
- let disposePreview=()=>{},selected='',receipt=null,receiptHost,receiptAccount;
+ let preview=null,selected='',receipt=null,receiptHost,receiptAccount;
  const el=(parent,tag,value='')=>{const node=document.createElement(tag);node.textContent=value;parent.append(node);return node;};
  function render(parent,{profile={},english=true,action,account,gallery=false,profession=profile.profession}={}){
-  disposePreview();
   const lang=english?1:0,own=new Set(ownedAncientSkins(profile)),equipped=equippedAncientSkin(profile);
   const skins=ancientProfessionSkins(profession);
   selected||=equipped||DEFAULT_SKIN;
@@ -16,7 +15,8 @@ export function createAncientSkinUI(){
    if(receiptAccount!==account){receiptAccount=account;receipt=null;}
    const banner=el(parent,'section');banner.className='ancientSkinDraw';
    const heading=el(banner,'div');heading.className='ancientSkinDrawHeading';
-   const text=el(heading,'div');
+   const text=el(heading,'div');text.className='ancientSkinDrawCopy';
+   const emblem=el(text,'i');emblem.className='ancientSkinDrawEmblem';emblem.setAttribute('aria-hidden','true');
    el(text,'strong',english?'Skin Draw':'皮肤抽奖');
    el(text,'p',english?`Get ${SKIN_DRAW_COUNT} fragments per draw`:`每次获得 ${SKIN_DRAW_COUNT} 块碎片`);
    const drawButton=el(heading,'button',(english?'Draw · ':'抽奖 · ')+SKIN_DRAW_COST+(english?' Gold':' 金币'));
@@ -32,10 +32,17 @@ export function createAncientSkinUI(){
    const showReceipt=()=>{
     if(!receiptHost?.isConnected)return;
     receiptHost.replaceChildren();
-    for(const [id,count] of Object.entries(receipt||{})){
-     const skin=skins.find(skin=>skin.id===id);if(!skin)continue;
-     const chip=el(receiptHost,'span',(english?skin.en:skin.zh)+' × '+count);
+    if(!receipt)return;
+    el(receiptHost,'h3',english?'Draw results':'本次获得');
+    const results=el(receiptHost,'div');results.className='ancientSkinDrawCards';
+    for(const skin of [...skins].reverse()){
+     const count=receipt[skin.id];if(!count)continue;
+     const chip=el(results,'div');chip.className='ancientSkinDrawResult';
      chip.style.setProperty('--skin-color',SKIN_COLORS[skin.rarity]);
+     const gem=el(chip,'i');gem.className='ancientSkinResultGem';gem.setAttribute('aria-hidden','true');
+     el(chip,'small',SKIN_RARITIES[skin.rarity][lang]);
+     el(chip,'strong',(english?skin.en:skin.zh).split(' · ').at(-1));
+     el(chip,'b','× '+count);
     }
    };
    showReceipt();
@@ -50,37 +57,8 @@ export function createAncientSkinUI(){
   const panel=el(layout,'section');panel.className='ancientSkinPreview';
   const stage=el(panel,'div');stage.className='ancientSkinStage';
   const caption=el(panel,'div');caption.className='ancientSkinCaption';
-  const canvas=el(stage,'canvas');canvas.setAttribute('aria-label',english?'3D skin preview':'皮肤 3D 预览');canvas.tabIndex=0;
-  let renderer;
-  try{renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:true});}
-  catch{canvas.remove();el(stage,'p',english?'3D preview unavailable':'无法打开 3D 预览');}
-  const scene=new T.Scene(),camera=new T.PerspectiveCamera(35,1,.1,30);
-  scene.add(new T.HemisphereLight(0xffe8c9,0x536284,2));
-  const key=new T.DirectionalLight(0xffead6,2.5);key.position.set(3,6,-4);scene.add(key);
-  const rim=new T.DirectionalLight(0x9fe7ff,1.8);rim.position.set(-3,2,4);scene.add(rim);
-  let actor,azimuth=Math.PI,elevation=.13,distance=4.7,drag=null;
-  function draw(){
-   if(!renderer||!actor||!stage.clientWidth||!stage.clientHeight)return;
-   const width=stage.clientWidth,height=stage.clientHeight;
-   renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.setSize(width,height,false);
-   camera.aspect=width/height;camera.updateProjectionMatrix();
-   camera.position.set(Math.sin(azimuth)*distance,1.07+Math.sin(elevation)*distance,Math.cos(azimuth)*distance);
-   camera.lookAt(0,1.07,0);renderer.render(scene,camera);
-  }
-  const observer=new ResizeObserver(draw);observer.observe(stage);
-  disposePreview=()=>{observer.disconnect();renderer?.dispose();renderer?.forceContextLoss();disposePreview=()=>{};};
-  canvas.onpointerdown=e=>{canvas.setPointerCapture(e.pointerId);drag={id:e.pointerId,x:e.clientX,y:e.clientY};};
-  canvas.onpointermove=e=>{
-   if(drag?.id!==e.pointerId)return;
-   azimuth-=(e.clientX-drag.x)*.012;elevation=T.MathUtils.clamp(elevation+(e.clientY-drag.y)*.009,-.45,.7);
-   drag.x=e.clientX;drag.y=e.clientY;draw();
-  };
-  canvas.onpointerup=canvas.onpointercancel=canvas.onlostpointercapture=()=>{drag=null;};
-  canvas.onwheel=e=>{e.preventDefault();distance=T.MathUtils.clamp(distance+e.deltaY*.003,3.2,7);draw();};
-  canvas.onkeydown=e=>{
-   if(!['ArrowLeft','ArrowRight'].includes(e.key))return;
-   e.preventDefault();azimuth+=e.key==='ArrowLeft'?.2:-.2;draw();
-  };
+  if(!preview)preview=createPreview();
+  preview.attach(stage,english);
   const buttons=[];
   function pick(skin){
    selected=skin.id;
@@ -101,8 +79,7 @@ export function createAncientSkinUI(){
      unlock.type='button';unlock.disabled=count<cost;unlock.onclick=()=>void action('unlockSkin',{id:skin.id});
     }
    }
-   if(actor)scene.remove(actor);
-   actor=createAncientSkinModel(skin.id,profession);scene.add(actor);draw();
+   preview.show(skin.id,profession);
   }
   for(const [rarity,labels] of SKIN_RARITIES.entries()){
    const group=el(list,'section');group.style.setProperty('--skin-color',SKIN_COLORS[rarity]);
@@ -115,5 +92,66 @@ export function createAncientSkinUI(){
   }
   pick(skins.find(skin=>skin.id===selected)||skins[0]);
  }
- return {render,dispose(){disposePreview();}};
+ return {render,dispose(){preview?.dispose();preview=null;}};
+}
+
+function createPreview(){
+ const canvas=document.createElement('canvas');canvas.tabIndex=0;
+ let renderer;
+ try{renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:true});}
+ catch{return {attach(stage,english){stage.textContent=english?'3D preview unavailable':'无法打开 3D 预览';},show(){},dispose(){}};}
+ const scene=new T.Scene(),camera=new T.PerspectiveCamera(35,1,.1,30);
+ scene.add(new T.HemisphereLight(0xffebd5,0x45536c,2));
+ const key=new T.DirectionalLight(0xffe1b3,2.7);key.position.set(-3,5,-4);scene.add(key);
+ const rim=new T.DirectionalLight(0x91caff,2.2);rim.position.set(4,3,3);scene.add(rim);
+ let stage,actor,id,profession,azimuth=Math.PI,elevation=.13,distance=4.7,drag=null,frame=0;
+ let previousWidth=0,previousHeight=0,previousRatio=0;
+ function draw(){
+  frame=0;
+  if(!actor||!stage?.isConnected)return;
+  const width=stage.clientWidth,height=stage.clientHeight,ratio=Math.min(devicePixelRatio,1.6);
+  if(!width||!height)return;
+  if(width!==previousWidth||height!==previousHeight||ratio!==previousRatio){
+   if(ratio!==previousRatio)renderer.setPixelRatio(ratio);
+   renderer.setSize(width,height,false);
+   camera.aspect=width/height;camera.updateProjectionMatrix();
+   previousWidth=width;previousHeight=height;previousRatio=ratio;
+  }
+  const focus=actor.userData.height*.5;
+  const framing=distance*Math.max(1,actor.userData.height/2.15,1/Math.max(.7,camera.aspect));
+  const horizontal=Math.cos(elevation)*framing;
+  camera.position.set(Math.sin(azimuth)*horizontal,focus+Math.sin(elevation)*framing,Math.cos(azimuth)*horizontal);
+  camera.lookAt(0,focus,0);renderer.render(scene,camera);
+ }
+ function schedule(){if(!frame)frame=requestAnimationFrame(draw);}
+ const observer=new ResizeObserver(schedule);
+ canvas.onpointerdown=e=>{canvas.setPointerCapture(e.pointerId);drag={id:e.pointerId,x:e.clientX,y:e.clientY};};
+ canvas.onpointermove=e=>{
+  if(drag?.id!==e.pointerId)return;
+  azimuth-=(e.clientX-drag.x)*.012;elevation=T.MathUtils.clamp(elevation+(e.clientY-drag.y)*.009,-.45,.7);
+  drag.x=e.clientX;drag.y=e.clientY;schedule();
+ };
+ canvas.onpointerup=canvas.onpointercancel=canvas.onlostpointercapture=()=>{drag=null;};
+ canvas.onwheel=e=>{e.preventDefault();distance=T.MathUtils.clamp(distance+e.deltaY*.003,3.2,7);schedule();};
+ canvas.onkeydown=e=>{
+  if(!['ArrowLeft','ArrowRight'].includes(e.key))return;
+  e.preventDefault();azimuth+=e.key==='ArrowLeft'?.2:-.2;schedule();
+ };
+ return {
+  attach(next,english){
+   observer.disconnect();drag=null;stage=next;stage.append(canvas);
+   canvas.setAttribute('aria-label',english?'3D skin preview':'皮肤 3D 预览');
+   observer.observe(stage);schedule();
+  },
+  show(nextId,nextProfession){
+   if(actor&&id===nextId&&profession===nextProfession)return;
+   if(actor)scene.remove(actor);
+   id=nextId;profession=nextProfession;
+   actor=createAncientSkinModel(id,profession);scene.add(actor);schedule();
+  },
+  dispose(){
+   observer.disconnect();cancelAnimationFrame(frame);
+   renderer.dispose();renderer.forceContextLoss();canvas.remove();
+  }
+ };
 }
