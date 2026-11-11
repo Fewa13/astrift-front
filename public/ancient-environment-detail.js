@@ -9,8 +9,8 @@ const mineralSurfaces={
  froststone:['#798a96','#c9e0e8','#475b70',.24],
  stormstone:['#676c83','#a0aacc','#333d60',.26],
  abyssstone:['#65868b','#a3c3b3','#354f61',.25],
- soil:['#8d8062','#b6a180','#554b37',.23],
- forestsoil:['#8b8969','#a9ad73','#494432',.27],
+ soil:['#8d8062','#a29476','#746951',.13],
+ forestsoil:['#8b8969','#999974','#757258',.13],
  sand:['#ad946e','#ebcf97','#6d5743',.20],
 };
 export function paintMineral(c,kind,rnd){
@@ -51,16 +51,16 @@ export function paintMineral(c,kind,rnd){
  c.globalAlpha=1;
 }
 function paintWall(c,kind,rnd){
- const masonry=kind==='masonry'||kind==='paving';
+ const paving=kind==='paving',masonry=kind==='masonry'||paving;
  paintMineral(c,kind==='sandcliff'?'sand':'stone',rnd);
  if(masonry){
   const row=kind==='paving'?128:64,width=kind==='paving'?256:128;
   for(let y=0;y<512;y+=row)for(let x=-width;x<512;x+=width){
    const left=x+(y/row%2)*width/2;
    c.fillStyle=rnd()<.45?'#d7d1b2':'#363c3c';
-   c.globalAlpha=.08+rnd()*.13;
+   c.globalAlpha=(.08+rnd()*.13)*(paving?.35:1);
    c.fillRect(left+2,y+2,width-4,row-4);
-   c.globalAlpha=.4;
+   c.globalAlpha=paving?.15:.4;
    c.fillStyle='#252a2b';
    c.fillRect(left,y,3,row);
    c.fillRect(left,y,width,3);
