@@ -44,10 +44,16 @@ function chapterSurroundings(map,add,rod){
  }
 }
 
+const frostIce=new T.Color(0xb0d9ed),frostFire=new T.Color(0x694139);
+const frostWallIce=new T.Color(0xa2cfec),frostWallFire=new T.Color(0x915440);
+function frostSide(x){
+ const t=T.MathUtils.clamp((Math.abs(x)-30)/42,0,1);
+ return t*t*(3-2*t);
+}
 function terrain(map,materials){const route=CHAPTER_ROUTES[map],extra=CHAPTER_EXTRAS[map]||[],xmin=Math.floor(Math.min(...route.map(p=>p[1]-p[3]),...extra.map(p=>p.x-p.w/2))/3)*3,xmax=Math.max(...route.map(p=>p[1]+p[3]),...extra.map(p=>p.x+p.w/2)),zmin=Math.floor(Math.min(...route.map(p=>p[2]-p[3]),...extra.map(p=>p.z-p.d/2))/3)*3,zmax=Math.max(...route.map(p=>p[2]+p[3]),...extra.map(p=>p.z+p.d/2));const pos=[],uv=[],colors=[],walls=[],wallColors=[];const enclosed=map==='dunes'||map==='frostcourt';const base=new T.Color(palettes[map].floor);
- const emit=(p)=>{pos.push(p.x,chapterHeight(map,p.x,p.z),p.z);uv.push(p.x/8,p.z/8);let c=map==='skyreach'&&chapterProjection(map,p.x,p.z).width<22?new T.Color(0x26374c):base.clone(),shade=.9+.09*Math.sin(p.x*.1)*Math.cos(p.z*.07);if(map==='frostcourt')c.lerp(new T.Color(p.x<-40?0xc6ecf0:p.x>55?0x746052:palettes[map].floor),.5);c.multiplyScalar(shade);colors.push(c.r,c.g,c.b)};
+ const emit=(p)=>{pos.push(p.x,chapterHeight(map,p.x,p.z),p.z);uv.push(p.x/8,p.z/8);let c=map==='skyreach'&&chapterProjection(map,p.x,p.z).width<22?new T.Color(0x26374c):base.clone(),shade=.9+.09*Math.sin(p.x*.1)*Math.cos(p.z*.07);if(map==='frostcourt')c.lerp(p.x<0?frostIce:frostFire,frostSide(p.x));c.multiplyScalar(shade);colors.push(c.r,c.g,c.b)};
  function tri(points){const clipped=[];for(let i=0;i<3;i++){const a=points[i],b=points[(i+1)%3],inside=a.d>=0;if(inside)clipped.push(a);if(a.d*b.d<0){const t=a.d/(a.d-b.d);clipped.push({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t,d:0})}}if(clipped.length<3)return;for(let i=1;i<clipped.length-1;i++)for(const p of [clipped[0],clipped[i+1],clipped[i]])emit(p);const edges=clipped.filter(p=>p.d===0);if(edges.length===2){const [a,b]=edges,ay=chapterHeight(map,a.x,a.z),by=chapterHeight(map,b.x,b.z),drop=map==='skyreach'?(chapterProjection(map,(a.x+b.x)/2,(a.z+b.z)/2).width<22?.45:23):map==='starfall'?18:12;const crest=p=>chapterHeight(map,p.x,p.z)+(map==='dunes'?17+3*Math.sin(p.x*.18)+2*Math.cos(p.z*.15):13);
-  const quad=(a,b,c,d,shade=1)=>{for(const p of [a,b,c,b,d,c]){walls.push(...p);wallColors.push(shade,shade,shade);}};
+  const quad=(a,b,c,d,shade=1)=>{for(const p of [a,b,c,b,d,c]){walls.push(...p);const tint=map==='frostcourt'?(p[0]<0?frostWallIce:frostWallFire):null,mix=tint?frostSide(p[0]):0;wallColors.push(shade*T.MathUtils.lerp(1,tint?.r??1,mix),shade*T.MathUtils.lerp(1,tint?.g??1,mix),shade*T.MathUtils.lerp(1,tint?.b??1,mix));}};
   if(!enclosed){quad([a.x,ay,a.z],[b.x,by,b.z],[a.x,ay-drop,a.z],[b.x,by-drop,b.z]);return;}
   const profile=p=>{
    const dx=chapterDistance(map,p.x-.3,p.z)-chapterDistance(map,p.x+.3,p.z);
@@ -93,12 +99,29 @@ export function buildDistinctStarfall(scene){const b=kit(scene,'starfall'),{add,
  const waterMaterial=new T.MeshStandardMaterial({color:0x17616b,bumpMap:ripples,bumpScale:.18,transparent:true,opacity:.23,roughness:.25,metalness:.25,side:T.DoubleSide,depthWrite:false}),water=new T.Mesh(new T.PlaneGeometry(550,480),waterMaterial);water.rotation.x=-Math.PI/2;water.position.set(0,-2,90);b.world.add(water);let drained=false;
  return b.finish(t=>{core.rotation.y=Math.sin(t*.00008)*.25;ripples.offset.set((t*.000018)%1,(t*.000027)%1);water.position.y+=( (drained?-15:-2)-water.position.y)*.04},state=>drained=!!state.drained);}
 export function buildDistinctFrostcourt(scene){const b=kit(scene,'frostcourt'),{add,rod}=b;
+ b.materials.ice=new T.MeshStandardMaterial({color:0xa9e4ff,roughness:.32,metalness:.16,emissive:0x19476d,emissiveIntensity:.4});
+ b.materials.rime=new T.MeshStandardMaterial({color:0xc3e2eb,map:b.materials.stone.map,roughness:.8});
+ b.materials.slag=new T.MeshStandardMaterial({color:0x423033,map:b.materials.stone.map,roughness:.92});
+ b.materials.ember=new T.MeshStandardMaterial({color:0xe57530,emissive:0xb52f09,emissiveIntensity:1.15,roughness:.7});
  // The central court branches west into frozen ramparts and east into furnaces.
- for(const o of CHAPTER_PROPS.frostcourt){if(o.kind==='nave-column')continue;const h=chapterHeight('frostcourt',o.x,o.z);if(o.kind==='ice-bastion'||o.kind==='throne-wing'){add('box','stone',o.x,h+o.h/2,o.z,o.w,o.h,o.d);for(const x of [-1,1]){add('cyl','stone',o.x+x*o.w/2,h+o.h*.6,o.z,3,o.h*1.3,3);add('cone','accent',o.x+x*o.w/2,h+o.h*1.3,o.z,4,9,4)}for(let i=0;i<5;i++)add('box','dark',o.x,h+3+i*3,o.z-o.d/2-.04,o.w*.55,1,.08);}
- else if(o.kind==='blast-furnace'){add('cyl','dark',o.x,h+5,o.z,6,10,6);for(let i=0;i<3;i++)add('ring','metal',o.x,h+2+i*3,o.z,6.1,6.1,6.1,Math.PI/2);add('cyl','metal',o.x,h+16,o.z,2.8,20,2.8);add('cone','glow',o.x,h+27,o.z,2,6,2);rod([o.x-6,h+5,o.z],[o.x-15,h+5,o.z+14],.8);}
+ for(const o of CHAPTER_PROPS.frostcourt){if(o.kind==='nave-column')continue;const h=chapterHeight('frostcourt',o.x,o.z);if(o.kind==='ice-bastion'||o.kind==='throne-wing'){add('box','rime',o.x,h+o.h/2,o.z,o.w,o.h,o.d);for(const x of [-1,1]){add('cyl','stone',o.x+x*o.w/2,h+o.h*.6,o.z,3,o.h*1.3,3);add('cone','ice',o.x+x*o.w/2,h+o.h*1.3,o.z,4,9,4)}for(let i=0;i<5;i++)add('box','dark',o.x,h+3+i*3,o.z-o.d/2-.04,o.w*.55,1,.08);}
+ else if(o.kind==='blast-furnace'){add('cyl','slag',o.x,h+5,o.z,6,10,6);for(let i=0;i<3;i++){add('ring','metal',o.x,h+2+i*3,o.z,6.1,6.1,6.1,Math.PI/2);add('ring','ember',o.x,h+2.45+i*3,o.z,6.05,6.05,6.05,Math.PI/2);}add('cyl','metal',o.x,h+16,o.z,2.8,20,2.8);add('cone','glow',o.x,h+27,o.z,2,6,2);rod([o.x-6,h+5,o.z],[o.x-15,h+5,o.z+14],.8);}
  else if(o.kind==='fountain'){add('cyl','stone',o.x,h+.5,o.z,6,1,6);add('cyl','accent',o.x,h+1.2,o.z,4,.2,4);add('cone','stone',o.x,h+5,o.z,2.5,8,2.5)}else{add('box','stone',o.x,h+5,o.z,8,10,8);add('arch','metal',o.x,h+10,o.z,4,5,2);add('ring','metal',o.x,h+13,o.z,2,2,2,0,Math.PI/2)}}
  for(let z=270;z<340;z+=14){for(const x of [-28,28])add('cyl','stone',x,chapterHeight('frostcourt',x,z)+10,z,1.5,20,1.5);add('arch','stone',0,chapterHeight('frostcourt',0,z)+20,z,29,12,1.4)}
- for(let i=0;i<24;i++){const a=i*Math.PI/12;add('crystal','accent',-115+Math.sin(a)*30,3+i%6,160+Math.cos(a)*30,1,6+i%4,1.5,0,a,.2)}
+ for(let i=0;i<24;i++){
+  const a=i*Math.PI/12;
+  const x=-115+Math.sin(a)*30,z=160+Math.cos(a)*30;
+  const y=chapterHeight('frostcourt',x,z),h=3+i%5;
+  add('crystal','ice',x,y+h*.65,z,1,h,1.5,0,a,.2);
+  add('rock','rime',x,y+.18,z,1.9,.4,1.7,0,a);
+ }
+ for(let i=0;i<20;i++){
+  const a=i*2.39996,x=105+Math.cos(a)*(18+i%4*2),z=168+Math.sin(a)*28;
+  if(chapterDistance('frostcourt',x,z)<2)continue;
+  const y=chapterHeight('frostcourt',x,z);
+  add('rock','slag',x,y+.3,z,1.5,.55,1,0,a);
+  add('box','ember',x,y+.48,z,.1,.08,1.3,0,a+.35);
+ }
  for(const x of [-35,35])for(let z=95;z<=205;z+=14){const y=chapterHeight('frostcourt',x,z);add('box','metal',x,y+.05,z,.2,.07,10);if(x>0)add('cone','glow',x,y+1,z,.4,2,.4)}
  let phase=0;return b.finish(t=>{for(const m of b.world.children)if(m.name==='thermal-gates')m.visible=phase===0},s=>{phase=s.phase||0;b.materials.accent.color.setHex(phase?0xe79b62:0x9dd8e4)});}
 export function buildDistinctSkyreach(scene){const b=kit(scene,'skyreach'),{add,rod}=b;
