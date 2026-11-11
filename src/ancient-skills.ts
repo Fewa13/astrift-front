@@ -9,10 +9,16 @@ export const PROFESSIONS:Record<string,{name:string;en:string;icon:string;skills
  warrior:{name:'战士',en:'Warrior',icon:'⚔',skills:['vitality','power','rage','slash']},
  summoner:{name:'召唤师',en:'Summoner',icon:'♜',skills:['summon','weaken','transform','soulbolt']},
  ice:{name:'冰雪法师',en:'Frost Mage',icon:'❄',skills:['icebolt','icearmor','blizzard','frostburst']},
- lightning:{name:'雷电法师',en:'Lightning Mage',icon:'ϟ',skills:['chain','haste','storm']},
+ fire:{name:'火焰法师',en:'Fire Mage',icon:'✹',skills:['firewave','firestorm','inferno','firebolt']},
+ lightning:{name:'雷电法师',en:'Lightning Mage',icon:'ϟ',skills:['chain','haste','storm','tempest']},
  curse:{name:'诅咒法师',en:'Curse Mage',icon:'☽',skills:['hex','drain','doom']}
 };
 export const SKILLS:Record<string,{job:string;name:string;en:string;unlock:number;key:string;duration:number;cooldown:number}>={
+ firebolt:{job:'fire',name:'余烬弹',en:'Ember Bolt',unlock:0,key:'X',duration:0,cooldown:5},
+ firewave:{job:'fire',name:'燎原火浪',en:'Wildfire Wave',unlock:0,key:'Q',duration:0,cooldown:9},
+ firestorm:{job:'fire',name:'熔火涡流',en:'Molten Vortex',unlock:5,key:'Z',duration:3,cooldown:18},
+ inferno:{job:'fire',name:'焚天陨星',en:'Solar Cataclysm',unlock:20,key:'C',duration:3,cooldown:32},
+ tempest:{job:'lightning',name:'九霄雷罚',en:'Heavenfall Judgment',unlock:25,key:'X',duration:0,cooldown:34},
  riftblade:{job:'shadowblade',name:'裂影刃',en:'Rift Blades',unlock:0,key:'X',duration:0,cooldown:4},
  shadowstep:{job:'shadowblade',name:'穿影',en:'Shadowstep',unlock:0,key:'Q',duration:0,cooldown:7},
  shadowreturn:{job:'shadowblade',name:'影返',en:'Shadow Recall',unlock:5,key:'Z',duration:6,cooldown:18},
@@ -44,6 +50,13 @@ export const SKILLS:Record<string,{job:string;name:string;en:string;unlock:numbe
  drain:{job:'curse',name:'生命汲取',en:'Life Drain',unlock:5,key:'Z',duration:0,cooldown:10},
  doom:{job:'curse',name:'灾厄领域',en:'Doom Field',unlock:20,key:'C',duration:8,cooldown:28}
 };
+export const ELEMENTAL_IMPACTS:Record<string,{hit:number;growth:number;burn:number;burnGrowth:number;seconds:number}>={
+ firebolt:{hit:3,growth:0.27,burn:0.32,burnGrowth:0.03,seconds:4},
+ firewave:{hit:3.4,growth:0.3,burn:0,burnGrowth:0,seconds:0},
+ firestorm:{hit:3,growth:0.26,burn:0.65,burnGrowth:0.06,seconds:6},
+ inferno:{hit:7,growth:0.55,burn:1,burnGrowth:0.08,seconds:7},
+ tempest:{hit:8,growth:0.65,burn:0,burnGrowth:0,seconds:0},
+};
 export type SkillRuntime={branch?:import('./ancient-branch-combat').BranchRuntime;relic?:import('./ancient-relic-combat').RelicRuntime;gearChain?:{key:string;until:number};shadowAnchor?:{map:string;x:number;y:number;z:number;until:number};bossForm?:import('./ancient-boss-cards').BossForm;cooldowns:Record<string,number>;effects:Record<string,{until:number;level:number}>;mode:number;lastAux:number;baseHp?:number;summon?:{x:number;z:number;hp:number;maxHp:number;damage:number;until:number;attackAt:number;target:string;level:number;path?:{x:number;z:number}[];pathAt?:number;pathX?:number;pathZ?:number};lastRegen?:number};
 export type SkillActor={holy?:boolean;corrupted?:boolean;name:string;x:number;y:number;z:number;hp:number;maxHp?:number;weapon:AncientWeapon;profession?:string;skills?:Record<string,number>;skillRuntime?:SkillRuntime;gearReduction?:number;boosts?:Record<string,number>;skillBaseHp?:number};
 export function runtime(a:SkillActor){return a.skillRuntime??={cooldowns:{},effects:{},mode:1,lastAux:0}}
@@ -52,23 +65,23 @@ export function skillBookName(key:string,english=false){const id=key.slice(10);i
 const targetedSkillRanges = new Map([
  ['slash',12], ['triplecut',15], ['drain',20], ['riftblade',20], ['stonefist',20],
  ['faultline',25], ['stoneprison',25], ['mountainfall',25],
- ...['frostburst','swordwave','swordrain','phantomblade','soulbolt','icebolt','blizzard','chain','storm','hex','doom'].map(id=>[id,30] as const),
+ ...[...Object.keys(ELEMENTAL_IMPACTS),'frostburst','swordwave','swordrain','phantomblade','soulbolt','icebolt','blizzard','chain','storm','hex','doom'].map(id=>[id,30] as const),
 ]);
 export function skillCastRange(id:string,level:number){
  const base=targetedSkillRanges.get(id);
  return base===undefined?0:Math.min(60,base+Math.max(0,level-1)*.5);
 }
-export function skillRadius(id:string,level:number,holy=false){const base:Record<string,number>={riftblade:2,shadowstep:2,shadowreturn:3,nightfall:5,stonefist:2,faultline:4,stoneprison:4,mountainfall:6,frostburst:2,slash:4,power:7,rage:7,icearmor:6,blizzard:6,haste:6,storm:5,doom:6,swordwave:2,swordrain:3,phantomblade:5};return base[id]===undefined?0:(base[id]+Math.max(0,level-1)*.5)*(holy?1.5:1)}
+export function skillRadius(id:string,level:number,holy=false){const base:Record<string,number>={firewave:4,firestorm:6,inferno:8,tempest:8,riftblade:2,shadowstep:2,shadowreturn:3,nightfall:5,stonefist:2,faultline:4,stoneprison:4,mountainfall:6,frostburst:2,slash:4,power:7,rage:7,icearmor:6,blizzard:6,haste:6,storm:5,doom:6,swordwave:2,swordrain:3,phantomblade:5};return base[id]===undefined?0:(base[id]+Math.max(0,level-1)*.5)*(holy?1.5:1)}
 // Shared by authoritative combat and bilingual descriptions. No cooldown or healing amplification.
 export function curseHitMultiplier(id:'hex'|'drain',level:number,hexed=false){return id==='hex'?(3.2+.3*level)*1.2:(4+.4*level)*(hexed?1.5:1)}
 export function skillCooldown(id:string,level:number){return id==='vitality'||id==='power'?Math.max(50,100-level*2):SKILLS[id]?.cooldown||0}
-export function ensureBasicSkills(p:AncientProfile){const id=p.profession==='shadowblade'?'riftblade':p.profession==='stonewright'?'stonefist':p.profession==='swordsman'?'swordwave':p.profession==='warrior'?'slash':p.profession==='summoner'?'soulbolt':p.profession==='ice'?'frostburst':null;if(!id||p.skills?.[id]!==undefined)return false;(p.skills??={})[id]=1;return true}
+export function ensureBasicSkills(p:AncientProfile){const id=p.profession==='fire'?'firebolt':p.profession==='shadowblade'?'riftblade':p.profession==='stonewright'?'stonefist':p.profession==='swordsman'?'swordwave':p.profession==='warrior'?'slash':p.profession==='summoner'?'soulbolt':p.profession==='ice'?'frostburst':null;if(!id||p.skills?.[id]!==undefined)return false;(p.skills??={})[id]=1;return true}
 export function skillTrainingCost(current:number){const next=current+1;return {books:2**current,cores:current>0?next:0,coins:current>0?50*next**2:0}}
 export function trainSkill(p:AncientProfile,id:string){const s=Object.hasOwn(SKILLS,id)?SKILLS[id]:undefined;if(!s||p.profession!==s.job)return '职业不匹配';if(p.level<s.unlock)return '玩家等级不足';const next=(p.skills?.[id]||0)+1,cost=skillTrainingCost(next-1);if(!Object.values(cost).every(Number.isSafeInteger))return '技能等级已达上限';const key=skillBook(id);if((p.materials[key]||0)<cost.books)return '技能书不足';if((p.materials.core||0)<cost.cores)return '相位核心不足';if((p.coins||0)<cost.coins)return '远古金币不足';p.materials[key]-=cost.books;if(cost.cores)p.materials.core-=cost.cores;if(cost.coins)p.coins=Math.round((p.coins-cost.coins)*100)/100;(p.skills??={})[id]=next;return null}
 export function skillDescription(id:string,n:number,en=false){const level=Math.max(1,n),cd=skillCooldown(id,level),range=skillCastRange(id,level);const texts:Record<string,[string,string]>={
  riftblade:[`${range}米裂影双刃，总计${300+25*level}%基础攻击伤害；冷却4秒。自带1级，按X使用。`,`${range}m twin rift blades: ${300+25*level}% base attack damage in total. Cooldown 4s. Starts at level 1; press X.`],
  shadowstep:[`沿朝向突进最多10米，沿途敌人各受一次${260+22*level}%基础攻击伤害；不能穿墙，冷却7秒。`,`Dash up to 10m forward; each enemy along the path takes ${260+22*level}% base attack damage once. Cannot cross walls. Cooldown 7s.`],
- shadowreturn:[`留下6秒残影并向后闪避最多6米，周围造成${220+20*level}%基础攻击伤害；6秒内再次按Z沿直线返回，终点再次斩击。墙体会阻挡返回；冷却18秒。`,`Leave a 6s afterimage and retreat up to 6m, dealing ${220+20*level}% base attack damage nearby. Recast Z within 6s to return along a straight path and slash again. Walls stop the return. Cooldown 18s.`],
+ shadowreturn:[`留下6秒残影并向后闪避最多9米，周围造成${220+20*level}%基础攻击伤害；6秒内再次按Z或到期自动返回，回拉速度翻倍，终点斩击伤害高10%。墙体会阻挡返回；冷却18秒。`,`Leave a 6s afterimage and retreat up to 9m, dealing ${220+20*level}% base attack damage nearby. Recast Z or wait 6s to return at double speed and slash for 10% more damage. Walls stop the return. Cooldown 18s.`],
  nightfall:[`周围斩击造成${400+35*level}%基础攻击伤害；8秒内伤害+25%、移速+30%，使用穿影后冷却降为3秒；冷却30秒。`,`Nearby slashes deal ${400+35*level}% base attack damage. For 8s: +25% damage, +30% speed, Shadowstep cooldown becomes 3s. Cooldown 30s.`],
  stonefist:[`${range}米碎岩重拳，造成${320+30*level}%基础攻击范围伤害；冷却5秒。自带1级，按X使用。`,`${range}m stone fist: ${320+30*level}% base attack area damage. Cooldown 5s. Starts at level 1; press X.`],
  faultline:[`锁定${range}米内敌人，地脉连续爆发3次，每次${180+15*level}%基础攻击伤害；冷却10秒。`,`Lock an enemy within ${range}m: three ground eruptions, each ${180+15*level}% base attack damage. Cooldown 10s.`],
@@ -96,7 +109,8 @@ export function skillDescription(id:string,n:number,en=false){const level=Math.m
  hex:[`${range}米目标受到${Math.round(curseHitMultiplier('hex',level)*100)}%基础攻击伤害；10秒攻击 -${Math.min(40,10+2*level)}%，受伤 +${Math.min(30,8+level)}%；冷却8秒`,`${range}m hex: ${Math.round(curseHitMultiplier('hex',level)*100)}% base attack damage; -${Math.min(40,10+2*level)}% enemy damage, +${Math.min(30,8+level)}% damage taken for 10s. Cooldown 8s.`],
  drain:[`${range}米汲取，造成${400+40*level}%基础攻击伤害，目标带有衰弱印记时伤害额外+50%，回复实际伤害30%（最多最大血量20%）；冷却10秒`,`${range}m drain: ${400+40*level}% base attack damage, +50% damage against a target with an active Frailty Hex; heal 30% actual damage (max 20% max HP). Cooldown 10s.`],
  doom:[`${range}米目标周围${skillRadius('doom',level)}米领域8秒，每秒${80+8*level}%基础攻击伤害，攻击 -${Math.min(40,10+level)}%；冷却28秒`,`${range}m target: ${skillRadius('doom',level)}m field for 8s, ${80+8*level}% base attack damage/s, -${Math.min(40,10+level)}% enemy damage. Cooldown 28s.`]
- };const text=texts[id]?.[en?1:0]||'',radius=skillRadius(id,level);return text+(radius?(en?` Area radius: ${radius}m (+0.5m per skill level).`:` 作用半径：${radius}米（每升一级+0.5米）。`):'')}
+ };const impact=ELEMENTAL_IMPACTS[id],hit=impact&&Math.round((impact.hit+impact.growth*level)*100),burn=impact&&Math.round((impact.burn+impact.burnGrowth*level)*100);
+ const text=impact?(en?`Hit: ${hit}% base attack. ${range}m targeting. Cooldown ${cd}s.`+(impact.seconds?` Burns for ${impact.seconds}s at ${burn}% per second, even after the cast ends.`:''):`命中造成${hit}%基础攻击伤害，锁定距离${range}米，冷却${cd}秒。`+(impact.seconds?`燃烧持续${impact.seconds}秒，每秒${burn}%基础攻击伤害，施法结束后仍生效。`:'')):texts[id]?.[en?1:0]||'',radius=skillRadius(id,level);return text+(radius?(en?` Area radius: ${radius}m (+0.5m per skill level).`:` 作用半径：${radius}米（每升一级+0.5米）。`):'')}
 export function activeSkill(a:SkillActor,id:string,now=Date.now()){const e=a.skillRuntime?.effects[id];return e&&e.until>now?e.level:0}
 export function skillDamageMultiplier(a:SkillActor,now=Date.now()){return (a.corrupted?1.3:1)*((a.boosts?.damage||0)>now?2:1)*(activeSkill(a,'nightfall',now)?1.25:1)*(1+activeSkill(a,'power',now)*.02)*(1+activeSkill(a,'rage',now)*.3)*(1+(bossFormStats(a,now)?.damage||0))}
 export function skillSpeedMultiplier(a:SkillActor,now=Date.now()){const t=activeSkill(a,'transform',now),h=activeSkill(a,'haste',now);return (activeSkill(a,'nightfall',now)?1.3:1)*(1+activeSkill(a,'rage',now)*.2)*(t?1+Math.min(.4,.1+.02*t):1)*(h?1+Math.min(.4,.15+.02*h):1)*(1+(bossFormStats(a,now)?.speed||0))}

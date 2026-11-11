@@ -17,12 +17,12 @@ function moveAlong(a:SkillActor,dx:number,dz:number,distance:number,c:SkillConte
  }
  return points;
 }
-export function castExpansionSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now:number,body:number,target?:SkillMonster){
+export function castExpansionSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now:number,body:number,target?:SkillMonster,autoRecall=false){
  const n=p.skills?.[id]||0,r=runtime(a),holy=isHoly(p),radius=skillRadius(id,n,holy)*branchRadius(p,id),source={x:a.x,y:a.y-.25,z:a.z};
  const visible=(m:SkillMonster,x=a.x,z=a.z,y=a.y)=>m.hp>0&&lineClear(x,y,z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map);
  const area=(x:number,z:number,amount:number)=>{for(const m of c.monsters)if(visible(m,x,z,ancientMapHeight(c.map,x,z)+1)&&Math.hypot(m.x-x,m.z-z)<=radius)c.damage(m,body*amount);};
  const fx=(x:number,z:number,follow=false)=>c.fx(id,x,z,radius,{target:follow?target?.id||'':'',source,phase:id==='shadowreturn'?(recall?'return':'anchor'):undefined});
- const recall=id==='shadowreturn'&&shadowRecallReady(a,now);
+ const recall=id==='shadowreturn'&&(autoRecall||shadowRecallReady(a,now));
  if(recall&&r.shadowAnchor?.map!==c.map)return '残影已消失';
  if(id==='shadowstep'||id==='shadowreturn'&&!recall){
   if(!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite)||Math.abs(Math.hypot(...direction)-1)>.05||Math.hypot(direction[0],direction[2])<.001)return '请朝前方使用技能';
@@ -36,9 +36,11 @@ export function castExpansionSkill(a:SkillActor,p:AncientProfile,id:string,direc
   fx(a.x,a.z);return null;
  }
  if(id==='shadowreturn'){
+  const start={x:a.x,y:a.y,z:a.z};
   if(recall){const anchor=r.shadowAnchor!;moveAlong(a,anchor.x-a.x,anchor.z-a.z,Math.min(20,Math.hypot(anchor.x-a.x,anchor.z-a.z)),c);delete r.shadowAnchor;delete r.effects.shadowreturn;}
-  else {r.shadowAnchor={map:c.map,x:a.x,y:a.y,z:a.z,until:now+6000};r.effects.shadowreturn={until:now+6000,level:n};const dir=direction as number[];moveAlong(a,-dir[0],-dir[2],6,c);}
-  area(a.x,a.z,2.2+.2*n);fx(a.x,a.z);return null;
+  else {r.shadowAnchor={map:c.map,x:a.x,y:a.y,z:a.z,until:now+6000};r.effects.shadowreturn={until:now+6000,level:n};const dir=direction as number[];moveAlong(a,-dir[0],-dir[2],9,c);}
+  area(a.x,a.z,(2.2+.2*n)*(recall?1.1:1));fx(a.x,a.z);
+  const end={x:a.x,y:a.y,z:a.z};if(c.motion&&Math.hypot(end.x-start.x,end.z-start.z)>.01){Object.assign(a,start);c.motion(end,recall?2:1);}return null;
  }
  if(id==='nightfall'){r.effects.nightfall={until:now+8000,level:n};area(a.x,a.z,4+.35*n);fx(a.x,a.z);return null;}
  if(!target)return null;

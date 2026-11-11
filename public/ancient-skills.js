@@ -7,10 +7,16 @@ const PROFESSIONS = {
   warrior: { name: "\u6218\u58EB", en: "Warrior", icon: "\u2694", skills: ["vitality", "power", "rage", "slash"] },
   summoner: { name: "\u53EC\u5524\u5E08", en: "Summoner", icon: "\u265C", skills: ["summon", "weaken", "transform", "soulbolt"] },
   ice: { name: "\u51B0\u96EA\u6CD5\u5E08", en: "Frost Mage", icon: "\u2744", skills: ["icebolt", "icearmor", "blizzard", "frostburst"] },
-  lightning: { name: "\u96F7\u7535\u6CD5\u5E08", en: "Lightning Mage", icon: "\u03DF", skills: ["chain", "haste", "storm"] },
+  fire: { name: "\u706B\u7130\u6CD5\u5E08", en: "Fire Mage", icon: "\u2739", skills: ["firewave", "firestorm", "inferno", "firebolt"] },
+  lightning: { name: "\u96F7\u7535\u6CD5\u5E08", en: "Lightning Mage", icon: "\u03DF", skills: ["chain", "haste", "storm", "tempest"] },
   curse: { name: "\u8BC5\u5492\u6CD5\u5E08", en: "Curse Mage", icon: "\u263D", skills: ["hex", "drain", "doom"] }
 };
 const SKILLS = {
+  firebolt: { job: "fire", name: "\u4F59\u70EC\u5F39", en: "Ember Bolt", unlock: 0, key: "X", duration: 0, cooldown: 5 },
+  firewave: { job: "fire", name: "\u71CE\u539F\u706B\u6D6A", en: "Wildfire Wave", unlock: 0, key: "Q", duration: 0, cooldown: 9 },
+  firestorm: { job: "fire", name: "\u7194\u706B\u6DA1\u6D41", en: "Molten Vortex", unlock: 5, key: "Z", duration: 3, cooldown: 18 },
+  inferno: { job: "fire", name: "\u711A\u5929\u9668\u661F", en: "Solar Cataclysm", unlock: 20, key: "C", duration: 3, cooldown: 32 },
+  tempest: { job: "lightning", name: "\u4E5D\u9704\u96F7\u7F5A", en: "Heavenfall Judgment", unlock: 25, key: "X", duration: 0, cooldown: 34 },
   riftblade: { job: "shadowblade", name: "\u88C2\u5F71\u5203", en: "Rift Blades", unlock: 0, key: "X", duration: 0, cooldown: 4 },
   shadowstep: { job: "shadowblade", name: "\u7A7F\u5F71", en: "Shadowstep", unlock: 0, key: "Q", duration: 0, cooldown: 7 },
   shadowreturn: { job: "shadowblade", name: "\u5F71\u8FD4", en: "Shadow Recall", unlock: 5, key: "Z", duration: 6, cooldown: 18 },
@@ -42,6 +48,13 @@ const SKILLS = {
   drain: { job: "curse", name: "\u751F\u547D\u6C72\u53D6", en: "Life Drain", unlock: 5, key: "Z", duration: 0, cooldown: 10 },
   doom: { job: "curse", name: "\u707E\u5384\u9886\u57DF", en: "Doom Field", unlock: 20, key: "C", duration: 8, cooldown: 28 }
 };
+const ELEMENTAL_IMPACTS = {
+  firebolt: { hit: 3, growth: 0.27, burn: 0.32, burnGrowth: 0.03, seconds: 4 },
+  firewave: { hit: 3.4, growth: 0.3, burn: 0, burnGrowth: 0, seconds: 0 },
+  firestorm: { hit: 3, growth: 0.26, burn: 0.65, burnGrowth: 0.06, seconds: 6 },
+  inferno: { hit: 7, growth: 0.55, burn: 1, burnGrowth: 0.08, seconds: 7 },
+  tempest: { hit: 8, growth: 0.65, burn: 0, burnGrowth: 0, seconds: 0 }
+};
 function runtime(a) {
   return a.skillRuntime ??= { cooldowns: {}, effects: {}, mode: 1, lastAux: 0 };
 }
@@ -63,14 +76,14 @@ const targetedSkillRanges = new Map([
   ["faultline", 25],
   ["stoneprison", 25],
   ["mountainfall", 25],
-  ...["frostburst", "swordwave", "swordrain", "phantomblade", "soulbolt", "icebolt", "blizzard", "chain", "storm", "hex", "doom"].map((id) => [id, 30])
+  ...[...Object.keys(ELEMENTAL_IMPACTS), "frostburst", "swordwave", "swordrain", "phantomblade", "soulbolt", "icebolt", "blizzard", "chain", "storm", "hex", "doom"].map((id) => [id, 30])
 ]);
 function skillCastRange(id, level) {
   const base = targetedSkillRanges.get(id);
   return base === void 0 ? 0 : Math.min(60, base + Math.max(0, level - 1) * 0.5);
 }
 function skillRadius(id, level, holy = false) {
-  const base = { riftblade: 2, shadowstep: 2, shadowreturn: 3, nightfall: 5, stonefist: 2, faultline: 4, stoneprison: 4, mountainfall: 6, frostburst: 2, slash: 4, power: 7, rage: 7, icearmor: 6, blizzard: 6, haste: 6, storm: 5, doom: 6, swordwave: 2, swordrain: 3, phantomblade: 5 };
+  const base = { firewave: 4, firestorm: 6, inferno: 8, tempest: 8, riftblade: 2, shadowstep: 2, shadowreturn: 3, nightfall: 5, stonefist: 2, faultline: 4, stoneprison: 4, mountainfall: 6, frostburst: 2, slash: 4, power: 7, rage: 7, icearmor: 6, blizzard: 6, haste: 6, storm: 5, doom: 6, swordwave: 2, swordrain: 3, phantomblade: 5 };
   return base[id] === void 0 ? 0 : (base[id] + Math.max(0, level - 1) * 0.5) * (holy ? 1.5 : 1);
 }
 function curseHitMultiplier(id, level, hexed = false) {
@@ -80,7 +93,7 @@ function skillCooldown(id, level) {
   return id === "vitality" || id === "power" ? Math.max(50, 100 - level * 2) : SKILLS[id]?.cooldown || 0;
 }
 function ensureBasicSkills(p) {
-  const id = p.profession === "shadowblade" ? "riftblade" : p.profession === "stonewright" ? "stonefist" : p.profession === "swordsman" ? "swordwave" : p.profession === "warrior" ? "slash" : p.profession === "summoner" ? "soulbolt" : p.profession === "ice" ? "frostburst" : null;
+  const id = p.profession === "fire" ? "firebolt" : p.profession === "shadowblade" ? "riftblade" : p.profession === "stonewright" ? "stonefist" : p.profession === "swordsman" ? "swordwave" : p.profession === "warrior" ? "slash" : p.profession === "summoner" ? "soulbolt" : p.profession === "ice" ? "frostburst" : null;
   if (!id || p.skills?.[id] !== void 0) return false;
   (p.skills ??= {})[id] = 1;
   return true;
@@ -110,7 +123,7 @@ function skillDescription(id, n, en = false) {
   const texts = {
     riftblade: [`${range}\u7C73\u88C2\u5F71\u53CC\u5203\uFF0C\u603B\u8BA1${300 + 25 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B\u51B7\u53744\u79D2\u3002\u81EA\u5E261\u7EA7\uFF0C\u6309X\u4F7F\u7528\u3002`, `${range}m twin rift blades: ${300 + 25 * level}% base attack damage in total. Cooldown 4s. Starts at level 1; press X.`],
     shadowstep: [`\u6CBF\u671D\u5411\u7A81\u8FDB\u6700\u591A10\u7C73\uFF0C\u6CBF\u9014\u654C\u4EBA\u5404\u53D7\u4E00\u6B21${260 + 22 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B\u4E0D\u80FD\u7A7F\u5899\uFF0C\u51B7\u53747\u79D2\u3002`, `Dash up to 10m forward; each enemy along the path takes ${260 + 22 * level}% base attack damage once. Cannot cross walls. Cooldown 7s.`],
-    shadowreturn: [`\u7559\u4E0B6\u79D2\u6B8B\u5F71\u5E76\u5411\u540E\u95EA\u907F\u6700\u591A6\u7C73\uFF0C\u5468\u56F4\u9020\u6210${220 + 20 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B6\u79D2\u5185\u518D\u6B21\u6309Z\u6CBF\u76F4\u7EBF\u8FD4\u56DE\uFF0C\u7EC8\u70B9\u518D\u6B21\u65A9\u51FB\u3002\u5899\u4F53\u4F1A\u963B\u6321\u8FD4\u56DE\uFF1B\u51B7\u537418\u79D2\u3002`, `Leave a 6s afterimage and retreat up to 6m, dealing ${220 + 20 * level}% base attack damage nearby. Recast Z within 6s to return along a straight path and slash again. Walls stop the return. Cooldown 18s.`],
+    shadowreturn: [`\u7559\u4E0B6\u79D2\u6B8B\u5F71\u5E76\u5411\u540E\u95EA\u907F\u6700\u591A9\u7C73\uFF0C\u5468\u56F4\u9020\u6210${220 + 20 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B6\u79D2\u5185\u518D\u6B21\u6309Z\u6216\u5230\u671F\u81EA\u52A8\u8FD4\u56DE\uFF0C\u56DE\u62C9\u901F\u5EA6\u7FFB\u500D\uFF0C\u7EC8\u70B9\u65A9\u51FB\u4F24\u5BB3\u9AD810%\u3002\u5899\u4F53\u4F1A\u963B\u6321\u8FD4\u56DE\uFF1B\u51B7\u537418\u79D2\u3002`, `Leave a 6s afterimage and retreat up to 9m, dealing ${220 + 20 * level}% base attack damage nearby. Recast Z or wait 6s to return at double speed and slash for 10% more damage. Walls stop the return. Cooldown 18s.`],
     nightfall: [`\u5468\u56F4\u65A9\u51FB\u9020\u6210${400 + 35 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B8\u79D2\u5185\u4F24\u5BB3+25%\u3001\u79FB\u901F+30%\uFF0C\u4F7F\u7528\u7A7F\u5F71\u540E\u51B7\u5374\u964D\u4E3A3\u79D2\uFF1B\u51B7\u537430\u79D2\u3002`, `Nearby slashes deal ${400 + 35 * level}% base attack damage. For 8s: +25% damage, +30% speed, Shadowstep cooldown becomes 3s. Cooldown 30s.`],
     stonefist: [`${range}\u7C73\u788E\u5CA9\u91CD\u62F3\uFF0C\u9020\u6210${320 + 30 * level}%\u57FA\u7840\u653B\u51FB\u8303\u56F4\u4F24\u5BB3\uFF1B\u51B7\u53745\u79D2\u3002\u81EA\u5E261\u7EA7\uFF0C\u6309X\u4F7F\u7528\u3002`, `${range}m stone fist: ${320 + 30 * level}% base attack area damage. Cooldown 5s. Starts at level 1; press X.`],
     faultline: [`\u9501\u5B9A${range}\u7C73\u5185\u654C\u4EBA\uFF0C\u5730\u8109\u8FDE\u7EED\u7206\u53D13\u6B21\uFF0C\u6BCF\u6B21${180 + 15 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B\u51B7\u537410\u79D2\u3002`, `Lock an enemy within ${range}m: three ground eruptions, each ${180 + 15 * level}% base attack damage. Cooldown 10s.`],
@@ -139,7 +152,8 @@ function skillDescription(id, n, en = false) {
     drain: [`${range}\u7C73\u6C72\u53D6\uFF0C\u9020\u6210${400 + 40 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u76EE\u6807\u5E26\u6709\u8870\u5F31\u5370\u8BB0\u65F6\u4F24\u5BB3\u989D\u5916+50%\uFF0C\u56DE\u590D\u5B9E\u9645\u4F24\u5BB330%\uFF08\u6700\u591A\u6700\u5927\u8840\u91CF20%\uFF09\uFF1B\u51B7\u537410\u79D2`, `${range}m drain: ${400 + 40 * level}% base attack damage, +50% damage against a target with an active Frailty Hex; heal 30% actual damage (max 20% max HP). Cooldown 10s.`],
     doom: [`${range}\u7C73\u76EE\u6807\u5468\u56F4${skillRadius("doom", level)}\u7C73\u9886\u57DF8\u79D2\uFF0C\u6BCF\u79D2${80 + 8 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u653B\u51FB -${Math.min(40, 10 + level)}%\uFF1B\u51B7\u537428\u79D2`, `${range}m target: ${skillRadius("doom", level)}m field for 8s, ${80 + 8 * level}% base attack damage/s, -${Math.min(40, 10 + level)}% enemy damage. Cooldown 28s.`]
   };
-  const text = texts[id]?.[en ? 1 : 0] || "", radius = skillRadius(id, level);
+  const impact = ELEMENTAL_IMPACTS[id], hit = impact && Math.round((impact.hit + impact.growth * level) * 100), burn = impact && Math.round((impact.burn + impact.burnGrowth * level) * 100);
+  const text = impact ? en ? `Hit: ${hit}% base attack. ${range}m targeting. Cooldown ${cd}s.` + (impact.seconds ? ` Burns for ${impact.seconds}s at ${burn}% per second, even after the cast ends.` : "") : `\u547D\u4E2D\u9020\u6210${hit}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u9501\u5B9A\u8DDD\u79BB${range}\u7C73\uFF0C\u51B7\u5374${cd}\u79D2\u3002` + (impact.seconds ? `\u71C3\u70E7\u6301\u7EED${impact.seconds}\u79D2\uFF0C\u6BCF\u79D2${burn}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u65BD\u6CD5\u7ED3\u675F\u540E\u4ECD\u751F\u6548\u3002` : "") : texts[id]?.[en ? 1 : 0] || "", radius = skillRadius(id, level);
   return text + (radius ? en ? ` Area radius: ${radius}m (+0.5m per skill level).` : ` \u4F5C\u7528\u534A\u5F84\uFF1A${radius}\u7C73\uFF08\u6BCF\u5347\u4E00\u7EA7+0.5\u7C73\uFF09\u3002` : "");
 }
 function activeSkill(a, id, now = Date.now()) {
@@ -175,6 +189,7 @@ function skillDrops(kind, random = Math.random) {
   return { [skillBook(id)]: 1 };
 }
 export {
+  ELEMENTAL_IMPACTS,
   PROFESSIONS,
   SKILLS,
   activeSkill,

@@ -9,7 +9,7 @@ import {rayAncientHitbox,ancientHitbox} from './ancient-hitboxes';
 import {bossBodyPathBlocked} from './ancient-boss-collision';
 import {isHoly,holyPower} from './ancient-ascension';
 import {ancientSkillDamage,ancientProfileHealth,ancientGearStats,equippedGear,GROWTH_COMBOS} from './ancient-gear';
-import {SKILLS,skillCastRange,skillRadius,curseHitMultiplier,runtime,activeSkill,skillCooldown,skillDamageMultiplier,skillHealth,type SkillActor} from './ancient-skills';
+import {ELEMENTAL_IMPACTS,SKILLS,skillCastRange,skillRadius,curseHitMultiplier,runtime,activeSkill,skillCooldown,skillDamageMultiplier,skillHealth,type SkillActor} from './ancient-skills';
 import {ancientMaxHealth,weaponDamage,blocked,lineClear,ancientMapHeight,type AncientProfile} from './ancient-rules';
 import {ANCIENT_KINDS as FOREST_KINDS} from './ancient-rules';
 import {forestPath} from './ancient-forest';
@@ -23,7 +23,7 @@ import {cityPath} from './ancient-city';
 export type SkillMonster={buffUntil?:number;buffPower?:number;id:string;kind:string;hp:number;maxHp:number;x:number;y?:number;z:number;slow?:number;slowUntil?:number;weak?:number;weakUntil?:number;vulnerable?:number;vulnerableUntil?:number;strikes?:{skillId?:string;owner:string;at:number;damage:number}[];dots?:{skillId?:string;owner:string;until:number;next:number;damage:number}[]};
 export type SkillFXDetails={target:string;phase?:string;source?:{x:number;y:number;z:number};links?:{x:number;y:number;z:number;target:string;height:number}[]};
 export function clearPendingSkillDamage(owner:string,targets:Iterable<Partial<Pick<SkillMonster,'strikes'|'dots'>>>){for(const m of targets){m.strikes=(m.strikes||[]).filter(v=>v.owner!==owner);m.dots=(m.dots||[]).filter(v=>v.owner!==owner);}}
-export type SkillContext={canMove?:(x:number,z:number,nx:number,nz:number)=>boolean;map:string;monsters:SkillMonster[];damage:(m:SkillMonster,n:number,source?:'summon',attack?:string)=>number;fx:(id:string,x:number,z:number,radius:number,details?:SkillFXDetails)=>void};
+export type SkillContext={motion?:(to:{x:number;y:number;z:number},speed:number)=>void;canMove?:(x:number,z:number,nx:number,nz:number)=>boolean;map:string;monsters:SkillMonster[];damage:(m:SkillMonster,n:number,source?:'summon',attack?:string)=>number;fx:(id:string,x:number,z:number,radius:number,details?:SkillFXDetails)=>void};
 function skillSourceContext(c:SkillContext,id:string):SkillContext{return {...c,damage:(m,n,source)=>c.damage(m,n,source,id)}}
 // The primary target already passed the caster's visibility test. Do not raycast
 // from inside its feet again: an altar/tree can falsely occlude a zero-length ray.
@@ -41,10 +41,11 @@ export function selectSkillTarget(a:SkillActor,dir:unknown,range:number,c:SkillC
 export function skillTargetError(a:SkillActor,dir:unknown,range:number,c:SkillContext){if(!Array.isArray(dir)||dir.length!==3||!dir.every(Number.isFinite))return '请瞄准可见的敌人';const hits=c.monsters.filter(m=>m.hp>0).map(m=>({m,hit:rayAncientHitbox(a,dir,m,ancientMapHeight(c.map,m.x,m.z,m.y),Math.max(60,range),.2)})).filter(v=>v.hit).sort((x,y)=>x.hit!.t-y.hit!.t);if(!hits.length)return '请瞄准可见的敌人';return hits[0].hit!.t>range?'目标超出技能范围':'目标被障碍物遮挡';}
 
 export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now=Date.now()){
+ const recalling=id==='shadowreturn'&&shadowRecallReady(a,now);
  const d=equippedGear(p,'weapon'),combo=d?.combo&&d.combo===p.profession?GROWTH_COMBOS[d.combo]:undefined,r=runtime(a),ready=!!combo&&!!r.gearChain&&r.gearChain.key===d!.combo&&r.gearChain.until>now&&id===combo.to;
  const start={x:a.x,z:a.z},relic=activeRelic(p),range=skillCastRange(id,p.skills?.[id]||1),target=['icebolt','stoneprison','storm'].includes(id)?selectSkillTarget(a,direction,range,c):undefined;
  const error=castSkillImpl(a,p,id,direction,relicCastContext(a,p,id,branchContext(a,p,id,skillSourceContext(c,id),now),now),now,ready?1+combo!.bonus:1);
- if(!error){if(r.cooldowns[id]>now)r.cooldowns[id]=now+(r.cooldowns[id]-now)*branchCooldown(p,id);if(id!=='weaken')queueBranchFinisher(a,p,id,target??selectSkillTarget(a,direction,range||30,c)??c.monsters.find(m=>m.hp>0&&Math.hypot(m.x-a.x,m.z-a.z)<=6&&lineClear(a.x,a.y,a.z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map)),now);const body=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p);
+ if(!error){if(!recalling&&r.cooldowns[id]>now)r.cooldowns[id]=now+(r.cooldowns[id]-now)*branchCooldown(p,id);if(id!=='weaken')queueBranchFinisher(a,p,id,target??selectSkillTarget(a,direction,range||30,c)??c.monsters.find(m=>m.hp>0&&Math.hypot(m.x-a.x,m.z-a.z)<=6&&lineClear(a.x,a.y,a.z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map)),now);const body=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p);
   if(relic==='ice'&&id==='icebolt'&&target)for(let i=0;i<3;i++)queueRelic(a,p,{at:now+1000+i*1000,x:target.x,z:target.z,radius:4,damage:body*.15,fx:'icebolt',slow:true});
   if(relic==='shadowblade'&&id==='shadowstep')queueRelic(a,p,{at:now+800,...start,radius:4,damage:body*.5,fx:'riftblade'});
   if(relic==='stonewright'&&id==='stoneprison'&&target)queueRelic(a,p,{at:now+1500,x:target.x,z:target.z,radius:5,damage:body*.6,fx:'faultline'});
@@ -77,6 +78,24 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
  }
  if(['vitality','power','rage','transform','icearmor'].includes(id)){r.effects[id]={until:now+s.duration*1000,level:n};if(id==='transform')r.mode=1;skillHealth(a,ancientProfileHealth(p),now);if(['power','rage','icearmor','haste'].includes(id)||id==='vitality'&&!!activeBranch(p)){const radius=(skillRadius(id,n,isHoly(p))||(id==='vitality'?4:0))*branchRadius(p,id);for(const m of c.monsters)if(m.hp>0&&Math.hypot(m.x-a.x,m.z-a.z)<=radius&&lineClear(a.x,a.y,a.z,m.x,(ancientMapHeight(c.map,m.x,m.z,m.y))+1,m.z,c.map)){c.damage(m,body*(id==='rage'?4+.4*n:3+.3*n));if(id==='icearmor')slow(m,Math.min(.7,.35+gear.slow),now+4000)}c.fx(id,a.x,a.z,radius)}else c.fx(id,a.x,a.z,2);return null}
  if(!target)return null;
+ const impact=ELEMENTAL_IMPACTS[id];
+ if(impact){
+  const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id),delay=id==='inferno'?550:id==='tempest'?300:0;
+  for(const m of radius?skillAreaTargets(target,radius,c):[target]){
+   const damage=body*(impact.hit+impact.growth*n);
+   if(delay){
+    m.strikes??=[];
+    if(m.strikes.length>=64)continue;
+    m.strikes.push({skillId:id,owner:a.name,at:now+delay,damage});
+   }else c.damage(m,damage);
+   if(!impact.seconds||m.hp<=0)continue;
+   m.dots=(m.dots||[]).filter(dot=>dot.until>now&&(dot.owner!==a.name||dot.skillId!==id));
+   if(m.dots.length>=8)m.dots.shift();
+   m.dots.push({skillId:id,owner:a.name,until:now+delay+(impact.seconds+1)*1000,next:now+delay+1000,damage:body*(impact.burn+impact.burnGrowth*n)});
+  }
+  c.fx(id,target.x,target.z,radius||1,{target:target.id,source:{x:a.x,y:a.y-.25,z:a.z}});
+  return null;
+ }
  if(id==='frostburst'){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(const m of skillAreaTargets(target!,radius,c))c.damage(m,body*(2.6+.25*n));c.fx(id,target!.x,target!.z,radius,{target:target!.id});return null;}
  if(['swordwave','triplecut','swordrain','phantomblade'].includes(id)){
   if(id==='swordrain'&&activeRelic(p)==='swordsman'){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(let i=0;i<6;i++)queueRelic(a,p,{at:now+250+i*500,x:target.x,z:target.z,target:target.id,radius,damage:body*(1.4+.16*n),fx:''});c.fx(id,target.x,target.z,radius,{target:target.id});return null;}
@@ -102,7 +121,10 @@ export function ancientAuxShot(a:SkillActor,p:AncientProfile,direction:unknown,c
 }
 export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,dt:number,now=Date.now()){
  if(a.hp<=0)clearPendingSkillDamage(a.name,c.monsters);
- const r=runtime(a);if(r.shadowAnchor&&r.shadowAnchor.until<=now)delete r.shadowAnchor;if(r.bossForm&&r.bossForm.until<=now)delete r.bossForm;skillHealth(a,ancientProfileHealth(p),now);for(const [id,e]of Object.entries(r.effects))if(e.until<=now)delete r.effects[id];if(a.hp<=0){delete r.relic;delete r.shadowAnchor;delete r.bossForm;r.effects={};if(r.summon){delete r.summon;r.cooldowns.summon=now+100000*(1-ancientGearStats(p).cooldown)}r.mode=1;skillHealth(a,ancientProfileHealth(p),now);return}
+ const r=runtime(a);if(r.shadowAnchor&&r.shadowAnchor.until<=now){
+  if(a.hp>0&&p.profession==='shadowblade'&&r.shadowAnchor.map===c.map)castExpansionSkill(a,p,'shadowreturn',undefined,skillSourceContext(c,'shadowreturn'),now,ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p),undefined,true);
+  else delete r.shadowAnchor;
+ }if(r.bossForm&&r.bossForm.until<=now)delete r.bossForm;skillHealth(a,ancientProfileHealth(p),now);for(const [id,e]of Object.entries(r.effects))if(e.until<=now)delete r.effects[id];if(a.hp<=0){delete r.relic;delete r.shadowAnchor;delete r.bossForm;r.effects={};if(r.summon){delete r.summon;r.cooldowns.summon=now+100000*(1-ancientGearStats(p).cooldown)}r.mode=1;skillHealth(a,ancientProfileHealth(p),now);return}
  const vitality=activeSkill(a,'vitality',now);if(vitality)a.hp=Math.min(a.maxHp||100,a.hp+(a.maxHp||100)*vitality*.01*dt);
  tickRelic(a,p,c,now);tickBranch(a,p,c,now);
  const branchTicks=new Map<string,SkillContext>();const tickContext=(id:string)=>{if(!branchTicks.has(id))branchTicks.set(id,branchContext(a,p,id,skillSourceContext(c,id),now));return branchTicks.get(id)!;};

@@ -3,6 +3,7 @@ import * as THREE from './three.module.js';
 const templates=new Map(),unit={box:new THREE.BoxGeometry(1,1,1),orb:new THREE.SphereGeometry(1,12,8),cone:new THREE.ConeGeometry(1,1,8),crystal:new THREE.OctahedronGeometry(1),tube:new THREE.CylinderGeometry(1,1,1,8),ring:new THREE.TorusGeometry(1,.06,5,24)};
 export const PROFESSION_LOOKS={
  shadowblade:{cloth:0x201e38,metal:0x3d405d,trim:0xb4a2d9,glow:0xa490ff,skin:0xb4a4a2},
+ fire:{cloth:0x542218,metal:0x64332d,trim:0xe3aa53,glow:0xff6f2c,skin:0xc49b7a},
  stonewright:{cloth:0x52412c,metal:0x737367,trim:0xe3b979,glow:0xffc96c,skin:0xba9a78},
  warrior:{cloth:0x5d2731,metal:0x586676,trim:0xd6a66a,glow:0xffa74b,skin:0xc9a888},
  summoner:{cloth:0x24564d,metal:0x4b6663,trim:0xd8cfab,glow:0x51ffd0,skin:0xb49d86},
@@ -63,6 +64,12 @@ function makeTemplate(job){
   for(let i=0;i<7;i++){const a=(i-3)*.36;add(body,'crystal','metal',Math.sin(a)*.22,1.98+(.15-Math.abs(i-3)*.025),-Math.cos(a)*.06,.047,.25-Math.abs(i-3)*.025,.065,0,0,-a*.4)}
   for(const side of [-1,1]){for(let i=0;i<3;i++)add(body,'crystal','metal',side*(.34+i*.06),1.51+i*.055,.025,.1,.18,.11,0,0,-side*.5);box(body,'glow',side*.13,1.24,-.247,.017,.32,.014,side*.2);add(body,'crystal','glow',side*.22,.57,-.185,.023,.1,.012)}
   add(body,'crystal','glow',0,1.46,-.22,.08,.13,.04);for(let i=0;i<6;i++)add(body,'crystal','metal',Math.sin(i*Math.PI/3)*.27,1.3+Math.cos(i*Math.PI/3)*.27,.3,.045,.11,.04,0,0,-i*Math.PI/3);
+ }else if(job==='fire'){
+  for(const side of [-1,1]){
+   add(body,'crystal','trim',side*.34,1.5,-.02,.19,.17,.19,0,0,side*.43);
+   box(body,'glow',side*.13,1.29,-.245,.019,.31,.015,side*.32);
+  }
+  add(body,'crystal','glow',0,1.48,-.25,.075,.13,.04);
  }else if(job==='lightning'){
   add(body,'orb','metal',0,1.84,.015,.218,.24,.21);box(body,'trim',0,1.78,-.203,.32,.07,.035);box(body,'glow',0,1.805,-.227,.25,.018,.009);
   for(const side of [-1,1]){add(body,'cone','trim',side*.17,2.13,.03,.035,.32,.04,0,0,-side*.25);add(body,'crystal','metal',side*.4,1.53,.04,.21,.13,.18,0,0,side*.35);for(let i=0;i<4;i++)box(body,'glow',side*(.045+(i%2)*.045),1.36-i*.065,-.242,.02,.095,.014,side*(i%2?.65:-.65));}

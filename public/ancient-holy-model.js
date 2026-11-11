@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as THREE from './three.module.js';
 const cache=new Map();
-const palettes={lightning:[0x0036c7,0x008cff],ice:[0x159bc7,0x5fe3ed],curse:[0x5915bb,0xc334f3],summoner:[0x078f77,0x35e8a1],swordsman:[0x068442,0x39f36c],warrior:[0xce4912,0xffb522],shadowblade:[0x392184,0xa56aff],stonewright:[0x9f531a,0xf0ac42]};
+const palettes={fire:[0xb72113,0xffca58],lightning:[0x0036c7,0x008cff],ice:[0x159bc7,0x5fe3ed],curse:[0x5915bb,0xc334f3],summoner:[0x078f77,0x35e8a1],swordsman:[0x068442,0x39f36c],warrior:[0xce4912,0xffb522],shadowblade:[0x392184,0xa56aff],stonewright:[0x9f531a,0xf0ac42]};
 // Cached, merged geometry per animated joint; no particles, timers or per-player lights.
 function build(job){const [deep,bright]=palettes[job]||palettes.warrior,groups=new Map(),box=new THREE.BoxGeometry(1,1,1),cone=new THREE.ConeGeometry(1,1,5),ring=new THREE.TorusGeometry(1,.018,4,40),dummy=new THREE.Object3D();
  const add=(joint,geo,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0,color=bright)=>{dummy.position.set(x,y,z);dummy.scale.set(sx,sy,sz);dummy.rotation.set(rx,ry,rz);dummy.updateMatrix();const g=geo.index?geo.toNonIndexed():geo.clone();g.applyMatrix4(dummy.matrix);const c=new THREE.Color(color),values=new Float32Array(g.attributes.position.count*3);for(let i=0;i<values.length;i+=3){values[i]=c.r;values[i+1]=c.g;values[i+2]=c.b}g.setAttribute('color',new THREE.BufferAttribute(values,3));if(!groups.has(joint))groups.set(joint,[]);groups.get(joint).push(g)};

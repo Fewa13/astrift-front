@@ -67,6 +67,7 @@ export function unlockAncientSkin(profile:SkinProfile,id:string){
 }
 
 export const SKIN_PROFESSIONS={
+ fire:{zh:'火焰法师',en:'Fire Mage',cloth:0x542218,accent:0xff9b48},
  warrior:{zh:'战士',en:'Warrior',cloth:0x77463b,accent:0xdfa773},
  summoner:{zh:'召唤师',en:'Summoner',cloth:0x45715e,accent:0x9ee2a3},
  ice:{zh:'冰雪法师',en:'Frost Mage',cloth:0x447391,accent:0xb8efff},

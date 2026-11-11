@@ -57,7 +57,7 @@ export function buildHolySpell(f,{mesh,ring,batch,set,beam,swords}){
   case 'swordrain':portal(10,r*.75);haloBlades(24,r*.78,9,0);swords(f,24,(i,t)=>{const a=i*2.399,rr=r*Math.sqrt((i+.5)/24),phase=(t+i*.07)% .5;return [Math.cos(a)*rr,10-phase*20,Math.sin(a)*rr,2.2,a]});break;
   case 'phantomblade':
    // An actual colossal sword: bevel, edge, fuller, guard, grip and pommel.
-   for(const [geo,y,sx,sy,sz]of [['bar',0,.85,10,.3],['bar',0,.12,10,.34],['cone',-6,.85,2,.3],['bar',5,4.5,.4,.65],['bar',6.2,.45,2,.45],['crystal',7.4,.6,.6,.6]])batch(f,geo,1,(i,t)=>{const a=-1.4+ease(Math.max(0,t-.32)/.23)*2.8,s=ease(t*6)*Math.max(0,1-Math.max(0,t-2)/1.3);set(-Math.sin(a)*y,7+Math.cos(a)*y,0,sx*s,sy*s,sz*s,0,0,a)});
+   for(const [geo,y,sx,sy,sz]of [['bar',0,.85,10,.3],['bar',0,.12,10,.34],['cone',-6,.85,2,.3],['bar',5,4.5,.4,.65],['bar',6.2,.45,2,.45],['crystal',7.4,.6,.6,.6]])batch(f,geo,1,(i,t)=>{const size=1+Math.log2(Math.max(1,f.r/7.5))*.48,a=-1.4+ease(Math.max(0,t-.32)/.23)*2.8,s=size*ease(t*6)*Math.max(0,1-Math.max(0,t-2)/1.3);set(-Math.sin(a)*y*size,(7+Math.cos(a)*y)*size,0,sx*s,sy*s,sz*s,0,0,a)});
    portal(11,r*.7);runes(11,r*.68,16);
    batch(f,'arc',4,(i,t)=>{const u=t-.34-i*.04,s=u>=0&&u<.8?(6-i*.3)*Math.max(0,1-u/.8):0;set(0,3,.08*i,s,s,.65,0,0,-1.4+ease(u/.25)*2.8)});
    batch(f,'beam',48,(i,t)=>{const a=Math.floor(i/3)/16*TAU,j=i%3,u=t-.5,rr=r*ease(u*5),w=u>=0?.065*Math.max(0,1-u/2.7):0;beam(Math.cos(a)*rr*j/3,.15,Math.sin(a)*rr*j/3,Math.cos(a+.08)*rr*(j+1)/3,.15,Math.sin(a+.08)*rr*(j+1)/3,w)});

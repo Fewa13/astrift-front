@@ -1,6 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 // Both live network effects and the preview call this same bounded, instanced builder.
 export const EXPANSION_FX={
+ firebolt:[0xff843c,1.25],firewave:[0xff7a31,1.55],firestorm:[0xff5c27,3.4],inferno:[0xffae48,3.9],tempest:[0x83c7ff,3.15],
  riftblade:[0x9e88ff,.8],shadowstep:[0x8671ff,1.1],shadowreturn:[0xba9dff,6],nightfall:[0x8279ff,8],
  stonefist:[0xf2bd75,1],faultline:[0xf5b862,1.7],stoneprison:[0xd7ac71,3.7],mountainfall:[0xffcc7b,3.3]
 };
@@ -13,7 +14,47 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
  const cracks=(start,size)=>batch(f,'beam',h?54:24,(i,t)=>{const a=Math.floor(i/3)/(h?18:8)*TAU,j=i%3,p=ease((t-start)*6),s=fade(t,start,start+1.8),rr=size*p;beam(Math.cos(a)*rr*j/3,.08,Math.sin(a)*rr*j/3,Math.cos(a+.07*(j%2?1:-1))*rr*(j+1)/3,.08,Math.sin(a+.07*(j%2?1:-1))*rr*(j+1)/3,.045*s)});
  const figures=(count,position)=>{for(const [geo,part,scale]of [['bar',[0,1.1,0],[.48,.7,.24]],['orb',[0,1.78,0],[.2,.23,.2]],['bar',[-.18,.4,0],[.16,.75,.2]],['bar',[.18,.4,0],[.16,.75,.2]],['bar',[-.43,1.05,-.12],[.12,.8,.12]],['bar',[.43,1.05,-.12],[.12,.8,.12]]])batch(f,geo,count,(i,t)=>{const [x,y,z,s,turn]=position(i,t);set(x+part[0]*s,y+part[1]*s,z+part[2]*s,scale[0]*s,scale[1]*s,scale[2]*s,0,turn||0,part[0]>.3?-.75:part[0]<-.3?.75:0)},true)};
  const blade=(count,pose)=>{for(const [geo,y,scale]of [['bar',0,[.1,1.1,.06]],['cone',.68,[.15,.3,.08]],['bar',-.5,[.38,.07,.1]]])batch(f,geo,count,(i,t)=>{const [x,yy,z,s,angle]=pose(i,t);set(x-Math.sin(angle)*y*s,yy+Math.cos(angle)*y*s,z,scale[0]*s,scale[1]*s,scale[2]*s,0,0,angle)})};
- if(f.id==='riftblade'){
+ const spread=(normal,holy,cap=96)=>Math.min(cap,Math.ceil((h?holy:normal)*Math.sqrt(Math.max(1,r/5))));
+ if(f.id==='firebolt'){
+  f.soft.color.setHex(h?0xffdb7b:0xff4e25);
+  batch(f,'orb',h?18:10,(i,t)=>{
+   const u=ease(Math.max(0,t-i*.013)*8),size=(i===0?.48:.19)*fade(t,0,.55)*(h?1.35:1);
+   set(f.source.x*(1-u),1.2+(f.source.y-1.2)*(1-u)+Math.sin(i*2)*.2,f.source.z*(1-u),size,size*1.4,size);
+  },true);
+  shards(h?26:14,.22,1.4);
+ }else if(f.id==='firewave'||f.id==='firestorm'||f.id==='inferno'){
+  const meteor=f.id==='inferno',vortex=f.id==='firestorm',impact=meteor?.55:0;
+  f.core.color.setHex(h?0xffe596:meteor?0xffa94a:0xff7935);
+  f.soft.color.setHex(h?0xff8426:0xe63c14);
+  const count=spread(30,54);
+  batch(f,'cone',count,(i,t)=>{
+   const u=t-impact,a=i*2.399+(vortex?t*2.8:0),p=ease(Math.max(0,u)*3);
+   const rr=r*Math.sqrt((i+.5)/count)*(vortex?.85:p);
+   const pulse=u>=0?(vortex?(.5+.5*Math.sin(t*9+i))*fade(t,0,3.4):fade(t,impact,meteor?2.9:1.35)):0;
+   set(Math.cos(a)*rr,.2+2*pulse,Math.sin(a)*rr,.17*pulse,(h?3.6:2.1)*pulse,.17*pulse,.2,a,.23);
+  });
+  batch(f,'ring',h?4:2,(i,t)=>{const u=t-impact-i*.11,p=ease(u*4),s=u>=0?p*r*fade(t,impact,meteor?3.2:1.5):0;set(0,.12+i*.05,0,s,s,s,Math.PI/2)},true);
+  if(h){
+   batch(f,'arc',meteor?8:4,(i,t)=>{
+    const u=t-impact-i*.06,s=ease(u*4)*r*.7*fade(t,impact,meteor?2.8:1.4);
+    set(0,meteor?4+i*.45:.35+i*.65,0,s,s,.25,Math.PI/2,i*.23,t*1.4+i);
+   },true);
+  }
+  if(meteor){
+   const count=h?12:6;
+   batch(f,'crystal',count,(i,t)=>{const a=i*2.399,rr=i?r*.65*Math.sqrt(i/count):0,p=ease(t/.55),s=fade(t,.02,.58)*(i?.6:1.5);set(Math.cos(a)*rr+(1-p)*5,16*(1-p)+.7,Math.sin(a)*rr,s,s*1.8,s,0,a,-.4)});
+  }
+ }else if(f.id==='tempest'){
+  f.core.color.setHex(h?0xf3f8ff:0xb9e6ff);f.soft.color.setHex(h?0x816bff:0x448dff);
+  const bolts=spread(9,15,24);
+  batch(f,'beam',bolts*4,(i,t)=>{
+   const j=Math.floor(i/4),k=i%4,a=j*2.399,rr=j?r*.96*Math.sqrt(j/bolts):0,x=Math.cos(a)*rr,z=Math.sin(a)*rr;
+   const u=t-.30-j*.035,w=u>=0?.13*fade(u,0,.64)*(h?1.4:1):0,offset=k===0?0:Math.sin(j*3+k*4)*.9;
+   beam(x+offset,k*3.6,z+offset,x+Math.sin(j*3+(k+1)*4)*.9,(k+1)*3.6,z-offset,w);
+  });
+  ring(f,r,.12,'shock',true);
+  batch(f,'ring',h?4:2,(i,t)=>{const u=t-.26-i*.1,s=u>=0?ease(u*6)*r*fade(t,.26,2.2):0;set(0,.18+i*.1,0,s,s,s,Math.PI/2)},true);
+ }else if(f.id==='riftblade'){
   batch(f,'arc',h?6:2,(i,t)=>{const delay=Math.floor(i/2)*.09,u=t-delay,on=u>=0&&u<.32,side=i%2?1:-1,s=on?(h?2.8:1.8)*(1-u/.45):0;set(side*.25,1.2,0,s,s,.45,0,0,side*(.7+ease(u/.32)*2.6))});
   if(h){figures(2,(i,t)=>{const p=ease(t/.3),side=i?1:-1;return [side*3*(1-p),0,side*.5,fade(t,0,.55),side*.8]});blade(4,(i,t)=>[Math.sin(i*1.7)*2,1.8,Math.cos(i*1.7),fade(t,.04,.7)*1.2,i*1.7+t*5]);}
  }else if(f.id==='shadowstep'){
@@ -25,24 +66,32 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
  }else if(f.id==='shadowreturn'){
   const back=f.phase!=='return';figures(h?3:1,(i,t)=>[back?f.source.x+(i-1)*(h?.7:0):Math.sin(i*2)*ease(t*5)*2,back?f.source.y-1.4:0,back?f.source.z:Math.cos(i*2)*ease(t*5)*2,back?.68+.12*Math.sin(t*5+i):fade(t,0,1.1),t*.2]);
   batch(f,'arc',h?4:2,(i,t)=>{const u=t-i*.04,s=fade(u,0,.55)*r*.7;set(0,1.2,0,s,s,.3,0,0,i*1.4+ease(u*4)*3)});
+  if(!back)batch(f,'beam',h?18:12,(i,t)=>{
+   const j=Math.floor(i/3),lane=(i%3-1)*.42,count=h?6:4,a=j/count,b=(j+1)/count,s=fade(t,0,.62);
+   beam(f.source.x*(1-a)+lane,.7+j*.09,f.source.z*(1-a),f.source.x*(1-b)+lane,.74+j*.09,f.source.z*(1-b),.065*s);
+  });
   if(h)batch(f,'ring',3,(i,t)=>{const s=back?1+.12*Math.sin(t*3+i):ease(t*5)*2;set(back?f.source.x:0,.15+i*.06,back?f.source.z:0,s,s,s,Math.PI/2,0,t*(i%2?1:-1))},true);
  }else if(f.id==='nightfall'){
-  blade(h?12:6,(i,t)=>{const count=h?12:6,a=i/count*TAU+t*(h?1.6:.9),rr=h?2.3:1.6;return [Math.cos(a)*rr,1.6+Math.sin(a*2+t)*.4,Math.sin(a)*rr,1,Math.sin(a)*1.2]});
+  blade(spread(8,14,26),(i,t)=>{const count=spread(8,14,26),a=i/count*TAU+t*(h?1.6:.9),rr=r*.72;return [Math.cos(a)*rr,1.6+Math.sin(a*2+t)*.4,Math.sin(a)*rr,1,Math.sin(a)*1.2]});
   batch(f,'arc',h?6:3,(i,t)=>{const beat=t%(h?.5:.85),s=fade(beat,i*.025,.4);set(0,.3+i*.45,0,(1+ease(beat*6)*r*.7)*s,(1+ease(beat*6)*r*.7)*s,.25,Math.PI/2,i*.3,t*2+i)});
   if(h)figures(3,(i,t)=>{const a=i/3*TAU+t*1.6;return [Math.cos(a)*2.8,0,Math.sin(a)*2.8,.7,-a]});
  }else if(f.id==='stonefist'){
   // Knuckles and wrist travel from caster to target; not another particle projectile.
   rockParts([['bar',[0,0,0],[.9,.8,.8]],['bar',[0,-.1,.65],[.65,.65,.7]],...Array.from({length:4},(_,i)=>['crystal',[(i-1.5)*.25,.3,-.35],[.19,.28,.23]])],t=>{const p=ease(t/.18),s=fade(t,0,.65)*(h?1.9:1);return [f.source.x*(1-p),1.3+(f.source.y-1.3)*(1-p),f.source.z*(1-p),s,-.15]});
   cracks(.18,r);shards(h?24:12,.18,r);
+  if(!back)batch(f,'beam',h?18:12,(i,t)=>{
+   const j=Math.floor(i/3),lane=(i%3-1)*.42,count=h?6:4,a=j/count,b=(j+1)/count,s=fade(t,0,.62);
+   beam(f.source.x*(1-a)+lane,.7+j*.09,f.source.z*(1-a),f.source.x*(1-b)+lane,.74+j*.09,f.source.z*(1-b),.065*s);
+  });
   if(h)batch(f,'ring',3,(i,t)=>{const u=t-.1-i*.07,s=u>=0?ease(u*7)*r:0;set(0,1.3,0,s,s,s,0,0,t*.3)},true);
  }else if(f.id==='faultline'){
-  stoneBatch('cone',(h?16:8)*3,(i,t)=>{const count=h?16:8,wave=Math.floor(i/count),j=i%count,u=t-wave*.35,a=j/count*TAU,rr=r*(.35+wave*.25),s=u>=0?fade(u,0,.65):0;set(Math.cos(a)*rr,-.2+ease(u*9)*s*(h?1.5:.8),Math.sin(a)*rr,.3*s,(h?2.6:1.4)*s,.3*s,0,a,.25)});
+  stoneBatch('cone',spread(8,16,28)*3,(i,t)=>{const count=spread(8,16,28),wave=Math.floor(i/count),j=i%count,u=t-wave*.35,a=j/count*TAU,rr=r*(.35+wave*.25),s=u>=0?fade(u,0,.65):0;set(Math.cos(a)*rr,-.2+ease(u*9)*s*(h?1.5:.8),Math.sin(a)*rr,.3*s,(h?2.6:1.4)*s,.3*s,0,a,.25)});
   for(let i=0;i<3;i++)cracks(i*.35,r*(.4+i*.3));
   if(h)batch(f,'bar',24,(i,t)=>{const a=i/24*TAU,s=fade(t,.12,1.6);set(Math.cos(a)*r*.85,2.7*s,Math.sin(a)*r*.85,.2*s,1.3*s,.15*s,0,-a,Math.PI/4)});
  }else if(f.id==='stoneprison'){
   stoneBatch('crystal',h?16:8,(i,t)=>{const a=i/(h?16:8)*TAU,s=t<3?ease(t*6):fade(t,3,3.65),rr=r*.8*(t<3?1:1-ease((t-3)*5));set(Math.cos(a)*rr,(h?2.1:1.3)*s,Math.sin(a)*rr,.4*s,(h?3.8:2.5)*s,.35*s,0,a,Math.sin(a)*.2)});
   batch(f,'beam',h?32:8,(i,t)=>{const j=i%8,layer=Math.floor(i/8),a=j/8*TAU,b=(j+1)/8*TAU,s=t<3?ease(t*6):fade(t,3,3.6);beam(Math.cos(a)*r*.8,(.7+layer*.65)*s,Math.sin(a)*r*.8,Math.cos(b)*r*.8,(.7+layer*.65)*s,Math.sin(b)*r*.8,.045*s)},true);
-  cracks(3,r);shards(h?32:16,3,r);
+  cracks(3,r);shards(spread(20,36),3,r);
   if(h){ring(f,r,.12,'counter');batch(f,'bar',24,(i,t)=>{const a=i/24*TAU+t*.15,s=fade(t,0,3.7);set(Math.cos(a)*r,.2,Math.sin(a)*r,.06,.5*s,.06,Math.PI/2,0,-a)})}
  }else if(f.id==='mountainfall'){
   // A jointed forearm descends, then an articulated fist strikes at the actual 650ms hit.
@@ -51,7 +100,7 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
    ...Array.from({length:6},(_,i)=>['bar',[(i%2?1:-1)*.9,1.7+Math.floor(i/2)*1.2,0],[.3,.9,1.65]])],
    t=>{const charge=ease(t/.5),slam=ease((t-.5)/.15),s=ease(t*6)*(t<.65?1:fade(t,.65,2.3))*(h?1.6:1);return [(1-slam)*-2,1+7*charge*(1-slam),0,s,(1-slam)*-.65]});
   batch(f,'bar',12,(i,t)=>{const side=i%2?1:-1,j=Math.floor(i/2),slam=ease((t-.5)/.15),s=ease(t*6)*(t<.65?1:fade(t,.65,2.3))*(h?1.6:1);set(side*.55*s+(1-slam)*-2,1+7*ease(t/.5)*(1-slam)+(j*.72+.5)*s,-.82*s,.055*s,.36*s,.035*s,0,0,side*.6)});
-  cracks(.65,r);shards(h?40:20,.65,r);
+  cracks(.65,r);shards(spread(24,44),.65,r);
   batch(f,'ring',3,(i,t)=>{const u=t-1-i*.5,s=u>=0&&u<.65?ease(u*6)*r:0;set(0,.14+i*.025,0,s,s,s,Math.PI/2)},true);
   if(h){batch(f,'crystal',12,(i,t)=>{const a=i/12*TAU,s=fade(t,.2,2.5),rr=r*.75;set(Math.cos(a)*rr,5+Math.sin(t*3+i)*.3,Math.sin(a)*rr,.45*s,1.4*s,.45*s,0,a,t*.3)});batch(f,'beam',24,(i,t)=>{const a=i/24*TAU,u=t-.65,s=fade(t,.65,2.6);beam(Math.cos(a)*r*.7,.1,Math.sin(a)*r*.7,Math.cos(a)*r*.7,6*ease(u*8),Math.sin(a)*r*.7,.06*s)})}
  }

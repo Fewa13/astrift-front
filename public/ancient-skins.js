@@ -62,6 +62,7 @@ function unlockAncientSkin(profile, id) {
   return null;
 }
 const SKIN_PROFESSIONS = {
+  fire: { zh: "\u706B\u7130\u6CD5\u5E08", en: "Fire Mage", cloth: 5513752, accent: 16751432 },
   warrior: { zh: "\u6218\u58EB", en: "Warrior", cloth: 7816763, accent: 14657395 },
   summoner: { zh: "\u53EC\u5524\u5E08", en: "Summoner", cloth: 4551006, accent: 10412707 },
   ice: { zh: "\u51B0\u96EA\u6CD5\u5E08", en: "Frost Mage", cloth: 4486033, accent: 12120063 },

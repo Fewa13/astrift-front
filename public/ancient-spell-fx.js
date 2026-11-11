@@ -29,7 +29,7 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
  function batch(f,geo,count,pose,soft=false){const original=count;count=geo==='beam'?count:Math.max(1,Math.ceil(count*(f.particles??1)));const sample=pose;pose=(i,t)=>sample(Math.min(original-1,Math.floor(i*original/count)),t);const m=new THREE.InstancedMesh(G[geo],soft?f.soft:f.core,count);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;f.group.add(m);f.batches.push({m,pose});return m}
  function set(x,y,z,sx,sy,sz,rx=0,ry=0,rz=0){dummy.position.set(x,y,z);dummy.rotation.set(rx,ry,rz);dummy.scale.set(sx,sy,sz)}
  function beam(ax,ay,az,bx,by,bz,width){dummy.position.set((ax+bx)/2,(ay+by)/2,(az+bz)/2);dir.set(bx-ax,by-ay,bz-az);dummy.scale.set(width,dir.length(),width);dummy.quaternion.setFromUnitVectors(up,dir.normalize())}
- function burst(f,n,speed){batch(f,'crystal',n,(i,t)=>{const a=i/n*TAU,r=ease(t*3)*speed*(.5+i%4*.15);set(Math.cos(a)*r,.7+Math.sin(i*2)*r*.4,Math.sin(a)*r,.04,.15,.04,t*5,a)})}
+ function burst(f,n,speed){n=Math.min(96,Math.ceil(n*Math.sqrt(Math.max(1,f.r/5))));speed=Math.max(speed,Math.min(24,f.r*.8));batch(f,'crystal',n,(i,t)=>{const a=i/n*TAU,r=ease(t*3)*speed*(.5+i%4*.15);set(Math.cos(a)*r,.7+Math.sin(i*2)*r*.4,Math.sin(a)*r,.04,.15,.04,t*5,a)})}
  function missile(f,ice){mesh(f,ice?'crystal':'orb',[0,1.2,0],ice?[.22,.75,.22]:[.25,.25,.25],[0,0,Math.PI/2],'missile');batch(f,ice?'crystal':'orb',12,(i,t)=>{const p=ease(t/.22-i*.025),s=Math.max(.015,(1-i/14)*.08);set(f.source.x*(1-p),1.2+(f.source.y-1.2)*(1-p),f.source.z*(1-p),s,ice?s*2:s,s,0,t*5)},true);burst(f,ice?22:16,ice?2:1.5)}
  function swords(f,count,position){for(const [geo,offset,scale]of [['bar',0,[.12,1.3,.05]],['cone',-.78,[.15,.3,.06]],['bar',.7,[.5,.08,.09]],['bar',.95,[.08,.4,.08]]])batch(f,geo,count,(i,t)=>{const p=position(i,t);set(p[0],p[1]+offset*p[3],p[2],scale[0]*p[3],scale[1]*p[3],scale[2]*p[3],Math.PI,0,p[4]||0)})}
  function build(f){const r=f.r;
@@ -40,10 +40,10 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
    case 'triplecut':
     for(let i=0;i<3;i++){const m=mesh(f,'arc',[0,1.3,i*.1],[2.8-i*.4,2.8-i*.4,.6],[i%2?.7:-.4,0,i%2?1.1:-.8],'tripleSlash');m.userData.delay=i*.3}burst(f,20,2);break;
    case 'swordrain':
-    swords(f,18,(i,t)=>{const a=i*2.399,rr=f.r*.8*Math.sqrt((i+.5)/18),phase=(t+i%3*.12)% .5;return [Math.cos(a)*rr,9-phase*18,Math.sin(a)*rr,1.2,0]});ring(f,r,.08,'pulse');ring(f,r*.83,.12,'counter',true);break;
+    const count=Math.min(64,Math.ceil(18*Math.sqrt(Math.max(1,r/3))));swords(f,count,(i,t)=>{const a=i*2.399,rr=f.r*.8*Math.sqrt((i+.5)/count),phase=(t+i%3*.12)% .5;return [Math.cos(a)*rr,9-phase*18,Math.sin(a)*rr,1.2,0]});ring(f,r,.08,'pulse');ring(f,r*.83,.12,'counter',true);break;
    case 'phantomblade':
     // Four instanced components form an actual blade, tip, guard and grip.
-    for(const [geo,offset,scale]of [['bar',0,[.65,10,.22]],['cone',-6,[.8,2,.24]],['bar',5,[4,.35,.6]],['bar',6.5,[.45,2.6,.45]]])batch(f,geo,1,(i,t)=>{const angle=-1.15+ease(Math.max(0,t-.32)/.23)*2.25,y=offset,s=ease(t*7)*Math.max(0,1-Math.max(0,t-1.5)/1.4);set(-Math.sin(angle)*y,7+Math.cos(angle)*y,0,scale[0]*s,scale[1]*s,scale[2]*s,0,0,angle)});
+    for(const [geo,offset,scale]of [['bar',0,[.65,10,.22]],['cone',-6,[.8,2,.24]],['bar',5,[4,.35,.6]],['bar',6.5,[.45,2.6,.45]]])batch(f,geo,1,(i,t)=>{const size=1+Math.log2(Math.max(1,f.r/5))*.48,angle=-1.15+ease(Math.max(0,t-.32)/.23)*2.25,y=offset*size,s=size*ease(t*7)*Math.max(0,1-Math.max(0,t-1.5)/1.4);set(-Math.sin(angle)*y,7*size+Math.cos(angle)*y,0,scale[0]*s,scale[1]*s,scale[2]*s,0,0,angle)});
     batch(f,'beam',18,(i,t)=>{const a=i/18*TAU,u=Math.max(0,t-.5),rr=ease(u*4)*f.r*1.5,w=t>=.5?.055*Math.max(0,1-u/2.5):0;beam(Math.cos(a)*rr*.25,.12,Math.sin(a)*rr*.25,Math.cos(a)*rr,.12,Math.sin(a)*rr,w)});
     batch(f,'ring',2,(i,t)=>{const u=t-.5-i*.12,s=u>=0&&u<1.5?ease(u*5)*(f.r+i)*Math.max(0,1-u/1.5):0;set(0,.12+i*.08,0,s,s,s,Math.PI/2)});
     mesh(f,'arc',[0,2,0],[7,7,.7],[0,0,-1.2],'greatCut',true);burst(f,30,5);break;
