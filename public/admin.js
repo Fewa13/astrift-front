@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {apiURL,diagnosticFetch} from './network-diagnostics.js?v=20261027-backend-fallback-1';
+import {apiURL,diagnosticFetch} from './network-diagnostics.js?v=20261111-feedback-1';
 const root=document.getElementById('adminApp');
 let mapPreview=null;
 let token=sessionStorage.getItem('astrift.admin.session')||'',challenge='',stage=1,state=null,mode='ban',busy=false,rewards=[],preview=null;

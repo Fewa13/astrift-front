@@ -22,15 +22,6 @@ export function networkReport(input,error){
  try{const url=new URL(raw,page?.href||'https://play.astrift.com');if(raw.startsWith('/api/')&&globalThis.window?.__ASTRIFT_API_ORIGIN__)url.host=new URL(window.__ASTRIFT_API_ORIGIN__).host;endpoint=url.origin+url.pathname}catch{endpoint='Unknown endpoint'}
  return ['ASTRIFT · 网络诊断 / Network diagnostics','时间 / Time: '+new Date().toISOString(),'页面来源 / Page origin: '+(page?.origin||'unknown'),'请求地址 / Endpoint: '+endpoint,'浏览器错误 / Browser error: '+String(error?.name||'Error')+': '+String(error?.message||'Unknown error').slice(0,300),'网络状态 / Browser network status: '+(globalThis.navigator?.onLine===false?'离线 / Offline':'在线（不代表服务器可达） / Online (server reachability unknown)'),'', '可能原因：网络或扩展拦截、DNS、连接故障、服务器不可用或 CORS。','Possible causes: network/extension filtering, DNS, connection failure, server outage or CORS.','浏览器没有向游戏公开具体原因，无法仅凭 Failed to fetch 确认。','The browser does not expose the underlying cause to the game. Failed to fetch alone cannot identify it.','本报告不包含账号、密码、验证码、登录令牌或请求内容。','No account details, passwords, verification codes, tokens or request bodies are included.'].join('\n');
 }
-let reportSending=false,reportBlockedUntil=0;
-try{reportBlockedUntil=Number(localStorage.getItem('astrift.problemReport.blockedUntil')||0)}catch{}
-function pauseReports(seconds){reportBlockedUntil=Math.max(reportBlockedUntil,Date.now()+seconds*1000);try{localStorage.setItem('astrift.problemReport.blockedUntil',String(reportBlockedUntil))}catch{}}
-export async function submitProblemReport(report,id=crypto.randomUUID(),fetchImpl=(...args)=>fetch(...args)){
- let device;try{device=localStorage.getItem('astrift.accountDevice.v1');if(!device){device=crypto.randomUUID();localStorage.setItem('astrift.accountDevice.v1',device)}}catch{device=crypto.randomUUID()}
- const origin=apiURL('');
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
- try{const response=await fetchImpl(origin+'/api/account/problem-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device,id,report}),signal:controller.signal,credentials:'omit'});const data=await response.json();if(!response.ok||!data?.ok){if(data?.retryAfter)pauseReports(data.retryAfter);const error=Error(data?.error||'REPORT_SEND_FAILED');error.retryAfter=data?.retryAfter;throw error}pauseReports(300);return data}finally{clearTimeout(timer)}
-}
 export function showNetworkFailure(input,error){
  const report=networkReport(input,error);if(!globalThis.document?.body)return report;
  try{
@@ -38,15 +29,13 @@ export function showNetworkFailure(input,error){
   if(!panel){panel=document.createElement('section');panel.id='astriftNetworkFailure';panel.setAttribute('data-no-translate','');panel.style.cssText='position:fixed;z-index:2147483646;bottom:20px;left:50%;transform:translateX(-50%);width:min(540px,calc(100vw - 28px));max-height:70dvh;overflow:auto;background:#102330;color:#e7f5fa;border:1px solid #548895;border-radius:10px;padding:16px;font:14px system-ui;box-sizing:border-box;box-shadow:0 8px 40px #0009;pointer-events:auto';document.body.append(panel)}
   panel.replaceChildren();panel.hidden=false;
   const el=(tag,text)=>{const node=document.createElement(tag);node.textContent=text;panel.append(node);return node};
-  el('strong','连接失败 / Connection failed');el('p','无法连接游戏服务器。请展开诊断并复制发给开发者。 / Cannot reach the game server. Copy the diagnostics for the developer.');
+  el('strong','连接失败 / Connection failed');el('p','无法连接游戏服务器。 / Cannot reach the game server.');
   const details=el('details',''),summary=document.createElement('summary');summary.textContent='查看诊断 / View diagnostics';details.append(summary);const pre=document.createElement('pre');pre.textContent=report;pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font:12px monospace;user-select:text';details.append(pre);
-  el('small','点击发送会将以上诊断提交至 help@astrift.com，不含密码或登录令牌。 / Sending submits these diagnostics to help@astrift.com, without passwords or login tokens.');
-  const send=el('button','发送问题报告 / Send problem report'),copy=el('button','复制诊断 / Copy diagnostics'),close=el('button','关闭 / Close'),feedback=el('p','');feedback.setAttribute('role','status');for(const b of [send,copy,close]){b.type='button';b.style.cssText='padding:10px 14px;margin:8px 8px 0 0;background:#0a1721;color:#dff7ff;border:1px solid #548895;border-radius:4px;cursor:pointer;font:inherit'}
-  const requestId=crypto.randomUUID();
-  function updateReportButton(){const wait=Math.max(0,Math.ceil((reportBlockedUntil-Date.now())/1000));send.disabled=reportSending||wait>0;if(wait)feedback.textContent=`报告提交冷却中，请约 ${Math.ceil(wait/60)} 分钟后再试。 / Reports paused; retry in about ${Math.ceil(wait/60)} minute(s).`;}
-  updateReportButton();
-  send.onclick=async()=>{if(reportSending||Date.now()<reportBlockedUntil){updateReportButton();return}reportSending=true;send.disabled=true;feedback.textContent='正在发送… / Sending…';try{await submitProblemReport(report,requestId);feedback.textContent='问题报告已发送，谢谢！ / Problem report sent. Thank you!'}catch(e){feedback.textContent=e.message==='REPORT_RATE_LIMIT'?`发送过于频繁，报告权限已暂时停用。请约 ${Math.ceil((e.retryAfter||600)/60)} 分钟后再试。 / Too many reports; temporarily suspended. Retry in about ${Math.ceil((e.retryAfter||600)/60)} minute(s).`:e.message==='REPORT_PENDING'?'报告正在处理，请稍后查看。 / Report is being processed.':'报告未能发送，网络可能也拦截了报告连接。请使用“复制诊断”保存。 / Report could not be sent. The network may also block reports; use Copy diagnostics to save it.';}finally{reportSending=false;send.disabled=Date.now()<reportBlockedUntil;if(reportBlockedUntil>Date.now())setTimeout(()=>{if(send.isConnected)send.disabled=false},Math.min(3600000,reportBlockedUntil-Date.now()+50))}};
-  copy.onclick=async()=>{try{await navigator.clipboard.writeText(report);copy.textContent='已复制 / Copied'}catch{details.open=true;const selection=window.getSelection(),range=document.createRange();range.selectNodeContents(pre);selection.removeAllRanges();selection.addRange(range);copy.textContent='请手动复制选中文字 / Copy the selected text'}};close.onclick=()=>{panel.hidden=true};
+  const close=el('button','关闭 / Close');
+  close.type='button';
+  close.style.cssText='padding:10px 14px;margin-top:8px;background:#0a1721;color:#dff7ff;border:1px solid #548895;border-radius:4px;cursor:pointer;font:inherit';
+  close.onclick=()=>{panel.hidden=true};
+
  }catch{/* Diagnostics must never replace the original request error. */}
  return report;
 }

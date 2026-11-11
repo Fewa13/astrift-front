@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-export {diagnosticFetch} from './network-diagnostics.js?v=20261027-backend-fallback-1';
+export {diagnosticFetch} from './network-diagnostics.js?v=20261111-feedback-1';
 import {createMailboxView} from './mailbox-view.js?v=20261027-back-1';
 const ERRORS={'请求太频繁，请稍后再试':'Too many requests. Please try again later.','请重新登录':'Please sign in again.','服务器响应无效':'Invalid server response. Please retry.','请求失败':'The request failed. Please retry.','账号名已被使用':'This account name is already taken.','账号名需要 2–14 个字母、数字、汉字或下划线':'Account names must be 2–14 letters, numbers, Chinese characters or underscores.','邮箱格式无效':'Enter a valid email address.','邮箱或账号已经绑定':'This email or account is already linked.','发送太频繁，请稍后再试':'Too many requests. Please wait before trying again.','验证码无效或已过期':'The code is incorrect, expired, or has reached its attempt limit.','邮件暂时无法发送，请稍后重试':'Email is temporarily unavailable. Please try later.','登录已失效':'Your session expired. Please log in again.','密码需要 8–128 个字符':'Use a password with 8–128 characters.','账号或密码错误':'Incorrect account/email or password.'};
 export function accountEmailError(message,en){return en?(ERRORS[message]||message):message;}

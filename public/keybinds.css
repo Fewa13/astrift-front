@@ -18,3 +18,5 @@
 .keybindFoot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;color:#8ba9b5;font-size:12px}
 @media(max-width:620px){.keybindCard{padding:15px}.keybindGrid{grid-template-columns:1fr}.keybindHead h2{font-size:24px}}
 .lookSensitivityRow{display:flex;align-items:center;gap:14px;padding:12px;margin-bottom:10px;border:1px solid #34515d;background:#102332;flex-shrink:0}.lookSensitivityRow input{flex:1;min-width:80px;accent-color:#5ff5ff}.lookSensitivityRow output{min-width:42px;color:#82f5ff;text-align:right}
+.settingsActions{display:flex;align-items:stretch;gap:8px;margin-top:12px}
+.settingsActions .keybindOpen{flex:1;width:auto;margin:0}

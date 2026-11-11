@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {clientVersion,assertClientAvailable,requireClientUpdate} from './client-version.js';
-import {showNetworkFailure,apiURL,diagnosticFetch} from './network-diagnostics.js?v=20261027-backend-fallback-1';
+import {showNetworkFailure,apiURL,diagnosticFetch} from './network-diagnostics.js?v=20261111-feedback-1';
 export function createAncientAPI({fallback,session,fetchImpl=diagnosticFetch,readTimeout=8000,writeTimeout=15000,setTimer=setTimeout,clearTimer=clearTimeout}){
  return async function request(path,body){
   assertClientAvailable();

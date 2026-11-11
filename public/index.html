@@ -1,7 +1,7 @@
 <!-- © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved. -->
 <!doctype html>
 <html lang="zh-CN">
-<head><meta name="astrift-build" content="01afa2e22bdf79d09dd4">
+<head><meta name="astrift-build" content="d36881033726471a3fb1">
   <meta charset="UTF-8" />
   <script id="astriftExitGuard">
     let astriftHosted=false;try{astriftHosted=window.parent!==window&&!!window.parent.__ASTRIFT_SHELL__}catch{}
@@ -73,7 +73,7 @@
   <link rel="stylesheet" href="/objective.css?v=1" />
   <link rel="stylesheet" href="/bomb.css?v=20261003-bomb-pacing-1" />
   <style>#bombPresetField[hidden]{display:none!important}</style>
-  <link rel="stylesheet" href="/keybinds.css?v=1" />
+  <link rel="stylesheet" href="/keybinds.css?v=20261111-feedback-1" />
   <link rel="stylesheet" href="/wounds.css?v=1" />
   <link rel="stylesheet" href="/throwables.css?v=20261001-cook-1" />
   <link rel="stylesheet" href="/new-modes.css?v=20261006-touch-editor-3" />
@@ -156,7 +156,10 @@
         </div>
       </details>
       <label class="qualityControl">画质 / 性能<select id="qualitySelect"><option value="smooth">流畅（低负载）</option><option value="balanced">均衡（画面更细）</option><option value="sharp">清晰（高清 + 动态阴影）</option></select></label>
+      <div class="settingsActions">
       <button id="openKeybinds" class="keybindOpen" type="button">键位设置</button>
+      <button id="openFeedback" type="button">反馈 / Feedback</button>
+      </div>
       <button id="openForum" type="button">论坛</button>
       <small id="migrationNotice" class="migrationNotice" hidden></small>
       <p id="menuControlTip" class="tip"><kbd>WASD</kbd> 移动 · <kbd>右键 / E</kbd> 开镜 · <kbd>左键</kbd> 开火 · <kbd>Q</kbd> 相位突进</p>
@@ -227,7 +230,7 @@
     <div id="damage"></div>
     <div id="woundStatus" aria-live="polite"></div>
   </div>
-  <div id="pauseScreen" hidden><div class="pauseCard"><span>ASTRIFT // PAUSED</span><h2>对局已暂停</h2><p>继续游戏不会重置当前状态；退出对局会结束本局并断开联机。</p><label class="qualityControl">画质 / 性能<select id="pauseQualitySelect"><option value="smooth">流畅（低负载）</option><option value="balanced">均衡</option><option value="sharp">清晰（含动态阴影）</option></select></label><button id="pauseKeybinds" type="button">键位设置</button><button id="resumeMatch" type="button">继续游戏</button><button id="exitMatch" type="button">退出对局</button></div></div>
+  <div id="pauseScreen" hidden><div class="pauseCard"><span>ASTRIFT // PAUSED</span><h2>对局已暂停</h2><p>继续游戏不会重置当前状态；退出对局会结束本局并断开联机。</p><label class="qualityControl">画质 / 性能<select id="pauseQualitySelect"><option value="smooth">流畅（低负载）</option><option value="balanced">均衡</option><option value="sharp">清晰（含动态阴影）</option></select></label><button id="pauseKeybinds" type="button">键位设置</button><button id="pauseFeedback" type="button">反馈 / Feedback</button><button id="resumeMatch" type="button">继续游戏</button><button id="exitMatch" type="button">退出对局</button></div></div>
   <div id="respawn" hidden><b>意识重构中</b><span id="countdown">3</span></div>
   <div id="objectiveResult" hidden><div><h2 id="objectiveWinner"></h2><p id="objectiveFinalScore"></p><p id="objectiveContinueHint"></p><button id="objectiveContinue" type="button">继续</button><button id="objectiveExit" type="button">退出</button></div></div>
   <div id="bombResult" hidden><div><h2 id="bombWinner"></h2><p id="bombFinal"></p><button id="bombContinue" type="button">再来一局</button><button id="bombExit" type="button">退出</button></div></div>
@@ -239,7 +242,7 @@
   <script type="module" src="/menu-navigation.js?v=20261003-1"></script>
 <link rel="stylesheet" href="/tower-survival.css?v=20261005-tower-look-1"><div id="survivalDuoDialog" hidden><div class="towerModal"><h2>高塔生存 · 双人</h2><button id="createSurvival">创建房间</button><button id="joinSurvival">加入房间</button><button id="survivalDuoClose">关闭</button></div></div><div id="survivalShop" hidden><div class="towerModal"><button id="survivalShopClose">关闭</button><h2>生存商店</h2><p id="survivalShopPoints"></p><div id="survivalShopItems"></div></div></div>
   <link rel="stylesheet" href="/survival-leaderboard.css?v=20261006-touch-editor-3"><div id="survivalLeaderboard" hidden><section class="towerRankCard"><header class="towerRankHead"><h2>高塔生存排行榜</h2><button id="closeTowerLeaderboard" type="button">关闭</button></header><p id="towerRankPeriod"></p><p id="towerRankChampion" hidden></p><table><thead><tr><th>名次</th><th>名字</th><th>时间</th></tr></thead><tbody id="towerRankRows"></tbody></table><p id="towerRankEmpty"></p><footer class="towerRankFooter"><small>每周三北京时间 00:00 结算。冠军队员获得「高塔之王」，有效期 7 天。<br>联网并登录后记录成绩；双人需双方登录。</small><button id="refreshTowerLeaderboard" type="button">刷新</button></footer></section></div>
-<script type="module" src="/game.js?v=20261110-fps-connect-2"></script>
+<script type="module" src="/game.js?v=20261111-feedback-1"></script>
   <link rel="stylesheet" href="/ancient.css?v=20261009-2" />
   <script type="module" src="/world-menu.js?v=20261026-admin-1"></script>
   <link rel="stylesheet" href="/tournament.css?v=20261006-touch-editor-3" />

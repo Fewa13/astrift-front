@@ -2,7 +2,7 @@
 import {clientVersion,assertClientAvailable,requireClientUpdate} from './client-version.js';
 import {accountPageLease} from './account-page-lease.js';
 import {createAnnouncementPoll} from './official-announcements.js';
-import {diagnosticFetch,apiURL} from './network-diagnostics.js?v=20261027-backend-fallback-1';
+import {diagnosticFetch,apiURL} from './network-diagnostics.js?v=20261111-feedback-1';
 import {createAccountEmailUI,accountEmailError} from './account-email-ui.js';
 const SESSION_KEY='astrift.accountSession.v1';
 const DEVICE_KEY='astrift.accountDevice.v1';
