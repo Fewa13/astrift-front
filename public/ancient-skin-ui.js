@@ -1,17 +1,50 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {ancientProfessionSkins,SKIN_COLORS,SKIN_RARITIES,DEFAULT_SKIN,ownedAncientSkins,equippedAncientSkin} from './ancient-skins.js?v=20261111-default-skin-1';
-import {createAncientSkinModel} from './ancient-skin-model.js';
+import {ancientProfessionSkins,SKIN_COLORS,SKIN_RARITIES,DEFAULT_SKIN,SKIN_DRAW_COST,SKIN_DRAW_COUNT,SKIN_DRAW_WEIGHTS,skinFragmentCost,ownedAncientSkins,equippedAncientSkin} from './ancient-skins.js?v=20261111-skin-draw-1';
+import {createAncientSkinModel} from './ancient-skin-model.js?v=20261111-skin-draw-1';
 
 export function createAncientSkinUI(){
- let disposePreview=()=>{},selected='';
+ let disposePreview=()=>{},selected='',receipt=null,receiptHost,receiptAccount;
  const el=(parent,tag,value='')=>{const node=document.createElement(tag);node.textContent=value;parent.append(node);return node;};
- function render(parent,{profile={},english=true,action,gallery=false,profession=profile.profession}={}){
+ function render(parent,{profile={},english=true,action,account,gallery=false,profession=profile.profession}={}){
   disposePreview();
   const lang=english?1:0,own=new Set(ownedAncientSkins(profile)),equipped=equippedAncientSkin(profile);
   const skins=ancientProfessionSkins(profession);
   selected||=equipped||DEFAULT_SKIN;
   el(parent,'h2',english?'Skins':'皮肤');
+  if(!gallery){
+   if(receiptAccount!==account){receiptAccount=account;receipt=null;}
+   const banner=el(parent,'section');banner.className='ancientSkinDraw';
+   const heading=el(banner,'div');heading.className='ancientSkinDrawHeading';
+   const text=el(heading,'div');
+   el(text,'strong',english?'Skin Draw':'皮肤抽奖');
+   el(text,'p',english?`Get ${SKIN_DRAW_COUNT} fragments per draw`:`每次获得 ${SKIN_DRAW_COUNT} 块碎片`);
+   const drawButton=el(heading,'button',(english?'Draw · ':'抽奖 · ')+SKIN_DRAW_COST+(english?' Gold':' 金币'));
+   drawButton.type='button';drawButton.disabled=profile.coins<SKIN_DRAW_COST||own.size===skins.length;
+   const odds=el(banner,'details');el(odds,'summary',english?'Fragment odds':'碎片概率');
+   const pool=skins.filter(skin=>!own.has(skin.id));
+   const total=pool.reduce((sum,skin)=>sum+SKIN_DRAW_WEIGHTS[skin.rarity],0);
+   if(total)for(const [rarity,labels] of SKIN_RARITIES.entries()){
+    const weight=pool.filter(skin=>skin.rarity===rarity).length*SKIN_DRAW_WEIGHTS[rarity];
+    if(weight)el(odds,'span',labels[lang]+' '+(weight/total*100).toFixed(1)+'%').style.color=SKIN_COLORS[rarity];
+   }
+   receiptHost=el(banner,'div');receiptHost.className='ancientSkinDrawResults';receiptHost.setAttribute('aria-live','polite');
+   const showReceipt=()=>{
+    if(!receiptHost?.isConnected)return;
+    receiptHost.replaceChildren();
+    for(const [id,count] of Object.entries(receipt||{})){
+     const skin=skins.find(skin=>skin.id===id);if(!skin)continue;
+     const chip=el(receiptHost,'span',(english?skin.en:skin.zh)+' × '+count);
+     chip.style.setProperty('--skin-color',SKIN_COLORS[skin.rarity]);
+    }
+   };
+   showReceipt();
+   drawButton.onclick=async()=>{
+    drawButton.disabled=true;
+    try{const result=await action('drawSkinFragments');if(result?.fragments&&receiptAccount===account){receipt=result.fragments;showReceipt();}}
+    finally{if(drawButton.isConnected)drawButton.disabled=false;}
+   };
+  }
   const layout=el(parent,'div');layout.className='ancientSkinLayout';
   const list=el(layout,'div');list.className='ancientSkinList';
   const panel=el(layout,'section');panel.className='ancientSkinPreview';
@@ -56,8 +89,17 @@ export function createAncientSkinUI(){
    el(caption,'small',SKIN_RARITIES[skin.rarity][lang]);el(caption,'strong',english?skin.en:skin.zh);
    if(!gallery){
     const unlocked=own.has(skin.id),worn=skin.id===equipped;
-    const equip=el(caption,'button',worn?(english?'Equipped':'已装备'):unlocked?(english?'Equip':'装备'):(english?'Locked':'未解锁'));
-    equip.type='button';equip.disabled=worn||!unlocked;equip.onclick=()=>void action('equipSkin',{id:skin.id});
+    if(unlocked){
+     const equip=el(caption,'button',worn?(english?'Equipped':'已装备'):(english?'Equip':'装备'));
+     equip.type='button';equip.disabled=worn;equip.onclick=()=>void action('equipSkin',{id:skin.id});
+    }else{
+     const count=profile.ancientSkinFragments?.[skin.id]||0,cost=skinFragmentCost(skin.rarity);
+     el(caption,'span',(english?'Fragments ':'碎片 ')+count+' / '+cost);
+     const progress=el(caption,'progress');progress.max=cost;progress.value=count;
+     progress.setAttribute('aria-label',english?'Fragment progress':'碎片进度');
+     const unlock=el(caption,'button',english?'Unlock':'解锁');
+     unlock.type='button';unlock.disabled=count<cost;unlock.onclick=()=>void action('unlockSkin',{id:skin.id});
+    }
    }
    if(actor)scene.remove(actor);
    actor=createAncientSkinModel(skin.id,profession);scene.add(actor);draw();

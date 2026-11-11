@@ -29,6 +29,38 @@ function equippedAncientSkin(profile) {
   const id = profile.ancientSkinByJob?.[profile.profession || "adventurer"] || profile.ancientSkin;
   return id && ownedAncientSkins(profile).includes(id) ? id : DEFAULT_SKIN;
 }
+const SKIN_DRAW_COST = 150;
+const SKIN_DRAW_COUNT = 10;
+const SKIN_DRAW_WEIGHTS = [0, 50, 24, 14, 8, 4];
+function skinFragmentCost(rarity) {
+  return rarity > 0 ? (rarity + 1) ** 2 * 10 : 0;
+}
+function drawAncientSkinFragments(profile, random = Math.random) {
+  const owned = new Set(ownedAncientSkins(profile));
+  const pool = ANCIENT_SKINS.filter((skin) => !owned.has(skin.id));
+  if (!pool.length) return { error: "\u6240\u6709\u76AE\u80A4\u5DF2\u89E3\u9501 / All skins unlocked" };
+  if (profile.coins < SKIN_DRAW_COST) return { error: "\u8FDC\u53E4\u91D1\u5E01\u4E0D\u8DB3 / Not enough Ancient Gold" };
+  const total = pool.reduce((sum, skin) => sum + SKIN_DRAW_WEIGHTS[skin.rarity], 0);
+  const fragments = {};
+  for (let i = 0; i < SKIN_DRAW_COUNT; i++) {
+    let roll = random() * total;
+    const skin = pool.find((skin2) => (roll -= SKIN_DRAW_WEIGHTS[skin2.rarity]) < 0) ?? pool[pool.length - 1];
+    fragments[skin.id] = (fragments[skin.id] || 0) + 1;
+  }
+  const balances = profile.ancientSkinFragments ??= {};
+  for (const [id, count] of Object.entries(fragments)) balances[id] = (balances[id] || 0) + count;
+  profile.coins -= SKIN_DRAW_COST;
+  return { fragments };
+}
+function unlockAncientSkin(profile, id) {
+  const skin = ANCIENT_SKINS.find((skin2) => skin2.id === id);
+  if (!skin || ownedAncientSkins(profile).includes(id)) return "\u76AE\u80A4\u5DF2\u89E3\u9501\u6216\u4E0D\u5B58\u5728 / Skin already unlocked or unavailable";
+  const cost = skinFragmentCost(skin.rarity);
+  if (!profile.ancientSkinFragments || (profile.ancientSkinFragments[id] || 0) < cost) return "\u76AE\u80A4\u788E\u7247\u4E0D\u8DB3 / Not enough skin fragments";
+  profile.ancientSkinFragments[id] -= cost;
+  (profile.ancientSkins ??= []).push(id);
+  return null;
+}
 const SKIN_PROFESSIONS = {
   warrior: { zh: "\u6218\u58EB", en: "Warrior", cloth: 7816763, accent: 14657395 },
   summoner: { zh: "\u53EC\u5524\u5E08", en: "Summoner", cloth: 4551006, accent: 10412707 },
@@ -56,9 +88,15 @@ export {
   ANCIENT_SKINS,
   DEFAULT_SKIN,
   SKIN_COLORS,
+  SKIN_DRAW_COST,
+  SKIN_DRAW_COUNT,
+  SKIN_DRAW_WEIGHTS,
   SKIN_PROFESSIONS,
   SKIN_RARITIES,
   ancientProfessionSkins,
+  drawAncientSkinFragments,
   equippedAncientSkin,
-  ownedAncientSkins
+  ownedAncientSkins,
+  skinFragmentCost,
+  unlockAncientSkin
 };

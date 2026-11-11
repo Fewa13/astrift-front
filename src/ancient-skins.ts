@@ -23,7 +23,7 @@ const designs=[
 ] as const;
 
 export const ANCIENT_SKINS=designs.map(([id,zh,en,rarity,cloth,accent,boots,style])=>({id,zh,en,rarity,cloth,accent,boots,style}));
-type SkinProfile={profession?:string;ancientSkin?:string;ancientSkinByJob?:Record<string,string>;ancientSkins?:string[]};
+type SkinProfile={profession?:string;ancientSkin?:string;ancientSkinByJob?:Record<string,string>;ancientSkins?:string[];ancientSkinFragments?:Record<string,number>};
 export function ownedAncientSkins(profile:SkinProfile):string[]{
  const unlocked=new Set([DEFAULT_SKIN,...(profile.ancientSkins||[])]);
  return ANCIENT_SKINS.filter(skin=>unlocked.has(skin.id)).map(skin=>skin.id);
@@ -31,6 +31,39 @@ export function ownedAncientSkins(profile:SkinProfile):string[]{
 export function equippedAncientSkin(profile:SkinProfile){
  const id=profile.ancientSkinByJob?.[profile.profession||'adventurer']||profile.ancientSkin;
  return id&&ownedAncientSkins(profile).includes(id)?id:DEFAULT_SKIN;
+}
+
+export const SKIN_DRAW_COST=150;
+export const SKIN_DRAW_COUNT=10;
+export const SKIN_DRAW_WEIGHTS=[0,50,24,14,8,4];
+export function skinFragmentCost(rarity:number){
+ return rarity>0?(rarity+1)**2*10:0;
+}
+export function drawAncientSkinFragments(profile:SkinProfile&{coins:number},random=Math.random){
+ const owned=new Set(ownedAncientSkins(profile));
+ const pool=ANCIENT_SKINS.filter(skin=>!owned.has(skin.id));
+ if(!pool.length)return {error:'所有皮肤已解锁 / All skins unlocked'};
+ if(profile.coins<SKIN_DRAW_COST)return {error:'远古金币不足 / Not enough Ancient Gold'};
+ const total=pool.reduce((sum,skin)=>sum+SKIN_DRAW_WEIGHTS[skin.rarity],0);
+ const fragments:Record<string,number>={};
+ for(let i=0;i<SKIN_DRAW_COUNT;i++){
+  let roll=random()*total;
+  const skin=pool.find(skin=>(roll-=SKIN_DRAW_WEIGHTS[skin.rarity])<0)??pool[pool.length-1];
+  fragments[skin.id]=(fragments[skin.id]||0)+1;
+ }
+ const balances=profile.ancientSkinFragments??={};
+ for(const [id,count] of Object.entries(fragments))balances[id]=(balances[id]||0)+count;
+ profile.coins-=SKIN_DRAW_COST;
+ return {fragments};
+}
+export function unlockAncientSkin(profile:SkinProfile,id:string){
+ const skin=ANCIENT_SKINS.find(skin=>skin.id===id);
+ if(!skin||ownedAncientSkins(profile).includes(id))return '皮肤已解锁或不存在 / Skin already unlocked or unavailable';
+ const cost=skinFragmentCost(skin.rarity);
+ if(!profile.ancientSkinFragments||(profile.ancientSkinFragments[id]||0)<cost)return '皮肤碎片不足 / Not enough skin fragments';
+ profile.ancientSkinFragments[id]-=cost;
+ (profile.ancientSkins??=[]).push(id);
+ return null;
 }
 
 export const SKIN_PROFESSIONS={

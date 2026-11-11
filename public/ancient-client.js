@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createAncientSkinUI} from './ancient-skin-ui.js?v=20261111-default-skin-1';
-import {createAncientSkinModel} from './ancient-skin-model.js';
+import {createAncientSkinUI} from './ancient-skin-ui.js?v=20261111-skin-draw-1';
+import {createAncientSkinModel} from './ancient-skin-model.js?v=20261111-skin-draw-1';
 import {createAncientPuzzleUI} from './ancient-puzzle-ui.js?v=20261111-puzzle-timed-1';
 import {clientUpdateRequired} from './client-version.js';
 import {poseCommunityFurniture} from './ancient-community-amenities.js';
@@ -218,7 +218,7 @@ function renderPanel(){panelMemory.capture();drawPanel();if(profile)panelMemory.
 function drawPanel(){skinUI.dispose();marketUI.dispose();collectionUI.dispose();stoneworkUI.dispose();roughShopUI.dispose();dailyShopUI.dispose();researchUI.dispose();trialUI.dispose();const panel=$('ancientPanel');panel.replaceChildren();$('ancientHeader').hidden=false;nav();if(!profile){identity();if(!accountSession())loginPanel();else{const loading=node('section','',panel);loading.className='ancientCard';node('h2',L('Ancient Age','Ancient Age'),loading);accountPanel(loading);node('p',busy?L('正在加载存档…','Loading save…'):L('存档暂未加载','Save not loaded'),loading);button(busy?L('加载中…','Loading…'):L('重新连接','Retry connection'),()=>void action('profile'),loading).disabled=busy;}return}identity();if(active&&!paused)return;const card=node('section','',panel);card.className='ancientCard';if(view!=='lobby'){const close=button('×',()=>{questUI.dismiss();if(active){paused=false;view='pause';renderPanel();quickbar.update();lock()}else{view='lobby';renderPanel()}},card);close.className='ancientPanelClose';close.setAttribute('aria-label',L('关闭','Close'));}
  if(view==='lobby'){card.classList.add('ancientLobby');node('small','ASTRIFT // ANCIENT AGE',card).className='ancientEyebrow';node('h1',L('远古世纪','ANCIENT AGE'),card);accountPanel(card);questUI.renderSummary(card)}
  else if(view==='menu'){node('h2',L('已暂停','Paused'),card);node('p',L('从上方分类直接选择功能。','Choose a function directly from the groups above.'),card);}
- else if(view==='skins'){skinUI.render(card,{profile,english:en(),action})}
+ else if(view==='skins'){skinUI.render(card,{profile,english:en(),action,account:accountSession()?.name})}
  else if(view==='market'){marketUI.render(card)}
  else if(view==='leaderboard'){leaderboardUI.render(card)}
  else if(view==='titles'){void renderAncientTitles(node('section','',card),{en,request:activityRequest,onProfile:activityProfile})}

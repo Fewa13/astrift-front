@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {ownedAncientSkins,equippedAncientSkin} from './ancient-skins';
+import {ownedAncientSkins,equippedAncientSkin,drawAncientSkinFragments,unlockAncientSkin} from './ancient-skins';
 import {PUZZLE_FLOORS,newPuzzleState,upgradePuzzleState,expireTimedPuzzle,puzzleOperate,puzzleRoomGold,puzzleView,type PuzzleState} from './ancient-puzzle';
 import {gearHuntEligible,gearHuntCounts,gearHuntQuota,gearRerollQuote,gearPromotion,GEAR_LEVELS} from './ancient-gear';
 import {CLIENT_OUTDATED,currentClient,worldActionRequiresVersion} from './client-version';
@@ -457,6 +457,21 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
   else if(action==='useLeisureFood'){const key=String(data.key||'meal:grilled'),food=Object.hasOwn(LEISURE_FOODS,key)?LEISURE_FOODS[key]:undefined;if(!food)return fail('Not enough food');const ws=this.connections().find(ws=>(ws.deserializeAttachment() as Player).name===name),a=ws?.deserializeAttachment() as Player|null;if(!ws||!a||a.hp<=0)return fail('Use food while alive');if((p.leisureFoodAt||0)>Date.now())return fail('Food is cooling down');if((p.materials[key]||0)<1)return fail('Not enough food');if(a.hp>=(a.maxHp||100))return fail('Health is already full');p.materials[key]--;p.leisureFoodAt=Date.now()+60000;const amount=Math.min((a.maxHp||100)-a.hp,Math.max(1,Math.floor((a.maxHp||100)*food.healPercent/100)));a.hp+=amount;this.save(name,p);this.persistHealth(a);ws.serializeAttachment(a);this.send(ws,{type:'healed',hp:a.hp,maxHp:a.maxHp,amount})}
   else if(action==='buySupply'){const error=buyAncientSupply(p,String(data.id||''),Number(data.quantity??1));if(error)return fail(error);this.save(name,p)}
   else if(action==='useSupply'){const error=useAncientSupply(p,String(data.id||''));if(error)return fail(error);this.save(name,p)}
+  else if(action==='drawSkinFragments'||action==='unlockSkin'){
+   return this.ctx.storage.transactionSync(()=>{
+    const fresh=this.read(name);
+    if(action==='drawSkinFragments'){
+     const result=drawAncientSkinFragments(fresh);
+     if(result.error)return fail(result.error);
+     this.save(name,fresh);
+     return {ok:true,profile:fresh,fragments:result.fragments};
+    }
+    const error=unlockAncientSkin(fresh,String(data.id||''));
+    if(error)return fail(error);
+    this.save(name,fresh);
+    return {ok:true,profile:fresh};
+   });
+  }
   else if(action==='equipSkin'){
    const id=String(data.id||'');
    if(!ownedAncientSkins(p).includes(id))return fail('尚未获得该皮肤 / Skin not owned');

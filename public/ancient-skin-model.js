@@ -243,6 +243,30 @@ function makeModel(skin){
    glint(shape,0,1.58,.408,width,height,.075,angle);
   }
  }
+ if(skin.rarity){
+  const edging=new T.Color(accent).lerp(new T.Color(boots),.42).getHex();
+  for(const [i,side] of [-1,1].entries()){
+   const arm=root.getObjectByName('arm'+i),leg=root.getObjectByName('leg'+i);
+   part(arm,'box',edging,0,-.24,-.102,.14,.15,.024);
+   part(arm,'gem',accent,0,-.24,-.121,.058,.09,.028,side*.16);
+   part(leg,'box',edging,side*.069,-.18,-.123,.032,.26,.024,side*.08);
+   if(skin.rarity>=3){
+    for(let row=0;row<skin.rarity-1;row++){
+     const y=1.4-row*.105,x=side*(.195-row*.014);
+     b('gem',edging,x,y,-.204,.128,.092,.06,side*.27);
+     b('box',accent,x,y+.025,-.236,.076,.014,.018,side*.27);
+    }
+   }
+  }
+  if(skin.rarity>=2){
+   b('gem',edging,0,.856,-.222,.174,.127,.075);
+   b('gem',accent,0,.858,-.271,.09,.073,.042);
+  }
+  if(skin.rarity>=4)for(let i=0;i<5;i++){
+   const angle=Math.PI*(.18+i*.16);
+   b('gem',accent,Math.cos(angle)*.22,1.56+Math.sin(angle)*.1,-.217,.035,.05,.04,angle-.5);
+  }
+ }
  for(const [joint,data]of batch){
   const geometry=new T.BufferGeometry();
   for(const [key,values]of Object.entries(data))geometry.setAttribute(key,new T.Float32BufferAttribute(values,3));
