@@ -2,7 +2,53 @@
 import * as THREE from './three.module.js';
 // Small, deterministic, shared procedural textures. No downloads or per-frame canvases.
 const textures=new Map();
-export function environmentTexture(kind){if(textures.has(kind))return textures.get(kind);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const c=canvas.getContext('2d');let seed=82111+kind.length*613;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296},base={wood:'#8c7250',stone:'#92968a',thatch:'#a28c58',wicker:'#a58c62',cut:'#b59a70',pelt:'#c2b291',ash:'#393832'}[kind]||'#8d896c';c.fillStyle=base;c.fillRect(0,0,512,512);for(let i=0;i<4200;i++){c.fillStyle=i%2?'#fff8de':'#302d21';c.globalAlpha=.035+rnd()*.055;c.fillRect(rnd()*512,rnd()*512,1+rnd()*4,1+rnd()*4)}c.globalAlpha=1;
+const mineralSurfaces={
+ stone:['#777b72','#c6c5ae','#46483f',.22],
+ ash:['#393832','#8e7971','#1f2024',.30],
+ marble:['#deded2','#f8f3e3','#829d96',.20],
+ froststone:['#798a96','#c9e0e8','#475b70',.24],
+ stormstone:['#676c83','#a0aacc','#333d60',.26],
+ abyssstone:['#65868b','#a3c3b3','#354f61',.25],
+ sand:['#ad946e','#ebcf97','#6d5743',.20],
+};
+export function paintMineral(c,kind,rnd){
+ const palette=mineralSurfaces[kind];
+ const [base,light,dark,opacity]=palette;
+ c.fillStyle=base;
+ c.fillRect(0,0,512,512);
+ // Wrap broad mottling at the edges so existing repeated UVs stay seamless.
+ for(let i=0;i<145;i++){
+  const x=rnd()*512,y=rnd()*512,r=8+rnd()*66;
+  const color=i%3?light:dark;
+  for(const dx of [-512,0,512])for(const dy of [-512,0,512]){
+   const px=x+dx,py=y+dy;
+   if(px+r<0||px-r>512||py+r<0||py-r>512)continue;
+   const gradient=c.createRadialGradient(px,py,0,px,py,r);
+   gradient.addColorStop(0,color);
+   gradient.addColorStop(1,color+'00');
+   c.globalAlpha=opacity;
+   c.fillStyle=gradient;
+   c.fillRect(px-r,py-r,r*2,r*2);
+  }
+ }
+ for(let i=0;i<28;i++){
+  let x=26+rnd()*460,y=26+rnd()*460;
+  const steps=2+Math.floor(rnd()*4);
+  c.beginPath();
+  c.moveTo(x,y);
+  for(let j=0;j<steps;j++){
+   x=Math.max(3,Math.min(509,x+4+rnd()*22));
+   y=Math.max(3,Math.min(509,y+(rnd()-.44)*35));
+   c.lineTo(x,y);
+  }
+  c.strokeStyle=dark;
+  c.globalAlpha=opacity*.9;
+  c.lineWidth=.4+rnd()*1.8;
+  c.stroke();
+ }
+ c.globalAlpha=1;
+}
+export function environmentTexture(kind){if(textures.has(kind))return textures.get(kind);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const c=canvas.getContext('2d');let seed=82111+kind.length*613;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296},base={wood:'#8c7250',stone:'#92968a',thatch:'#a28c58',wicker:'#a58c62',cut:'#b59a70',pelt:'#c2b291',ash:'#393832'}[kind]||'#8d896c';if(mineralSurfaces[kind])paintMineral(c,kind,rnd);else{c.fillStyle=base;c.fillRect(0,0,512,512)}for(let i=0;i<4200;i++){c.fillStyle=i%2?'#fff8de':'#302d21';c.globalAlpha=.035+rnd()*.055;c.fillRect(rnd()*512,rnd()*512,1+rnd()*4,1+rnd()*4)}c.globalAlpha=1;
  if(kind==='shadow'){c.clearRect(0,0,512,512);c.fillStyle='#000000';c.globalAlpha=.045;for(let r=230;r>15;r-=12){c.beginPath();c.ellipse(256,256,r,r,0,0,Math.PI*2);c.fill()}}
  if(kind==='soil'){for(let i=0;i<100;i++){c.globalAlpha=.04;c.fillStyle=i%2?'#c0a273':'#493f2b';c.beginPath();c.ellipse(rnd()*512,rnd()*512,15+rnd()*45,8+rnd()*30,rnd()*6,0,Math.PI*2);c.fill()}}
  if(kind==='wood'){for(let i=0;i<85;i++){const x=i*6;c.strokeStyle=i%3?'#4e382538':'#e8c78b38';c.lineWidth=.5+rnd()*1.3;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x+10+rnd()*16,160,x-10-rnd()*10,350,x,512);c.stroke()}for(let i=0;i<5;i++){const x=40+rnd()*430,y=40+rnd()*430;for(let j=0;j<4;j++){c.strokeStyle='#362a2450';c.beginPath();c.ellipse(x,y,3+j*2,8+j*5,.08,0,Math.PI*2);c.stroke()}}}

@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import assert from 'node:assert/strict';
 import * as THREE from '../public/three.module.js';
-const canvas={width:0,height:0,getContext:()=>new Proxy({},{get:(o,k)=>o[k]??(()=>{}),set:(o,k,v)=>(o[k]=v,true)})};globalThis.document={createElement:()=>({...canvas})};
+const canvas={width:0,height:0,getContext:()=>new Proxy({},{get:(o,k)=>o[k]??(k==='createRadialGradient'?()=>({addColorStop(){}}):()=>{}),set:(o,k,v)=>(o[k]=v,true)})};globalThis.document={createElement:()=>({...canvas})};
 const {buildAncientScene,buildForestScene}=await import('../public/ancient-scene.js'),{buildCityScene}=await import('../public/ancient-city-scene.js');const {ENV_GEOMETRIES,environmentTexture}=await import('../public/ancient-environment-detail.js');
 const {blocked,tribeCompactZ,tribeSurface,TRIBE_SOLIDS}=await import('../public/ancient-rules.js');
 assert.equal(environmentTexture('wood'),environmentTexture('wood'),'Texture is cached');assert.equal(environmentTexture('wood').image.width,512);assert.equal(ENV_GEOMETRIES.eCrown.attributes.position.count<2000,true);

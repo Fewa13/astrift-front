@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import assert from 'node:assert/strict';
 import * as T from '../public/three.module.js';
-globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>new Proxy({},{get:(o,k)=>o[k]??(()=>{}),set:(o,k,v)=>(o[k]=v,true)})})};
+globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>new Proxy({},{get:(o,k)=>o[k]??(k==='createRadialGradient'?()=>({addColorStop(){}}):()=>{}),set:(o,k,v)=>(o[k]=v,true)})})};
 const {buildBlightScene,createBlightCreature}=await import('../public/ancient-blight-scene.js');
 const scene=new T.Scene(),map=buildBlightScene(scene);assert.equal(map.crystals.size,12);scene.updateMatrixWorld(true);
 for(const [eye,target]of [[[0,1.7,10],[0,2,55]],[[-4,3,256],[-24,4,287]],[[0,-1,417],[6,-7,472]],[[10,-10,578],[0,-10,601]]]){
