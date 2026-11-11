@@ -23,10 +23,9 @@ const designs=[
 ] as const;
 
 export const ANCIENT_SKINS=designs.map(([id,zh,en,rarity,cloth,accent,boots,style])=>({id,zh,en,rarity,cloth,accent,boots,style}));
-const towerRewards=['reed','briar','sun','moon','star'];
-type SkinProfile={profession?:string;ancientSkin?:string;ancientSkinByJob?:Record<string,string>;ancientSkins?:string[];tower?:{best:number}};
+type SkinProfile={profession?:string;ancientSkin?:string;ancientSkinByJob?:Record<string,string>;ancientSkins?:string[]};
 export function ownedAncientSkins(profile:SkinProfile):string[]{
- const unlocked=new Set([DEFAULT_SKIN,...(profile.ancientSkins||[]),...towerRewards.filter((_,i)=>(profile.tower?.best||0)>=(i+1)*20)]);
+ const unlocked=new Set([DEFAULT_SKIN,...(profile.ancientSkins||[])]);
  return ANCIENT_SKINS.filter(skin=>unlocked.has(skin.id)).map(skin=>skin.id);
 }
 export function equippedAncientSkin(profile:SkinProfile){

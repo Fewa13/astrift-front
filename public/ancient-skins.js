@@ -21,9 +21,8 @@ const designs = [
   ["void", "\u865A\u7A7A\u7EC7\u8005", "Void Weaver", 5, 3746384, 14788348, 2366517, "void"]
 ];
 const ANCIENT_SKINS = designs.map(([id, zh, en, rarity, cloth, accent, boots, style]) => ({ id, zh, en, rarity, cloth, accent, boots, style }));
-const towerRewards = ["reed", "briar", "sun", "moon", "star"];
 function ownedAncientSkins(profile) {
-  const unlocked = /* @__PURE__ */ new Set([DEFAULT_SKIN, ...profile.ancientSkins || [], ...towerRewards.filter((_, i) => (profile.tower?.best || 0) >= (i + 1) * 20)]);
+  const unlocked = /* @__PURE__ */ new Set([DEFAULT_SKIN, ...profile.ancientSkins || []]);
   return ANCIENT_SKINS.filter((skin) => unlocked.has(skin.id)).map((skin) => skin.id);
 }
 function equippedAncientSkin(profile) {

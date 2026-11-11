@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
-import {ancientProfessionSkins,SKIN_COLORS,SKIN_RARITIES,DEFAULT_SKIN,ownedAncientSkins,equippedAncientSkin} from './ancient-skins.js';
+import {ancientProfessionSkins,SKIN_COLORS,SKIN_RARITIES,DEFAULT_SKIN,ownedAncientSkins,equippedAncientSkin} from './ancient-skins.js?v=20261111-default-skin-1';
 import {createAncientSkinModel} from './ancient-skin-model.js';
 
 export function createAncientSkinUI(){
