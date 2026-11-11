@@ -68,7 +68,9 @@ function terrain(map,materials){const route=CHAPTER_ROUTES[map],extra=CHAPTER_EX
  return [m,edgeMesh];}
 function kit(scene,map){const world=new T.Group();world.name='distinct-'+map;scene.add(world);const p=palettes[map],materials={};for(const [k,c]of Object.entries(p))materials[k]=new T.MeshStandardMaterial({color:c,roughness:k==='metal'?.4:.85,metalness:k==='metal'?.7:.12});materials.floor=new T.MeshStandardMaterial({vertexColors:true,map:chapterTexture(map),roughness:.9});materials.glow=new T.MeshBasicMaterial({color:p.glow});materials.cloth=new T.MeshStandardMaterial({color:p.accent,side:T.DoubleSide,roughness:.9});materials.wall.side=T.DoubleSide;
  materials.stone.map=environmentTexture(chapterStone[map]);
- if(map==='dunes'||map==='frostcourt'){materials.wall.map=materials.stone.map;materials.wall.vertexColors=true;materials.wall.color.multiplyScalar(1.3);}const staticRoot=new T.Group();world.add(staticRoot);
+ materials.wall.map=environmentTexture(map==='dunes'?'sandcliff':map==='frostcourt'?'masonry':chapterStone[map]);
+ materials.wall.vertexColors=true;
+ if(map==='dunes'||map==='frostcourt')materials.wall.color.multiplyScalar(1.3);const staticRoot=new T.Group();world.add(staticRoot);
  function add(shape,mat,x,y,z,w,h,d,rx=0,ry=0,rz=0,parent=staticRoot){const groundDetail=shape==='box'&&h<=.08&&rx===0&&rz===0&&y>=chapterHeight(map,x,z)&&y-chapterHeight(map,x,z)<.1;
  if(groundDetail){
   const g=new T.PlaneGeometry(w,d,Math.ceil(w),Math.ceil(d)),p=g.attributes.position,offset=y-chapterHeight(map,x,z),c=Math.cos(ry),s=Math.sin(ry);
