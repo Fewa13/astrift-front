@@ -357,7 +357,7 @@ export function createPuzzleMap(canvas,name,en,interact){
   canvas.parentElement?.classList.toggle('puzzleTargeted',nearby>=0);
   const bank=state.banks?.[active];
   if(bank?.kind===15){
-   const phase=Math.floor((Date.now()+clockOffset)/950)%bank.count;
+   const phase=Math.floor((Date.now()+clockOffset)/(bank.phaseMs||950))%bank.count;
    for(let i=0;i<bank.count;i++)stations[bank.start+i].mark.material=i===phase?jade:material(stations[bank.start+i].tint);
   }
   vy-=19*dt;height=Math.max(eyeHeight,height+vy*dt);if(height===eyeHeight)vy=0;

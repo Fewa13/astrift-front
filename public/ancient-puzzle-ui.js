@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261109-scenery-1';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261110-puzzle-difficulty-1';
 import {PROFESSIONS,SKILLS} from './ancient-skills.js';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',queuedPlates=[];

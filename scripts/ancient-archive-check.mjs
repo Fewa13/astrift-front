@@ -60,7 +60,7 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
      }
     }
    }else if(bank.kind===15){
-    for(const i of bank.target){now=(Math.floor(now/(950*bank.count))*bank.count+bank.count+i)*950+475;press(i);}
+    for(const i of bank.target){const phase=bank.phaseMs;now=(Math.floor(now/(phase*bank.count))*bank.count+bank.count+i)*phase+phase/2;press(i);}
    }else if(bank.kind===16){
     press(0);now+=6500;
     assert.equal(puzzleView(state,now).deadline,undefined);
@@ -116,6 +116,11 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
  if(floor>1)assert.equal(puzzleRoomGold(floor,1),puzzleRoomGold(floor-1,puzzleView(newPuzzleState(floor-1)).banks.length)+10);
 }
 assert.equal(PUZZLE_FLOORS,120);
+const sixth=puzzleView(newPuzzleState(6));
+assert.equal(sixth.difficulty,5);
+assert.equal(sixth.banks[0].target.length,8);
+assert.equal(sixth.banks[1].count,8);
+assert(sixth.banks[2].phaseMs<950);
 assert.equal(puzzleView(state).complete,true);
 const targets=Object.keys(GEAR).filter(gearHuntEligible);
 assert(targets.length>0);

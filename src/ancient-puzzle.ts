@@ -26,10 +26,18 @@ const rules:{name:Text;clue:Text}[]=[
  {name:['回声门','Echo gate'],clue:['记住门刻顺序。输入第一枚正确图案后门刻隐藏，输错重新显示。','Memorize the gate pattern. It hides after the first correct input and returns on a mistake.']},
  ...CHAMBER_RULES,
 ];
-const difficultyFor=(floor:number)=>Math.min(5,Math.ceil(floor/24));
-export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,values:[],layout:6});
+const difficultyFor=(floor:number,layout?:number)=>{
+ if(layout!==7)return Math.min(5,Math.ceil(floor/24));
+ if(floor>=6)return 5;
+ return Math.min(4,floor);
+};
+export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,values:[],layout:7});
 export function upgradePuzzleState(state:PuzzleState){
- return state.layout===4||state.layout===5||state.layout===6?state:newPuzzleState(state.floor,state.revision+1);
+ if(state.layout===7)return state;
+ if([4,5,6].includes(state.layout??0)){
+  return state.values.length?state:{...state,layout:7};
+ }
+ return {...newPuzzleState(state.floor,state.revision+1),pendingBooksFloor:state.pendingBooksFloor};
 }
 const roomCount=(floor:number)=>8+Math.floor(16*(floor-1)/(PUZZLE_FLOORS-1));
 export function puzzleRoomGold(floor:number,room:number){
@@ -37,32 +45,34 @@ export function puzzleRoomGold(floor:number,room:number){
  for(let previous=1;previous<floor;previous++)number+=roomCount(previous);
  return 100+number*10;
 }
+const sixthFloorKinds=[8,7,15,13,11,14,9,16];
 function roomLayout(floor:number,layout?:number){
- const difficulty=difficultyFor(floor),count=roomCount(floor);
+ const difficulty=difficultyFor(floor,layout),count=roomCount(floor);
  const palette=floor<3?[1,2,3,4,5,6,7]:[1,2,3,4,5,6,7,8];
  const expanded=[1,9,5,10,2,11,3,12,4,13,14,6,15,7,16,8,17];
  const rotation=(Math.imul(floor,2654435761)>>>0)%palette.length;
  let start=0;
  return Array.from({length:count},(_,room)=>{
-  const kind=floor===1&&room===0?0:layout===4?1+(floor+room-2+5)%5:layout===5?
+  const kind=floor===1&&room===0?0:layout===7&&floor===6&&room<sixthFloorKinds.length?sixthFloorKinds[room]:layout===4?1+(floor+room-2+5)%5:layout===5?
    palette[(rotation+room*[1,3,5][floor%3])%palette.length]:
    expanded[((floor-1)*5+room*(floor%2?1:3))%expanded.length];
-  const size=kind===0?1:layout===6&&kind===1?5:kind===14?6:[10,12].includes(kind)?(difficulty<3?6:8):kind===7?Math.min(8,4+2*Math.floor(difficulty/2)):Math.min(8,3+difficulty+(room%2));
+  const size=kind===0?1:[6,7].includes(layout??0)&&kind===1?(layout===7?Math.min(8,4+difficulty):5):kind===14?6:[10,12].includes(kind)?(difficulty<3?6:8):kind===7?Math.min(8,4+2*Math.floor(difficulty/2)):Math.min(8,3+difficulty+(room%2));
   const symbols=glyphs.slice(0,size);
   const seed=(floor*31+room*17)>>>0;
   const order=Array.from({length:size},(_,i)=>i).sort((a,b)=>(Math.imul(a+seed,2654435761)>>>0)-(Math.imul(b+seed,2654435761)>>>0));
   const runePattern=Array.from({length:size},(_,i)=>i<3?1+i:1+((Math.imul(seed+i+1,1597334677)>>>16)%3));
-  if(kind===1&&layout===6){
+  if(kind===1&&[6,7].includes(layout??0)){
    for(let i=size-1;i>0;i--){
     const j=(Math.imul(seed+i,1597334677)>>>0)%(i+1);
     [runePattern[i],runePattern[j]]=[runePattern[j],runePattern[i]];
    }
   }
-  const target=kind>=9?chamberTarget(kind,seed,size,difficulty):layout===6&&kind===1?runePattern:kind===1?symbols.map((_,i)=>1+(seed+i*3)%3):kind===5?(layout===6?[order[0],order[1]]:[order[0]]):kind===7?order.map(i=>i% (size/2)):order;
+  const target=kind>=9?chamberTarget(kind,seed,size,difficulty):[6,7].includes(layout??0)&&kind===1?runePattern:kind===1?symbols.map((_,i)=>1+(seed+i*3)%3):kind===5?([6,7].includes(layout??0)?[order[0],order[1]]:[order[0]]):kind===7?order.map(i=>i% (size/2)):order;
   const initial=kind>=9?chamberStart(kind,seed,size,difficulty):symbols.map(()=>0);
   if(kind===17&&initial.every((v,i)=>v===target[i]))[initial[0],initial[1]]=[initial[1],initial[0]];
-  const clue:Text=kind===5&&layout===6?['先找门上的石印，再找侧墙上的石印。顺序错了就重来。','Find the seal shown above the gate, then the seal on the side wall. A mistake resets the lock.']:rules[kind].clue;
-  const bank={...rules[kind],clue,kind,start,count:size,symbols,target,initial};
+  const clue:Text=kind===5&&[6,7].includes(layout??0)?['先找门上的石印，再找侧墙上的石印。顺序错了就重来。','Find the seal shown above the gate, then the seal on the side wall. A mistake resets the lock.']:rules[kind].clue;
+  const phaseMs=kind===15&&layout===7?Math.max(650,950-floor*12):950;
+  const bank={...rules[kind],clue,kind,start,count:size,symbols,target,initial,phaseMs};
   start+=size;
   return bank;
  });
@@ -80,7 +90,7 @@ export function puzzleView(state:PuzzleState,now?:number){
  const active=banks.find(bank=>!done(bank,state.values));
  const expired=now!==undefined&&state.deadline!==undefined&&now>=state.deadline&&active&&(active.kind===6||active.kind===16);
  const values=banks.flatMap(bank=>bank.initial.map((value,i)=>expired&&bank===active?value:state.values[bank.start+i]??value));
- return {floor:state.floor,revision:state.revision,complete:false as const,difficulty:difficultyFor(state.floor),
+ return {floor:state.floor,revision:state.revision,complete:false as const,difficulty:difficultyFor(state.floor,state.layout),
   deadline:expired?undefined:state.deadline,pair:state.pair,held:state.held,
   banks:banks.map(bank=>({...bank,target:bank.kind===7?bank.target.map((v,i)=>state.pair===bank.start+i||state.values[bank.start+i]===1?v:-1):bank.target,done:done(bank,state.values)})),
   values};
@@ -93,7 +103,7 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
  const {kind,start,count,target}=active,local=index-start,values=state.values.slice();
  let notice='activate',deadline=state.deadline,pair=state.pair,held=state.held;
  if(kind>=9){
-  const result=advanceChamber(kind,active.initial.map((v,i)=>values[start+i]??v),local,target,now,deadline,held);
+  const result=advanceChamber(kind,active.initial.map((v,i)=>values[start+i]??v),local,target,now,deadline,held,active.phaseMs);
   if(!result.values)return {state,notice:result.notice};
   result.values.forEach((v,i)=>{values[start+i]=v;});
   ({notice,deadline,held}=result);
@@ -108,7 +118,7 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
  }else if(kind===6){
   if(!deadline||now>=deadline){
    for(let i=start;i<start+count;i++)values[i]=0;
-   deadline=now+Math.max(7500,15000-difficultyFor(state.floor)*1200);
+   deadline=now+Math.max(7500,15000-difficultyFor(state.floor,state.layout)*1200);
   }
   values[index]=1;
  }else if(kind===7){
@@ -202,7 +212,7 @@ export function chamberSolved(kind:number,values:number[],target:number[]){
  return values.every((value,i)=>value===target[i]);
 }
 
-export function advanceChamber(kind:number,values:number[],index:number,target:number[],now:number,deadline?:number,held?:number){
+export function advanceChamber(kind:number,values:number[],index:number,target:number[],now:number,deadline?:number,held?:number,phaseMs=950){
  let notice='activate';
  if(kind===14){
   const empty=values.indexOf(0);
@@ -210,7 +220,7 @@ export function advanceChamber(kind:number,values:number[],index:number,target:n
   [values[index],values[empty]]=[values[empty],values[index]];
  }else if(kind===15){
   const progress=values[0];
-  const phaseMatches=[now-170,now,now+170].some(t=>Math.floor(t/950)%values.length===index);
+  const phaseMatches=[now-170,now,now+170].some(t=>Math.floor(t/phaseMs)%values.length===index);
   if(target[progress]!==index||!phaseMatches){values[0]=0;notice='reset';}
   else values[0]++;
  }else if(kind===16){
