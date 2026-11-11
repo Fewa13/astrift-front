@@ -87,8 +87,9 @@ export function buildDistinctStarfall(scene){const b=kit(scene,'starfall'),{add,
  for(const o of CHAPTER_PROPS.starfall.slice(1)){const h=chapterHeight('starfall',o.x,o.z);if(o.kind==='sunken-arch'){for(const side of [-1,1])add('cyl','stone',o.x+side*8,h+8,o.z,2.5,16,2.5);add('arch','stone',o.x,h+16,o.z,9,7,3)}else if(o.kind==='coral-tower'){for(let i=0;i<7;i++){const a=i*2.4;rod([o.x,h,o.z],[o.x+Math.sin(a)*5,h+6+i*1.5,o.z+Math.cos(a)*4],.6,'accent');add('ball','accent',o.x+Math.sin(a)*5,h+6+i*1.5,o.z+Math.cos(a)*4,1.2,2,1.2)}}else add('cyl','stone',o.x,h+o.h/2,o.z,o.w/2,o.h,o.d/2)}
  for(let i=0;i<38;i++){const u=i*10+20,p=chapterPoint('starfall',(i%2?1:-1)*53,u),h=chapterHeight('starfall',p.x,p.z);rod([p.x,h-5,p.z],[p.x+Math.sin(i)*2,h+5+i%6,p.z+2],.18,'accent');for(let j=0;j<3;j++)add('crystal','accent',p.x+Math.sin(i)*2,h+3+j*2,p.z+2,.8,1.3,.3,0,i,j*.4)}
  const core=new T.Group();core.position.set(0,-7,88);b.world.add(core);for(let i=0;i<3;i++)add('ring',i%2?'metal':'glow',0,3+i*.6,0,10+i*2,10+i*2,10+i*2,Math.PI/2+i*.3,0,0,core);add('crystal','glow',0,3,0,2,4,2,0,0,0,core);
- const waterMaterial=new T.MeshStandardMaterial({color:0x17616b,transparent:true,opacity:.23,roughness:.25,metalness:.25,side:T.DoubleSide,depthWrite:false}),water=new T.Mesh(new T.PlaneGeometry(550,480),waterMaterial);water.rotation.x=-Math.PI/2;water.position.set(0,-2,90);b.world.add(water);let drained=false;
- return b.finish(t=>{core.rotation.y=Math.sin(t*.00008)*.25;water.position.y+=( (drained?-15:-2)-water.position.y)*.04},state=>drained=!!state.drained);}
+ const ripples=rippleTexture(26,22);
+ const waterMaterial=new T.MeshStandardMaterial({color:0x17616b,bumpMap:ripples,bumpScale:.18,transparent:true,opacity:.23,roughness:.25,metalness:.25,side:T.DoubleSide,depthWrite:false}),water=new T.Mesh(new T.PlaneGeometry(550,480),waterMaterial);water.rotation.x=-Math.PI/2;water.position.set(0,-2,90);b.world.add(water);let drained=false;
+ return b.finish(t=>{core.rotation.y=Math.sin(t*.00008)*.25;ripples.offset.set((t*.000018)%1,(t*.000027)%1);water.position.y+=( (drained?-15:-2)-water.position.y)*.04},state=>drained=!!state.drained);}
 export function buildDistinctFrostcourt(scene){const b=kit(scene,'frostcourt'),{add,rod}=b;
  // The central court branches west into frozen ramparts and east into furnaces.
  for(const o of CHAPTER_PROPS.frostcourt){if(o.kind==='nave-column')continue;const h=chapterHeight('frostcourt',o.x,o.z);if(o.kind==='ice-bastion'||o.kind==='throne-wing'){add('box','stone',o.x,h+o.h/2,o.z,o.w,o.h,o.d);for(const x of [-1,1]){add('cyl','stone',o.x+x*o.w/2,h+o.h*.6,o.z,3,o.h*1.3,3);add('cone','accent',o.x+x*o.w/2,h+o.h*1.3,o.z,4,9,4)}for(let i=0;i<5;i++)add('box','dark',o.x,h+3+i*3,o.z-o.d/2-.04,o.w*.55,1,.08);}
@@ -120,28 +121,80 @@ export function buildDistinctSkyreach(scene){const b=kit(scene,'skyreach'),{add,
  }
  const cloudMaterial=new T.MeshBasicMaterial({color:0x8ca8bd,transparent:true,opacity:.8}),cloud=new T.Mesh(new T.PlaneGeometry(1000,1000),cloudMaterial);cloud.rotation.x=-Math.PI/2;cloud.position.set(0,-50,120);b.world.add(cloud);
  return b.finish();}
-function buildOasis(world){
- const o=DUNES_OASIS,canvas=document.createElement('canvas');canvas.width=canvas.height=128;
- const ctx=canvas.getContext('2d'),pixels=ctx.createImageData(128,128);
- for(let y=0;y<128;y++)for(let x=0;x<128;x++){
-  const a=x*Math.PI/64,b=y*Math.PI/64,i=(y*128+x)*4;
-  const ripple=Math.sin(a*4+b*7+Math.sin(b*3)*1.2);
-  pixels.data.set([140+40*ripple,140+40*ripple,140+40*ripple,255],i);
+function rippleTexture(repeatX,repeatY){
+ const size=64,data=new Uint8Array(size*size*4);
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+  const a=x*Math.PI*2/size,b=y*Math.PI*2/size,i=(y*size+x)*4;
+  const wave=.7*Math.sin(2*a+3*b+Math.sin(b)*1.4)+.3*Math.sin(5*a-2*b);
+  data[i]=data[i+1]=data[i+2]=Math.round(184+50*wave);
+  data[i+3]=255;
  }
- ctx.putImageData(pixels,0,0);
- const ripples=new T.CanvasTexture(canvas);ripples.wrapS=ripples.wrapT=T.RepeatWrapping;ripples.repeat.set(3,2);
+ const texture=new T.DataTexture(data,size,size);
+ texture.wrapS=texture.wrapT=T.RepeatWrapping;
+ texture.magFilter=T.LinearFilter;
+ texture.minFilter=T.LinearMipmapLinearFilter;
+ texture.generateMipmaps=true;
+ texture.repeat.set(repeatX,repeatY);
+ texture.needsUpdate=true;
+ return texture;
+}
+function buildOasis(world){
+ const o=DUNES_OASIS,ripples=rippleTexture(3,2);
  const shape=new T.Shape();shape.absellipse(0,0,o.rx*1.18,o.rz*1.18,0,Math.PI*2,false,0);
  const geometry=new T.ShapeGeometry(shape,48),uv=geometry.attributes.uv;
  for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)/(2*o.rx)+.5,uv.getY(i)/(2*o.rz)+.5);
- const mesh=new T.Mesh(geometry,new T.MeshStandardMaterial({color:0x489f90,bumpMap:ripples,bumpScale:.27,roughness:.26,emissive:0x2f8478,emissiveMap:ripples,emissiveIntensity:.3,transparent:true,opacity:.84,polygonOffset:true,polygonOffsetFactor:-1}));
+ const mesh=new T.Mesh(geometry,new T.MeshStandardMaterial({color:0x489f90,bumpMap:ripples,bumpScale:.14,roughness:.26,emissive:0x2f8478,emissiveMap:ripples,emissiveIntensity:.3,transparent:true,opacity:.84,polygonOffset:true,polygonOffsetFactor:-1}));
  mesh.rotation.x=-Math.PI/2;mesh.position.set(o.x,o.water,o.z);mesh.name='oasis-water';world.add(mesh);
- return time=>ripples.offset.set(time*.00005,time*.00008);
+ return time=>ripples.offset.set((time*.000025)%1,(time*.000041)%1);
 }
-export function buildDunesScene(scene){const b=kit(scene,'dunes'),{add,rod}=b,updateWater=buildOasis(b.world);
+function buildSandDrift(world){
+ const positions=[];
+ for(let i=0;i<96;i++){
+  const z=12+i*4.1,x=Math.sin(i*2.399)*44;
+  if(chapterDistance('dunes',x,z)<8||dunesOasisRadius(x,z)<1.65)continue;
+  positions.push(x,chapterHeight('dunes',x,z)+.45+i%5*.22,z);
+ }
+ const geometry=new T.BufferGeometry();
+ geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));
+ geometry.computeBoundingSphere();
+ geometry.boundingSphere.radius+=4;
+ const material=new T.ShaderMaterial({
+  uniforms:{time:{value:0}},
+  transparent:true,depthWrite:false,
+  vertexShader:`
+   uniform float time;
+   varying float opacity;
+   void main(){
+    float phase=fract(time*.25+sin(position.z*12.9898)*437.585);
+    vec3 p=position+vec3((phase-.5)*7.,sin(phase*6.283)*.16,phase*.6);
+    vec4 eye=modelViewMatrix*vec4(p,1.);
+    float distance=-eye.z;
+    opacity=sin(phase*3.14159)*smoothstep(2.,8.,distance)*(1.-smoothstep(45.,90.,distance));
+    gl_PointSize=clamp(240./max(distance,1.),2.,18.);
+    gl_Position=projectionMatrix*eye;
+   }`,
+  fragmentShader:`
+   varying float opacity;
+   void main(){
+    vec2 p=(gl_PointCoord-.5)*vec2(2.,5.);
+    gl_FragColor=vec4(.86,.68,.42,(1.-smoothstep(0.,1.,length(p)))*opacity*.19);
+   }`,
+ });
+ world.add(new T.Points(geometry,material));
+ return time=>material.uniforms.time.value=(time%16000)*.001;
+}
+export function buildDunesScene(scene){const b=kit(scene,'dunes'),{add,rod}=b,updateWater=buildOasis(b.world),updateSand=buildSandDrift(b.world);
+ const o=DUNES_OASIS;
+ for(let i=0;i<26;i++){
+  const angle=i*2.39996,r=1.08+(i%4)*.09,x=o.x+Math.cos(angle)*o.rx*r,z=o.z+Math.sin(angle)*o.rz*r;
+  if(chapterDistance('dunes',x,z)<3)continue;
+  const size=.24+(i%5)*.08;
+  add('rock','stone',x,chapterHeight('dunes',x,z)+size*.16,z,size*1.6,size*.6,size,0,angle);
+ }
  for(const o of CHAPTER_PROPS.dunes){if(o.kind==='temple-wing')continue;const y=chapterHeight('dunes',o.x,o.z);if(o.kind==='sand-house'){add('box','stone',o.x,y+o.h/2,o.z,o.w,o.h,o.d);add('box','dark',o.x,y+3,o.z-o.d/2-.05,3,6,.1);add('cone','stone',o.x,y+o.h+2,o.z,o.w*.75,4,o.d*.75,0,Math.PI/4);for(let i=0;i<3;i++)add('box','dark',o.x-4+i*4,y+o.h*.7,o.z-o.d/2-.06,1.2,1.5,.08);add('cloth','cloth',o.x,y+4,o.z-o.d/2-3,o.w+1,.1,6,0,0,-.1)}else if(o.kind==='sun-obelisk'){add('box','stone',o.x,y+o.h/2,o.z,o.w,o.h,o.d);add('cone','metal',o.x,y+o.h+3,o.z,o.w*.6,6,o.d*.6);add('box','glow',o.x,y+o.h*.5,o.z-o.d/2-.1,.3,o.h*.7,.1)}else{for(let i=0;i<6;i++)add('rock','stone',o.x+Math.sin(i)*2,y+i*o.h/6,o.z,Math.max(2,o.w*.6-i*.7),o.h/6+2,Math.max(2,o.d*.6-i*.8),0,i,.06*i)}}
  // A stepped temple with an open axial nave, not a painted mountain corridor.
  for(const side of [-1,1])for(let i=0;i<7;i++)add('box','stone',side*(45-i*2),chapterHeight('dunes',side*(45-i*2),350)+i*2.5,350,30-i*2,5,90-i*8);for(let z=320;z<390;z+=14)for(const x of [-24,24]){const y=chapterHeight('dunes',x,z);add('cyl','stone',x,y+11,z,2,22,2);add('box','metal',x,y+22,z,7,1,7)}add('box','stone',0,34,390,65,7,7);
  for(let i=0;i<12;i++){const x=-20+(i%4)*15,z=145+Math.floor(i/4)*16;if(dunesOasisRadius(x,z)<1.55)continue;const y=chapterHeight('dunes',x,z);add('box','metal',x,y+.7,z,3,1.4,2);if(i%2)for(const s of [-1,1])rod([x+s*3,y,z],[x+s*3,y+4,z],.1);if(i%2)add('cloth','cloth',x,y+4,z,7,.05,5,0,0,.08)}
  for(let i=0;i<22;i++){const x=Math.sin(i*2.399)*120,z=30+i*16;if(chapterDistance('dunes',x,z)>1)continue;add('cone','accent',x,chapterHeight('dunes',x,z)+.6,z,.5,1.2,.5,0,i,.1)}
  const dial=new T.Group();dial.position.set(0,17,350);b.world.add(dial);for(let i=0;i<3;i++)add('ring','metal',0,3,0,8+i*2,8+i*2,8+i*2,0,i*.5,0,dial);add('crystal','glow',0,3,0,2,4,2,0,0,0,dial);let solved=false;
- return b.finish(t=>{updateWater(t);dial.rotation.y=t*.00006*(solved?.15:1)},s=>solved=!!s.solved);}
+ return b.finish(t=>{updateWater(t);updateSand(t);dial.rotation.y=t*.00006*(solved?.15:1)},s=>solved=!!s.solved);}
