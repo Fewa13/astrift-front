@@ -1,5 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261109-scenery-1';
+import {PROFESSIONS,SKILLS} from './ancient-skills.js';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',queuedPlates=[];
  const L=(a,b)=>en()?b:a;
@@ -20,6 +21,14 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
    room.querySelector('.ancientPuzzlePanel').close();
   }
   state=next;map?.sync(next,started);draw();
+  const panel=room.querySelector('.ancientPuzzlePanel');
+  panel.querySelector('header button').hidden=!!next.pendingBooksFloor;
+  panel.querySelector('header strong').textContent=next.pendingBooksFloor?L('通关奖励','Clear rewards'):L('解谜聊天','Puzzle chat');
+  panel.querySelector('.ancientPuzzleChat').hidden=!!next.pendingBooksFloor;
+  if(next.pendingBooksFloor&&!panel.open){
+   if(document.pointerLockElement)document.exitPointerLock();
+   panel.showModal();
+  }
 
   room.querySelector('.ancientPuzzleFeedback').textContent=feedback;
   room.querySelector('.ancientPuzzleFloorLabel').textContent=next.complete?L('已通关','All floors cleared'):L('第 ','Floor ')+next.floor+' / '+next.total+' · '+L('难度 ','Difficulty ')+next.difficulty+'/5 · '+L('房间 ','Room ')+(next.banks.findIndex(bank=>!bank.done)+1)+' / '+next.banks.length+' · '+next.banks.find(bank=>!bank.done)?.name[en()?1:0];
@@ -35,20 +44,20 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   if(!room||(passive?polling||working:working))return;
   const id=generation,started=Date.now();if(passive)polling=true;else working=true;
   try{
-   const r=await request(action,body);if(id!==generation)return;
+   const r=await request(action,body);if(id!==generation||(passive&&working))return;
    if(action==='puzzleOperate'&&r.puzzle?.notice==='clear'){
     map?.finishFloor();
     await new Promise(resolve=>setTimeout(resolve,700));
     if(id!==generation)return;
    }
    const messages={clear:L('本层已通关！','Floor cleared!'),blocked:L('只能滑动空格旁的砖。','Only a tile beside the gap can slide.'),wrongPair:L('图案不同，第二枚石印保持翻开。','No match. The second seal stays revealed.'),open:L('石门已打开。','The gate is open.'),wrong:L('这个石印对不上。','That seal does not match.'),reset:L('顺序错了，重新开始。','Wrong order. Start again.'),stale:L('机关已更新。','Controls updated.')};
-   if(action!=='puzzleState')feedback=action==='puzzleClaim'?L('奖励已入账。','Rewards credited.'):messages[r.puzzle?.notice]||'';
+   if(action!=='puzzleState')feedback=action==='puzzleClaim'?L('奖励已入账。','Rewards credited.'):[messages[r.puzzle?.notice],r.puzzle?.gold?'+'+r.puzzle.gold+L(' 金币',' gold'):''].filter(Boolean).join(' · ');
    apply(r,started);
   }catch(error){if(id===generation){feedback=error.message;room.querySelector('.ancientPuzzleFeedback').textContent=feedback;draw();}}
   finally{if(id===generation){if(passive)polling=false;else{working=false;while(queuedPlates.length&&!working){const pending=queuedPlates.shift();if(pending.floor===state?.floor)operate(pending.index,true);}}}}
  }
  function operate(index,step=false){
-  if(!state||state.complete)return;
+  if(!state||state.complete||state.pendingBooksFloor)return;
   const active=state.banks.find(bank=>!bank.done);
   if(!active||index<active.start||index>=active.start+active.count)return;
   if(working){if(step&&queuedPlates.length<8)queuedPlates.push({floor:state.floor,index});return;}
@@ -56,13 +65,38 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
  }
  function draw(){
   if(!room||!state)return;
-  const view=room.querySelector('main'),key=JSON.stringify([state.revision,state.floor,state.claimed,feedback,en()]);
+  const view=room.querySelector('main'),key=JSON.stringify([state.revision,state.floor,state.pendingBooksFloor,en()]);
   if(key===signature)return;signature=key;view.replaceChildren();
-  const active=make(view,'section');active.className='ancientPuzzleMachine';
-  if(state.complete)make(active,'h2',L('已解开全部 '+state.total+' 层','All '+state.total+' floors cleared'));
-  const status=make(view,'p',feedback);status.setAttribute('role','status');
-  const count=Math.min(state.total,state.floor-1)-state.claimed;
-  button(view,L('领取已通关楼层奖励','Claim cleared-floor rewards')+' · '+Math.max(0,count),()=>void update('puzzleClaim')).disabled=count<=0;
+  const status=make(view,'p',feedback);status.dataset.puzzleRewardStatus='';status.setAttribute('role','status');
+  if(!state.pendingBooksFloor){
+   if(state.complete)make(view,'h2',L('已解开全部 '+state.total+' 层','All '+state.total+' floors cleared'));
+   return;
+  }
+  const floor=state.pendingBooksFloor;
+  make(view,'h2',L('第 '+floor+' 层奖励','Floor '+floor+' reward'));
+  make(view,'p',L('选满三本技能书后继续。','Choose all three skill books to continue.'));
+  const choices=Array.from({length:3},(_,index)=>{
+   const label=make(view,'label',L('技能书 ','Skill book ')+(index+1));label.className='ancientPuzzleBookChoice';
+   const select=make(label,'select');
+   const placeholder=make(select,'option',L('请选择','Choose a book'));placeholder.value='';
+   for(const profession of Object.values(PROFESSIONS)){
+    const group=make(select,'optgroup');group.label=en()?profession.en:profession.name;
+    for(const skill of profession.skills){const option=make(group,'option',en()?SKILLS[skill].en:SKILLS[skill].name);option.value=skill;}
+   }
+   return select;
+  });
+  const claim=button(view,L('领取三本技能书','Claim three skill books'),async()=>{
+   claim.disabled=true;
+   const counts=new Map();
+   for(const choice of choices)counts.set(choice.value,(counts.get(choice.value)||0)+1);
+   await update('puzzleClaim',{floor,selection:[...counts].map(([id,quantity])=>({id,quantity}))});
+   if(claim.isConnected){status.textContent=feedback;claim.disabled=false;}
+   if(!state?.pendingBooksFloor)room?.querySelector('.ancientPuzzlePanel')?.close();
+  });
+  claim.disabled=true;
+  for(const choice of choices)choice.onchange=()=>{claim.disabled=choices.some(select=>!select.value)};
+  button(view,L('离开解谜地图','Leave puzzle map'),close);
+
  }
  function close(){
   if(!room)return;generation++;clearInterval(poll);map?.dispose();map=null;room.querySelector('.ancientPuzzlePanel')?.close();room.close();room.remove();room=null;state=null;queuedPlates=[];working=polling=false;
@@ -75,7 +109,7 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   generation++;signature='';feedback='';
   room=make(document.body,'dialog');room.className='ancientPuzzleRoom';
   const top=make(room,'header');make(top,'strong').className='ancientPuzzleFloorLabel';
-  button(top,L('奖励','Rewards'),()=>focusControls(-1));
+  button(top,L('解谜聊天','Puzzle chat'),()=>focusControls(-1));
   button(top,L('离开解谜地图','Leave puzzle map'),close);
   const notice=make(top,'small');notice.className='ancientPuzzleFeedback';notice.setAttribute('role','status');
   const viewport=make(room,'section');viewport.className='ancientPuzzleViewport';
@@ -84,9 +118,9 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   make(viewport,'span','+').className='ancientPuzzleReticle';
   const panel=make(room,'dialog');panel.className='ancientPuzzlePanel';
   const panelTop=make(panel,'header');make(panelTop,'strong',L('机关','Mechanism')).className='ancientPuzzleFloorLabel';
-  button(panelTop,L('关闭','Close'),()=>panel.close());
+  button(panelTop,L('关闭','Close'),()=>{if(!state?.pendingBooksFloor)panel.close()});
   panel.addEventListener('close',()=>{if(room?.isConnected)canvas.focus({preventScroll:true});});
-  panel.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();panel.close();});
+  panel.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();if(!state?.pendingBooksFloor)panel.close();});
   function focusControls(index,step=false){
    if(panel.open)return;
    if(index>=0){operate(index,step);return;}

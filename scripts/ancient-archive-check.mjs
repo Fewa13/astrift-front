@@ -1,14 +1,14 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import assert from 'node:assert/strict';
-import {PUZZLE_FLOORS,newPuzzleState,puzzleView,puzzleOperate,puzzleReward,TILE_NEIGHBORS} from '../src/ancient-puzzle.ts';
+import {PUZZLE_FLOORS,newPuzzleState,puzzleView,puzzleOperate,puzzleRoomGold,TILE_NEIGHBORS} from '../src/ancient-puzzle.ts';
 import {GEAR,GEAR_AFFIXES,gearHuntEligible,gearHuntCounts,gearRerollQuote,rollGearItem} from '../public/ancient-gear.js';
 
-let state=newPuzzleState(),now=20000;
+let state=newPuzzleState(),now=20000,lastMove;
 for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
  const room=puzzleView(state);
  assert.equal(room.floor,floor);
  assert(room.banks.length>=8&&room.banks.length<=24);
- const activate=index=>puzzleOperate(state,{floor,revision:state.revision,control:'activate',index},now);
+ const activate=index=>{const input={floor,revision:state.revision,control:'activate',index};const result=puzzleOperate(state,input,now);if(floor===1&&result.notice==='clear')lastMove={state,input};return result;};
  const old=state;
  assert.equal(activate(-1).notice,'locked');
  assert.equal(activate(room.banks.at(-1).start).notice,'locked');
@@ -113,7 +113,7 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
  }
  assert.equal(state.floor,floor+1,'Floor '+floor+' must be solvable');
  assert.equal(puzzleOperate(state,{floor,revision:old.revision,control:'activate',index:0},now).notice,'stale');
- if(floor>1)assert(puzzleReward(floor).coins>=puzzleReward(floor-1).coins);
+ if(floor>1)assert.equal(puzzleRoomGold(floor,1),puzzleRoomGold(floor-1,puzzleView(newPuzzleState(floor-1)).banks.length)+10);
 }
 assert.equal(PUZZLE_FLOORS,120);
 assert.equal(puzzleView(state).complete,true);
@@ -176,9 +176,12 @@ const first=(await server.command('puzzle-a','puzzleEnter',{})).puzzle;
 const other=(await server.command('puzzle-b','puzzleEnter',{})).puzzle;
 assert.equal(first.floor,1);
 assert.equal(other.floor,1);
-assert.equal(first.claimed,0);
+assert.equal(first.pendingBooksFloor,undefined);
 const press={floor:1,revision:first.revision,control:'activate',index:first.banks[0].start};
-assert.equal((await server.command('puzzle-a','puzzleOperate',press)).puzzle.banks[0].done,true);
+const openedGate=await server.command('puzzle-a','puzzleOperate',press);
+assert.equal(openedGate.puzzle.banks[0].done,true);
+assert.equal(openedGate.puzzle.gold,110);
+assert.equal(openedGate.profile.coins,oldProfile.coins+110);
 assert.equal((await server.command('puzzle-a','puzzleOperate',press)).puzzle.notice,'stale');
 assert.equal((await server.command('puzzle-b','puzzleState',{})).puzzle.banks[0].done,false);
 assert.equal((await server.command('puzzle-a','puzzleEnter',{})).puzzle.banks[0].done,true);
@@ -192,5 +195,38 @@ assert.equal((await server.command('puzzle-a','equipPuzzleTitle',{worn:true})).p
 assert.equal((await server.command('puzzle-a','equipPuzzleTitle',{worn:false})).profile.puzzleTitle.worn,false);
 assert.equal((await server.command('puzzle-b','equipPuzzleTitle',{worn:true})).ok,false);
 console.log('PASS: old puzzle progress reset, independent puzzle commands, reconnect persistence, replay-safe scores and title equipment.');
+sql.exec('UPDATE ancient_abilities SET data=? WHERE name=?',JSON.stringify(lastMove.state),'personal-puzzle-v1:puzzle-a');
+const clear=await server.command('puzzle-a','puzzleOperate',lastMove.input);
+assert.equal(clear.puzzle.pendingBooksFloor,1);
+assert.equal(clear.puzzle.gold,180);
+const resumed=(await server.command('puzzle-a','puzzleEnter',{})).puzzle;
+assert.equal(resumed.pendingBooksFloor,1);
+const nextPress={floor:2,revision:resumed.revision,control:'activate',index:0};
+assert.equal((await server.command('puzzle-a','puzzleOperate',nextPress)).ok,false);
+assert.equal((await server.command('puzzle-a','puzzleClaim',{floor:1,selection:[{id:'chain',quantity:2}]})).ok,false);
+const selection=[{id:'chain',quantity:2},{id:'slash',quantity:1}];
+const books=await server.command('puzzle-a','puzzleClaim',{floor:1,selection});
+assert.equal(books.profile.materials['skillbook:chain'],2);
+assert.equal(books.profile.materials['skillbook:slash'],1);
+assert.equal(books.puzzle.pendingBooksFloor,undefined);
+assert.equal((await server.command('puzzle-a','puzzleClaim',{floor:1,selection})).ok,false);
+assert.equal((await server.command('puzzle-a','puzzleOperate',nextPress)).ok,true);
+console.log('PASS: gold per room, reconnect keeps the required reward, exactly three books, duplicate claim rejected.');
+const buyer=server.read('book-shop-qa');
+buyer.profession='ice';
+buyer.coins=10000;
+server.save('book-shop-qa',buyer);
+const {PROFESSIONS,SKILLS}=await import('../public/ancient-skills.js');
+for(const job of Object.keys(PROFESSIONS)){
+ const id='book:'+job;
+ const purchased=await server.command('book-shop-qa','buySupply',{id,quantity:1});
+ assert(purchased.ok);
+ const opened=await server.command('book-shop-qa','useSupply',{id});
+ assert(opened.ok);
+ const added=Object.keys(opened.profile.materials).filter(key=>key.startsWith('skillbook:')&&opened.profile.materials[key]>(purchased.profile.materials[key]||0));
+ assert.equal(added.length,1);
+ assert.equal(SKILLS[added[0].slice(10)].job,job);
+}
+console.log('PASS: every shop profession book opens into its own profession, independently of the player’s profession.');
 db.close();
 console.log('PASS: actual AncientWorld commands redeem once, charge once, keep or replace a single affix, and reject replay.');

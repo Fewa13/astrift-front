@@ -168,3 +168,6 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientTitleList canvas{width:100%;display:block}
 .ancientTitlePerks{display:flex;flex-wrap:wrap;gap:5px}
 .puzzleTargeted .ancientPuzzleReticle{color:#8af4c7;text-shadow:0 0 7px #218e78,0 1px 3px #000}
+.ancientPuzzleBookChoice{display:grid;grid-template-columns:minmax(5rem,auto) 1fr;align-items:center;gap:12px;margin:10px 0}
+.ancientPuzzleBookChoice select{min-width:0;padding:8px;color:#e9f5f4;background:#102330;border:1px solid #527d86;border-radius:6px}
+.ancientPuzzlePanel main>button+button{margin-inline-start:8px}

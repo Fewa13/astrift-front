@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ownedAncientSkins,equippedAncientSkin} from './ancient-skins';
-import {PUZZLE_FLOORS,newPuzzleState,upgradePuzzleState,puzzleOperate,puzzleReward,puzzleView,type PuzzleState} from './ancient-puzzle';
+import {PUZZLE_FLOORS,newPuzzleState,upgradePuzzleState,puzzleOperate,puzzleRoomGold,puzzleView,type PuzzleState} from './ancient-puzzle';
 import {gearHuntEligible,gearHuntCounts,gearHuntQuota,gearRerollQuote,gearPromotion,GEAR_LEVELS} from './ancient-gear';
 import {CLIENT_OUTDATED,currentClient,worldActionRequiresVersion} from './client-version';
 import {traceCommunityLight} from './ancient-community-optics';
@@ -275,7 +275,9 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
      sql.exec('INSERT INTO ancient_puzzle_chat(name,text) VALUES(?,?)',name,result.message.text);
      sql.exec('DELETE FROM ancient_puzzle_chat WHERE id<=(SELECT MAX(id)-24 FROM ancient_puzzle_chat)');
     }
+    let gold=0;
     if(action==='puzzleOperate'){
+     if(state.pendingBooksFloor)return fail('请先领取本层的三本技能书 / Claim this floor’s three skill books first');
      const next=puzzleOperate(state,data,now);notice=next.notice;
      if(state!==next.state){
       const before=puzzleView(state),after=puzzleView(next.state);
@@ -283,13 +285,21 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
       const completed=next.state.floor!==state.floor?(!before.complete?before.banks.length-previous:0):
        (!after.complete?after.banks.filter(bank=>bank.done).length-previous:0);
       creditPuzzleRooms(sql,name,completed,now);
-      state=next.state;sql.exec('INSERT INTO ancient_abilities VALUES(?,?) ON CONFLICT(name) DO UPDATE SET data=excluded.data',key,JSON.stringify(state));}
+      for(let i=1;i<=completed;i++)gold+=puzzleRoomGold(state.floor,previous+i);
+      if(gold){p.coins+=gold;this.save(name,p);}
+      const clearedFloor=state.floor;
+      state=next.state;
+      if(notice==='clear')state.pendingBooksFloor=clearedFloor;
+      sql.exec('INSERT INTO ancient_abilities VALUES(?,?) ON CONFLICT(name) DO UPDATE SET data=excluded.data',key,JSON.stringify(state));
+     }
     }
     if(action==='puzzleClaim'){
-     const through=Math.min(PUZZLE_FLOORS,state.floor-1),from=p.personalPuzzleClaimed||0;
-     if(through<=from)return fail('没有待领取奖励 / No rewards to claim');
-     for(let f=from+1;f<=through;f++){const reward=puzzleReward(f);p.coins+=reward.coins;p.materials.core=(p.materials.core||0)+reward.cores;}
-     p.personalPuzzleClaimed=through;this.save(name,p);
+     if(!state.pendingBooksFloor||data.floor!==state.pendingBooksFloor)return fail('没有待领取奖励 / No rewards to claim');
+     const error=grantMailRewards(p,[{key:'skill-choice',quantity:3}],data.selection);
+     if(error)return fail(error);
+     delete state.pendingBooksFloor;
+     sql.exec('UPDATE ancient_abilities SET data=? WHERE name=?',JSON.stringify(state),key);
+     this.save(name,p);
     }
     const position=data.position as {x?:unknown;z?:unknown}|undefined;
     const valid=action==='puzzleState'&&data.floor===state.floor&&typeof position?.x==='number'&&typeof position.z==='number'&&Number.isFinite(position.x+position.z);
@@ -299,7 +309,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
     sql.exec('DELETE FROM ancient_puzzle_presence WHERE seen<?',now-15000);
     const players=sql.exec<{name:string;x:number;z:number}>('SELECT name,x,z FROM ancient_puzzle_presence WHERE floor=? ORDER BY name LIMIT 40',state.floor).toArray();
     const chat=sql.exec<{id:number;name:string;text:string}>('SELECT id,name,text FROM ancient_puzzle_chat ORDER BY id DESC LIMIT 24').toArray().reverse();
-    return {ok:true,puzzle:{...puzzleView(state,now),notice,players,chat,serverTime:now,total:PUZZLE_FLOORS,reward:state.floor<=PUZZLE_FLOORS?puzzleReward(state.floor):null,claimed:p.personalPuzzleClaimed||0},...(action==='puzzleClaim'?{profile:p}:{})};
+    return {ok:true,puzzle:{...puzzleView(state,now),notice,players,chat,serverTime:now,total:PUZZLE_FLOORS,gold,pendingBooksFloor:state.pendingBooksFloor},...(action==='puzzleClaim'||gold?{profile:p}:{})};
    });
   }
   if(action==='sellSkillBooks')return this.ctx.storage.transactionSync(()=>{const key=String(data.key||''),quantity=Number(data.quantity),id=String(data.requestId||''),signature=JSON.stringify([key,quantity]);if(!/^[a-zA-Z0-9-]{16,80}$/.test(id))return fail('请求无效');this.ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS ancient_book_sales(name TEXT NOT NULL,id TEXT NOT NULL,signature TEXT NOT NULL,PRIMARY KEY(name,id))');const receipt=this.ctx.storage.sql.exec<{signature:string}>('SELECT signature FROM ancient_book_sales WHERE name=? AND id=?',name,id).toArray()[0];if(receipt)return receipt.signature===signature?{ok:true,profile:p}:fail('请求内容已更改');const error=sellSkillBooks(p,key,quantity,this.trades().reservedItem(name,key,'material'));if(error)return fail(error);this.save(name,p);this.ctx.storage.sql.exec('INSERT INTO ancient_book_sales VALUES(?,?,?)',name,id,signature);return {ok:true,profile:p};});

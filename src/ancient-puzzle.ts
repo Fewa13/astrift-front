@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 export const PUZZLE_FLOORS=120;
-export type PuzzleState={floor:number;revision:number;values:number[];layout?:number;deadline?:number;pair?:number;held?:number};
+export type PuzzleState={floor:number;revision:number;values:number[];layout?:number;deadline?:number;pair?:number;held?:number;pendingBooksFloor?:number};
 type Text=[string,string];
 const glyphs=['○','△','◇','✦','☾','☀','✚','□'];
 const CHAMBER_RULES:{name:Text;clue:Text}[]=[
@@ -31,8 +31,14 @@ export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,v
 export function upgradePuzzleState(state:PuzzleState){
  return state.layout===4||state.layout===5||state.layout===6?state:newPuzzleState(state.floor,state.revision+1);
 }
+const roomCount=(floor:number)=>8+Math.floor(16*(floor-1)/(PUZZLE_FLOORS-1));
+export function puzzleRoomGold(floor:number,room:number){
+ let number=room;
+ for(let previous=1;previous<floor;previous++)number+=roomCount(previous);
+ return 100+number*10;
+}
 function roomLayout(floor:number,layout?:number){
- const difficulty=difficultyFor(floor),count=8+Math.floor(16*(floor-1)/(PUZZLE_FLOORS-1));
+ const difficulty=difficultyFor(floor),count=roomCount(floor);
  const palette=floor<3?[1,2,3,4,5,6,7]:[1,2,3,4,5,6,7,8];
  const expanded=[1,9,5,10,2,11,3,12,4,13,14,6,15,7,16,8,17];
  const rotation=(Math.imul(floor,2654435761)>>>0)%palette.length;
@@ -123,7 +129,6 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
  if(done(active,values)){notice='open';deadline=pair=held=undefined;}
  return {state:{...state,values,revision,deadline,pair,held},notice};
 }
-export const puzzleReward=(floor:number)=>{const difficulty=difficultyFor(floor);return {coins:40*difficulty*difficulty,cores:difficulty>=3?difficulty-2:0}};
 
 export const TILE_NEIGHBORS=[[1,3],[0,2,4],[1,5],[0,4],[1,3,5],[2,4]];
 
