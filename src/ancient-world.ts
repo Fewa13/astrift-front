@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ownedAncientSkins,equippedAncientSkin} from './ancient-skins';
-import {PUZZLE_FLOORS,newPuzzleState,upgradePuzzleState,puzzleOperate,puzzleRoomGold,puzzleView,type PuzzleState} from './ancient-puzzle';
+import {PUZZLE_FLOORS,newPuzzleState,upgradePuzzleState,expireTimedPuzzle,puzzleOperate,puzzleRoomGold,puzzleView,type PuzzleState} from './ancient-puzzle';
 import {gearHuntEligible,gearHuntCounts,gearHuntQuota,gearRerollQuote,gearPromotion,GEAR_LEVELS} from './ancient-gear';
 import {CLIENT_OUTDATED,currentClient,worldActionRequiresVersion} from './client-version';
 import {traceCommunityLight} from './ancient-community-optics';
@@ -274,6 +274,13 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
      const result=roomChat(this.ctx,'puzzle:'+name,name,-1,data.text);if(result.error||!result.message)return fail(result.error||'消息无效');
      sql.exec('INSERT INTO ancient_puzzle_chat(name,text) VALUES(?,?)',name,result.message.text);
      sql.exec('DELETE FROM ancient_puzzle_chat WHERE id<=(SELECT MAX(id)-24 FROM ancient_puzzle_chat)');
+    }
+    if(action==='puzzleState'||action==='puzzleEnter'){
+     const refreshed=expireTimedPuzzle(state,now);
+     if(refreshed!==state){
+      state=refreshed;notice='timedReset';
+      sql.exec('UPDATE ancient_abilities SET data=? WHERE name=?',JSON.stringify(state),key);
+     }
     }
     let gold=0;
     if(action==='puzzleOperate'){

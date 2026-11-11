@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261110-puzzle-difficulty-1';
+import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261111-puzzle-timed-1';
 import {PROFESSIONS,SKILLS} from './ancient-skills.js';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',queuedPlates=[];
@@ -50,8 +50,8 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
     await new Promise(resolve=>setTimeout(resolve,700));
     if(id!==generation)return;
    }
-   const messages={clear:L('本层已通关！','Floor cleared!'),blocked:L('只能滑动空格旁的砖。','Only a tile beside the gap can slide.'),wrongPair:L('图案不同，第二枚石印保持翻开。','No match. The second seal stays revealed.'),open:L('石门已打开。','The gate is open.'),wrong:L('这个石印对不上。','That seal does not match.'),reset:L('顺序错了，重新开始。','Wrong order. Start again.'),stale:L('机关已更新。','Controls updated.')};
-   if(action!=='puzzleState')feedback=action==='puzzleClaim'?L('奖励已入账。','Rewards credited.'):[messages[r.puzzle?.notice],r.puzzle?.gold?'+'+r.puzzle.gold+L(' 金币',' gold'):''].filter(Boolean).join(' · ');
+   const messages={timedReset:L('时间到，机关已重新打乱。','Time is up. The puzzle has been reshuffled.'),clear:L('本层已通关！','Floor cleared!'),blocked:L('只能滑动空格旁的砖。','Only a tile beside the gap can slide.'),wrongPair:L('图案不同，第二枚石印保持翻开。','No match. The second seal stays revealed.'),open:L('石门已打开。','The gate is open.'),wrong:L('这个石印对不上。','That seal does not match.'),reset:L('顺序错了，重新开始。','Wrong order. Start again.'),stale:L('机关已更新。','Controls updated.')};
+   if(action!=='puzzleState'||r.puzzle?.notice==='timedReset')feedback=action==='puzzleClaim'?L('奖励已入账。','Rewards credited.'):[messages[r.puzzle?.notice],r.puzzle?.gold?'+'+r.puzzle.gold+L(' 金币',' gold'):''].filter(Boolean).join(' · ');
    apply(r,started);
   }catch(error){if(id===generation){feedback=error.message;room.querySelector('.ancientPuzzleFeedback').textContent=feedback;draw();}}
   finally{if(id===generation){if(passive)polling=false;else{working=false;while(queuedPlates.length&&!working){const pending=queuedPlates.shift();if(pending.floor===state?.floor)operate(pending.index,true);}}}}

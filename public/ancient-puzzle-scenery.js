@@ -11,7 +11,7 @@ export function dressPuzzleStation(station,kind,part){
  const pivot=new T.Group();pivot.position.y=1.32;station.add(pivot);
  station.mechanism={pivot,angle:0};
  if(kind===9){
-  pivot.add(part(0,0,0,1.14,.9,.19,BRASS),part(0,0,.11,.94,.7,.05,0xa6d5e7));
+  pivot.add(part(0,0,0,1.14,.9,.19,BRASS),part(0,0,-.11,.94,.7,.05,0xa6d5e7));
  }else if(kind===10){
   pivot.add(part(0,0,0,.82,.22,.65,BRASS),part(0,.26,0,.12,.52,.12,BRASS));
   station.mechanism.streams=[-1,1].map(side=>part(side*.45,1.13,.05,.58,.055,.2,WATER));
@@ -32,7 +32,10 @@ export function dressPuzzleChamber({bank,z,parent,box,glow}){
    part(x,3.7,6,.6,.24,11,DARK);
   }
   part(12.5,2.83,.62,.46,.46,.46,BRASS).material=glow;
-  room.beams=Array.from({length:count},()=>{const mesh=part(0,0,0,.055,.055,1,BRASS);mesh.material=glow;mesh.visible=false;return mesh;});
+  part(2.58,1.32,8,.85,.58,.66,DARK);
+  part(2.9,1.32,8,.25,.36,.36,BRASS).material=glow;
+  room.emitter=new T.Vector3(3.03,1.32,z+8);
+  room.beams=Array.from({length:count+1},()=>{const mesh=part(0,0,0,.055,.055,1,BRASS);mesh.material=glow;mesh.visible=false;return mesh;});
  }else if(kind===10){
   for(const x of [4.15,20.85]){
    part(x,.06,6,2.2,.12,9.7,DARK);
@@ -59,6 +62,13 @@ export function dressPuzzleChamber({bank,z,parent,box,glow}){
  return room;
 }
 
+function placeBeam(beam,ax,ay,az,bx,by,bz){
+ const delta=new T.Vector3(bx-ax,by-ay,bz-az);
+ beam.position.set((ax+bx)/2,(ay+by)/2,(az+bz)/2);
+ beam.scale.z=delta.length();
+ beam.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),delta.normalize());
+ beam.visible=true;
+}
 export function syncPuzzleScenery(room,bank,values,stations,gate){
  if(!room)return;
  const local=values.slice(bank.start,bank.start+bank.count);
@@ -69,18 +79,17 @@ export function syncPuzzleScenery(room,bank,values,stations,gate){
  });
  if(room.kind===9){
   for(const beam of room.beams)beam.visible=false;
+  const first=stations[bank.start].position;
+  const source=room.emitter;
+  placeBeam(room.beams[0],source.x,source.y,source.z,first.x,1.32,first.z);
   const visited=new Set();
-  for(let i=0,segment=0;i<bank.count&&local[i]&&!visited.has(i);segment++){
+  for(let i=0,segment=1;i<bank.count&&local[i]&&!visited.has(i);segment++){
    visited.add(i);
    const next=(i+local[i])%(bank.count+1);
    const from=stations[bank.start+i].position;
    const to=next===bank.count?{x:12.5,z:gate+.62}:stations[bank.start+next].position;
-   const beam=room.beams[segment],dy=next===bank.count?1.51:0;
-   const delta=new T.Vector3(to.x-from.x,dy,to.z-from.z);
-   beam.position.set((from.x+to.x)/2,1.32+dy/2,(from.z+to.z)/2);
-   beam.scale.z=delta.length();
-   beam.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),delta.normalize());
-   beam.visible=true;i=next;
+   placeBeam(room.beams[segment],from.x,1.32,from.z,to.x,next===bank.count?2.83:1.32,to.z);
+   i=next;
   }
  }else if(room.kind===10){
   const total=bank.target.reduce((sum,v)=>sum+v,0);

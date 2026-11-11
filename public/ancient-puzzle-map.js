@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as T from './three.module.js';
 import {ancientInputCode,ancientSensitivity} from './ancient-input-settings.js';
-import {dressPuzzleStation,dressPuzzleChamber,syncPuzzleScenery,animatePuzzleScenery} from './ancient-puzzle-scenery.js';
+import {dressPuzzleStation,dressPuzzleChamber,syncPuzzleScenery,animatePuzzleScenery} from './ancient-puzzle-scenery.js?v=20261111-puzzle-timed-1';
 import {slideAncientMove} from './ancient-control-feel.js';
 
 const ROOM_DEPTH=12;
@@ -84,7 +84,7 @@ export function createPuzzleMap(canvas,name,en,interact){
      side.userData.bank=i;plaques.push(side);stonework.add(side);
     }
     signs.push(sign);stonework.add(sign);
-    if([5,6,9,10,11,12,15,16,17].includes(bank.kind)){
+    if(bank.timedMs||[5,6,9,10,11,12,15,16,17].includes(bank.kind)){
      const readout=badge('',true);
      readout.position.set(12.5,1.64,z+1.04);readout.scale.set(4.2,.65,1);
      readouts[i]=readout;stonework.add(readout);
@@ -309,7 +309,7 @@ export function createPuzzleMap(canvas,name,en,interact){
    const values=state.values.slice(start,start+count);
    const seconds=Math.max(0,Math.ceil(((state.deadline||0)-Date.now()-clockOffset)/1000));
    let message='';
-   if(kind===6||kind===16)message=state.deadline?seconds+' s':'⌛';
+   if(currentBank.timedMs||kind===6||kind===16)message=state.deadline?seconds+' s':currentBank.timedMs?'⌛ '+Math.ceil(currentBank.timedMs/1000)+' s':'⌛';
    if(kind===9){
     const path=[0];
     while(path.at(-1)<count&&values[path.at(-1)]){

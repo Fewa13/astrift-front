@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 export const PUZZLE_FLOORS=120;
-export type PuzzleState={floor:number;revision:number;values:number[];layout?:number;deadline?:number;pair?:number;held?:number;pendingBooksFloor?:number};
+export type PuzzleState={floor:number;revision:number;values:number[];layout?:number;deadline?:number;pair?:number;held?:number;pendingBooksFloor?:number;shuffle?:number};
 type Text=[string,string];
 const glyphs=['○','△','◇','✦','☾','☀','✚','□'];
 const CHAMBER_RULES:{name:Text;clue:Text}[]=[
@@ -27,15 +27,15 @@ const rules:{name:Text;clue:Text}[]=[
  ...CHAMBER_RULES,
 ];
 const difficultyFor=(floor:number,layout?:number)=>{
- if(layout!==7)return Math.min(5,Math.ceil(floor/24));
+ if(layout!==7&&layout!==8)return Math.min(5,Math.ceil(floor/24));
  if(floor>=6)return 5;
  return Math.min(4,floor);
 };
-export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,values:[],layout:7});
+export const newPuzzleState=(floor=1,revision=0):PuzzleState=>({floor,revision,values:[],layout:8});
 export function upgradePuzzleState(state:PuzzleState){
- if(state.layout===7)return state;
- if([4,5,6].includes(state.layout??0)){
-  return state.values.length?state:{...state,layout:7};
+ if(state.layout===8)return state;
+ if([4,5,6,7].includes(state.layout??0)){
+  return state.values.length?state:{...state,layout:8};
  }
  return {...newPuzzleState(state.floor,state.revision+1),pendingBooksFloor:state.pendingBooksFloor};
 }
@@ -53,26 +53,28 @@ function roomLayout(floor:number,layout?:number){
  const rotation=(Math.imul(floor,2654435761)>>>0)%palette.length;
  let start=0;
  return Array.from({length:count},(_,room)=>{
-  const kind=floor===1&&room===0?0:layout===7&&floor===6&&room<sixthFloorKinds.length?sixthFloorKinds[room]:layout===4?1+(floor+room-2+5)%5:layout===5?
+  const originalKind=floor===1&&room===0?0:(layout===7||layout===8)&&floor===6&&room<sixthFloorKinds.length?sixthFloorKinds[room]:layout===4?1+(floor+room-2+5)%5:layout===5?
    palette[(rotation+room*[1,3,5][floor%3])%palette.length]:
    expanded[((floor-1)*5+room*(floor%2?1:3))%expanded.length];
-  const size=kind===0?1:[6,7].includes(layout??0)&&kind===1?(layout===7?Math.min(8,4+difficulty):5):kind===14?6:[10,12].includes(kind)?(difficulty<3?6:8):kind===7?Math.min(8,4+2*Math.floor(difficulty/2)):Math.min(8,3+difficulty+(room%2));
+  const timedMs=layout===8&&floor>=6&&[6,16].includes(originalKind)?Math.max(19000,28000-floor*175):0;
+  const kind=timedMs?14:originalKind;
+  const size=kind===0?1:[6,7,8].includes(layout??0)&&kind===1?(layout!==6?Math.min(8,4+difficulty):5):kind===14?6:[10,12].includes(kind)?(difficulty<3?6:8):kind===7?Math.min(8,4+2*Math.floor(difficulty/2)):Math.min(8,3+difficulty+(room%2));
   const symbols=glyphs.slice(0,size);
   const seed=(floor*31+room*17)>>>0;
   const order=Array.from({length:size},(_,i)=>i).sort((a,b)=>(Math.imul(a+seed,2654435761)>>>0)-(Math.imul(b+seed,2654435761)>>>0));
   const runePattern=Array.from({length:size},(_,i)=>i<3?1+i:1+((Math.imul(seed+i+1,1597334677)>>>16)%3));
-  if(kind===1&&[6,7].includes(layout??0)){
+  if(kind===1&&[6,7,8].includes(layout??0)){
    for(let i=size-1;i>0;i--){
     const j=(Math.imul(seed+i,1597334677)>>>0)%(i+1);
     [runePattern[i],runePattern[j]]=[runePattern[j],runePattern[i]];
    }
   }
-  const target=kind>=9?chamberTarget(kind,seed,size,difficulty):[6,7].includes(layout??0)&&kind===1?runePattern:kind===1?symbols.map((_,i)=>1+(seed+i*3)%3):kind===5?([6,7].includes(layout??0)?[order[0],order[1]]:[order[0]]):kind===7?order.map(i=>i% (size/2)):order;
+  const target=kind>=9?chamberTarget(kind,seed,size,difficulty):[6,7,8].includes(layout??0)&&kind===1?runePattern:kind===1?symbols.map((_,i)=>1+(seed+i*3)%3):kind===5?([6,7,8].includes(layout??0)?[order[0],order[1]]:[order[0]]):kind===7?order.map(i=>i% (size/2)):order;
   const initial=kind>=9?chamberStart(kind,seed,size,difficulty):symbols.map(()=>0);
   if(kind===17&&initial.every((v,i)=>v===target[i]))[initial[0],initial[1]]=[initial[1],initial[0]];
-  const clue:Text=kind===5&&[6,7].includes(layout??0)?['先找门上的石印，再找侧墙上的石印。顺序错了就重来。','Find the seal shown above the gate, then the seal on the side wall. A mistake resets the lock.']:rules[kind].clue;
-  const phaseMs=kind===15&&layout===7?Math.max(650,950-floor*12):950;
-  const bank={...rules[kind],clue,kind,start,count:size,symbols,target,initial,phaseMs};
+  const clue:Text=kind===5&&[6,7,8].includes(layout??0)?['先找门上的石印，再找侧墙上的石印。顺序错了就重来。','Find the seal shown above the gate, then the seal on the side wall. A mistake resets the lock.']:rules[kind].clue;
+  const phaseMs=kind===15&&(layout===7||layout===8)?Math.max(650,950-floor*12):950;
+  const bank={...rules[kind],clue:timedMs?[clue[0]+' 第一次移动后开始计时，超时打乱。',clue[1]+' The first move starts the timer. Timeouts reshuffle the tiles.'] as Text:clue,kind,start,count:size,symbols,target,initial,phaseMs,timedMs,seed};
   start+=size;
   return bank;
  });
@@ -83,6 +85,24 @@ function done(bank:Bank,values:number[]){
  return bank.kind===1?bank.target.every((v,i)=>values[bank.start+i]===v):
   [4,6,7].includes(bank.kind)?bank.symbols.every((_,i)=>values[bank.start+i]===1):
   (values[bank.start]||0)===([2,3,8].includes(bank.kind)?bank.count:bank.kind===5?bank.target.length:1);
+}
+export function expireTimedPuzzle(state:PuzzleState,now:number){
+ if(state.layout!==8||state.deadline===undefined||now<state.deadline)return state;
+ const active=roomLayout(state.floor,state.layout).find(bank=>!done(bank,state.values));
+ if(!active?.timedMs)return state;
+ const shuffle=(state.shuffle||0)+1;
+ const scrambled=chamberStart(active.kind,(active.seed+shuffle*131)>>>0,active.count,difficultyFor(state.floor,state.layout));
+ if(scrambled.every((value,index)=>value===(state.values[active.start+index]??active.initial[index]))){
+  const empty=scrambled.indexOf(0);
+  for(const neighbor of TILE_NEIGHBORS[empty]){
+   [scrambled[empty],scrambled[neighbor]]=[scrambled[neighbor],scrambled[empty]];
+   if(!chamberSolved(active.kind,scrambled,active.target))break;
+   [scrambled[empty],scrambled[neighbor]]=[scrambled[neighbor],scrambled[empty]];
+  }
+ }
+ const values=state.values.slice();
+ scrambled.forEach((value,index)=>{values[active.start+index]=value;});
+ return {...state,values,shuffle,deadline:undefined,revision:state.revision+1};
 }
 export function puzzleView(state:PuzzleState,now?:number){
  if(state.floor>PUZZLE_FLOORS)return {floor:state.floor,revision:state.revision,complete:true as const};
@@ -96,6 +116,8 @@ export function puzzleView(state:PuzzleState,now?:number){
   values};
 }
 export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now:number){
+ const refreshed=expireTimedPuzzle(state,now);
+ if(refreshed!==state)return {state:refreshed,notice:'timedReset'};
  if(state.floor>PUZZLE_FLOORS||input.floor!==state.floor||input.revision!==state.revision)return {state,notice:'stale'};
  const banks=roomLayout(state.floor,state.layout),active=banks.find(bank=>!done(bank,state.values)),index=input.index;
  if(input.control!=='activate'||typeof index!=='number'||!Number.isInteger(index))return {state,notice:'invalid'};
@@ -107,6 +129,7 @@ export function puzzleOperate(state:PuzzleState,input:Record<string,unknown>,now
   if(!result.values)return {state,notice:result.notice};
   result.values.forEach((v,i)=>{values[start+i]=v;});
   ({notice,deadline,held}=result);
+  if(active.timedMs)deadline??=now+active.timedMs;
  }else if(kind===1)values[index]=((values[index]||0)+1)%4;
  else if(kind===2||kind===3||kind===8){
   const step=values[start]||0;

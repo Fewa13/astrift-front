@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {createAncientSkinUI} from './ancient-skin-ui.js';
 import {createAncientSkinModel} from './ancient-skin-model.js';
-import {createAncientPuzzleUI} from './ancient-puzzle-ui.js?v=20261110-puzzle-difficulty-1';
+import {createAncientPuzzleUI} from './ancient-puzzle-ui.js?v=20261111-puzzle-timed-1';
 import {clientUpdateRequired} from './client-version.js';
 import {poseCommunityFurniture} from './ancient-community-amenities.js';
 import {setChapterState,chapterMovementScale} from './ancient-geography.js';

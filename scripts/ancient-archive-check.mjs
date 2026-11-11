@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import assert from 'node:assert/strict';
-import {PUZZLE_FLOORS,newPuzzleState,puzzleView,puzzleOperate,puzzleRoomGold,TILE_NEIGHBORS} from '../src/ancient-puzzle.ts';
+import {PUZZLE_FLOORS,newPuzzleState,puzzleView,expireTimedPuzzle,puzzleOperate,puzzleRoomGold,TILE_NEIGHBORS} from '../src/ancient-puzzle.ts';
 import {GEAR,GEAR_AFFIXES,gearHuntEligible,gearHuntCounts,gearRerollQuote,rollGearItem} from '../public/ancient-gear.js';
 
 let state=newPuzzleState(),now=20000,lastMove;
@@ -48,7 +48,19 @@ for(let floor=1;floor<=PUZZLE_FLOORS;floor++){
     let orientation=1;
     for(let i=0;i<bank.count;i++){if(i&&bank.target[i])orientation=3-orientation;for(let j=0;j<orientation;j++)press(i);}
    }else if(bank.kind===14){
-    const queue=[{tiles:bank.initial,steps:[]}],seen=new Set([bank.initial.join('')]);
+    if(bank.timedMs){
+     const empty=bank.initial.indexOf(0);
+     press(TILE_NEIGHBORS[empty].find(i=>{const moved=bank.initial.slice();[moved[i],moved[empty]]=[moved[empty],moved[i]];return moved.some((v,j)=>v!==bank.target[j]);}));
+     const started=state;
+     assert.equal(started.deadline,now+bank.timedMs);
+     const expired=expireTimedPuzzle(started,started.deadline);
+     assert.equal(expired.deadline,undefined);
+     assert.equal(expired.revision,started.revision+1);
+     assert.notDeepEqual(puzzleView(expired).values.slice(bank.start,bank.start+bank.count),puzzleView(started).values.slice(bank.start,bank.start+bank.count));
+     state=expired;
+    }
+    const tilesAtStart=puzzleView(state).values.slice(bank.start,bank.start+bank.count);
+    const queue=[{tiles:tilesAtStart,steps:[]}],seen=new Set([tilesAtStart.join('')]);
     for(const {tiles,steps} of queue){
      if(tiles.every((v,i)=>v===bank.target[i])){steps.forEach(press);break;}
      const gap=tiles.indexOf(0);
