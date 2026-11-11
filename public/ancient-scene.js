@@ -67,7 +67,7 @@ const forestTemplates=new Map();geo.sigil=new THREE.TorusGeometry(1,.018,4,48);
 export function buildForestScene(scene){
  const world=new THREE.Group(),chunks=new Map(),fires=[];scene.add(world);
  let seed=71713;const random=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296};
- mats.forestSoil=new THREE.MeshStandardMaterial({map:environmentTexture('soil'),color:0x6b8450,roughness:1});
+ mats.forestSoil=new THREE.MeshStandardMaterial({map:environmentTexture('forestsoil'),color:0x83975f,roughness:1});
  mats.forestLeaf=new THREE.MeshStandardMaterial({color:0x4d7e52,roughness:1});
  mats.moss=new THREE.MeshStandardMaterial({color:0x72984d,roughness:1});
  mats.fern=new THREE.MeshStandardMaterial({color:0x4f8154,roughness:1,side:THREE.DoubleSide});
