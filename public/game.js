@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {apiURL} from './network-diagnostics.js?v=20261027-backend-fallback-1';
 import {clientVersion,clientUpdateRequired,requireClientUpdate} from './client-version.js';
 import {t,initLanguage,setNameProvider,setLocalizedText} from './i18n.js?v=20261008-onboarding-1';
 import {initTutorial} from './tutorial.js?v=20261026-admin-1';
@@ -934,10 +935,14 @@ function scheduleReconnect(reason='连接中断'){if(clientUpdateRequired()||!al
 async function connect(isRetry=false){
   if(!online||!allowReconnect)return;const connectionSeq=sessionSeq;
   if(!isRetry)resetGameChat();
-  const protocol=location.protocol==="https:"?"wss":"ws",room=activeRoomCode||"ORBIT-01";
+  const room=activeRoomCode||"ORBIT-01";
   const socketPath=`/api/${isObjectiveMode()||isArenaMode()||roomMode==='survival'||isBombMode()?roomMode:"room"}/${room}`;let socketTicket;
   try{socketTicket=(await accountApi('account/socket-ticket',{...accountSession(),path:socketPath})).ticket}catch(error){if(connectionSeq===sessionSeq)scheduleReconnect("房间凭证："+error.message);return}if(!online||!allowReconnect||connectionSeq!==sessionSeq)return;
-  const socket=new WebSocket(`${protocol}://${location.host}${socketPath}?ticket=${encodeURIComponent(socketTicket)}&clientVersion=${encodeURIComponent(clientVersion)}`);ws=socket;$("netText").textContent=isRetry?"正在重新连接":"正在连接";$("netDot").style.background="#ffbf5f";
+  const socketURL=new URL(apiURL(socketPath));
+  socketURL.protocol=socketURL.protocol==='https:'?'wss:':'ws:';
+  socketURL.searchParams.set('ticket',socketTicket);
+  socketURL.searchParams.set('clientVersion',clientVersion);
+  const socket=new WebSocket(socketURL);ws=socket;$("netText").textContent=isRetry?"正在重新连接":"正在连接";$("netDot").style.background="#ffbf5f";
   let opened=false,confirmed=false,timedOut=false;
   const handshakeTimer=setTimeout(()=>{if(ws===socket&&!confirmed){timedOut=true;socket.close()}},8000);
   socket.onopen=()=>{if(ws!==socket)return;opened=true;socket.send(JSON.stringify({type:"join",id:playerId,name:$("name").value,color:"#5ff5ff",team:playerTeam,map:activeMapId,reconnect:isRetry,creator:isRoomCreator,preset:isBombMode()?$('bombPreset').value:undefined,gunmasterWeapon:roomMode==='gunmaster'?gunmasterWeapon:undefined,...((isTenPointMode()||roomMode==='survival')?{account:accountSession()?.name,token:accountSession()?.token,device:accountSession()?.device}:{})}));$("netText").textContent=isRetry?"正在恢复房间":"正在加入房间";$("netDot").style.background="#ffbf5f"};
