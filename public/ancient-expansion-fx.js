@@ -46,12 +46,12 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
   batch(f,'orb',sparks,(i,t)=>{
    const age=t-impact,phase=(Math.max(0,age)*.68+i*.137)%1,a=i*2.399+(vortex?t*1.9:0);
    const rr=r*Math.sqrt((i+.5)/sparks)*(.65+.32*phase);
-   const s=(.08+i%4*.025)*Math.sin(phase*Math.PI)*fade(t,impact,f.life);
+   const s=(.08+i%4*.025)*Math.sin(phase*Math.PI)*fade(t,impact,f.duration);
    set(Math.cos(a)*rr,.22+phase*(meteor?5:3.1),Math.sin(a)*rr,s,s*2,s);
   },true);
   batch(f,'arc',h?10:6,(i,t)=>{
    const u=t-impact-i*.09,rr=r*(.36+.055*i)*ease(u*3),a=i*2.399+t*(vortex?2.7:.6);
-   const s=rr*fade(t,impact,f.life);
+   const s=rr*fade(t,impact,f.duration);
    set(Math.cos(a)*rr*.28,.28+(i%3)*.45,Math.sin(a)*rr*.28,s,s,.3,Math.PI/2,i*.12,a);
   });
   if(h){
