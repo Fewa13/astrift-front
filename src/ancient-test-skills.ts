@@ -7,13 +7,13 @@ export function setTestSkillLevels(name:string,p:AncientProfile,value:unknown):s
  if(!value||typeof value!=='object'||Array.isArray(value))return 'Invalid skill levels';
  const entries=Object.entries(value);
  if(!entries.length||entries.length>Object.keys(SKILLS).length)return 'Invalid skill levels';
- for(const [id,level]of entries)if(!Object.hasOwn(SKILLS,id)||typeof level!=='number'||!Number.isSafeInteger(level)||level<1||level>400)return 'Skill levels must be integers from 1 to 400';
+ for(const [id,level]of entries)if(!Object.hasOwn(SKILLS,id)||typeof level!=='number'||!Number.isSafeInteger(level)||level<1)return 'Skill levels must be integers that can be represented exactly and are at least 1';
  p.skills={...p.skills,...Object.fromEntries(entries)};
  return null;
 }
 export function setTestPlayerLevel(name:string,p:AncientProfile,value:unknown):string|null{
  if(name!=='admintest')return 'AdminTest only';
- if(typeof value!=='number'||!Number.isSafeInteger(value)||value<1||value>1000)return 'Player level must be an integer from 1 to 1000';
+ if(typeof value!=='number'||!Number.isSafeInteger(value)||value<1)return 'Player level must be a positive safe integer';
  p.level=value;p.xp=0;return null;
 }
 export function supplyTestBossCards(name:string,p:AncientProfile):string|null{
