@@ -50,6 +50,21 @@ export function paintMineral(c,kind,rnd){
  }
  c.globalAlpha=1;
 }
+function paintCreatureSurface(c,kind,rnd){
+ const metal=kind==='creature-metal',hide=kind==='creature-hide';
+ c.fillStyle=metal?'#d4d1ca':hide?'#c8b8a6':'#cdd0c9';
+ c.fillRect(0,0,512,512);
+ for(let i=0;i<1800;i++){
+  const x=rnd()*512,y=rnd()*512,len=(hide?12:metal?7:4)*rnd()+1;
+  c.strokeStyle=i%3?'#352b24':'#fff3d9';
+  c.globalAlpha=.07+rnd()*.15;
+  c.lineWidth=.5+rnd()*1.4;
+  c.beginPath();c.moveTo(x,y);
+  c.lineTo(x+(hide?len*.45:len),y+(hide?len:len*.24));
+  c.stroke();
+ }
+ c.globalAlpha=1;
+}
 function paintWall(c,kind,rnd){
  const paving=kind==='paving',masonry=kind==='masonry'||paving;
  paintMineral(c,kind==='sandcliff'?'sand':'stone',rnd);
@@ -85,7 +100,7 @@ function paintWall(c,kind,rnd){
  }
  c.globalAlpha=1;
 }
-export function environmentTexture(kind){if(textures.has(kind))return textures.get(kind);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const c=canvas.getContext('2d');let seed=82111+kind.length*613;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296},base={wood:'#8c7250',stone:'#92968a',thatch:'#a28c58',wicker:'#a58c62',cut:'#b59a70',pelt:'#c2b291',ash:'#393832'}[kind]||'#8d896c';if(['cliff','sandcliff','masonry','paving'].includes(kind))paintWall(c,kind,rnd);else if(mineralSurfaces[kind])paintMineral(c,kind,rnd);else{c.fillStyle=base;c.fillRect(0,0,512,512)}for(let i=0;i<4200;i++){c.fillStyle=i%2?'#fff8de':'#302d21';c.globalAlpha=.035+rnd()*.055;c.fillRect(rnd()*512,rnd()*512,1+rnd()*4,1+rnd()*4)}c.globalAlpha=1;
+export function environmentTexture(kind){if(textures.has(kind))return textures.get(kind);const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const c=canvas.getContext('2d');let seed=82111+kind.length*613;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296},base={wood:'#8c7250',stone:'#92968a',thatch:'#a28c58',wicker:'#a58c62',cut:'#b59a70',pelt:'#c2b291',ash:'#393832'}[kind]||'#8d896c';if(kind.startsWith('creature-'))paintCreatureSurface(c,kind,rnd);else if(['cliff','sandcliff','masonry','paving'].includes(kind))paintWall(c,kind,rnd);else if(mineralSurfaces[kind])paintMineral(c,kind,rnd);else{c.fillStyle=base;c.fillRect(0,0,512,512)}for(let i=0;i<4200;i++){c.fillStyle=i%2?'#fff8de':'#302d21';c.globalAlpha=.035+rnd()*.055;c.fillRect(rnd()*512,rnd()*512,1+rnd()*4,1+rnd()*4)}c.globalAlpha=1;
  if(kind==='shadow'){c.clearRect(0,0,512,512);c.fillStyle='#000000';c.globalAlpha=.045;for(let r=230;r>15;r-=12){c.beginPath();c.ellipse(256,256,r,r,0,0,Math.PI*2);c.fill()}}
  if(kind==='soil'){for(let i=0;i<100;i++){c.globalAlpha=.04;c.fillStyle=i%2?'#c0a273':'#493f2b';c.beginPath();c.ellipse(rnd()*512,rnd()*512,15+rnd()*45,8+rnd()*30,rnd()*6,0,Math.PI*2);c.fill()}}
  if(kind==='wood'){for(let i=0;i<85;i++){const x=i*6;c.strokeStyle=i%3?'#4e382538':'#e8c78b38';c.lineWidth=.5+rnd()*1.3;c.beginPath();c.moveTo(x,0);c.bezierCurveTo(x+10+rnd()*16,160,x-10-rnd()*10,350,x,512);c.stroke()}for(let i=0;i<5;i++){const x=40+rnd()*430,y=40+rnd()*430;for(let j=0;j<4;j++){c.strokeStyle='#362a2450';c.beginPath();c.ellipse(x,y,3+j*2,8+j*5,.08,0,Math.PI*2);c.stroke()}}}

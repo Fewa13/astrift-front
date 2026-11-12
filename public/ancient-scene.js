@@ -53,11 +53,36 @@ export function buildAncientScene(scene){const world=new THREE.Group(),staticGro
  batchEnvironment(staticGroup);const update=createCampFlames(world,firePoints);
  return {world,fires,update};
 }
-export function createAncientCreature(kind,level){if(DUNES_KINDS[kind])return createDunesCreature(kind,level);if(SKYREACH_KINDS[kind])return createSkyreachCreature(kind,level);if(FROSTCOURT_KINDS[kind])return createFrostcourtCreature(kind,level);if(STARFALL_KINDS[kind])return createStarfallCreature(kind,level);if(BESTIARY[kind])return createBestiaryCreature(kind,level);if(SANCTUM_KINDS[kind])return createSanctumCreature(kind,level);if(BLIGHT_KINDS[kind])return createBlightCreature(kind,level);if(CITY_KINDS[kind])return createCityCreature(kind,level);if(FOREST_KINDS[kind])return createForestCreature(kind,level);const root=new THREE.Group(),body=new THREE.Group();root.add(body);const boss=kind==='chief'||kind==='lord',scale=kind==='lord'?3.4:kind==='chief'?2.7:1;root.scale.setScalar(scale);const hunter=kind==='hunter',height=hunter?1.9:1.5;const torso=part(body,'sphere','fur',0,height*.58,0,hunter?.42:.58,.55,.35);part(body,'sphere','fur',0,height*.95,-.02,.4,.35,.32);part(body,'box','fur',0,height*.88,-.3,.34,.23,.2);part(body,'sphere','coal',0,height*.86,-.42,.2,.09,.03);for(const s of [-1,1]){part(body,'sphere','eye',s*.17,height*.98,-.31,.065,.04,.035);part(body,'cone','bone',s*.17,height*.82,-.38,.07,.35,.07,Math.PI);part(body,'cone','bone',s*.4,height*1.03,0,.1,.5,.1,0,0,-s*.6);part(body,'cone','fur',s*.46,height*.96,0,.15,.4,.13,0,0,-s*.8)}for(let j=0;j<13;j++){const a=j/13*Math.PI*2;part(body,'cone','fur',Math.cos(a)*.44,height*.84,Math.sin(a)*.27,.12,.5,.12,0,0,Math.cos(a)*.5)}
+const creatureMaterials=new WeakMap();
+export function createAncientCreature(kind,level){
+ const root=buildAncientCreature(kind,level);
+ const hide=kind==='grox'||kind==='hunter'||kind==='chief'||kind==='lord'||/beast|leopard|stalker|wyvern|maw/.test(kind);
+ root.traverse(node=>{
+  const material=node.material;
+  if(!node.isMesh||!node.geometry.attributes.uv||!material?.isMeshStandardMaterial||material.map||material.transparent||material.vertexColors||material.emissiveIntensity>0&&material.emissive.getHex()!==0)return;
+  const surface=material.metalness>=.25?'creature-metal':hide?'creature-hide':'creature-stone';
+  let variants=creatureMaterials.get(material);
+  if(!variants){variants=new Map();creatureMaterials.set(material,variants);}
+  if(!variants.has(surface)){
+   const textured=material.clone();
+   textured.map=environmentTexture(surface);
+   variants.set(surface,textured);
+  }
+  node.material=variants.get(surface);
+ });
+ return root;
+}
+function buildAncientCreature(kind,level){if(DUNES_KINDS[kind])return createDunesCreature(kind,level);if(SKYREACH_KINDS[kind])return createSkyreachCreature(kind,level);if(FROSTCOURT_KINDS[kind])return createFrostcourtCreature(kind,level);if(STARFALL_KINDS[kind])return createStarfallCreature(kind,level);if(BESTIARY[kind])return createBestiaryCreature(kind,level);if(SANCTUM_KINDS[kind])return createSanctumCreature(kind,level);if(BLIGHT_KINDS[kind])return createBlightCreature(kind,level);if(CITY_KINDS[kind])return createCityCreature(kind,level);if(FOREST_KINDS[kind])return createForestCreature(kind,level);const root=new THREE.Group(),body=new THREE.Group();root.add(body);const boss=kind==='chief'||kind==='lord',scale=kind==='lord'?3.4:kind==='chief'?2.7:1;root.scale.setScalar(scale);const hunter=kind==='hunter',height=hunter?1.9:1.5;const torso=part(body,'sphere','fur',0,height*.58,0,hunter?.42:.58,.55,.35);part(body,'sphere','fur',0,height*.95,-.02,.4,.35,.32);part(body,'box','fur',0,height*.88,-.3,.34,.23,.2);part(body,'sphere','coal',0,height*.86,-.42,.2,.09,.03);for(const s of [-1,1]){part(body,'sphere','eye',s*.17,height*.98,-.31,.065,.04,.035);part(body,'cone','bone',s*.17,height*.82,-.38,.07,.35,.07,Math.PI);part(body,'cone','bone',s*.4,height*1.03,0,.1,.5,.1,0,0,-s*.6);part(body,'cone','fur',s*.46,height*.96,0,.15,.4,.13,0,0,-s*.8)}for(let j=0;j<13;j++){const a=j/13*Math.PI*2;part(body,'cone','fur',Math.cos(a)*.44,height*.84,Math.sin(a)*.27,.12,.5,.12,0,0,Math.cos(a)*.5)}
  const legs=[],arms=[];for(const s of [-1,1]){const leg=new THREE.Group();leg.position.set(s*.27,.57,0);body.add(leg);part(leg,'log','fur',0,-.23,0,.16,.55,.16);part(leg,'sphere','fur',0,-.46,-.1,.23,.15,.28);for(let j=0;j<3;j++)part(leg,'cone','bone',-.12+j*.12,-.48,-.34,.035,.15,.035,Math.PI/2);legs.push(leg);const arm=new THREE.Group();arm.position.set(s*.55,height*.75,0);body.add(arm);part(arm,'log','fur',s*.1,-.3,0,.18,.65,.18,0,0,s*.2);part(arm,'sphere','fur',s*.16,-.6,0,.22,.18,.2);part(arm,'ring','bone',s*.09,-.32,0,.19,.19,.19,Math.PI/2);arms.push(arm)}
  const weapon=new THREE.Group();arms[1].add(weapon);weapon.position.set(.15,-.58,0);part(weapon,'log',hunter?'wood':'bone',0,0,-.35,hunter?.035:.09,hunter?2.4:1.2,hunter?.035:.09,Math.PI/2);if(hunter)part(weapon,'cone','bone',0,0,-1.6,.11,.45,.11,-Math.PI/2);else part(weapon,'sphere','bone',0,0,-.95,.23,.23,.28);
  for(let j=0;j<9;j++)part(body,'cone','bone',-.44+j*.11,height*.42,-.31,.065,.23,.08,Math.PI);part(body,'box','hide',0,height*.39,-.34,.7,.34,.05);
  if(boss){for(const side of [-1,1]){part(body,'cone','bone',side*.3,height*1.16,0,.13,.85,.12,0,0,-side*.5);part(body,'ring','red',side*.6,height*.8,0,.34,.34,.34,0,Math.PI/2)}part(body,'box','red',0,height*.65,-.4,.26,.45,.055);part(body,'sphere','rock',0,height*.57,.07,.64,.62,.4);for(const s of [-1,1]){part(body,'sphere','rock',s*.62,height*.8,0,.3,.25,.3);for(let j=0;j<4;j++)part(body,'cone','bone',s*(.45+j*.1),height*.98,0,.09,.5+j*.08,.09,0,0,-s*.5)}part(weapon,'log','wood',0,0,-.6,.28,2.4,.28,Math.PI/2);for(let j=0;j<4;j++){part(weapon,'box',j%2?'bone':'red',0,0,-1.4+j*.35,.62,.62,.2);part(weapon,'box','coal',0,-.32,-1.4+j*.35,.25,.04,.12)}if(kind==='lord'){part(body,'cone','bone',0,height*1.4,0,.18,1,.18);for(const s of [-1,1])part(body,'cone','bone',s*.45,height*1.23,0,.16,1,.16,0,0,-s*.75);part(body,'box','rune',0,height*.65,-.37,.12,.3,.06);for(let j=0;j<8;j++)part(body,'box','red',Math.sin(j)*.45,height*.6,Math.cos(j)*.33,.15,.45,.04,0,j)}}
+ for(const side of [-1,1]){
+  for(let i=0;i<4;i++)part(body,'box','bone',side*(.23+i*.048),height*(.54+i*.026),-.337,.028,.11,.025,0,0,side*.49);
+  for(let i=0;i<3;i++)part(arms[side>0?1:0],'ring','eRope',0,-.39-i*.042,0,.18,.18,.18,Math.PI/2);
+  part(body,'sphere','fur',side*.245,height*.88,-.291,.14,.12,.1);
+  if(boss)for(let i=0;i<4;i++)part(body,'box','eBand',side*(.18+i*.075),height*.68+i*.045,-.395,.079,.035,.03,0,0,side*.4);
+ }
  batchJoints(root);root.userData={body,legs,arms,height:height*scale,kind,level};return root;
 }
 function batchJoints(group){for(const child of [...group.children])if(child.isGroup)batchJoints(child);const batches=new Map();for(const child of [...group.children]){if(!child.isMesh||child.isInstancedMesh)continue;const key=child.geometry.uuid+child.material.uuid;if(!batches.has(key))batches.set(key,[]);batches.get(key).push(child)}for(const parts of batches.values()){if(parts.length<2)continue;const mesh=new THREE.InstancedMesh(parts[0].geometry,parts[0].material,parts.length);parts.forEach((p,i)=>{p.updateMatrix();mesh.setMatrixAt(i,p.matrix);group.remove(p)});mesh.computeBoundingSphere();group.add(mesh)}}
