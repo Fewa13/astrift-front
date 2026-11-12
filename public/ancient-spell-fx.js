@@ -165,28 +165,45 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
   }
   const material=new THREE.ShaderMaterial({
    transparent:true,depthWrite:false,side:THREE.DoubleSide,
-   uniforms:{age:{value:0},strength:{value:0},radius:{value:r},holy:{value:f.holy?1:0}},
+   uniforms:{age:{value:0},strength:{value:0},radius:{value:r},holy:{value:f.holy?1:0},pattern:{value:f.id==='firewave'?0:f.id==='firestorm'?1:2}},
    vertexShader:`
     varying vec2 groundUV;
     void main(){groundUV=uv*2.0-1.0;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}
    `,
    fragmentShader:`
-    uniform float age,strength,radius,holy;
+    uniform float age,strength,radius,holy,pattern;
     varying vec2 groundUV;
     void main(){
      float dist=length(groundUV);
      float edge=1.0-smoothstep(.88,1.0,dist);
      if(edge<=0.0)discard;
      vec2 p=groundUV*radius;
-     float flow=sin(p.x*2.8+sin(p.y*2.1-age*2.8)*1.4-age*3.7);
-     float folds=sin(p.y*3.4+flow*1.8+age*4.1);
-     float heat=.5+.28*flow+.22*folds;
-     float crest=smoothstep(.45,.94,heat);
-     vec3 base=mix(vec3(.54,.055,.012),vec3(.68,.13,.018),holy);
-     vec3 hot=mix(vec3(1.0,.39,.045),vec3(1.0,.77,.19),holy);
-     vec3 color=mix(base,hot,crest);
+     float angle=atan(p.y,p.x+.0001);
+     float grain=sin(p.x*4.1+sin(p.y*3.2+age*2.4))*sin(p.y*3.6-age*2.8);
+     float shape;
+     if(pattern<.5){
+      float wave=length(p)*2.8-age*5.0+.55*sin(angle*8.0);
+      shape=.55+.31*sin(wave)+.14*grain;
+     }else if(pattern<1.5){
+      float spiral=angle*3.0-length(p)*1.9+age*3.0;
+      shape=.52+.36*sin(spiral)+.12*grain;
+     }else{
+      float fissure=sin(angle*7.0+.8*sin(length(p)*2.0));
+      float impact=sin(length(p)*3.1-age*4.4);
+      shape=.48+.27*impact+.17*fissure+.08*grain;
+     }
+     float flame=smoothstep(.22,.85,shape);
      float front=1.0-smoothstep(max(0.0,age*2.9-.1),age*2.9+.1,dist);
-     gl_FragColor=vec4(color,edge*front*strength*(.63+.23*crest));
+     vec3 color=mix(vec3(.78,.095,.018),vec3(1.0,.70,.19),flame);
+     float opacity=(.25+.67*flame)*edge*front;
+     if(holy>.5){
+      float crack=1.0-smoothstep(.03,.17,abs(sin(p.x*1.55+sin(p.y*1.8)*1.35)+.44*sin(p.y*2.5)));
+      float molten=max(crack*.88,flame*.7);
+      color=mix(vec3(.16,.018,.009),vec3(1.0,.49,.065),molten);
+      color=mix(color,vec3(1.0,.82,.38),pow(flame,5.0)*.72);
+      opacity=(.72+.23*molten)*edge*front;
+     }
+     gl_FragColor=vec4(color,opacity*strength);
      #include <colorspace_fragment>
     }
    `,
