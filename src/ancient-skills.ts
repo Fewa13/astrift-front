@@ -14,10 +14,10 @@ export const PROFESSIONS:Record<string,{name:string;en:string;icon:string;skills
  curse:{name:'诅咒法师',en:'Curse Mage',icon:'☽',skills:['hex','drain','doom']}
 };
 export const SKILLS:Record<string,{job:string;name:string;en:string;unlock:number;key:string;duration:number;cooldown:number}>={
- firebolt:{job:'fire',name:'余烬弹',en:'Ember Bolt',unlock:0,key:'X',duration:0,cooldown:5},
- firewave:{job:'fire',name:'燎原火浪',en:'Wildfire Wave',unlock:0,key:'Q',duration:0,cooldown:9},
- firestorm:{job:'fire',name:'熔火涡流',en:'Molten Vortex',unlock:5,key:'Z',duration:3,cooldown:18},
- inferno:{job:'fire',name:'焚天陨星',en:'Solar Cataclysm',unlock:20,key:'C',duration:3,cooldown:32},
+ firebolt:{job:'fire',name:'余烬弹',en:'Ember Bolt',unlock:0,key:'X',duration:5,cooldown:5},
+ firewave:{job:'fire',name:'燎原火浪',en:'Wildfire Wave',unlock:0,key:'Q',duration:6,cooldown:9},
+ firestorm:{job:'fire',name:'熔火涡流',en:'Molten Vortex',unlock:5,key:'Z',duration:8,cooldown:18},
+ inferno:{job:'fire',name:'焚天陨星',en:'Solar Cataclysm',unlock:20,key:'C',duration:11,cooldown:32},
  tempest:{job:'lightning',name:'九霄雷罚',en:'Heavenfall Judgment',unlock:25,key:'X',duration:0,cooldown:34},
  riftblade:{job:'shadowblade',name:'裂影刃',en:'Rift Blades',unlock:0,key:'X',duration:0,cooldown:4},
  shadowstep:{job:'shadowblade',name:'穿影',en:'Shadowstep',unlock:0,key:'Q',duration:0,cooldown:7},
@@ -51,13 +51,13 @@ export const SKILLS:Record<string,{job:string;name:string;en:string;unlock:numbe
  doom:{job:'curse',name:'灾厄领域',en:'Doom Field',unlock:20,key:'C',duration:8,cooldown:28}
 };
 export const ELEMENTAL_IMPACTS:Record<string,{hit:number;growth:number;burn:number;burnGrowth:number;seconds:number}>={
- firebolt:{hit:3,growth:0.27,burn:0.32,burnGrowth:0.03,seconds:4},
- firewave:{hit:3.4,growth:0.3,burn:0,burnGrowth:0,seconds:0},
- firestorm:{hit:3,growth:0.26,burn:0.65,burnGrowth:0.06,seconds:6},
- inferno:{hit:7,growth:0.55,burn:1,burnGrowth:0.08,seconds:7},
+ firebolt:{hit:0.75,growth:0.07,burn:0.42,burnGrowth:0.04,seconds:4},
+ firewave:{hit:1,growth:0.09,burn:0.62,burnGrowth:0.055,seconds:5},
+ firestorm:{hit:0.9,growth:0.08,burn:0.7,burnGrowth:0.065,seconds:7},
+ inferno:{hit:1.8,growth:0.15,burn:1.05,burnGrowth:0.09,seconds:10},
  tempest:{hit:8,growth:0.65,burn:0,burnGrowth:0,seconds:0},
 };
-export type SkillRuntime={branch?:import('./ancient-branch-combat').BranchRuntime;relic?:import('./ancient-relic-combat').RelicRuntime;gearChain?:{key:string;until:number};shadowAnchor?:{map:string;x:number;y:number;z:number;until:number};bossForm?:import('./ancient-boss-cards').BossForm;cooldowns:Record<string,number>;effects:Record<string,{until:number;level:number}>;mode:number;lastAux:number;baseHp?:number;summon?:{x:number;z:number;hp:number;maxHp:number;damage:number;until:number;attackAt:number;target:string;level:number;path?:{x:number;z:number}[];pathAt?:number;pathX?:number;pathZ?:number};lastRegen?:number};
+export type SkillRuntime={fireFields?:{id:string;map:string;x:number;z:number;radius:number;next:number;until:number;hit:number;damage:number}[];branch?:import('./ancient-branch-combat').BranchRuntime;relic?:import('./ancient-relic-combat').RelicRuntime;gearChain?:{key:string;until:number};shadowAnchor?:{map:string;x:number;y:number;z:number;until:number};bossForm?:import('./ancient-boss-cards').BossForm;cooldowns:Record<string,number>;effects:Record<string,{until:number;level:number}>;mode:number;lastAux:number;baseHp?:number;summon?:{x:number;z:number;hp:number;maxHp:number;damage:number;until:number;attackAt:number;target:string;level:number;path?:{x:number;z:number}[];pathAt?:number;pathX?:number;pathZ?:number};lastRegen?:number};
 export type SkillActor={holy?:boolean;corrupted?:boolean;name:string;x:number;y:number;z:number;hp:number;maxHp?:number;weapon:AncientWeapon;profession?:string;skills?:Record<string,number>;skillRuntime?:SkillRuntime;gearReduction?:number;boosts?:Record<string,number>;skillBaseHp?:number};
 export function runtime(a:SkillActor){return a.skillRuntime??={cooldowns:{},effects:{},mode:1,lastAux:0}}
 export function skillBook(id:string){return 'skillbook:'+id}
@@ -110,7 +110,7 @@ export function skillDescription(id:string,n:number,en=false){const level=Math.m
  drain:[`${range}米汲取，造成${400+40*level}%基础攻击伤害，目标带有衰弱印记时伤害额外+50%，回复实际伤害30%（最多最大血量20%）；冷却10秒`,`${range}m drain: ${400+40*level}% base attack damage, +50% damage against a target with an active Frailty Hex; heal 30% actual damage (max 20% max HP). Cooldown 10s.`],
  doom:[`${range}米目标周围${skillRadius('doom',level)}米领域8秒，每秒${80+8*level}%基础攻击伤害，攻击 -${Math.min(40,10+level)}%；冷却28秒`,`${range}m target: ${skillRadius('doom',level)}m field for 8s, ${80+8*level}% base attack damage/s, -${Math.min(40,10+level)}% enemy damage. Cooldown 28s.`]
  };const impact=ELEMENTAL_IMPACTS[id],hit=impact&&Math.round((impact.hit+impact.growth*level)*100),burn=impact&&Math.round((impact.burn+impact.burnGrowth*level)*100);
- const text=impact?(en?`Hit: ${hit}% base attack. ${range}m targeting. Cooldown ${cd}s.`+(impact.seconds?` Burns for ${impact.seconds}s at ${burn}% per second, even after the cast ends.`:''):`命中造成${hit}%基础攻击伤害，锁定距离${range}米，冷却${cd}秒。`+(impact.seconds?`燃烧持续${impact.seconds}秒，每秒${burn}%基础攻击伤害，施法结束后仍生效。`:'')):texts[id]?.[en?1:0]||'',radius=skillRadius(id,level);return text+(radius?(en?` Area radius: ${radius}m (+0.5m per skill level).`:` 作用半径：${radius}米（每升一级+0.5米）。`):'')}
+ const text=impact?(en?`Hit: ${hit}% base attack. ${range}m targeting. Cooldown ${cd}s.`+(impact.seconds?` ${id==='firebolt'?'Burns the target':'Burns enemies in the area'} for ${impact.seconds}s at ${burn}% per second, even after the cast ends.`:''):`命中造成${hit}%基础攻击伤害，锁定距离${range}米，冷却${cd}秒。`+(impact.seconds?`${id==='firebolt'?'目标':'区域内敌人'}燃烧持续${impact.seconds}秒，每秒${burn}%基础攻击伤害，施法结束后仍生效。`:'')):texts[id]?.[en?1:0]||'',radius=skillRadius(id,level);return text+(radius?(en?` Area radius: ${radius}m (+0.5m per skill level).`:` 作用半径：${radius}米（每升一级+0.5米）。`):'')}
 export function activeSkill(a:SkillActor,id:string,now=Date.now()){const e=a.skillRuntime?.effects[id];return e&&e.until>now?e.level:0}
 export function skillDamageMultiplier(a:SkillActor,now=Date.now()){return (a.corrupted?1.3:1)*((a.boosts?.damage||0)>now?2:1)*(activeSkill(a,'nightfall',now)?1.25:1)*(1+activeSkill(a,'power',now)*.02)*(1+activeSkill(a,'rage',now)*.3)*(1+(bossFormStats(a,now)?.damage||0))}
 export function skillSpeedMultiplier(a:SkillActor,now=Date.now()){const t=activeSkill(a,'transform',now),h=activeSkill(a,'haste',now);return (activeSkill(a,'nightfall',now)?1.3:1)*(1+activeSkill(a,'rage',now)*.2)*(t?1+Math.min(.4,.1+.02*t):1)*(h?1+Math.min(.4,.15+.02*h):1)*(1+(bossFormStats(a,now)?.speed||0))}

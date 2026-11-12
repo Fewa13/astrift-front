@@ -81,19 +81,24 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
  const impact=ELEMENTAL_IMPACTS[id];
  if(impact){
   const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id),delay=id==='inferno'?550:id==='tempest'?300:0;
-  for(const m of radius?skillAreaTargets(target,radius,c):[target]){
-   const damage=body*(impact.hit+impact.growth*n);
+  const damage=body*(impact.hit+impact.growth*n),burn=body*(impact.burn+impact.burnGrowth*n);
+  if(impact.seconds&&radius){
+   r.fireFields=(r.fireFields||[]).filter(field=>field.until>=now&&field.map===c.map&&field.id!==id);
+   r.fireFields.push({id,map:c.map,x:target.x,z:target.z,radius,next:now+delay,until:now+delay+impact.seconds*1000,hit:damage,damage:burn});
+  }else{
    if(delay){
-    m.strikes??=[];
-    if(m.strikes.length>=64)continue;
-    m.strikes.push({skillId:id,owner:a.name,at:now+delay,damage});
-   }else c.damage(m,damage);
-   if(!impact.seconds||m.hp<=0)continue;
-   m.dots=(m.dots||[]).filter(dot=>dot.until>now&&(dot.owner!==a.name||dot.skillId!==id));
-   if(m.dots.length>=8)m.dots.shift();
-   m.dots.push({skillId:id,owner:a.name,until:now+delay+(impact.seconds+1)*1000,next:now+delay+1000,damage:body*(impact.burn+impact.burnGrowth*n)});
+    for(const m of skillAreaTargets(target,radius,c)){
+     m.strikes??=[];
+     if(m.strikes.length<64)m.strikes.push({skillId:id,owner:a.name,at:now+delay,damage});
+    }
+   }else c.damage(target,damage);
+   if(impact.seconds&&target.hp>0){
+    target.dots=(target.dots||[]).filter(dot=>dot.until>now&&(dot.owner!==a.name||dot.skillId!==id));
+    if(target.dots.length>=8)target.dots.shift();
+    target.dots.push({skillId:id,owner:a.name,until:now+(impact.seconds+1)*1000,next:now+1000,damage:burn});
+   }
   }
-  c.fx(id,target.x,target.z,radius||1,{target:target.id,source:{x:a.x,y:a.y-.25,z:a.z}});
+  c.fx(id,target.x,target.z,radius||1,{target:impact.seconds&&radius?'':target.id,source:{x:a.x,y:a.y-.25,z:a.z}});
   return null;
  }
  if(id==='frostburst'){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(const m of skillAreaTargets(target!,radius,c))c.damage(m,body*(2.6+.25*n));c.fx(id,target!.x,target!.z,radius,{target:target!.id});return null;}
@@ -124,10 +129,21 @@ export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,d
  const r=runtime(a);if(r.shadowAnchor&&r.shadowAnchor.until<=now){
   if(a.hp>0&&p.profession==='shadowblade'&&r.shadowAnchor.map===c.map)castExpansionSkill(a,p,'shadowreturn',undefined,skillSourceContext(c,'shadowreturn'),now,ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p),undefined,true);
   else delete r.shadowAnchor;
- }if(r.bossForm&&r.bossForm.until<=now)delete r.bossForm;skillHealth(a,ancientProfileHealth(p),now);for(const [id,e]of Object.entries(r.effects))if(e.until<=now)delete r.effects[id];if(a.hp<=0){delete r.relic;delete r.shadowAnchor;delete r.bossForm;r.effects={};if(r.summon){delete r.summon;r.cooldowns.summon=now+100000*(1-ancientGearStats(p).cooldown)}r.mode=1;skillHealth(a,ancientProfileHealth(p),now);return}
+ }if(r.bossForm&&r.bossForm.until<=now)delete r.bossForm;skillHealth(a,ancientProfileHealth(p),now);for(const [id,e]of Object.entries(r.effects))if(e.until<=now)delete r.effects[id];if(a.hp<=0){delete r.fireFields;delete r.relic;delete r.shadowAnchor;delete r.bossForm;r.effects={};if(r.summon){delete r.summon;r.cooldowns.summon=now+100000*(1-ancientGearStats(p).cooldown)}r.mode=1;skillHealth(a,ancientProfileHealth(p),now);return}
  const vitality=activeSkill(a,'vitality',now);if(vitality)a.hp=Math.min(a.maxHp||100,a.hp+(a.maxHp||100)*vitality*.01*dt);
  tickRelic(a,p,c,now);tickBranch(a,p,c,now);
  const branchTicks=new Map<string,SkillContext>();const tickContext=(id:string)=>{if(!branchTicks.has(id))branchTicks.set(id,branchContext(a,p,id,skillSourceContext(c,id),now));return branchTicks.get(id)!;};
+ if(r.fireFields){
+  r.fireFields=r.fireFields.filter(field=>field.map===c.map&&p.profession==='fire'&&now<field.until+1000);
+  for(const field of r.fireFields){
+   if(field.next>now||field.next>field.until)continue;
+   const amount=field.hit||field.damage;
+   field.hit=0;field.next=Math.min(field.until+1000,field.next+1000);
+   const floor=ancientMapHeight(c.map,field.x,field.z)+1;
+   const context=tickContext(field.id);
+   for(const m of c.monsters)if(m.hp>0&&Math.hypot(m.x-field.x,m.z-field.z)<=field.radius&&lineClear(field.x,floor,field.z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map))context.damage(m,amount);
+  }
+ }
  for(const m of c.monsters){const due=(m.strikes||[]).filter(v=>v.owner===a.name&&v.at<=now);m.strikes=(m.strikes||[]).filter(v=>!(v.owner===a.name&&v.at<=now));for(const hit of due)if(m.hp>0)tickContext(hit.skillId||'periodic').damage(m,hit.damage);for(const d of m.dots||[])if(d.owner===a.name&&d.next<=now&&d.until>now&&m.hp>0){d.next=now+1000;tickContext(d.skillId||'periodic').damage(m,d.damage)}m.dots=(m.dots||[]).filter(d=>d.until>now)}
  const pet=r.summon;if(pet){if(pet.hp<=0||pet.until<=now){delete r.summon;r.cooldowns.summon=(pet.hp<=0?now:pet.until)+100000*(1-ancientGearStats(p).cooldown);r.mode=1}else{let target=c.monsters.find(m=>m.id===pet.target&&m.hp>0);const visible=(m:SkillMonster)=>lineClear(pet.x,(ancientMapHeight(c.map,pet.x,pet.z))+1,pet.z,m.x,(ancientMapHeight(c.map,m.x,m.z,m.y))+1,m.z,c.map);if(!target)target=c.monsters.filter(m=>m.hp>0&&Math.hypot(m.x-pet.x,m.z-pet.z)<20&&visible(m)).sort((x,y)=>Math.hypot(x.x-pet.x,x.z-pet.z)-Math.hypot(y.x-pet.x,y.z-pet.z))[0];const tx=target?.x??a.x,tz=target?.z??a.z,distance=Math.hypot(tx-pet.x,tz-pet.z);if(target&&distance<2.8&&visible(target)){if(now>=pet.attackAt){pet.attackAt=now+1000;pet.damage=Math.max(1,Math.floor(ancientSkillDamage(p)*(.75+.05*pet.level)*(1+ancientGearStats(p).pet)*skillDamageMultiplier(a,now)*holyPower(p)));const key=activeBranch(p);c.damage(target,pet.damage*(key==='beastlord'?1.25:key==='spiritpack'?.8:1),'summon');if(key==='spiritpack')queueBranchFinisher(a,p,'petEcho',target,now,pet.damage);c.fx('petHit',target.x,target.z,1)}}else if(distance>2||target&&!visible(target)){if(c.map==='dunes'||c.map==='forest'||c.map==='city'||c.map==='blight'||c.map==='skyreach'||c.map==='frostcourt'||c.map==='starfall'||c.map==='sanctum'){if(now>=(pet.pathAt||0)||Math.hypot(tx-(pet.pathX??tx),tz-(pet.pathZ??tz))>5){pet.path=(c.map==='dunes'?dunesPath:c.map==='skyreach'?skyreachPath:c.map==='frostcourt'?frostcourtPath:c.map==='starfall'?starfallPath:c.map==='sanctum'?sanctumPath:c.map==='blight'?blightPath:c.map==='city'?cityPath:forestPath)(pet.x,pet.z,tx,tz);pet.pathAt=now+2000;pet.pathX=tx;pet.pathZ=tz}while(pet.path?.length&&Math.hypot(pet.path[0].x-pet.x,pet.path[0].z-pet.z)<.7)pet.path.shift()}const waypoint=pet.path?.[0],dx=(waypoint?.x??tx)-pet.x,dz=(waypoint?.z??tz)-pet.z,d=Math.hypot(dx,dz)||1,step=Math.min(d,dt*((r.relic?.petRushUntil||0)>now?11:7)),x=pet.x+dx/d*step,z=pet.z+dz/d*step;if(!blocked(x,z,.8,c.map)){pet.x=x;pet.z=z}else if(!blocked(x,pet.z,.8,c.map))pet.x=x;else if(!blocked(pet.x,z,.8,c.map))pet.z=z}}}
 }

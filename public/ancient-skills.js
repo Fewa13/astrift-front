@@ -12,10 +12,10 @@ const PROFESSIONS = {
   curse: { name: "\u8BC5\u5492\u6CD5\u5E08", en: "Curse Mage", icon: "\u263D", skills: ["hex", "drain", "doom"] }
 };
 const SKILLS = {
-  firebolt: { job: "fire", name: "\u4F59\u70EC\u5F39", en: "Ember Bolt", unlock: 0, key: "X", duration: 0, cooldown: 5 },
-  firewave: { job: "fire", name: "\u71CE\u539F\u706B\u6D6A", en: "Wildfire Wave", unlock: 0, key: "Q", duration: 0, cooldown: 9 },
-  firestorm: { job: "fire", name: "\u7194\u706B\u6DA1\u6D41", en: "Molten Vortex", unlock: 5, key: "Z", duration: 3, cooldown: 18 },
-  inferno: { job: "fire", name: "\u711A\u5929\u9668\u661F", en: "Solar Cataclysm", unlock: 20, key: "C", duration: 3, cooldown: 32 },
+  firebolt: { job: "fire", name: "\u4F59\u70EC\u5F39", en: "Ember Bolt", unlock: 0, key: "X", duration: 5, cooldown: 5 },
+  firewave: { job: "fire", name: "\u71CE\u539F\u706B\u6D6A", en: "Wildfire Wave", unlock: 0, key: "Q", duration: 6, cooldown: 9 },
+  firestorm: { job: "fire", name: "\u7194\u706B\u6DA1\u6D41", en: "Molten Vortex", unlock: 5, key: "Z", duration: 8, cooldown: 18 },
+  inferno: { job: "fire", name: "\u711A\u5929\u9668\u661F", en: "Solar Cataclysm", unlock: 20, key: "C", duration: 11, cooldown: 32 },
   tempest: { job: "lightning", name: "\u4E5D\u9704\u96F7\u7F5A", en: "Heavenfall Judgment", unlock: 25, key: "X", duration: 0, cooldown: 34 },
   riftblade: { job: "shadowblade", name: "\u88C2\u5F71\u5203", en: "Rift Blades", unlock: 0, key: "X", duration: 0, cooldown: 4 },
   shadowstep: { job: "shadowblade", name: "\u7A7F\u5F71", en: "Shadowstep", unlock: 0, key: "Q", duration: 0, cooldown: 7 },
@@ -49,10 +49,10 @@ const SKILLS = {
   doom: { job: "curse", name: "\u707E\u5384\u9886\u57DF", en: "Doom Field", unlock: 20, key: "C", duration: 8, cooldown: 28 }
 };
 const ELEMENTAL_IMPACTS = {
-  firebolt: { hit: 3, growth: 0.27, burn: 0.32, burnGrowth: 0.03, seconds: 4 },
-  firewave: { hit: 3.4, growth: 0.3, burn: 0, burnGrowth: 0, seconds: 0 },
-  firestorm: { hit: 3, growth: 0.26, burn: 0.65, burnGrowth: 0.06, seconds: 6 },
-  inferno: { hit: 7, growth: 0.55, burn: 1, burnGrowth: 0.08, seconds: 7 },
+  firebolt: { hit: 0.75, growth: 0.07, burn: 0.42, burnGrowth: 0.04, seconds: 4 },
+  firewave: { hit: 1, growth: 0.09, burn: 0.62, burnGrowth: 0.055, seconds: 5 },
+  firestorm: { hit: 0.9, growth: 0.08, burn: 0.7, burnGrowth: 0.065, seconds: 7 },
+  inferno: { hit: 1.8, growth: 0.15, burn: 1.05, burnGrowth: 0.09, seconds: 10 },
   tempest: { hit: 8, growth: 0.65, burn: 0, burnGrowth: 0, seconds: 0 }
 };
 function runtime(a) {
@@ -153,7 +153,7 @@ function skillDescription(id, n, en = false) {
     doom: [`${range}\u7C73\u76EE\u6807\u5468\u56F4${skillRadius("doom", level)}\u7C73\u9886\u57DF8\u79D2\uFF0C\u6BCF\u79D2${80 + 8 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u653B\u51FB -${Math.min(40, 10 + level)}%\uFF1B\u51B7\u537428\u79D2`, `${range}m target: ${skillRadius("doom", level)}m field for 8s, ${80 + 8 * level}% base attack damage/s, -${Math.min(40, 10 + level)}% enemy damage. Cooldown 28s.`]
   };
   const impact = ELEMENTAL_IMPACTS[id], hit = impact && Math.round((impact.hit + impact.growth * level) * 100), burn = impact && Math.round((impact.burn + impact.burnGrowth * level) * 100);
-  const text = impact ? en ? `Hit: ${hit}% base attack. ${range}m targeting. Cooldown ${cd}s.` + (impact.seconds ? ` Burns for ${impact.seconds}s at ${burn}% per second, even after the cast ends.` : "") : `\u547D\u4E2D\u9020\u6210${hit}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u9501\u5B9A\u8DDD\u79BB${range}\u7C73\uFF0C\u51B7\u5374${cd}\u79D2\u3002` + (impact.seconds ? `\u71C3\u70E7\u6301\u7EED${impact.seconds}\u79D2\uFF0C\u6BCF\u79D2${burn}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u65BD\u6CD5\u7ED3\u675F\u540E\u4ECD\u751F\u6548\u3002` : "") : texts[id]?.[en ? 1 : 0] || "", radius = skillRadius(id, level);
+  const text = impact ? en ? `Hit: ${hit}% base attack. ${range}m targeting. Cooldown ${cd}s.` + (impact.seconds ? ` ${id === "firebolt" ? "Burns the target" : "Burns enemies in the area"} for ${impact.seconds}s at ${burn}% per second, even after the cast ends.` : "") : `\u547D\u4E2D\u9020\u6210${hit}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u9501\u5B9A\u8DDD\u79BB${range}\u7C73\uFF0C\u51B7\u5374${cd}\u79D2\u3002` + (impact.seconds ? `${id === "firebolt" ? "\u76EE\u6807" : "\u533A\u57DF\u5185\u654C\u4EBA"}\u71C3\u70E7\u6301\u7EED${impact.seconds}\u79D2\uFF0C\u6BCF\u79D2${burn}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF0C\u65BD\u6CD5\u7ED3\u675F\u540E\u4ECD\u751F\u6548\u3002` : "") : texts[id]?.[en ? 1 : 0] || "", radius = skillRadius(id, level);
   return text + (radius ? en ? ` Area radius: ${radius}m (+0.5m per skill level).` : ` \u4F5C\u7528\u534A\u5F84\uFF1A${radius}\u7C73\uFF08\u6BCF\u5347\u4E00\u7EA7+0.5\u7C73\uFF09\u3002` : "");
 }
 function activeSkill(a, id, now = Date.now()) {

@@ -5,6 +5,26 @@ import * as THREE from './three.module.js';
 import {buildHolySpell} from './ancient-holy-spells.js?v=20261014-new-professions-1';
 // Reuse geometry, not spell designs. Every skill has its own composition.
 const G={ring:new THREE.TorusGeometry(1,.035,5,48),arc:new THREE.TorusGeometry(1,.075,5,40,Math.PI*1.35),crystal:new THREE.OctahedronGeometry(1,0),orb:new THREE.IcosahedronGeometry(1,2),bar:new THREE.BoxGeometry(1,1,1),beam:new THREE.CylinderGeometry(1,1,1,5),cone:new THREE.ConeGeometry(1,1,6)};
+const flame=new THREE.SphereGeometry(1,9,8);
+const flameVertices=flame.attributes.position;
+for(let i=0;i<flameVertices.count;i++){
+ const y=(flameVertices.getY(i)+1)/2,taper=1-.83*y;
+ flameVertices.setXYZ(i,flameVertices.getX(i)*taper+.38*y*y,y,flameVertices.getZ(i)*taper);
+}
+flame.computeVertexNormals();G.flame=flame;
+const meteorRock=new THREE.IcosahedronGeometry(1,2),rockVertices=meteorRock.attributes.position,rockColors=[];
+const basalt=new THREE.Color(0x3f221e),lava=new THREE.Color(0xff711b);
+for(let i=0;i<rockVertices.count;i++){
+ const x=rockVertices.getX(i),y=rockVertices.getY(i),z=rockVertices.getZ(i);
+ const scale=1+.13*Math.sin(x*9+y*4)*Math.cos(z*8-y*5);
+ rockVertices.setXYZ(i,x*scale,y*scale,z*scale);
+ const vein=Math.abs(Math.sin(x*7+y*8+Math.sin(z*7)*1.6));
+ const color=basalt.clone().lerp(lava,Math.max(0,1-vein*6)**2);
+ rockColors.push(color.r,color.g,color.b);
+}
+meteorRock.setAttribute('color',new THREE.Float32BufferAttribute(rockColors,3));
+meteorRock.computeVertexNormals();G.meteor=meteorRock;
+const meteorMaterial=new THREE.MeshBasicMaterial({vertexColors:true});
 const TAU=Math.PI*2,ease=t=>1-(1-Math.max(0,Math.min(1,t)))**3;
 const spells={...EXPANSION_FX,frostburst:[0x88ddff,1.8],swordwave:[0x68ff9b,.8],triplecut:[0x22ed70,1.1],swordrain:[0x83ffb2,3.4],phantomblade:[0x4bff88,3.6],vitality:[0x58ee92,2.8],power:[0xffc342,1.3],rage:[0xff4825,1.6],slash:[0xffdda0,.65],summon:[0x38ffb8,2],weaken:[0xaaff42,1.4],transform:[0xff9e36,2.1],soulbolt:[0x29f2d4,.85],icebolt:[0x65ddff,1],icearmor:[0x94eaff,1.8],blizzard:[0x86bbff,6],chain:[0xffe568,.65],haste:[0x55aaff,1.4],storm:[0xb6a4ff,4],hex:[0xb94aff,1.6],drain:[0xff387a,1.25],doom:[0x9c37ff,8],mark:[0xffd367,.8],claw:[0xffb767,.4],petHit:[0x58ffcf,.45]};
 export const ANCIENT_FX_IDS=Object.keys(spells);
@@ -26,7 +46,7 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
  }
  function mesh(f,geo,pos,scale,rot=[0,0,0],motion='still',soft=false){const m=new THREE.Mesh(G[geo],soft?f.soft:f.core);m.position.fromArray(pos);m.scale.fromArray(scale);m.rotation.fromArray(rot);m.userData={motion,pos,scale,rot};f.group.add(m);return m}
  function ring(f,r,y,motion='spin',soft=false){return mesh(f,'ring',[0,y,0],[r,r,r],[-Math.PI/2,0,0],motion,soft)}
- function batch(f,geo,count,pose,soft=false){const original=count;count=geo==='beam'?count:Math.max(1,Math.ceil(count*(f.particles??1)));const sample=pose;pose=(i,t)=>sample(Math.min(original-1,Math.floor(i*original/count)),t);const m=new THREE.InstancedMesh(G[geo],soft?f.soft:f.core,count);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;f.group.add(m);f.batches.push({m,pose});return m}
+ function batch(f,geo,count,pose,soft=false){const original=count;count=geo==='beam'?count:Math.max(1,Math.ceil(count*(f.particles??1)));const sample=pose;pose=(i,t)=>sample(Math.min(original-1,Math.floor(i*original/count)),t);const m=new THREE.InstancedMesh(G[geo],geo==='meteor'?meteorMaterial:soft?f.soft:f.core,count);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;f.group.add(m);f.batches.push({m,pose});return m}
  function set(x,y,z,sx,sy,sz,rx=0,ry=0,rz=0){dummy.position.set(x,y,z);dummy.rotation.set(rx,ry,rz);dummy.scale.set(sx,sy,sz)}
  function beam(ax,ay,az,bx,by,bz,width){dummy.position.set((ax+bx)/2,(ay+by)/2,(az+bz)/2);dir.set(bx-ax,by-ay,bz-az);dummy.scale.set(width,dir.length(),width);dummy.quaternion.setFromUnitVectors(up,dir.normalize())}
  function burst(f,n,speed){n=Math.min(96,Math.ceil(n*Math.sqrt(Math.max(1,f.r/5))));speed=Math.max(speed,Math.min(24,f.r*.8));batch(f,'crystal',n,(i,t)=>{const a=i/n*TAU,r=ease(t*3)*speed*(.5+i%4*.15);set(Math.cos(a)*r,.7+Math.sin(i*2)*r*.4,Math.sin(a)*r,.04,.15,.04,t*5,a)})}
