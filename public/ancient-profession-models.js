@@ -65,11 +65,30 @@ function makeTemplate(job){
   for(const side of [-1,1]){for(let i=0;i<3;i++)add(body,'crystal','metal',side*(.34+i*.06),1.51+i*.055,.025,.1,.18,.11,0,0,-side*.5);box(body,'glow',side*.13,1.24,-.247,.017,.32,.014,side*.2);add(body,'crystal','glow',side*.22,.57,-.185,.023,.1,.012)}
   add(body,'crystal','glow',0,1.46,-.22,.08,.13,.04);for(let i=0;i<6;i++)add(body,'crystal','metal',Math.sin(i*Math.PI/3)*.27,1.3+Math.cos(i*Math.PI/3)*.27,.3,.045,.11,.04,0,0,-i*Math.PI/3);
  }else if(job==='fire'){
+  // Open hood, layered split robe and wide cuffs give the mage a cloth silhouette.
+  add(body,'orb','cloth',0,1.87,.085,.238,.275,.175);
   for(const side of [-1,1]){
-   add(body,'crystal','trim',side*.34,1.5,-.02,.19,.17,.19,0,0,side*.43);
-   box(body,'glow',side*.13,1.29,-.245,.019,.31,.015,side*.32);
+   add(body,'orb','cloth',side*.176,1.82,-.048,.072,.205,.13,0,0,side*.13);
+   box(body,'trim',side*.153,1.81,-.157,.017,.21,.028,side*.24);
+   add(body,'orb','cloth',side*.235,1.46,.018,.18,.105,.245,0,0,side*.25);
+   box(body,'trim',side*.19,1.42,-.209,.25,.022,.019,side*.24);
+   for(let panel=0;panel<3;panel++){
+    const x=side*(.115+panel*.074),y=.58-panel*.024,z=.065+panel*.042;
+    box(body,'cloth',x,y,z,.095,.88,.39,side*.13);
+    box(body,'trim',x,y-.42,z-.207,.075,.028,.02,side*.13);
+   }
+   box(body,'metal',side*.2,.87,-.253,.11,.19,.08,side*.2);
+   const arm=body.getObjectByName(side<0?'arm0':'arm1');
+   add(arm,'tube','cloth',0,-.33,0,.125,.31,.123);
+   add(arm,'tube','trim',0,-.49,0,.13,.036,.13);
   }
-  add(body,'crystal','glow',0,1.48,-.25,.075,.13,.04);
+  for(let i=0;i<7;i++){
+   const x=(i-3)*.079;
+   box(body,'cloth',x,1.0,.278,.081,1.17+(.1-Math.abs(x)*.2),.046,x*.31);
+   box(body,'trim',x,.43,.309,.067,.025,.016,x*.31);
+  }
+  add(body,'ring','trim',0,1.38,-.269,.088,.088,.088);
+  add(body,'crystal','glow',0,1.38,-.286,.044,.067,.026);
  }else if(job==='lightning'){
   add(body,'orb','metal',0,1.84,.015,.218,.24,.21);box(body,'trim',0,1.78,-.203,.32,.07,.035);box(body,'glow',0,1.805,-.227,.25,.018,.009);
   for(const side of [-1,1]){add(body,'cone','trim',side*.17,2.13,.03,.035,.32,.04,0,0,-side*.25);add(body,'crystal','metal',side*.4,1.53,.04,.21,.13,.18,0,0,side*.35);for(let i=0;i<4;i++)box(body,'glow',side*(.045+(i%2)*.045),1.36-i*.065,-.242,.02,.095,.014,side*(i%2?.65:-.65));}
