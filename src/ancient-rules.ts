@@ -72,7 +72,15 @@ export const QUALITY=['','普通','稀有','史诗','传说','神话'];
 export function ancientMaxHealth(level:number){return ancientBaseHealth(level)}
 export function ancientSyncHealth(player:{hp:number;maxHp?:number},level:number){const maxHp=ancientMaxHealth(level),previous=player.maxHp??100;player.maxHp=maxHp;if(player.hp>0)player.hp=Math.min(maxHp,Math.max(0,player.hp+maxHp-previous))}
 export function ancientMonsterDamage(kind:string,level:number,skill='attack'){if(DUNES_KINDS[kind])return dunesMonsterDamage(kind,level);if(SKYREACH_KINDS[kind])return skyreachMonsterDamage(kind,level);if(FROSTCOURT_KINDS[kind])return frostcourtMonsterDamage(kind,level);if(STARFALL_KINDS[kind])return starfallMonsterDamage(kind,level);if(BESTIARY[kind])return bestiaryDamage(kind,level);if(SANCTUM_KINDS[kind])return sanctumMonsterDamage(kind,level);if(BLIGHT_KINDS[kind])return blightMonsterDamage(kind,level);if(CITY_KINDS[kind])return cityMonsterDamage(kind,level);if(FOREST_KINDS[kind])return forestMonsterDamage(kind,level,skill);const boss=ancientBossDamage(kind,level);if(boss)return Math.floor(boss*(skill==='roar'?.5:1));const mob=ancientMobDamage(kind,level);if(mob)return Math.floor(mob*(skill==='roar'?.5:1));const base=kind==='lord'?300:kind==='chief'?120:kind==='hunter'?25:20;return Math.floor(base*1.22**Math.max(0,level-1)*(skill==='roar'?.5:1))}
-export function ancientMoveCredit(credit:number,elapsed:number){return Math.min(30,Math.max(0,credit)+Math.max(0,elapsed)*10)}
+export function ancientMovementMultiplier(value:number){return Number.isNaN(value)?1:Math.max(0,Math.min(96,value));}
+export function ancientMoveCredit(credit:number,elapsed:number,multiplier=1){
+ const speed=10*ancientMovementMultiplier(multiplier);
+ return Math.min(Math.max(30,speed*.25),Math.max(0,credit)+Math.max(0,elapsed)*speed);
+}
+export function boundedAncientDamage(amount:number,remaining:number){
+ if(!(amount>0)||!Number.isFinite(remaining)||remaining<=0)return 0;
+ return Math.min(remaining,Math.max(1,Math.floor(amount)));
+}
 export function ancientMovementPath(ax:number,az:number,bx:number,bz:number,map='tribe',feet=0){const segment=(x:number,z:number,tx:number,tz:number)=>{const steps=Math.max(1,Math.ceil(Math.hypot(tx-x,tz-z)/.2));for(let i=1;i<=steps;i++)if(blocked(x+(tx-x)*i/steps,z+(tz-z)*i/steps,.6,map,feet))return false;return true};return segment(ax,az,bx,bz)||(segment(ax,az,bx,az)&&segment(bx,az,bx,bz))||(segment(ax,az,ax,bz)&&segment(ax,bz,bx,bz))}
 export function ancientMoveCorrection(current:{x:number;y:number;z:number},ack:{x:number;y:number;z:number},sent:{x:number;y:number;z:number}){return {x:current.x+ack.x-sent.x,y:current.y+ack.y-sent.y,z:current.z+ack.z-sent.z}}
 export function ancientAttackReady(attackAt:number,now:number){return now>=attackAt}

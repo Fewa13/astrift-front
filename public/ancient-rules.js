@@ -108,8 +108,16 @@ function ancientMonsterDamage(kind, level, skill = "attack") {
   const base = kind === "lord" ? 300 : kind === "chief" ? 120 : kind === "hunter" ? 25 : 20;
   return Math.floor(base * 1.22 ** Math.max(0, level - 1) * (skill === "roar" ? 0.5 : 1));
 }
-function ancientMoveCredit(credit, elapsed) {
-  return Math.min(30, Math.max(0, credit) + Math.max(0, elapsed) * 10);
+function ancientMovementMultiplier(value) {
+  return Number.isNaN(value) ? 1 : Math.max(0, Math.min(96, value));
+}
+function ancientMoveCredit(credit, elapsed, multiplier = 1) {
+  const speed = 10 * ancientMovementMultiplier(multiplier);
+  return Math.min(Math.max(30, speed * 0.25), Math.max(0, credit) + Math.max(0, elapsed) * speed);
+}
+function boundedAncientDamage(amount, remaining) {
+  if (!(amount > 0) || !Number.isFinite(remaining) || remaining <= 0) return 0;
+  return Math.min(remaining, Math.max(1, Math.floor(amount)));
 }
 function ancientMovementPath(ax, az, bx, bz, map = "tribe", feet = 0) {
   const segment = (x, z, tx, tz) => {
@@ -334,6 +342,7 @@ export {
   ancientMonsterXP,
   ancientMoveCorrection,
   ancientMoveCredit,
+  ancientMovementMultiplier,
   ancientMovementPath,
   ancientObstacles,
   ancientSpread,
@@ -343,6 +352,7 @@ export {
   ancientTarget,
   ancientWeaponLoot,
   blocked,
+  boundedAncientDamage,
   cityHeight2 as cityHeight,
   citySurface2 as citySurface,
   forestBlocked2 as forestBlocked,
