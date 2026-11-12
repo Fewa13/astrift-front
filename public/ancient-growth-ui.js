@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {formatAncientNumber} from './ancient-number-format.js';
 import {ANCIENT_FORGE,GEAR_LEVELS,GEAR_SLOTS,FORGE_MATERIAL_NAMES,gearDefinition,gearName,gearDescription,growthTier,ancientSkillDamage,ancientGearStats,ancientProfileHealth} from './ancient-gear.js?v=20261021-skyreach-market-1';
 export function growthSuggestion(p){
  if(p.gearGoal&&ANCIENT_FORGE[p.gearGoal])return p.gearGoal;
@@ -12,7 +13,7 @@ export function gearDelta(p,item,en=false){
  const d=gearDefinition(item.key);if(!d||p.level<GEAR_LEVELS[d.quality-1])return '';
  const next={...p,gearEquipped:{...p.gearEquipped,[d.slot]:item.id}},a=ancientGearStats(p),b=ancientGearStats(next);
  const rows=[[en?'Skill power':'技能强度',ancientSkillDamage(next)-ancientSkillDamage(p),''],[en?'HP':'生命',ancientProfileHealth(next)-ancientProfileHealth(p),''],[en?'Reduction':'减伤',(b.reduction-a.reduction)*100,'%'],[en?'Cooldown reduction':'冷却缩减',(b.cooldown-a.cooldown)*100,'%']];
- return rows.filter(([,n])=>Math.abs(n)>.001).map(([label,n,suffix])=>label+' '+(n>0?'+':'')+(suffix?+n.toFixed(1):n.toLocaleString())+suffix).join(' · ');
+ return rows.filter(([,n])=>Math.abs(n)>.001).map(([label,n,suffix])=>label+' '+(n>0?'+':'')+(suffix?+n.toFixed(1):formatAncientNumber(n))+suffix).join(' · ');
 }
 export function renderGrowthGoal(parent,{profile:p,en,action}){
  if(p.level>60&&!p.gearGoal)return;

@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {formatAncientNumber} from './ancient-number-format.js';
 import {towerRunes,towerRuneAligned} from './ancient-dungeon.js';
 import {DUNGEON_TIERS,ASCENSION_DUNGEON_TIERS} from './ancient-dungeon.js';
 import {huntDefinition,HUNT_RANKS} from './ancient-hunts.js?v=20261016-hunts-1';
@@ -25,7 +26,7 @@ export function createDungeonUI({en,name,request,getProfile,onProfile,refresh,is
   if(r.status==='active')el('span',count?`${L('剩余敌人','Enemies left')} ${count}`:L('前往下一段','Proceed to the next chamber'),hud);
   if(r.hunt){const h=huntDefinition(r.hunt.id);el('span',h?(en()?h.en:h.name):'',hud);if(r.hunt.device)el('span',L('信标','Beacon')+' · '+r.hunt.device.hp+'/'+r.hunt.device.maxHp,hud);if(r.status==='active'){const sec=Math.max(0,Math.ceil((r.expires-Date.now())/1000));el('span',Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'),hud);}if(r.reason==='beacon')el('span',L('信标已被摧毁','Beacon destroyed'),hud);}
   if(r.status==='active'&&r.mechanisms&&!r.mechanisms.solved[r.stage])el('span',r.stage===0?L('将光束引向接收器','Reflect the beam into the receiver'):r.stage===1?L('按石碑顺序点亮符文','Follow the rune tablet')+' · '+r.mechanisms.runes+'/4':L('把两座石像移到光环上','Move both stones onto the glowing plates'),hud);
-  if(r.status==='active'&&boss){el('span',`${L('首领','Boss')} · ${Math.ceil(boss.hp).toLocaleString()} / ${boss.maxHp.toLocaleString()}`,hud);const track=el('div','',hud);track.className='ancientDungeonBossTrack';const bar=el('i','',track);bar.style.width=Math.max(0,boss.hp/boss.maxHp*100)+'%'}
+  if(r.status==='active'&&boss){el('span',`${L('首领','Boss')} · ${formatAncientNumber(Math.ceil(boss.hp))} / ${formatAncientNumber(boss.maxHp)}`,hud);const track=el('div','',hud);track.className='ancientDungeonBossTrack';const bar=el('i','',track);bar.style.width=Math.max(0,boss.hp/boss.maxHp*100)+'%'}
   if(r.status!=='active')button(r.hunt?L('离开挑战','Leave Hunt'):L('离开地穴','Leave Hollow'),exit,hud);
  }
  setInterval(()=>{if(isOpen()||run?.status==='preparing')void poll()},2500);

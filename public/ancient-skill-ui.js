@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import {formatAncientNumber} from './ancient-number-format.js';
 import {ancientKeyLabel,ancientBindingVersion} from './ancient-input-settings.js';
 import {renderBranchPanel} from './ancient-branch-ui.js?v=20261017-guide-position-1';
 import {PROFESSIONS,SKILLS,skillBook,skillTrainingCost,skillDescription,activeSkill} from './ancient-skills.js?v=20261109-cast-range-60';
@@ -55,7 +56,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    el('small',`${L('玩家等级','Player level')} ${s.unlock}`,item);el('p',skillDescription(id,n,en()),item);if(holyView)el('strong',holySkillDetails(id,n,en()),item);
    if(!n)el('small',L('等级0不可使用；下方显示1级效果','Level 0 is inactive; showing level 1 effects'),item);
    el('small',`${en()?job.en:job.name}-${en()?s.en:s.name}${L('技能书',' Skill Book')} · ${count} / ${cost}`,item);
-   if(n)el('small',L('相位核心：','Phase Cores: ')+(p.materials.core||0)+' / '+training.cores+' · '+L('金币：','Gold: ')+(p.coins||0).toLocaleString()+' / '+training.coins.toLocaleString(),item);
+   if(n)el('small',L('相位核心：','Phase Cores: ')+(p.materials.core||0)+' / '+training.cores+' · '+L('金币：','Gold: ')+formatAncientNumber((p.coins||0))+' / '+formatAncientNumber(training.coins),item);
    if(n)el('p',L('下一级：','Next level: ')+skillDescription(id,n+1,en()),item);
    if(current){const b=btn(L('修炼至','Train to')+' '+(n+1),()=>void action('trainSkill',{id}),item);b.disabled=submitting||p.level<s.unlock||count<cost||(p.materials.core||0)<training.cores||(p.coins||0)<training.coins||!Number.isSafeInteger(cost);if(trainingFirst&&id===job.skills[0]){item.classList.add('ancientGuided');b.classList.add('ancientGuideTarget');btn(L('定位 Q 技能激活按钮 ↓','Find the Q activation button ↓'),()=>{b.scrollIntoView({block:'center',behavior:'smooth'});b.focus({preventScroll:true})},coach);el('p',L('激活成功后关闭技能面板，在战斗中按 Q（或点击下方 Q 技能按钮）使用。','After activation, close Skills and press Q in combat (or click the Q ability on the HUD).'),item);if(b.disabled)el('p',count<cost?L('尚未收到技能书：关闭面板，回到格鲁克身边按 F 领取赠书。','Book not received yet: close this panel, return to Gruk and press F to collect his gift.'):L('等待操作完成后再点击。','Wait for the current operation to finish.'),item);}}
   }
