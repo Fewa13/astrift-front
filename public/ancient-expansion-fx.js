@@ -5,7 +5,7 @@ export const EXPANSION_FX={
  riftblade:[0x9e88ff,.8],shadowstep:[0x8671ff,1.1],shadowreturn:[0xba9dff,6],nightfall:[0x8279ff,8],
  stonefist:[0xf2bd75,1],faultline:[0xf5b862,1.7],stoneprison:[0xd7ac71,3.7],mountainfall:[0xffcc7b,3.3]
 };
-export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
+export function buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea}){
  if(!Object.hasOwn(EXPANSION_FX,f.id))return false;
  const TAU=Math.PI*2,r=f.r,h=f.holy,ease=t=>1-(1-Math.max(0,Math.min(1,t)))**3,fade=(t,start,end)=>t<start?0:Math.max(0,1-(t-start)/(end-start));
  const stoneBatch=(geo,count,pose)=>{const m=batch(f,geo,count,pose);m.material=f.dark;f.dark.color.setHex(h?0x9c8057:0x746653);f.dark.transparent=false;f.dark.depthWrite=true;return m;};
@@ -15,19 +15,6 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
  const figures=(count,position)=>{for(const [geo,part,scale]of [['bar',[0,1.1,0],[.48,.7,.24]],['orb',[0,1.78,0],[.2,.23,.2]],['bar',[-.18,.4,0],[.16,.75,.2]],['bar',[.18,.4,0],[.16,.75,.2]],['bar',[-.43,1.05,-.12],[.12,.8,.12]],['bar',[.43,1.05,-.12],[.12,.8,.12]]])batch(f,geo,count,(i,t)=>{const [x,y,z,s,turn]=position(i,t);set(x+part[0]*s,y+part[1]*s,z+part[2]*s,scale[0]*s,scale[1]*s,scale[2]*s,0,turn||0,part[0]>.3?-.75:part[0]<-.3?.75:0)},true)};
  const blade=(count,pose)=>{for(const [geo,y,scale]of [['bar',0,[.1,1.1,.06]],['cone',.68,[.15,.3,.08]],['bar',-.5,[.38,.07,.1]]])batch(f,geo,count,(i,t)=>{const [x,yy,z,s,angle]=pose(i,t);set(x-Math.sin(angle)*y*s,yy+Math.cos(angle)*y*s,z,scale[0]*s,scale[1]*s,scale[2]*s,0,0,angle)})};
  const spread=(normal,holy,cap=96)=>Math.min(cap,Math.ceil((h?holy:normal)*Math.sqrt(Math.max(1,r/5))));
- const fireBed=(start,end,base)=>{
-  const count=Math.min(h?156:120,Math.ceil(base+(h?1.2:.9)*r*r));
-  batch(f,'flame',count,(i,t)=>{
-   const angle=i*2.399963,reach=r*.98*Math.sqrt((i+.5)/count);
-   const age=t-start-(i%7)*.045;
-   const size=ease(age*5)*fade(Math.max(t,end-.95),end-.95,end);
-   const pulse=.72+.28*Math.sin(t*8+i*1.9);
-   const width=(.24+Math.min(r,30)*.024)*size;
-   const x=Math.cos(angle)*reach,z=Math.sin(angle)*reach;
-   const y=f.ground(f.group.position.x+x,f.group.position.z+z)-f.group.position.y+.08;
-   set(x,y,z,width,(.95+i%4*.32)*size*pulse*(h?1.22:1),width,0,angle,Math.sin(t*3+i)*.12);
-  },true);
- };
  if(f.id==='firebolt'){
   f.soft.color.setHex(0xf45d26);
   batch(f,'orb',h?9:6,(i,t)=>{
@@ -47,7 +34,7 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
    const s=fade(u,0,5.8)*Math.max(.22,reach*TAU/count*.66);
    set(Math.cos(a)*reach,.09,Math.sin(a)*reach,s*.52,s*2.15,s*.43,0,-a+Math.PI/2,-.22);
   });
-  fireBed(.36,6,14);
+  fireSea(f,.36,6);
   ring(f,r,.1,'shock',true);
  }else if(f.id==='firestorm'){
   const count=spread(18,27,46);
@@ -61,7 +48,7 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
    const s=r*(.78+i*.14)*ease(t*3)*fade(Math.max(t,3.4),3.4,8);
    set(0,.1+i*.08,0,s,s,s,Math.PI/2);
   },true);
-  fireBed(.22,8,20);
+  fireSea(f,.22,8);
  }else if(f.id==='inferno'){
   f.core.color.setHex(h?0xffde8a:0xffa34f);
   f.soft.color.setHex(0xe95224);
@@ -79,7 +66,7 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
    const u=t-.55-i*.2,s=ease(u*2.7)*r*(1-i*.13)*fade(u,0,10.3);
    set(0,.12+i*.06,0,s,s,s,Math.PI/2);
   },true);
-  fireBed(.55,11,30);
+  fireSea(f,.55,11);
   if(h)batch(f,'arc',8,(i,t)=>{
    const a=i*TAU/8+t*.45,u=t-.68,s=r*.34*ease(u*3)*fade(u,0,10.3);
    set(Math.cos(a)*r*.62,2.1+s*.45,Math.sin(a)*r*.62,s,s,.28,Math.PI/2,0,a);

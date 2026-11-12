@@ -155,7 +155,46 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
   }
  }
  function holyFlourish(f){buildHolySpell(f,{mesh,ring,batch,set,beam,swords})}
- function remove(f){scene.remove(f.group);for(const m of [f.core,f.soft,f.dark])m.dispose();for(const b of f.batches)b.m.dispose()}
+ function fireSea(f,start,end){
+  const r=f.r,segments=Math.min(48,Math.max(12,Math.ceil(r*2)));
+  const geometry=new THREE.PlaneGeometry(r*2,r*2,segments,segments).rotateX(-Math.PI/2);
+  const positions=geometry.attributes.position;
+  for(let i=0;i<positions.count;i++){
+   const x=positions.getX(i),z=positions.getZ(i);
+   positions.setY(i,f.ground(f.group.position.x+x,f.group.position.z+z)-f.group.position.y+.14);
+  }
+  const material=new THREE.ShaderMaterial({
+   transparent:true,depthWrite:false,side:THREE.DoubleSide,
+   uniforms:{age:{value:0},strength:{value:0},radius:{value:r},holy:{value:f.holy?1:0}},
+   vertexShader:`
+    varying vec2 groundUV;
+    void main(){groundUV=uv*2.0-1.0;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}
+   `,
+   fragmentShader:`
+    uniform float age,strength,radius,holy;
+    varying vec2 groundUV;
+    void main(){
+     float dist=length(groundUV);
+     float edge=1.0-smoothstep(.88,1.0,dist);
+     if(edge<=0.0)discard;
+     vec2 p=groundUV*radius;
+     float flow=sin(p.x*2.8+sin(p.y*2.1-age*2.8)*1.4-age*3.7);
+     float folds=sin(p.y*3.4+flow*1.8+age*4.1);
+     float heat=.5+.28*flow+.22*folds;
+     float crest=smoothstep(.45,.94,heat);
+     vec3 base=mix(vec3(.54,.055,.012),vec3(.68,.13,.018),holy);
+     vec3 hot=mix(vec3(1.0,.39,.045),vec3(1.0,.77,.19),holy);
+     vec3 color=mix(base,hot,crest);
+     float front=1.0-smoothstep(max(0.0,age*2.9-.1),age*2.9+.1,dist);
+     gl_FragColor=vec4(color,edge*front*strength*(.63+.23*crest));
+     #include <colorspace_fragment>
+    }
+   `,
+  });
+  const surface=new THREE.Mesh(geometry,material);
+  f.group.add(surface);f.fireSea={surface,start,end};
+ }
+ function remove(f){scene.remove(f.group);if(f.fireSea){f.fireSea.surface.geometry.dispose();f.fireSea.surface.material.dispose();}for(const m of [f.core,f.soft,f.dark])m.dispose();for(const b of f.batches)b.m.dispose()}
  function effect(d,ground){if(!Object.hasOwn(spells,d.id)||!Number.isFinite(d.x)||!Number.isFinite(d.z))return;
   const local=!camera?.userData.localName||!d.owner||d.owner===camera.userData.localName,distance=camera?Math.hypot(d.x-camera.position.x,d.z-camera.position.z):0,policy=remoteSpellPolicy({local,distance,pressure:camera?.userData.renderPressure,remoteCount:effects.filter(f=>!f.local).length});
   if(!local&&distance>130&&camera?.userData.renderPressure)return;
@@ -164,9 +203,15 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
   const core=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.85,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}),soft=core.clone();soft.opacity=.25;
   const dark=new THREE.MeshBasicMaterial({color:0x17051f,transparent:true,opacity:.65,depthWrite:false}),owner=d.source||resolveOwner?.(d.owner),source=new THREE.Vector3(Number.isFinite(owner?.x)?owner.x-d.x:0,Number.isFinite(owner?.y)?owner.y-y:1.3,Number.isFinite(owner?.z)?owner.z-d.z:-4);if(source.length()>65)source.set(0,1.3,-4);
   const links=d.id==='chain'?(Array.isArray(d.links)?d.links.filter(p=>[p.x,p.y,p.z,p.height].every(Number.isFinite)).slice(0,32):[{x:d.x,y:y+1.2,z:d.z,height:1.2,target:d.target}]):[];
-  const life=(d.id==='shadowreturn'&&d.phase==='return'?1.2:d.holy?Math.max(1.6,duration):duration)+Math.max(0,links.length-1)*.13,f={local,particles:policy.particles,id:d.id,owner:d.owner,phase:d.phase,holy:!!d.holy,group,core,soft,dark,batches:[],source,links,nodes:links.map(p=>new THREE.Vector3(p.x-d.x,p.y-y,p.z-d.z)),r:Math.max(.7,Number(d.radius)||1),detail:policy.detail,duration:life,life,target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=f.batches.reduce((n,b)=>n+b.m.count,0);while(effects.length&&effects.reduce((n,e)=>n+e.batches.reduce((v,b)=>v+b.m.count,0),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
+  const life=(d.id==='shadowreturn'&&d.phase==='return'?1.2:d.holy?Math.max(1.6,duration):duration)+Math.max(0,links.length-1)*.13,f={local,particles:policy.particles,id:d.id,owner:d.owner,phase:d.phase,holy:!!d.holy,group,core,soft,dark,batches:[],source,links,nodes:links.map(p=>new THREE.Vector3(p.x-d.x,p.y-y,p.z-d.z)),r:Math.max(.7,Number(d.radius)||1),detail:policy.detail,duration:life,life,target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=f.batches.reduce((n,b)=>n+b.m.count,0);while(effects.length&&effects.reduce((n,e)=>n+e.batches.reduce((v,b)=>v+b.m.count,0),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
  }
  function updateEffect(f,t){const p=t/f.duration,fade=Math.min(1,(1-p)*4),r=f.r;f.core.opacity=.82*fade;f.soft.opacity=.24*fade;f.dark.opacity=.7*fade;
+  if(f.fireSea){
+   const {surface,start,end}=f.fireSea,age=t-start;
+   surface.visible=age>=0&&t<end;
+   surface.material.uniforms.age.value=Math.max(0,age);
+   surface.material.uniforms.strength.value=Math.max(0,Math.min(1,age*6,(end-t)*1.5));
+  }
   if(f.id==='chain')for(let i=0;i<f.links.length;i++){const link=f.links[i],actor=resolveOwner?.('@monster:'+link.target);if(actor&&[actor.x,actor.z].every(Number.isFinite))f.nodes[i].set(actor.x-f.group.position.x,f.ground(actor.x,actor.z)+link.height-f.group.position.y,actor.z-f.group.position.z)}
   for(const m of f.group.children){if(m.isInstancedMesh||!m.userData.motion)continue;const {motion,pos,scale,rot}=m.userData;m.position.fromArray(pos);m.scale.fromArray(scale);m.rotation.fromArray(rot);
    if(motion==='swordWave'){const u=1-ease(t/.22);m.position.set(f.source.x*u,1.2+(f.source.y-1.2)*u,f.source.z*u);m.rotation.z+=t*2;m.scale.multiplyScalar(.5+ease(t*4))}
