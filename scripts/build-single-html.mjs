@@ -19,6 +19,10 @@ const emailUIBundle=await build({entryPoints:[path.join(source,'account-email-ui
 const auth=fs.readFileSync(path.join(root,'scripts/single-html-auth.html'),'utf8').replace('__CLOUD_KEYS__',()=>JSON.stringify(cloudKeys)).replace('__EMAIL_UI_BUNDLE__',()=>escape(emailUIBundle.outputFiles[0].text));
 const packed=gzipSync(Buffer.from(JSON.stringify({main:auth,ancient:worlds.ancient})),{level:9}).toString('base64');
 const decode="worlds=JSON.parse(await new Response(new Blob([Uint8Array.from(atob(document.getElementById('worldData').textContent),c=>c.charCodeAt(0))]).stream().pipeThrough(new DecompressionStream('gzip'))).text())";
+const compactShell=shell.replace('(()=>{','(async()=>{').replace("worlds=JSON.parse(document.getElementById('worldData').textContent)",decode);
+const compactGame=html.replace(/<script id="worldData" type="application\/json">[\s\S]*?<\/script>/,()=>'<script id="worldData" type="application/octet-stream">'+gzipSync(Buffer.from(JSON.stringify(worlds)),{level:9}).toString('base64')+'</script>').replace('<script>'+escape(shell)+'</script>',()=>'<script>'+escape(compactShell)+'</script>');
+if(compactGame===html||!compactGame.includes(decode))throw Error('Compressed dual-mode HTML was not generated correctly');
+fs.writeFileSync(path.join(out,'astrift-play.html'),compactGame);
 const ancientShell=shell.replace('(()=>{','(async()=>{').replace("worlds=JSON.parse(document.getElementById('worldData').textContent)",decode).replace("shell.switchWorld('main')})();","shell.switchWorld('ancient')})();");
 const compact=html.replace(/<script id="worldData" type="application\/json">[\s\S]*?<\/script>/,()=>'<script id="worldData" type="application/octet-stream">'+packed+'</script>').replace('<script>'+escape(shell)+'</script>',()=>'<script>'+escape(ancientShell)+'</script>');
 if(compact===html||compact.includes('const worlds='))throw Error('Ancient-only shell was not generated correctly');
