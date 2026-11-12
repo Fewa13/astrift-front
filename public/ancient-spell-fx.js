@@ -156,7 +156,15 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
  }
  function holyFlourish(f){buildHolySpell(f,{mesh,ring,batch,set,beam,swords})}
  function fireSea(f,start,end){
-  const r=f.r,segments=Math.min(48,Math.max(12,Math.ceil(r*2)));
+  const pressure=!!camera?.userData.renderPressure;
+  const budget=pressure?1:2;
+  const surfaces=effects.filter(effect=>effect.fireSea);
+  while(surfaces.length>=budget){
+   const remote=surfaces.findIndex(effect=>!effect.local);
+   if(remote<0&&!f.local)return;
+   releaseFireSea(surfaces.splice(remote<0?0:remote,1)[0]);
+  }
+  const r=f.r,segments=Math.min(pressure?12:20,Math.max(8,Math.ceil(r*.65)));
   const geometry=new THREE.PlaneGeometry(r*2,r*2,segments,segments).rotateX(-Math.PI/2);
   const positions=geometry.attributes.position;
   for(let i=0;i<positions.count;i++){
@@ -195,12 +203,12 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      float flame=smoothstep(.22,.85,shape);
      float front=1.0-smoothstep(max(0.0,age*2.9-.1),age*2.9+.1,dist);
      vec3 color=mix(vec3(.58,.044,.008),vec3(1.0,.46,.095),flame);
-     float opacity=(.12+.75*pow(flame,1.5))*edge*front;
+     float opacity=(.12+.75*flame*(.55+.45*flame))*edge*front;
      if(holy>.5){
       float crack=1.0-smoothstep(.03,.17,abs(sin(p.x*1.55+sin(p.y*1.8)*1.35)+.44*sin(p.y*2.5)));
       float molten=max(crack*.88,flame*.7);
       color=mix(vec3(.16,.018,.009),vec3(1.0,.49,.065),molten);
-      color=mix(color,vec3(1.0,.82,.38),pow(flame,5.0)*.72);
+      color=mix(color,vec3(1.0,.82,.38),flame*flame*flame*flame*flame*.72);
       opacity=(.72+.23*molten)*edge*front;
      }
      gl_FragColor=vec4(color,opacity*strength);
@@ -211,7 +219,13 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
   const surface=new THREE.Mesh(geometry,material);
   f.group.add(surface);f.fireSea={surface,start,end};
  }
- function remove(f){scene.remove(f.group);if(f.fireSea){f.fireSea.surface.geometry.dispose();f.fireSea.surface.material.dispose();}for(const m of [f.core,f.soft,f.dark])m.dispose();for(const b of f.batches)b.m.dispose()}
+ function releaseFireSea(f){
+  if(!f.fireSea)return;
+  const {surface}=f.fireSea;
+  surface.removeFromParent();surface.geometry.dispose();surface.material.dispose();
+  delete f.fireSea;
+ }
+ function remove(f){scene.remove(f.group);releaseFireSea(f);for(const m of [f.core,f.soft,f.dark])m.dispose();for(const b of f.batches)b.m.dispose()}
  function effect(d,ground){if(!Object.hasOwn(spells,d.id)||!Number.isFinite(d.x)||!Number.isFinite(d.z))return;
   const local=!camera?.userData.localName||!d.owner||d.owner===camera.userData.localName,distance=camera?Math.hypot(d.x-camera.position.x,d.z-camera.position.z):0,policy=remoteSpellPolicy({local,distance,pressure:camera?.userData.renderPressure,remoteCount:effects.filter(f=>!f.local).length});
   if(!local&&distance>130&&camera?.userData.renderPressure)return;
