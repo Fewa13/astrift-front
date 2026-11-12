@@ -30,9 +30,9 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea}){
  }else if(f.id==='firewave'){
   const count=spread(22,32,54);
   batch(f,'flame',count,(i,t)=>{
-   const a=i/count*TAU,u=t-.035*(i%3),reach=r*ease(u*2.8);
+   const a=i/count*TAU,u=t-.035*(i%3),reach=r*(.76+.21*(.5+.5*Math.sin(i*2.399)))*ease(u*2.8);
    const s=fade(u,0,5.8)*Math.max(.22,reach*TAU/count*.66);
-   set(Math.cos(a)*reach,.09,Math.sin(a)*reach,s*.52,s*2.15,s*.43,0,-a+Math.PI/2,-.22);
+   set(Math.cos(a)*reach,.09,Math.sin(a)*reach,s*.52,s*(1.55+(i%5)*.26),s*.43,0,-a+Math.PI/2,-.22);
   });
   fireSea(f,.36,6);
   ring(f,r,.1,'shock',true);

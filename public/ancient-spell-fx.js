@@ -182,7 +182,7 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      float grain=sin(p.x*4.1+sin(p.y*3.2+age*2.4))*sin(p.y*3.6-age*2.8);
      float shape;
      if(pattern<.5){
-      float wave=length(p)*2.8-age*5.0+.55*sin(angle*8.0);
+      float wave=length(p)*2.8-age*5.0+.85*sin(angle*5.0+dist*7.0)+.64*grain;
       shape=.55+.31*sin(wave)+.14*grain;
      }else if(pattern<1.5){
       float spiral=angle*3.0-length(p)*1.9+age*3.0;
@@ -194,8 +194,8 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      }
      float flame=smoothstep(.22,.85,shape);
      float front=1.0-smoothstep(max(0.0,age*2.9-.1),age*2.9+.1,dist);
-     vec3 color=mix(vec3(.78,.095,.018),vec3(1.0,.70,.19),flame);
-     float opacity=(.25+.67*flame)*edge*front;
+     vec3 color=mix(vec3(.58,.044,.008),vec3(1.0,.46,.095),flame);
+     float opacity=(.12+.75*pow(flame,1.5))*edge*front;
      if(holy>.5){
       float crack=1.0-smoothstep(.03,.17,abs(sin(p.x*1.55+sin(p.y*1.8)*1.35)+.44*sin(p.y*2.5)));
       float molten=max(crack*.88,flame*.7);
