@@ -4,7 +4,7 @@ import {isHoly} from './ancient-ascension';
 import {ancientGearStats} from './ancient-gear';
 import {ancientMapHeight,blocked,lineClear,type AncientProfile} from './ancient-rules';
 import {runtime,skillRadius,skillCooldown,activeSkill,type SkillActor} from './ancient-skills';
-import type {SkillContext,SkillMonster} from './ancient-skill-combat';
+import {skillAreaHits,skillAreaTargets,type SkillContext,type SkillMonster} from './ancient-skill-combat';
 export const EXPANSION_SKILLS=['riftblade','shadowstep','shadowreturn','nightfall','stonefist','faultline','stoneprison','mountainfall'];
 export function shadowRecallReady(a:SkillActor,now:number){return (runtime(a).shadowAnchor?.until||0)>now;}
 function moveAlong(a:SkillActor,dx:number,dz:number,distance:number,c:SkillContext){
@@ -20,7 +20,7 @@ function moveAlong(a:SkillActor,dx:number,dz:number,distance:number,c:SkillConte
 export function castExpansionSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now:number,body:number,target?:SkillMonster,autoRecall=false){
  const n=p.skills?.[id]||0,r=runtime(a),holy=isHoly(p),radius=skillRadius(id,n,holy)*branchRadius(p,id),source={x:a.x,y:a.y-.25,z:a.z};
  const visible=(m:SkillMonster,x=a.x,z=a.z,y=a.y)=>m.hp>0&&lineClear(x,y,z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map);
- const area=(x:number,z:number,amount:number)=>{for(const m of c.monsters)if(visible(m,x,z,ancientMapHeight(c.map,x,z)+1)&&Math.hypot(m.x-x,m.z-z)<=radius)c.damage(m,body*amount);};
+ const area=(x:number,z:number,amount:number)=>{for(const m of c.monsters)if(skillAreaHits({x,z},m,radius,c.map))c.damage(m,body*amount);};
  const fx=(x:number,z:number,follow=false)=>c.fx(id,x,z,radius,{target:follow?target?.id||'':'',source,phase:id==='shadowreturn'?(recall?'return':'anchor'):undefined});
  const recall=id==='shadowreturn'&&(autoRecall||shadowRecallReady(a,now));
  if(recall&&r.shadowAnchor?.map!==c.map)return '残影已消失';
@@ -44,7 +44,7 @@ export function castExpansionSkill(a:SkillActor,p:AncientProfile,id:string,direc
  }
  if(id==='nightfall'){r.effects.nightfall={until:now+8000,level:n};area(a.x,a.z,4+.35*n);fx(a.x,a.z);return null;}
  if(!target)return null;
- const victims=c.monsters.filter(m=>m.hp>0&&(m.id===target.id||Math.hypot(m.x-target.x,m.z-target.z)<=radius&&lineClear(target.x,ancientMapHeight(c.map,target.x,target.z,target.y)+1,target.z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map)));
+ const victims=skillAreaTargets(target,radius,c);
  const hits=id==='riftblade'?[{delay:0,multiplier:(3+.25*n)*.5},{delay:120,multiplier:(3+.25*n)*.5}]
   :id==='stonefist'?[{delay:180,multiplier:3.2+.3*n}]
   :id==='faultline'?[0,350,700].map(delay=>({delay,multiplier:1.8+.15*n}))

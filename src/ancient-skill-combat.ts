@@ -25,9 +25,19 @@ export type SkillFXDetails={target:string;phase?:string;source?:{x:number;y:numb
 export function clearPendingSkillDamage(owner:string,targets:Iterable<Partial<Pick<SkillMonster,'strikes'|'dots'>>>){for(const m of targets){m.strikes=(m.strikes||[]).filter(v=>v.owner!==owner);m.dots=(m.dots||[]).filter(v=>v.owner!==owner);}}
 export type SkillContext={motion?:(to:{x:number;y:number;z:number},speed:number)=>void;canMove?:(x:number,z:number,nx:number,nz:number)=>boolean;map:string;monsters:SkillMonster[];damage:(m:SkillMonster,n:number,source?:'summon',attack?:string)=>number;fx:(id:string,x:number,z:number,radius:number,details?:SkillFXDetails)=>void};
 function skillSourceContext(c:SkillContext,id:string):SkillContext{return {...c,damage:(m,n,source)=>c.damage(m,n,source,id)}}
-// The primary target already passed the caster's visibility test. Do not raycast
-// from inside its feet again: an altar/tree can falsely occlude a zero-length ray.
-export function skillAreaTargets(target:SkillMonster,radius:number,c:SkillContext){return c.monsters.filter(m=>m.hp>0&&(m.id===target.id||Math.hypot(m.x-target.x,m.z-target.z)<=radius&&lineClear(target.x,ancientMapHeight(c.map,target.x,target.z,target.y)+1,target.z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map)));}
+export function skillAreaHits(center:{x:number;z:number;y?:number},m:SkillMonster,radius:number,map:string){
+ if(m.hp<=0)return false;
+ const bounds=ancientHitbox(m.kind),distance=Math.hypot(m.x-center.x,m.z-center.z);
+ if(distance>radius+bounds.radius)return false;
+ const floor=ancientMapHeight(map,m.x,m.z,m.y),origin=ancientMapHeight(map,center.x,center.z,center.y);
+ const near=Math.min(.8,bounds.radius/Math.max(distance,.01));
+ const x=m.x+(center.x-m.x)*near,z=m.z+(center.z-m.z)*near;
+ return lineClear(center.x,origin+1,center.z,x,floor+bounds.height*.5,z,map)
+  ||lineClear(center.x,origin+1.65,center.z,x,floor+bounds.height*.78,z,map);
+}
+export function skillAreaTargets(target:SkillMonster,radius:number,c:SkillContext){
+ return c.monsters.filter(m=>m.id===target.id?m.hp>0:skillAreaHits(target,m,radius,c.map));
+}
 export function monsterIncoming(m:SkillMonster,now:number){return (m.kind==='oathknight'&&(m as SkillMonster & {bossCast?:{id:string}}).bossCast?.id==='oathGuard'?.35:1)*(m.vulnerableUntil&&m.vulnerableUntil>now?1+(m.vulnerable||0):1)}
 export function monsterOutgoing(m:SkillMonster,now:number){return (m.weakUntil&&m.weakUntil>now?1-(m.weak||0):1)*((m.buffUntil||0)>now?m.buffPower||1:1)}
 export function monsterSpeed(m:SkillMonster,now:number){return m.slowUntil&&m.slowUntil>now?1-(m.slow||0):1}
@@ -109,13 +119,13 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
   const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);const victims=radius?skillAreaTargets(target,radius,c):[target];
   for(const m of victims){m.strikes=(m.strikes||[]);if(m.strikes.length+strikes.length>64)continue;m.strikes.push(...strikes.map(v=>({...v})));const due=m.strikes.filter(v=>v.owner===a.name&&v.at<=now);m.strikes=m.strikes.filter(v=>!(v.owner===a.name&&v.at<=now));for(const hit of due)if(m.hp>0)c.damage(m,hit.damage)}c.fx(id,target.x,target.z,radius||2,{target:target.id});return null;
  }
- if(id==='slash'){for(const m of c.monsters)if(m.hp>0&&Math.hypot(m.x-target.x,m.z-target.z)<=skillRadius(id,n,isHoly(p))*branchRadius(p,id)&&(m.id===target.id||lineClear(a.x,a.y,a.z,m.x,(ancientMapHeight(c.map,m.x,m.z,m.y))+1,m.z,c.map)))c.damage(m,body*((320+30*n)/100))}
+ if(id==='slash')for(const m of skillAreaTargets(target,skillRadius(id,n,isHoly(p))*branchRadius(p,id),c))c.damage(m,body*((320+30*n)/100));
  if(id==='soulbolt'){c.damage(target,body*((330+30*n)/100));if(r.summon)r.summon.target=target.id}
  if(id==='icebolt'){c.damage(target,body*((300+30*n)/100));slow(target,Math.min(.7,.2+.02*n+gear.slow),now+6000)}
  if(id==='hex'){c.damage(target,body*curseHitMultiplier('hex',n));weaken(target,Math.min(.4,.1+.02*n),now+10000);target.vulnerable=Math.min(.3,.08+.01*n);target.vulnerableUntil=now+10000}
  if(id==='drain'){const actual=c.damage(target,body*curseHitMultiplier('drain',n,(target.vulnerableUntil||0)>now));a.hp=Math.min(a.maxHp||100,a.hp+Math.min(actual*.3,(a.maxHp||100)*.2))}
  if(id==='chain'){let current=target;const seen=new Set<string>(),links:{x:number;y:number;z:number;target:string;height:number}[]=[];for(let i=0;i<Math.min(c.monsters.length,activeBranch(p)==='heavenwrath'?2:n+2+gear.chainTargets+(isHoly(p)?2:0)+(activeBranch(p)==='thunderfield'?3:0));i++){seen.add(current.id);const size=FOREST_KINDS[current.kind]?.size??(current.kind==='lord'?3.4:current.kind==='chief'?2.7:1),height=(current.kind==='hunter'?2.1:1.65)*size*.5;links.push({x:current.x,y:ancientMapHeight(c.map,current.x,current.z)+height,z:current.z,target:current.id,height});c.damage(current,body*((300+30*n)/100)*.75**i);const next=c.monsters.filter(m=>m.hp>0&&!seen.has(m.id)&&Math.hypot(m.x-current.x,m.z-current.z)<=(16+n-1)/2*(isHoly(p)?1.5:1)*(activeBranch(p)==='thunderfield'?1.35:1)&&lineClear(current.x,(ancientMapHeight(c.map,current.x,current.z))+1,current.z,m.x,(ancientMapHeight(c.map,m.x,m.z,m.y))+1,m.z,c.map)).sort((x,y)=>Math.hypot(x.x-current.x,x.z-current.z)-Math.hypot(y.x-current.x,y.z-current.z))[0];if(!next)break;current=next}c.fx(id,target.x,target.z,1,{target:target.id,source:{x:a.x,y:a.y-.25,z:a.z},links});return null}
- if(['blizzard','storm','doom'].includes(id)){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(const m of skillAreaTargets(target,radius,c)){const amount=id==='blizzard'?1.25+.1*n:id==='storm'?1.6+.15*n:.8+.08*n;m.dots=(m.dots||[]).filter(d=>d.until>now&&d.owner!==a.name);if(m.dots.length>=8)m.dots.shift();m.dots.push({skillId:id,owner:a.name,until:now+s.duration*1000,next:now,damage:body*amount});if(id==='blizzard')slow(m,Math.min(.7,.25+.01*n+gear.slow),now+6000);if(id==='doom')weaken(m,Math.min(.4,.1+.01*n),now+8000)}}
+ if(['blizzard','storm','doom'].includes(id)){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(const m of skillAreaTargets(target,radius,c)){const amount=id==='blizzard'?1.25+.1*n:id==='storm'?1.6+.15*n:.8+.08*n;m.dots=(m.dots||[]).filter(d=>d.until>now&&(d.owner!==a.name||d.skillId!==id));if(m.dots.length>=8)m.dots.shift();m.dots.push({skillId:id,owner:a.name,until:now+s.duration*1000,next:now,damage:body*amount});if(id==='blizzard')slow(m,Math.min(.7,.25+.01*n+gear.slow),now+6000);if(id==='doom')weaken(m,Math.min(.4,.1+.01*n),now+8000)}}
  c.fx(id,target.x,target.z,skillRadius(id,n,isHoly(p))*branchRadius(p,id)||1);return null;
 }
 export function ancientAuxShot(a:SkillActor,p:AncientProfile,direction:unknown,c:SkillContext,now=Date.now()){
@@ -139,9 +149,8 @@ export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,d
    if(field.next>now||field.next>field.until)continue;
    const amount=field.hit||field.damage;
    field.hit=0;field.next=Math.min(field.until+1000,field.next+1000);
-   const floor=ancientMapHeight(c.map,field.x,field.z)+1;
    const context=tickContext(field.id);
-   for(const m of c.monsters)if(m.hp>0&&Math.hypot(m.x-field.x,m.z-field.z)<=field.radius&&lineClear(field.x,floor,field.z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map))context.damage(m,amount);
+   for(const m of c.monsters)if(skillAreaHits(field,m,field.radius,c.map))context.damage(m,amount);
   }
  }
  for(const m of c.monsters){const due=(m.strikes||[]).filter(v=>v.owner===a.name&&v.at<=now);m.strikes=(m.strikes||[]).filter(v=>!(v.owner===a.name&&v.at<=now));for(const hit of due)if(m.hp>0)tickContext(hit.skillId||'periodic').damage(m,hit.damage);for(const d of m.dots||[])if(d.owner===a.name&&d.next<=now&&d.until>now&&m.hp>0){d.next=now+1000;tickContext(d.skillId||'periodic').damage(m,d.damage)}m.dots=(m.dots||[]).filter(d=>d.until>now)}
