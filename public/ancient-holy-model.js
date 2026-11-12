@@ -7,17 +7,7 @@ function build(job){const [deep,bright]=palettes[job]||palettes.warrior,groups=n
  const add=(joint,geo,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0,color=bright)=>{dummy.position.set(x,y,z);dummy.scale.set(sx,sy,sz);dummy.rotation.set(rx,ry,rz);dummy.updateMatrix();const g=geo.index?geo.toNonIndexed():geo.clone();g.applyMatrix4(dummy.matrix);const c=new THREE.Color(color),values=new Float32Array(g.attributes.position.count*3);for(let i=0;i<values.length;i+=3){values[i]=c.r;values[i+1]=c.g;values[i+2]=c.b}g.setAttribute('color',new THREE.BufferAttribute(values,3));if(!groups.has(joint))groups.set(joint,[]);groups.get(joint).push(g)};
  const line=(joint,points,width=.018,color=bright)=>{for(let i=1;i<points.length;i++){const a=new THREE.Vector3(...points[i-1]),b=new THREE.Vector3(...points[i]),d=b.clone().sub(a),mid=a.clone().add(b).multiplyScalar(.5);dummy.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());const e=new THREE.Euler().setFromQuaternion(dummy.quaternion);add(joint,box,...mid.toArray(),width,d.length(),width,e.x,e.y,e.z,color)}};
  const bolt=(joint,x,y,z,length,width=.018)=>line(joint,[[x,y,z],[x+.065,y-length*.23,z-.015],[x-.04,y-length*.48,z+.01],[x+.045,y-length*.55,z],[x-.03,y-length,z]],width);
- if(job==='fire'){
-  for(const radius of [.46,.59])add('body',ring,0,1.83,.39,radius,radius,radius);
-  for(let i=0;i<11;i++){
-   const a=-Math.PI*.75+i*Math.PI*1.5/10;
-   add('body',cone,Math.sin(a)*.61,1.83+Math.cos(a)*.61,.39,.036,.15+(i%2)*.09,.04,0,0,-a);
-  }
-  for(const side of [-1,1]){
-   line('body',[[side*.16,1.45,-.25],[side*.11,1.16,-.266],[side*.22,.91,-.254]],.018);
-   line('body',[[side*.17,.83,-.16],[side*.24,.54,-.13],[side*.28,.25,-.12]],.016,deep);
-  }
- }else if(job==='lightning'){
+ if(job==='lightning'){
   // Lightning is worn across the body, rather than a pale crown floating above it.
   for(const s of [-1,1]){bolt('body',s*.18,1.73,-.245,.79,.025);bolt('body',s*.24,1.65,.245,.73,.022);line('body',[[s*.12,1.5,-.27],[s*.3,1.59,-.24],[s*.46,1.53,-.15],[s*.57,1.65,-.04]],.024);for(let i=0;i<3;i++)bolt('body',s*(.39+i*.09),1.76+i*.1,.03,.29,.018);bolt('body',s*.11,2.07,-.19,.27,.016);}
   for(const joint of ['arm0','arm1']){bolt(joint,-.06,.02,-.145,.53,.023);bolt(joint,.07,-.05,.12,.45,.016);add(joint,ring,0,-.4,0,.16,.16,.16,Math.PI/2);}

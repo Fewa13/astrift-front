@@ -5,6 +5,7 @@ import {PROFESSIONS,SKILLS,skillBook,skillTrainingCost,skillDescription,activeSk
 import {renderAscensionPanel} from './ancient-ascension-ui.js?v=20261012-ascension-1';
 import {openSkillPreview} from './ancient-skill-preview.js?v=20261109-cast-range-60';
 import {isHoly,holyName,holySkillDetails,ascensionEligible,ascensionProgress,ASCENSION_STEPS} from './ancient-ascension.js?v=20261014-new-professions-1';
+import {equippedAncientSkin} from './ancient-skins.js';
 import {currentQuest} from './ancient-quests.js';
 export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,request,join}){
  const L=(zh,english)=>en()?english:zh,el=(tag,text,parent)=>{const n=document.createElement(tag);n.textContent=text;parent?.append(n);return n},btn=(text,fn,parent)=>{const n=el('button',text,parent);n.type='button';n.onclick=fn;return n};
@@ -38,7 +39,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   const selected=previewJob,job=PROFESSIONS[selected],current=p.profession===selected;
   el('h3',job.icon+' '+holyName(en()?job.en:job.name,en(),holyView),card);
   btn(holyView?L('普通级详情','Normal Details'):L('圣级详情','Holy Details'),()=>{holyView=!holyView;refreshPreview()},card);
-  btn(L('3D技能预览','3D Skill Preview'),()=>openSkillPreview(selected,{en,level:3}),card);
+  btn(L('3D技能预览','3D Skill Preview'),()=>openSkillPreview(selected,{en,level:3,skin:current?equippedAncientSkin(p):undefined}),card);
   if(holyView&&!current)renderAscensionPanel(card,{getProfile,en,job:selected,request,join,refresh:refreshPreview});
   const confirm=btn(current?L('当前职业','Current profession'):p.profession?L('更改职业','Change profession'):L('选择职业','Choose profession'),async()=>{
    const latest=getProfile();if(submitting||latest.profession===selected||(latest.materials['supply:transfer']||0)<1)return;

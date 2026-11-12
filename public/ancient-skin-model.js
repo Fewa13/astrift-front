@@ -47,6 +47,25 @@ function makeModel(skin){
   if(['guard','thorn','smith','sun','crystal','feather','crown','ivory','void'].includes(style))
    part(arm,['thorn','crystal','feather','void'].includes(style)?'gem':'box',accent,0,-.02,.015,.26,.24,.34,side*.27);
  }
+ if(skin.profession==='fire'){
+  const hood=['hood','moon','void'].includes(style);
+  if(!hood){
+   b('head',cloth,0,1.87,.102,.443,.48,.355);
+   for(const side of [-1,1])b('head',cloth,side*.171,1.78,-.039,.132,.34,.25,side*.18);
+  }
+  for(const side of [-1,1])for(let i=0;i<2;i++){
+   const x=side*(.12+i*.114),z=.08+i*.053,y=.56-i*.02;
+   b('box',cloth,x,y,z,.116,.82,.34,side*.12);
+   if(skin.rarity)b('box',accent,x,y-.385,z-.178,.096,.021,.018,side*.12);
+  }
+  if(style==='sun'){
+   b('ring',accent,0,1.84,.36,1.02,1.02,.9);
+   for(let i=0;i<9;i++){
+    const a=(i-4)*.33;
+    b('gem',accent,Math.sin(a)*.54,1.84+Math.cos(a)*.54,.36,.035,.11,.04,-a);
+   }
+  }
+ }
  if(['hood','moon','void'].includes(style)){
   b('head',cloth,0,1.88,.09,.48,.45,.48);
   for(const side of [-1,1])b('box',cloth,side*.2,1.72,-.035,.1,.32,.36);
