@@ -16,54 +16,58 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
  const blade=(count,pose)=>{for(const [geo,y,scale]of [['bar',0,[.1,1.1,.06]],['cone',.68,[.15,.3,.08]],['bar',-.5,[.38,.07,.1]]])batch(f,geo,count,(i,t)=>{const [x,yy,z,s,angle]=pose(i,t);set(x-Math.sin(angle)*y*s,yy+Math.cos(angle)*y*s,z,scale[0]*s,scale[1]*s,scale[2]*s,0,0,angle)})};
  const spread=(normal,holy,cap=96)=>Math.min(cap,Math.ceil((h?holy:normal)*Math.sqrt(Math.max(1,r/5))));
  if(f.id==='firebolt'){
-  f.soft.color.setHex(h?0xffdb7b:0xff4e25);
-  batch(f,'orb',h?18:10,(i,t)=>{
-   const u=ease(Math.max(0,t-i*.013)*8),size=(i===0?.48:.19)*fade(t,0,.55)*(h?1.35:1);
-   set(f.source.x*(1-u),1.2+(f.source.y-1.2)*(1-u)+Math.sin(i*2)*.2,f.source.z*(1-u),size,size*1.4,size);
-  },true);
-  shards(h?32:20,.22,1.8);
-  batch(f,'arc',h?6:3,(i,t)=>{
-   const u=t-.18-i*.08,s=ease(u*6)*fade(t,.2,2.5)*(1.3+i*.18);
-   set(0,.8+i*.13,0,s,s,.25,Math.PI/2,i*.24,t*1.9+i);
+  f.soft.color.setHex(0xf45d26);
+  batch(f,'orb',h?9:6,(i,t)=>{
+   const u=(t-i*.025)/.23,p=Math.max(0,Math.min(1,u));
+   const size=u>=0&&u<1?(i===0?.46:.26-i*.019)*(h?1.25:1):0;
+   set(f.source.x*(1-p),1.2+(f.source.y-1.2)*(1-p),f.source.z*(1-p),size,size,size);
   });
-  batch(f,'orb',h?26:16,(i,t)=>{
-   const a=i*2.399,u=t-.2-(i%5)*.12,s=.13*fade(u,0,2.05),rr=ease(u*2)*1.75;
-   set(Math.cos(a)*rr,.35+Math.max(0,u)*(1+i%3*.18),Math.sin(a)*rr,s,s*1.7,s);
+  batch(f,'ring',h?2:1,(i,t)=>{
+   const u=t-.23-i*.08,s=ease(u*4)*fade(u,0,1.8)*(1.15+i*.28);
+   set(0,.09+i*.05,0,s,s,s,Math.PI/2);
   },true);
- }else if(f.id==='firewave'||f.id==='firestorm'||f.id==='inferno'){
-  const meteor=f.id==='inferno',vortex=f.id==='firestorm',impact=meteor?.55:0;
-  f.core.color.setHex(h?0xffe596:meteor?0xffa94a:0xff7935);
-  f.soft.color.setHex(h?0xff8426:0xe63c14);
-  const count=spread(48,76,110);
+  shards(h?12:7,.23,1.35);
+ }else if(f.id==='firewave'){
+  const count=spread(22,32,54);
+  batch(f,'arc',count,(i,t)=>{
+   const a=i/count*TAU,u=t-.035*(i%3),reach=r*ease(u*2.8);
+   const s=fade(u,0,2.7)*Math.max(.22,reach*TAU/count*.66);
+   set(Math.cos(a)*reach,.26+s*.45,Math.sin(a)*reach,s,s*1.9,.24,0,-a+Math.PI/2,-.4);
+  });
+  ring(f,r,.1,'shock',true);
+ }else if(f.id==='firestorm'){
+  const count=spread(18,27,46);
+  batch(f,'arc',count,(i,t)=>{
+   const ribbon=i%3,along=Math.floor(i/3)/Math.ceil(count/3),a=ribbon*TAU/3+along*2.3+t*1.9;
+   const s=ease(t*4)*fade(Math.max(t,3.1),3.1,5.5);
+   const reach=r*(.26+.58*along);
+   set(Math.cos(a)*reach,.3+along*2.6*s,Math.sin(a)*reach,r*.21*s,(.7+along)*s,.25,0,-a,-.52);
+  });
+  batch(f,'ring',h?2:1,(i,t)=>{
+   const s=r*(.78+i*.14)*ease(t*3)*fade(Math.max(t,3.4),3.4,5.6);
+   set(0,.1+i*.08,0,s,s,s,Math.PI/2);
+  },true);
+ }else if(f.id==='inferno'){
+  f.core.color.setHex(h?0xffde8a:0xffa34f);
+  f.soft.color.setHex(0xe95224);
+  batch(f,'crystal',h?5:3,(i,t)=>{
+   const u=t-i*.025,p=ease(u/.55),size=u>=0&&u<.55?(i===0?1.45:.72-i*.09):0;
+   set((1-p)*(5+i*.38),.85+(1-p)*(16+i*1.4),0,size,size*1.55,size,0,0,-.3);
+  });
+  batch(f,'ring',h?3:2,(i,t)=>{
+   const u=t-.55-i*.2,s=ease(u*2.7)*r*(1-i*.13)*fade(u,0,4.7);
+   set(0,.12+i*.06,0,s,s,s,Math.PI/2);
+  },true);
+  const count=spread(18,28,48);
   batch(f,'cone',count,(i,t)=>{
-   const u=t-impact,a=i*2.399+(vortex?t*2.8:0),p=ease(Math.max(0,u)*3);
-   const rr=r*Math.sqrt((i+.5)/count)*(vortex?.85:p);
-   const pulse=u>=0?(vortex?(.5+.5*Math.sin(t*9+i))*fade(Math.max(t,2.8),2.8,5.5):fade(t,impact,meteor?6.4:3.15)):0;
-   set(Math.cos(a)*rr,.2+2*pulse,Math.sin(a)*rr,.17*pulse,(h?3.6:2.1)*pulse,.17*pulse,.2,a,.23);
+   const a=i/count*TAU,u=t-.55-(i%3)*.07,reach=r*.83*ease(u*2.4);
+   const s=ease(u*5)*fade(u,0,5.9);
+   set(Math.cos(a)*reach,.22+1.5*s,Math.sin(a)*reach,.18*s,(2.2+i%3*.4)*s,.18*s,0,a,.28);
   });
-  batch(f,'ring',h?4:2,(i,t)=>{const u=t-impact-i*.11,p=ease(u*4),s=u>=0?p*r*fade(t,impact,meteor?6.6:vortex?5.2:3.1):0;set(0,.12+i*.05,0,s,s,s,Math.PI/2)},true);
-  const sparks=spread(34,58,84);
-  batch(f,'orb',sparks,(i,t)=>{
-   const age=t-impact,phase=(Math.max(0,age)*.68+i*.137)%1,a=i*2.399+(vortex?t*1.9:0);
-   const rr=r*Math.sqrt((i+.5)/sparks)*(.65+.32*phase);
-   const s=(.08+i%4*.025)*Math.sin(phase*Math.PI)*fade(t,impact,f.duration);
-   set(Math.cos(a)*rr,.22+phase*(meteor?5:3.1),Math.sin(a)*rr,s,s*2,s);
+  if(h)batch(f,'arc',8,(i,t)=>{
+   const a=i*TAU/8+t*.45,u=t-.68,s=r*.34*ease(u*3)*fade(u,0,5.9);
+   set(Math.cos(a)*r*.62,2.1+s*.45,Math.sin(a)*r*.62,s,s,.28,Math.PI/2,0,a);
   },true);
-  batch(f,'arc',h?10:6,(i,t)=>{
-   const u=t-impact-i*.09,rr=r*(.36+.055*i)*ease(u*3),a=i*2.399+t*(vortex?2.7:.6);
-   const s=rr*fade(t,impact,f.duration);
-   set(Math.cos(a)*rr*.28,.28+(i%3)*.45,Math.sin(a)*rr*.28,s,s,.3,Math.PI/2,i*.12,a);
-  });
-  if(h){
-   batch(f,'arc',meteor?8:4,(i,t)=>{
-    const u=t-impact-i*.06,s=ease(u*4)*r*.7*fade(t,impact,meteor?6.2:vortex?5.1:2.9);
-    set(0,meteor?4+i*.45:.35+i*.65,0,s,s,.25,Math.PI/2,i*.23,t*1.4+i);
-   },true);
-  }
-  if(meteor){
-   const count=h?12:6;
-   batch(f,'crystal',count,(i,t)=>{const a=i*2.399,rr=i?r*.65*Math.sqrt(i/count):0,p=ease(t/.55),s=fade(t,.02,.58)*(i?.6:1.5);set(Math.cos(a)*rr+(1-p)*5,16*(1-p)+.7,Math.sin(a)*rr,s,s*1.8,s,0,a,-.4)});
-  }
  }else if(f.id==='tempest'){
   f.core.color.setHex(h?0xf3f8ff:0xb9e6ff);f.soft.color.setHex(h?0x816bff:0x448dff);
   const bolts=spread(9,15,24);
