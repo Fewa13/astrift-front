@@ -150,7 +150,7 @@ export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,d
    const amount=field.hit||field.damage;
    field.hit=0;field.next=Math.min(field.until+1000,field.next+1000);
    const context=tickContext(field.id);
-   for(const m of c.monsters)if(skillAreaHits(field,m,field.radius,c.map))context.damage(m,amount);
+   for(const m of c.monsters)if(m.hp>0&&Math.hypot(m.x-field.x,m.z-field.z)<=field.radius+ancientHitbox(m.kind).radius)context.damage(m,amount);
   }
  }
  for(const m of c.monsters){const due=(m.strikes||[]).filter(v=>v.owner===a.name&&v.at<=now);m.strikes=(m.strikes||[]).filter(v=>!(v.owner===a.name&&v.at<=now));for(const hit of due)if(m.hp>0)tickContext(hit.skillId||'periodic').damage(m,hit.damage);for(const d of m.dots||[])if(d.owner===a.name&&d.next<=now&&d.until>now&&m.hp>0){d.next=now+1000;tickContext(d.skillId||'periodic').damage(m,d.damage)}m.dots=(m.dots||[]).filter(d=>d.until>now)}
