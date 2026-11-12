@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 // Both live network effects and the preview call this same bounded, instanced builder.
 export const EXPANSION_FX={
- firebolt:[0xff843c,1.25],firewave:[0xff7a31,1.55],firestorm:[0xff5c27,3.4],inferno:[0xffae48,3.9],tempest:[0x83c7ff,3.15],
+ firebolt:[0xff843c,2.6],firewave:[0xff7a31,3.4],firestorm:[0xff5c27,5.6],inferno:[0xffae48,7.2],tempest:[0x83c7ff,3.15],
  riftblade:[0x9e88ff,.8],shadowstep:[0x8671ff,1.1],shadowreturn:[0xba9dff,6],nightfall:[0x8279ff,8],
  stonefist:[0xf2bd75,1],faultline:[0xf5b862,1.7],stoneprison:[0xd7ac71,3.7],mountainfall:[0xffcc7b,3.3]
 };
@@ -21,22 +21,42 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam}){
    const u=ease(Math.max(0,t-i*.013)*8),size=(i===0?.48:.19)*fade(t,0,.55)*(h?1.35:1);
    set(f.source.x*(1-u),1.2+(f.source.y-1.2)*(1-u)+Math.sin(i*2)*.2,f.source.z*(1-u),size,size*1.4,size);
   },true);
-  shards(h?26:14,.22,1.4);
+  shards(h?32:20,.22,1.8);
+  batch(f,'arc',h?6:3,(i,t)=>{
+   const u=t-.18-i*.08,s=ease(u*6)*fade(t,.2,2.5)*(1.3+i*.18);
+   set(0,.8+i*.13,0,s,s,.25,Math.PI/2,i*.24,t*1.9+i);
+  });
+  batch(f,'orb',h?26:16,(i,t)=>{
+   const a=i*2.399,u=t-.2-(i%5)*.12,s=.13*fade(u,0,2.05),rr=ease(u*2)*1.75;
+   set(Math.cos(a)*rr,.35+Math.max(0,u)*(1+i%3*.18),Math.sin(a)*rr,s,s*1.7,s);
+  },true);
  }else if(f.id==='firewave'||f.id==='firestorm'||f.id==='inferno'){
   const meteor=f.id==='inferno',vortex=f.id==='firestorm',impact=meteor?.55:0;
   f.core.color.setHex(h?0xffe596:meteor?0xffa94a:0xff7935);
   f.soft.color.setHex(h?0xff8426:0xe63c14);
-  const count=spread(30,54);
+  const count=spread(48,76,110);
   batch(f,'cone',count,(i,t)=>{
    const u=t-impact,a=i*2.399+(vortex?t*2.8:0),p=ease(Math.max(0,u)*3);
    const rr=r*Math.sqrt((i+.5)/count)*(vortex?.85:p);
-   const pulse=u>=0?(vortex?(.5+.5*Math.sin(t*9+i))*fade(t,0,3.4):fade(t,impact,meteor?2.9:1.35)):0;
+   const pulse=u>=0?(vortex?(.5+.5*Math.sin(t*9+i))*fade(Math.max(t,2.8),2.8,5.5):fade(t,impact,meteor?6.4:3.15)):0;
    set(Math.cos(a)*rr,.2+2*pulse,Math.sin(a)*rr,.17*pulse,(h?3.6:2.1)*pulse,.17*pulse,.2,a,.23);
   });
-  batch(f,'ring',h?4:2,(i,t)=>{const u=t-impact-i*.11,p=ease(u*4),s=u>=0?p*r*fade(t,impact,meteor?3.2:1.5):0;set(0,.12+i*.05,0,s,s,s,Math.PI/2)},true);
+  batch(f,'ring',h?4:2,(i,t)=>{const u=t-impact-i*.11,p=ease(u*4),s=u>=0?p*r*fade(t,impact,meteor?6.6:vortex?5.2:3.1):0;set(0,.12+i*.05,0,s,s,s,Math.PI/2)},true);
+  const sparks=spread(34,58,84);
+  batch(f,'orb',sparks,(i,t)=>{
+   const age=t-impact,phase=(Math.max(0,age)*.68+i*.137)%1,a=i*2.399+(vortex?t*1.9:0);
+   const rr=r*Math.sqrt((i+.5)/sparks)*(.65+.32*phase);
+   const s=(.08+i%4*.025)*Math.sin(phase*Math.PI)*fade(t,impact,f.life);
+   set(Math.cos(a)*rr,.22+phase*(meteor?5:3.1),Math.sin(a)*rr,s,s*2,s);
+  },true);
+  batch(f,'arc',h?10:6,(i,t)=>{
+   const u=t-impact-i*.09,rr=r*(.36+.055*i)*ease(u*3),a=i*2.399+t*(vortex?2.7:.6);
+   const s=rr*fade(t,impact,f.life);
+   set(Math.cos(a)*rr*.28,.28+(i%3)*.45,Math.sin(a)*rr*.28,s,s,.3,Math.PI/2,i*.12,a);
+  });
   if(h){
    batch(f,'arc',meteor?8:4,(i,t)=>{
-    const u=t-impact-i*.06,s=ease(u*4)*r*.7*fade(t,impact,meteor?2.8:1.4);
+    const u=t-impact-i*.06,s=ease(u*4)*r*.7*fade(t,impact,meteor?6.2:vortex?5.1:2.9);
     set(0,meteor?4+i*.45:.35+i*.65,0,s,s,.25,Math.PI/2,i*.23,t*1.4+i);
    },true);
   }
