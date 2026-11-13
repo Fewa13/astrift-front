@@ -12,9 +12,10 @@ async function refresh(){
   const row=document.createElement('li');
   row.textContent=(code.label||new Date(code.created).toLocaleString())+' · '+(code.used?'已使用':'待兑换');
   const value=document.createElement('code');
-  value.textContent=code.code||'旧口令仅保存了校验值';
-  row.append(document.createElement('br'),value);
-  if(code.code&&!code.used){
+  value.className='play-code';
+  value.textContent=code.code||'旧码原文未保存，可生成新码替换';
+  row.prepend(value);
+  if(code.code){
    const copy=document.createElement('button');copy.textContent='复制';
    copy.onclick=()=>run(async()=>{await navigator.clipboard.writeText(code.code);$('message').textContent='已复制';});
    row.append(copy);

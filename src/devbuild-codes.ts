@@ -37,6 +37,6 @@ export async function devbuildCodeCommand(storage:DurableObjectStorage,secret:st
   sql.exec('DELETE FROM devbuild_codes WHERE hash=? AND used IS NULL',data.id);
   return {ok:true};
  }
- if(action==='list')return {ok:true,codes:sql.exec('SELECT hash AS id,label,created,used,code FROM devbuild_codes ORDER BY created DESC LIMIT 200').toArray()};
+ if(action==='list')return {ok:true,codes:sql.exec('SELECT hash AS id,label,created,used,code FROM devbuild_codes ORDER BY created DESC').toArray()};
  return {error:'未知操作'};
 }
