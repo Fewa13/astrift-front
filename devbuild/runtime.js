@@ -4,7 +4,6 @@ import {AncientWorld} from '../src/ancient-world.ts';
 import {ANCIENT_POTIONS} from '../src/ancient-rules.ts';
 import {ANCIENT_SUPPLIES,supplyKey} from '../src/ancient-commerce.ts';
 import {BOSS_CARDS,bossCardKey} from '../src/ancient-boss-cards.ts';
-import {beyondDevBoundary,devBoundary} from './limits.js';
 import {ANCIENT_SKINS} from '../src/ancient-skins.ts';
 
 const key = 'astrift.dev.database.v1';
@@ -143,14 +142,6 @@ class LocalSocket {
     });
   }
   send(data) {
-    const message = JSON.parse(data);
-    const actor = this.peer.deserializeAttachment();
-    if (message.type === 'move' && actor && beyondDevBoundary(actor.map,message.x,message.z)) {
-      message.x = actor.x;
-      message.y = actor.y;
-      message.z = actor.z;
-      data = JSON.stringify(message);
-    }
     void world.webSocketMessage(this.peer, data).catch(console.error);
   }
   close() {
@@ -161,7 +152,7 @@ class LocalSocket {
   }
 }
 window.WebSocket = LocalSocket;
-window.__ASTRIFT_DEV__ = {session, command, beyondDevBoundary, devBoundary};
+window.__ASTRIFT_DEV__ = {session, command};
 const networkFetch = window.fetch.bind(window);
 window.fetch = async (input, init) => {
   const url = new URL(input instanceof Request ? input.url : input, 'https://dev.astrift.invalid');
