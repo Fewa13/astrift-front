@@ -377,7 +377,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         if(!data||typeof data!=='object'||Array.isArray(data))throw Error();
         if(redeem)data.action='redeem';
         else if(!['add','delete','list'].includes(data.action))throw Error();
-        const result=await env.ACCOUNT_SESSIONS.getByName('global-v1').devbuildCode(request.headers.get('CF-Connecting-IP')||'unknown',data);
+        const result=await env.ACCOUNT_SESSIONS.getByName('global-v1').devbuildCodeVisible(request.headers.get('CF-Connecting-IP')||'unknown',data);
         return Response.json(result,{status:result.ok?200:400,headers:{'Cache-Control':'no-store'}});
       }catch{return Response.json({error:'请求无效'},{status:400});}
     }
