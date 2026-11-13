@@ -17,7 +17,7 @@ export class AccountSessionRegistry extends DurableObject<Env>{
     this.emailStore=new AccountEmailStore(ctx.storage,env.EMAIL);
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS active_sessions (account TEXT PRIMARY KEY,device TEXT NOT NULL UNIQUE,token_hash TEXT NOT NULL,expires INTEGER NOT NULL)');
   }
-  devbuildCodeVisible(ip:string,data:Record<string,unknown>){return devbuildCodeCommand(this.ctx.storage,this.env.ASTRIFT_DEVBUILD_PASSWORD,ip,data)}
+  devbuildCode(ip:string,data:Record<string,unknown>){return devbuildCodeCommand(this.ctx.storage,this.env.ASTRIFT_DEVBUILD_PASSWORD,ip,data)}
   gameGuideStatus(){return new GameGuide(this.ctx.storage,this.env as Env & GuideEnv).diagnostics()}
   gameGuide(account:string,input:GuideInput){return new GameGuide(this.ctx.storage,this.env as Env & GuideEnv).handle(account,input)}
   submitProblemReport(device:string,ip:string,id:string,report:string){return new ProblemReports(this.ctx.storage,this.env.EMAIL).submit(device,ip,id,report)}
