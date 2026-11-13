@@ -23,20 +23,21 @@ export async function devbuildCodeCommand(storage:DurableObjectStorage,secret:st
   sql.exec('INSERT INTO devbuild_limits VALUES(?,?,1) ON CONFLICT(ip) DO UPDATE SET attempts=attempts+1',ip,now);
   return {error:'密码错误'};
  }
- if(action==='add'||action==='list'){
-  const columns=sql.exec<{name:string}>('PRAGMA table_info(devbuild_codes)').toArray();
-  if(!columns.some(column=>column.name==='code'))sql.exec('ALTER TABLE devbuild_codes ADD COLUMN code TEXT');
- }
+ sql.exec('CREATE TABLE IF NOT EXISTS devbuild_code_values(hash TEXT PRIMARY KEY,code TEXT NOT NULL)');
  if(action==='add'){
-  const code=crypto.randomUUID().replaceAll('-','');
-  sql.exec('INSERT INTO devbuild_codes(hash,label,created,used,code) VALUES(?,?,?,NULL,?)',await emailDigest(code),String(data.label||'').slice(0,80),now,code);
+  const code=crypto.randomUUID().replaceAll('-',''),hash=await emailDigest(code);
+  storage.transactionSync(()=>{
+   sql.exec('INSERT INTO devbuild_codes(hash,label,created,used) VALUES(?,?,?,NULL)',hash,String(data.label||'').slice(0,80),now);
+   sql.exec('INSERT INTO devbuild_code_values VALUES(?,?)',hash,code);
+  });
   return {ok:true,code};
  }
  if(action==='delete'&&typeof data.id==='string'){
   // Keep used hashes as redemption receipts.
-  sql.exec('DELETE FROM devbuild_codes WHERE hash=? AND used IS NULL',data.id);
+  const rows=sql.exec('DELETE FROM devbuild_codes WHERE hash=? AND used IS NULL RETURNING hash',data.id).toArray();
+  if(rows.length)sql.exec('DELETE FROM devbuild_code_values WHERE hash=?',data.id);
   return {ok:true};
  }
- if(action==='list')return {ok:true,codes:sql.exec('SELECT hash AS id,label,created,used,code FROM devbuild_codes ORDER BY created DESC').toArray()};
+ if(action==='list')return {ok:true,codes:sql.exec('SELECT c.hash AS id,c.label,c.created,c.used,v.code FROM devbuild_codes c LEFT JOIN devbuild_code_values v ON v.hash=c.hash ORDER BY c.created DESC').toArray()};
  return {error:'未知操作'};
 }
