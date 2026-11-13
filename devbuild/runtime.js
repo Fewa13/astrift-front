@@ -94,7 +94,10 @@ async function command(data) {
     profile.materials[supplyKey(id)] = (profile.materials[supplyKey(id)] || 0) + count;
   }
   world.save(name, profile);
-  if (['devRestock','devTitle','buySupply'].includes(action)) return {ok:true,profile:world.read(name)};
+  if (['devRestock','devTitle','buySupply'].includes(action)) {
+    const updated = world.read(name);
+    return {ok:true,profile:updated,title:updated.puzzleTitle};
+  }
   const result = await world.command(name, action, data);
   if (result.ok && /^.*buy/i.test(action)) {
     const updated = world.read(name);
