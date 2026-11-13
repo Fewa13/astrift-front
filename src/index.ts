@@ -366,6 +366,21 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       let version:unknown;try{version=JSON.parse(raw)?.clientVersion}catch{return clientVersionResponse()}
       return currentClient(version)?Response.json({ok:true},{headers:{'Cache-Control':'no-store'}}):clientVersionResponse();
     }
+    if(url.pathname==='/api/devbuild/redeem'||url.pathname==='/api/devbuild/codes'){
+      const redeem=url.pathname.endsWith('/redeem');
+      if(request.method!=='POST')return Response.json({error:'仅支持 POST'},{status:405});
+      if(!redeem&&request.headers.get('Origin')!==url.origin)return Response.json({error:'管理请求来源无效'},{status:403});
+      try{
+        const raw=await request.text();
+        if(raw.length>2048)throw Error();
+        const data=JSON.parse(raw);
+        if(!data||typeof data!=='object'||Array.isArray(data))throw Error();
+        if(redeem)data.action='redeem';
+        else if(!['add','delete','list'].includes(data.action))throw Error();
+        const result=await env.ACCOUNT_SESSIONS.getByName('global-v1').devbuildCode(request.headers.get('CF-Connecting-IP')||'unknown',data);
+        return Response.json(result,{status:result.ok?200:400,headers:{'Cache-Control':'no-store'}});
+      }catch{return Response.json({error:'请求无效'},{status:400});}
+    }
     if(url.pathname==='/api/admin'){
       const origin=request.headers.get('Origin');if(!origin||origin==='null'||!allowedApiOrigin(origin,url.origin)||googleEmbedOrigin(origin)||canvaEmbedOrigin(origin))return Response.json({error:'管理请求来源无效'},{status:403});return adminAPI(request,env);
     }
@@ -785,7 +800,7 @@ function allowedApiOrigin(origin:string|null,workerOrigin:string){return origin=
 function googleEmbedPath(path:string){return /^\/api\/(account|ancient|social)\//.test(path)}
 // Opaque origins cannot identify a particular file. Treat these as public,
 // credentialless clients; protected actions still require explicit account tokens.
-function localFilePath(path:string){return path==='/api/client-version'||googleEmbedPath(path)||/^\/api\/(extraction|room|duel|tri|quad|gunmaster|challenge|ranked|tournament|ctf|hardpoint|survival|bomb)\//.test(path)||['/api/loadout-codes','/api/matchmaking/ranked','/api/matchmaking/duel','/api/forum','/api/forum/post'].includes(path)}
+function localFilePath(path:string){return path==='/api/devbuild/redeem'||path==='/api/client-version'||googleEmbedPath(path)||/^\/api\/(extraction|room|duel|tri|quad|gunmaster|challenge|ranked|tournament|ctf|hardpoint|survival|bomb)\//.test(path)||['/api/loadout-codes','/api/matchmaking/ranked','/api/matchmaking/duel','/api/forum','/api/forum/post'].includes(path)}
 
 export default {
   async fetch(request,env):Promise<Response>{
