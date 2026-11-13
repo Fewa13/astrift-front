@@ -64,7 +64,7 @@ function applyProfile(){
  save();
 }
 function openMenu(){
- menu.hidden=false;keys.clear();if(document.pointerLockElement)document.exitPointerLock();panel.replaceChildren();node('h1','Astrift-DevBuildAncient');node('p','单人生日版 · ∞ 金币');
+ menu.hidden=false;keys.clear();if(document.pointerLockElement)document.exitPointerLock();panel.replaceChildren();node('h1','Dev');
  if(worldId)button('继续',()=>resume());
  for(const [id,[name]] of Object.entries(maps))button(name,()=>enter(id));
  button('试炼塔',()=>enter('tower'));button('密室',()=>enterPuzzle());
