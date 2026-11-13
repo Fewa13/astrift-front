@@ -25,6 +25,16 @@ for(const file of await fs.readdir(out)){if(!file.endsWith('.js')||file==='three
 const revision=createHash('sha256');for(const file of (await fs.readdir(source)).filter(f=>f.endsWith('.js')).sort())revision.update(await fs.readFile(path.join(source,file)));const stamp=revision.digest('hex').slice(0,12);
 async function versionFiles(dir){for(const e of await fs.readdir(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory()){await versionFiles(p);continue}if(!/\.(js|html)$/.test(e.name)||e.name.startsWith('three-')||e.name==='three.module.js')continue;let s=await fs.readFile(p,'utf8');s=s.replace(/(['"])(\.{0,2}\/[^'"\s]+\.js)(?:\?[^'"]*)?\1/g,(_,q,url)=>q+url+'?v='+stamp+q);await fs.writeFile(p,s)}}
 await versionFiles(out);
+// Code management requires the first-party origin.
+const devCodeUrl = 'https://play.astrift.com/DevModeCode/';
+await fs.writeFile(path.join(out, 'DevModeCode', 'index.html'), `<!doctype html>
+<!-- © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved. -->
+<html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="refresh" content="0; url=${devCodeUrl}">
+<title>Astrift DevBuild</title></head>
+<body><a href="${devCodeUrl}">Open DevBuild code management</a></body></html>
+`);
+await fs.rm(path.join(out, 'DevModeCode', 'manage.js'), {force: true});
 await fs.writeFile(path.join(out,'CNAME'),'astrift-front.surge.sh\n');
 console.log('Static mirror built from astrift-front/public:',out);
 
