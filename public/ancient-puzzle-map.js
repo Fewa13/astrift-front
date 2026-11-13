@@ -42,11 +42,49 @@ export function createPuzzleMap(canvas,name,en,interact){
  const signGeometry=new T.PlaneGeometry(1,1);
  const stonework=new T.Group();scene.add(stonework);
  let doors=[],signs=[],plaques=[],readouts=[],chambers=[];
+ const masonry=new T.MeshStandardMaterial({roughness:.88});
+ let relief;
+ function buildRelief(count){
+  relief?.dispose();
+  const pieces=[],piece=(x,y,z,w,h,d,c)=>pieces.push([x,y,z,w,h,d,c]);
+  const accents=[0x647b73,0x526b80,0x80675a,0x756989];
+  for(let i=0;i<count;i++){
+   const z=gateAt(i),accent=accents[i%accents.length];
+   for(const x of [2.35,22.65]){
+    for(const offset of [2,6,10]){
+     piece(x,2.45,z+offset,.9,4.9,1.08,0x49444a);
+     for(const y of [.22,.48,3.78,4.55])piece(x,y,z+offset,1.25,.19,1.36,0x786a60);
+    }
+   }
+   for(const x of [3.35,21.65]){
+    piece(x,.012,z+6,.09,.022,10,accent);
+    piece(x,4.63,z+6,.15,.16,10,accent);
+   }
+   for(const x of [5.8,19.2]){
+    piece(x,2.25,z+.39,4.5,2.75,.15,0x46444a);
+    piece(x,2.25,z+.49,4.19,2.44,.10,accent);
+    for(const y of [1.25,2.25,3.25])piece(x,y,z+.55,3.65,.035,.035,0x9a8674);
+   }
+   for(const x of [10.2,14.8]){
+    piece(x,3.5,z+.57,.66,.19,.18,0xa38259);
+    piece(x,.28,z+.57,.66,.19,.18,0xa38259);
+   }
+  }
+  relief=new T.InstancedMesh(geometry,masonry,pieces.length);
+  const matrix=new T.Matrix4(),color=new T.Color();
+  for(const [i,[x,y,z,w,h,d,c]] of pieces.entries()){
+   matrix.makeScale(w,h,d).setPosition(x,y,z);
+   relief.setMatrixAt(i,matrix);relief.setColorAt(i,color.setHex(c));
+  }
+  stonework.add(relief);
+ }
+
  function buildRooms(banks){
   for(const sign of [...signs,...plaques,...readouts.filter(Boolean)]){sign.material.map.dispose();sign.material.dispose();}
   stonework.clear();doors=[];signs=[];plaques=[];readouts=[];chambers=[];
   const count=Math.max(1,banks.length),end=gateAt(count-1),length=24-end;
-  const stone=0x554638,trim=0x8e7350;
+  const stone=0x514b4e,trim=0x8e7350;
+  buildRelief(count);
   box(stonework,12.5,-.32,24-length/2,22,.64,length,0x534737);
   box(stonework,12.5,5,24-length/2,22,.3,length,0x3c342b);
   for(const x of [1.5,23.5])box(stonework,x,2.45,24-length/2,.4,5,length,stone);
@@ -380,6 +418,6 @@ export function createPuzzleMap(canvas,name,en,interact){
   for(const actor of [...players.values(),...stations])clearPlayer(actor);
   for(const sign of [...signs,...plaques,...readouts.filter(Boolean)]){sign.material.map.dispose();sign.material.dispose();}
   if(audio)void audio.close().catch(()=>{});
-  signGeometry.dispose();geometry.dispose();jade.dispose();for(const mat of materials.values())mat.dispose();renderer.dispose();
+  relief?.dispose();masonry.dispose();signGeometry.dispose();geometry.dispose();jade.dispose();for(const mat of materials.values())mat.dispose();renderer.dispose();
  }};
 }
