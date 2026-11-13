@@ -23,9 +23,13 @@ export async function devbuildCodeCommand(storage:DurableObjectStorage,secret:st
   sql.exec('INSERT INTO devbuild_limits VALUES(?,?,1) ON CONFLICT(ip) DO UPDATE SET attempts=attempts+1',ip,now);
   return {error:'密码错误'};
  }
+ if(action==='add'||action==='list'){
+  const columns=sql.exec<{name:string}>('PRAGMA table_info(devbuild_codes)').toArray();
+  if(!columns.some(column=>column.name==='code'))sql.exec('ALTER TABLE devbuild_codes ADD COLUMN code TEXT');
+ }
  if(action==='add'){
   const code=crypto.randomUUID().replaceAll('-','');
-  sql.exec('INSERT INTO devbuild_codes VALUES(?,?,?,NULL)',await emailDigest(code),String(data.label||'').slice(0,80),now);
+  sql.exec('INSERT INTO devbuild_codes(hash,label,created,used,code) VALUES(?,?,?,NULL,?)',await emailDigest(code),String(data.label||'').slice(0,80),now,code);
   return {ok:true,code};
  }
  if(action==='delete'&&typeof data.id==='string'){
@@ -33,6 +37,6 @@ export async function devbuildCodeCommand(storage:DurableObjectStorage,secret:st
   sql.exec('DELETE FROM devbuild_codes WHERE hash=? AND used IS NULL',data.id);
   return {ok:true};
  }
- if(action==='list')return {ok:true,codes:sql.exec('SELECT hash AS id,label,created,used FROM devbuild_codes ORDER BY created DESC LIMIT 200').toArray()};
+ if(action==='list')return {ok:true,codes:sql.exec('SELECT hash AS id,label,created,used,code FROM devbuild_codes ORDER BY created DESC LIMIT 200').toArray()};
  return {error:'未知操作'};
 }

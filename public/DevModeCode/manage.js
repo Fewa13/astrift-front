@@ -11,6 +11,14 @@ async function refresh(){
  for(const code of codes){
   const row=document.createElement('li');
   row.textContent=(code.label||new Date(code.created).toLocaleString())+' · '+(code.used?'已使用':'待兑换');
+  const value=document.createElement('code');
+  value.textContent=code.code||'旧口令仅保存了校验值';
+  row.append(document.createElement('br'),value);
+  if(code.code&&!code.used){
+   const copy=document.createElement('button');copy.textContent='复制';
+   copy.onclick=()=>run(async()=>{await navigator.clipboard.writeText(code.code);$('message').textContent='已复制';});
+   row.append(copy);
+  }
   if(!code.used){
    const remove=document.createElement('button');remove.textContent='删除';
    remove.onclick=()=>run(async()=>{await request('delete',{id:code.id});await refresh();});
@@ -23,6 +31,6 @@ async function run(action){try{await action();}catch(error){$('message').textCon
 $('unlock').onsubmit=e=>{e.preventDefault();$('message').textContent='';void run(refresh);};
 $('create').onsubmit=e=>{e.preventDefault();void run(async()=>{
  const {code}=await request('add',{label:$('label').value});
- $('message').textContent='请复制游玩码（仅显示一次） '+code;
+ $('message').textContent='已生成游玩码 '+code;
  await refresh();
 });};
