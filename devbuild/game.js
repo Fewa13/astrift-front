@@ -228,13 +228,13 @@ function loop(t){
 }
 function enterPuzzle(){
  cleanup();worldId='puzzle';const canvas=document.createElement('canvas');$('game').append(canvas);
- puzzle=createPuzzleMap(canvas,'DevBuild',()=>false,index=>{
+ puzzle=createPuzzleMap(canvas,()=> 'DevBuild',()=>false,index=>{
   const result=puzzleOperate(state.puzzle,{control:'activate',index,floor:state.puzzle.floor,revision:state.puzzle.revision},Date.now());state.puzzle=result.state;save();paintPuzzle();
  });
  paintPuzzle();resume();
 }
 function paintPuzzle(){
- const view=puzzleView(state.puzzle,Date.now());puzzle.sync?.(view);
+ const view=puzzleView(state.puzzle,Date.now());puzzle.sync?.({...view,players:[]});
  hud.textContent='密室 · '+(view.complete?'已通关':view.floor+' 层')+' · F 交互 · Esc 菜单';
 }
 window.addEventListener('resize',resize);
