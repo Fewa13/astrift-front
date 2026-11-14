@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {createDungeonMechanismScene} from './ancient-dungeon-mechanism-scene.js?v=20261014-dungeon-puzzles-1';
 import * as THREE from './three.module.js';
-import {DUNGEON_BLOCKS,DUNGEON_PILLARS,dungeonObstacles} from './ancient-dungeon.js';
+import {artifactTrialBlocks,DUNGEON_BLOCKS,DUNGEON_PILLARS,dungeonObstacles} from './ancient-dungeon.js';
 export function buildDungeonScene(scene){
  const world=new THREE.Group();world.name='Bonebreaker Hollow';scene.add(world);const staticParts=[],fires=[],pillarParts=[],rubbleParts=[],traps=[];
  const materials={stone:new THREE.MeshStandardMaterial({color:0x6c747b,roughness:.95}),dark:new THREE.MeshStandardMaterial({color:0x3c4653,roughness:.95}),bone:new THREE.MeshStandardMaterial({color:0xe2d5af,roughness:.8}),copper:new THREE.MeshStandardMaterial({color:0x876444,metalness:.5,roughness:.65}),rune:new THREE.MeshBasicMaterial({color:0x72dfce}),flame:new THREE.MeshBasicMaterial({color:0xffb865}),moss:new THREE.MeshStandardMaterial({color:0x384e46,roughness:1}),warning:new THREE.MeshBasicMaterial({color:0xff9b56,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide})};
@@ -22,13 +22,40 @@ export function buildDungeonScene(scene){
  part('box','dark',0,2,185,7,4,3);part('box','stone',0,5,187,8,10,1);for(const s of [-1,1])for(let j=0;j<7;j++){part('spike','bone',s*(5+j*.95),3+j*.55,182,.35,6+j,.35,0,0,-s*.28);part('column','copper',s*7,9.5-j*.8,177,.07,.9,.07,0,0,j%2?Math.PI/2:0)}
  for(let i=0;i<120;i++){const x=(i%2?1:-1)*(18+random()*4),z=12+random()*171;part('column','bone',x,.18,z,.09,.65,.09,Math.PI/2,random()*6);if(i%5===0){part('rock','bone',x,.3,z,.32,.4,.3);for(const s of [-1,1])part('box','dark',x+s*.11,.36,z-.29,.09,.09,.035)}}
  // Batch the static scenery; no unique materials or per-frame geometry creation.
- const batches=new Map();for(const p of staticParts){const key=p.geometry.uuid+p.material.uuid;if(!batches.has(key))batches.set(key,[]);batches.get(key).push(p)}for(const list of batches.values()){const batch=new THREE.InstancedMesh(list[0].geometry,list[0].material,list.length);list.forEach((p,i)=>{p.updateMatrix();batch.setMatrixAt(i,p.matrix)});batch.computeBoundingSphere();world.add(batch)}
+ const scenery=[];const batches=new Map();for(const p of staticParts){const key=p.geometry.uuid+p.material.uuid;if(!batches.has(key))batches.set(key,[]);batches.get(key).push(p)}for(const list of batches.values()){const batch=new THREE.InstancedMesh(list[0].geometry,list[0].material,list.length);list.forEach((p,i)=>{p.updateMatrix();batch.setMatrixAt(i,p.matrix)});batch.computeBoundingSphere();world.add(batch);scenery.push(batch)}
  for(let i=0;i<4;i++){const g=new THREE.Group(),ring=part('ring','warning',0,.03,0,2.8,2.8,1,-Math.PI/2,0,0,g),spikes=[];for(let j=0;j<7;j++)spikes.push(part('spike','copper',(j%3-1)*1.1,0,(Math.floor(j/3)-1)*1.1,.1,1.3,.1,0,0,0,g));g.visible=false;world.add(g);traps.push({g,ring,spikes})}
  const collapseRing=new THREE.Mesh(new THREE.RingGeometry(7.6,8,48),materials.warning);collapseRing.rotation.x=-Math.PI/2;world.add(collapseRing);collapseRing.visible=false;
  const gates=[62,122,162].map(z=>{const g=new THREE.Group();world.add(g);part('box','dark',0,6,z+1,z===162?48:16,12,2,0,0,0,g);for(let i=-3;i<=3;i++)part('column','copper',i*2,6,z-.04,.13,11,.13,0,0,0,g);for(let i=-3;i<=3;i++)part('box','rune',i*2,5,z-.1,.1,2,.04,0,0,0,g);g.visible=false;return {g,z}});
  const beacon=new THREE.Group();beacon.name='Camp Beacon';world.add(beacon);beacon.visible=false;
  part('column','dark',0,.25,0,1.6,.5,1.6,0,0,0,beacon);part('column','copper',0,1,0,.35,1.8,.35,0,0,0,beacon);part('rock','rune',0,2.15,0,.6,.9,.6,0,0,0,beacon);part('ring','rune',0,.04,0,2.5,2.5,1,-Math.PI/2,0,0,beacon);
- const mechanismScene=createDungeonMechanismScene(world);let state=null;function sync(run){state=run;mechanismScene.sync(run);const device=run?.hunt?.device;beacon.visible=!!device;if(device)beacon.position.set(device.x,0,device.z);for(const {g,z}of gates)g.visible=run?.gateZ===z;const collapsed=run?.collapsed||[];for(let i=0;i<3;i++){pillarParts[i].visible=!collapsed.includes(i);rubbleParts[i].visible=collapsed.includes(i)}}
+ const trialLandmarks=new THREE.Group();
+ world.add(trialLandmarks);
+ let trialId;
+ function syncTrial(id){
+  if(id===trialId)return;
+  trialId=id;
+  for(const mesh of [...trialLandmarks.children]){mesh.geometry.dispose();mesh.material.dispose();mesh.removeFromParent();}
+  const colors={elements:0xffbe57,void:0xa370ff,abyss:0xa8244e,hourglass:0x67dadc,crown:0xffdb82,divinity:0xf093c9,origin:0xfff0bf};
+  for(const batch of scenery)batch.visible=!id;
+  if(!id||!colors[id])return;
+  const make=(geometry,color,x,y,z)=>{
+   const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness:.83}));
+   mesh.position.set(x,y,z);trialLandmarks.add(mesh);
+  };
+  make(new THREE.BoxGeometry(48,.2,186),0x272731,0,-.1,96);
+  for(const x of [-24,24])make(new THREE.BoxGeometry(1,12,186),0x333342,x,6,96);
+  for(const block of artifactTrialBlocks(id))make(new THREE.BoxGeometry(block.w,block.h,block.d),colors[id],block.x,block.h/2,block.z);
+
+  for(const z of [32,92,152]){
+   const color=colors[id];
+   const floor=new THREE.Mesh(new THREE.RingGeometry(7.5,8,64),new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide}));
+   floor.rotation.x=-Math.PI/2;floor.position.set(0,.05,z);trialLandmarks.add(floor);
+   const shape=id==='hourglass'?new THREE.ConeGeometry(2,3,20):id==='crown'?new THREE.TorusGeometry(2.4,.24,8,36):id==='void'?new THREE.TorusKnotGeometry(2,.19,52,6):id==='abyss'?new THREE.IcosahedronGeometry(2,0):new THREE.OctahedronGeometry(2,0);
+   const emblem=new THREE.Mesh(shape,new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.32,metalness:.55,roughness:.27}));
+   emblem.position.set(0,7,z+9);emblem.rotation.z=id==='void'?.6:0;trialLandmarks.add(emblem);
+  }
+ }
+ const mechanismScene=createDungeonMechanismScene(world);let state=null;function sync(run){state=run;syncTrial(run?.artifact?.id);mechanismScene.sync(run);const device=run?.hunt?.device;beacon.visible=!!device;if(device)beacon.position.set(device.x,0,device.z);for(const {g,z}of gates)g.visible=run?.gateZ===z;const collapsed=run?.collapsed||[];for(let i=0;i<3;i++){pillarParts[i].visible=!run?.artifact&&!collapsed.includes(i);rubbleParts[i].visible=collapsed.includes(i)}}
  function update(now){mechanismScene.update(now);for(let i=0;i<traps.length;i++){const t=traps[i],data=state?.traps?.[i];t.g.visible=!!data;if(data){t.g.position.set(data.x,0,data.z);const progress=Math.min(1,(now-data.started)/Math.max(1,data.hitAt-data.started));t.ring.material.opacity=.3+progress*.5;for(const spike of t.spikes)spike.position.y=progress>.8?.5:-.6}}const c=state?.collapse;collapseRing.visible=!!c;if(c){const p=DUNGEON_PILLARS[c.index];collapseRing.position.set(p.x,.04,p.z)}}
  return {world,fires,sync,update};
 }

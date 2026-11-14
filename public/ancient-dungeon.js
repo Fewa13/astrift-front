@@ -20,16 +20,29 @@ const DUNGEON_BLOCKS = [
   ...[64, 124].flatMap((z) => [-16, 16].map((x) => ({ x, z, w: 16, d: 5, h: 10 }))),
   ...DUNGEON_PILLARS.map((p) => ({ ...p, w: 3, d: 3, h: 9 }))
 ];
+const artifactPatterns = {
+  elements: [[-12, 18, 5, 5], [12, 18, 5, 5], [-12, 43, 7, 4], [12, 43, 7, 4]],
+  void: [[-9, 20, 13, 4], [9, 40, 13, 4]],
+  abyss: [[-16, 22, 8, 19], [16, 41, 8, 18]],
+  hourglass: [[-12, 21, 14, 3], [12, 31, 14, 3], [-12, 43, 14, 3]],
+  crown: [[-13, 24, 8, 8], [13, 24, 8, 8], [-13, 45, 8, 8], [13, 45, 8, 8]],
+  divinity: [[-12, 18, 5, 10], [12, 20, 4, 10], [-10, 42, 9, 5], [11, 46, 7, 4]],
+  origin: [[-15, 21, 6, 17], [14, 21, 6, 17], [-12, 45, 12, 3], [12, 45, 12, 3]]
+};
+const artifactLayouts = new Map(Object.entries(artifactPatterns).map(([id, blocks]) => [id, [0, 60, 120].flatMap((offset) => blocks.map(([x, z, w, d]) => ({ x, z: z + offset, w, d, h: id === "void" ? 8 : 4 })))]));
+function artifactTrialBlocks(id) {
+  return artifactLayouts.get(id) || [];
+}
 const geometry = /* @__PURE__ */ new Map();
-function setDungeonGeometry(map, collapsed, gateZ = 189, mechanisms, tower = false) {
+function setDungeonGeometry(map, collapsed, gateZ = 189, mechanisms, tower = false, artifact) {
   if (!isDungeonMap(map)) return;
   if (geometry.size > 128 && !geometry.has(map)) geometry.delete(geometry.keys().next().value);
-  geometry.set(map, { collapsed, gateZ, mechanisms, tower });
+  geometry.set(map, { collapsed, gateZ, mechanisms, tower, artifact });
 }
 function solids(map) {
   if (geometry.get(map || "")?.tower) return [];
-  const { collapsed, gateZ, mechanisms } = geometry.get(map || "") || { collapsed: [], gateZ: 189 };
-  return [...DUNGEON_BLOCKS.filter((o) => !collapsed.some((i) => DUNGEON_PILLARS[i].x === o.x && DUNGEON_PILLARS[i].z === o.z)), ...dungeonObstacles({ collapsed }), ...dungeonMechanismSolids(mechanisms), ...gateZ < 189 ? [{ x: 0, z: gateZ + 1, w: gateZ === 162 ? 48 : 16, d: 2, h: 14 }] : []];
+  const { collapsed, gateZ, mechanisms, artifact } = geometry.get(map || "") || { collapsed: [], gateZ: 189 };
+  return [...(artifact ? artifactTrialBlocks(artifact) : DUNGEON_BLOCKS).filter((o) => !collapsed.some((i) => DUNGEON_PILLARS[i].x === o.x && DUNGEON_PILLARS[i].z === o.z)), ...dungeonObstacles({ collapsed }), ...dungeonMechanismSolids(mechanisms), ...gateZ < 189 ? [{ x: 0, z: gateZ + 1, w: gateZ === 162 ? 48 : 16, d: 2, h: 14 }] : []];
 }
 function dungeonBlocked(x, z, r = 0.6, map) {
   if (geometry.get(map || "")?.tower) return !Number.isFinite(x + z) || Math.abs(x) > 22 - r || z < 3 + r || z > 55 - r;
@@ -132,6 +145,7 @@ export {
   DUNGEON_PILLARS,
   DUNGEON_TIERS,
   TOWER_RUNE_RANGE,
+  artifactTrialBlocks,
   dungeonBlocked,
   dungeonControlClear,
   dungeonDamageScale,

@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { ARTIFACT_COMBAT } from "./ancient-artifacts.js";
 import { bossFormStats } from "./ancient-boss-cards.js";
 const PROFESSIONS = {
   shadowblade: { name: "\u5F71\u5203\u884C\u8005", en: "Shadowblade", icon: "\u25C8", skills: ["shadowstep", "shadowreturn", "nightfall", "riftblade"] },
@@ -252,10 +253,10 @@ function skillDescription(id, n, en = false) {
 }
 function activeSkill(a, id, now = Date.now()) {
   const e = a.skillRuntime?.effects[id];
-  return e && e.until > now ? e.level : 0;
+  return e && e.until > now && (e.starts ?? 0) <= now ? e.level : 0;
 }
 function skillDamageMultiplier(a, now = Date.now()) {
-  return (activeSkill(a, "voiddomain", now) ? 1.25 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
+  return (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.25 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
 }
 function skillSpeedMultiplier(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), h = activeSkill(a, "haste", now);

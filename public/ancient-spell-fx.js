@@ -32,7 +32,8 @@ const fusionFx={
  abysstouch:[0xff457e,1.6,4],devour:[0xffa061,2,9],descent:[0xc92569,8,12],avatar:[0xf62557,3,10],
  temporalrift:[0x92ffe8,1.6,5],chronoshift:[0x5ce9e8,2.3,6],rewind:[0xffda85,2,8],stasis:[0x7df6ff,4,12],
 };
-const spells={...fusionFx,...EXPANSION_FX,frostburst:[0x88ddff,1.8],swordwave:[0x68ff9b,.8],triplecut:[0x22ed70,1.1],swordrain:[0x83ffb2,3.4],phantomblade:[0x4bff88,3.6],vitality:[0x58ee92,2.8],power:[0xffc342,1.3],rage:[0xff4825,1.6],slash:[0xffdda0,.65],summon:[0x38ffb8,2],weaken:[0xaaff42,1.4],transform:[0xff9e36,2.1],soulbolt:[0x29f2d4,.85],icebolt:[0x65ddff,1],icearmor:[0x94eaff,1.8],blizzard:[0x86bbff,6],chain:[0xffe568,.65],haste:[0x55aaff,1.4],storm:[0xb6a4ff,4],hex:[0xb94aff,1.6],drain:[0xff387a,1.25],doom:[0x9c37ff,8],mark:[0xffd367,.8],claw:[0xffb767,.4],petHit:[0x58ffcf,.45]};
+const artifactFx={'artifact-elements':[0xffbf65,2.2],'artifact-void':[0xc086ff,1.8],'artifact-abyss':[0xff577c,1.8],'artifact-hourglass':[0x67e9ed,2.4],'artifact-crown':[0xffe491,2.4],'artifact-divinity':[0xf8ace9,2.6],'artifact-origin':[0xfff7d6,4],'mastery-rise':[0xc8a8ff,2]};
+const spells={...artifactFx,...fusionFx,...EXPANSION_FX,frostburst:[0x88ddff,1.8],swordwave:[0x68ff9b,.8],triplecut:[0x22ed70,1.1],swordrain:[0x83ffb2,3.4],phantomblade:[0x4bff88,3.6],vitality:[0x58ee92,2.8],power:[0xffc342,1.3],rage:[0xff4825,1.6],slash:[0xffdda0,.65],summon:[0x38ffb8,2],weaken:[0xaaff42,1.4],transform:[0xff9e36,2.1],soulbolt:[0x29f2d4,.85],icebolt:[0x65ddff,1],icearmor:[0x94eaff,1.8],blizzard:[0x86bbff,6],chain:[0xffe568,.65],haste:[0x55aaff,1.4],storm:[0xb6a4ff,4],hex:[0xb94aff,1.6],drain:[0xff387a,1.25],doom:[0x9c37ff,8],mark:[0xffd367,.8],claw:[0xffb767,.4],petHit:[0x58ffcf,.45]};
 export const ANCIENT_FX_IDS=Object.keys(spells);
 export function createAncientMagicFX(scene,resolveOwner,camera=null){
  const effects=[],dummy=new THREE.Object3D(),up=new THREE.Vector3(0,1,0),dir=new THREE.Vector3();
@@ -314,7 +315,14 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
   const life=(d.id==='shadowreturn'&&d.phase==='return'?1.2:d.holy?Math.max(1.6,duration):duration)+Math.max(0,links.length-1)*.13,f={local,particles:policy.particles,id:d.id,owner:d.owner,phase:d.phase,level:d.level,holy:!!d.holy,group,core,soft,dark,batches:[],source,links,nodes:links.map(p=>new THREE.Vector3(p.x-d.x,p.y-y,p.z-d.z)),r:Math.max(.7,Number(d.radius)||1),detail:policy.detail,duration:life,life,floor(x,z){
    const height=ground(group.position.x+x,group.position.z+z,group.position.y);
    return Number.isFinite(height)?height-group.position.y:0;
-  },target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(fusionFx[d.id]){
+  },target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(artifactFx[d.id]){
+   ring(f,f.r,.12,'shock');
+   const shape=d.id==='artifact-void'?'arc':d.id==='artifact-hourglass'?'bar':'crystal';
+   batch(f,shape,d.id==='artifact-origin'?72:30,(i,t)=>{
+    const a=i*2.39996+t*1.6,r=(.25+i%8*.11)*f.r;
+    set(Math.cos(a)*r,.3+((i*.19+t*.65)%1)*3,Math.sin(a)*r,.14,.44,.14,a,t,a);
+   });
+  }else if(fusionFx[d.id]){
    const radius=Math.max(3,Math.min(18,f.r*1.45));
    const trail=(n,pose,soft=false)=>batch(f,'beam',n,pose,soft);
    const shards=(shape,n,pose,soft=false)=>batch(f,shape,n,pose,soft);

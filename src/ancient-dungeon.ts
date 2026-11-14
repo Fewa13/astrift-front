@@ -19,9 +19,20 @@ export const DUNGEON_BLOCKS=[
  ...[64,124].flatMap(z=>[-16,16].map(x=>({x,z,w:16,d:5,h:10}))),
  ...DUNGEON_PILLARS.map(p=>({...p,w:3,d:3,h:9}))
 ];
-const geometry=new Map<string,{collapsed:number[];gateZ:number;mechanisms?:DungeonMechanisms;tower?:boolean}>();
-export function setDungeonGeometry(map:string,collapsed:number[],gateZ=189,mechanisms?:DungeonMechanisms,tower=false){if(!isDungeonMap(map))return;if(geometry.size>128&&!geometry.has(map))geometry.delete(geometry.keys().next().value!);geometry.set(map,{collapsed,gateZ,mechanisms,tower})}
-function solids(map?:string){if(geometry.get(map||'')?.tower)return []; const {collapsed,gateZ,mechanisms}=geometry.get(map||'')||{collapsed:[],gateZ:189};return [...DUNGEON_BLOCKS.filter(o=>!collapsed.some(i=>DUNGEON_PILLARS[i].x===o.x&&DUNGEON_PILLARS[i].z===o.z)),...dungeonObstacles({collapsed}),...dungeonMechanismSolids(mechanisms),...(gateZ<189?[{x:0,z:gateZ+1,w:gateZ===162?48:16,d:2,h:14}]:[])]}
+const artifactPatterns:Record<string,number[][]>={
+  elements:[[-12,18,5,5],[12,18,5,5],[-12,43,7,4],[12,43,7,4]],
+  void:[[-9,20,13,4],[9,40,13,4]],
+  abyss:[[-16,22,8,19],[16,41,8,18]],
+  hourglass:[[-12,21,14,3],[12,31,14,3],[-12,43,14,3]],
+  crown:[[-13,24,8,8],[13,24,8,8],[-13,45,8,8],[13,45,8,8]],
+  divinity:[[-12,18,5,10],[12,20,4,10],[-10,42,9,5],[11,46,7,4]],
+  origin:[[-15,21,6,17],[14,21,6,17],[-12,45,12,3],[12,45,12,3]],
+};
+const artifactLayouts=new Map(Object.entries(artifactPatterns).map(([id,blocks])=>[id,[0,60,120].flatMap(offset=>blocks.map(([x,z,w,d])=>({x,z:z+offset,w,d,h:id==='void'?8:4})))]));
+export function artifactTrialBlocks(id:string){return artifactLayouts.get(id)||[];}
+const geometry=new Map<string,{collapsed:number[];gateZ:number;mechanisms?:DungeonMechanisms;tower?:boolean;artifact?:string}>();
+export function setDungeonGeometry(map:string,collapsed:number[],gateZ=189,mechanisms?:DungeonMechanisms,tower=false,artifact?:string){if(!isDungeonMap(map))return;if(geometry.size>128&&!geometry.has(map))geometry.delete(geometry.keys().next().value!);geometry.set(map,{collapsed,gateZ,mechanisms,tower,artifact})}
+function solids(map?:string){if(geometry.get(map||'')?.tower)return []; const {collapsed,gateZ,mechanisms,artifact}=geometry.get(map||'')||{collapsed:[],gateZ:189};return [...(artifact?artifactTrialBlocks(artifact):DUNGEON_BLOCKS).filter(o=>!collapsed.some(i=>DUNGEON_PILLARS[i].x===o.x&&DUNGEON_PILLARS[i].z===o.z)),...dungeonObstacles({collapsed}),...dungeonMechanismSolids(mechanisms),...(gateZ<189?[{x:0,z:gateZ+1,w:gateZ===162?48:16,d:2,h:14}]:[])]}
 export function dungeonBlocked(x:number,z:number,r=.6,map?:string){if(geometry.get(map||'')?.tower)return !Number.isFinite(x+z)||Math.abs(x)>22-r||z<3+r||z>55-r;return !Number.isFinite(x+z)||Math.abs(x)>24-r||z<3+r||z>(geometry.get(map||'')?.gateZ||189)-r||solids(map).some(o=>Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)}
 export function dungeonLineClear(ax:number,ay:number,az:number,bx:number,by:number,bz:number,map?:string,ignore?:{x:number;z:number}){
  return !solids(map).some(o=>{if(ignore&&o.x===ignore.x&&o.z===ignore.z)return false;let lo=0,hi=1;for(const [a,b,min,max]of [[ax,bx,o.x-o.w/2,o.x+o.w/2],[ay,by,0,o.h],[az,bz,o.z-o.d/2,o.z+o.d/2]]){const d=b-a;if(Math.abs(d)<1e-8){if(a<min||a>max)return false}else{const u=(min-a)/d,v=(max-a)/d;lo=Math.max(lo,Math.min(u,v));hi=Math.min(hi,Math.max(u,v));if(lo>hi)return false}}return hi>=0&&lo<=1});
@@ -61,7 +72,7 @@ export function turnTowerRune(tower:NonNullable<DungeonRun['tower']>,floor:unkno
  values[index]=((values[index]||0)+1)%4;
  return true;
 }
-export type DungeonRun={tower?:{floor:number;nextAt?:number;runes?:number[]};revision?:number;hunt?:import('./ancient-hunts').HuntRun;mechanisms?:DungeonMechanisms;ascensionJob?:string;id:number;map:string;leader:string;members:string[];ready:string[];tier:string;level:number;stage:number;gateZ?:number;status:'preparing'|'active'|'complete'|'failed';created:number;expires:number;started:number;finished?:number;rewarded?:boolean;joined:string[];fallen:string[];abandoned?:string[];positions:Record<string,{x:number;y:number;z:number;hp:number}>;seed:number;traps:{x:number;z:number;hitAt:number;started:number}[];trapAt:number;collapsed:number[];collapse?:{index:number;hitAt:number};reason?:string};
+export type DungeonRun={artifact?:{id:import("./ancient-artifacts").ArtifactId;stage:number;challenge?:number;rewound?:boolean;skills?:string[];bossRewound?:boolean;safetyUsed?:boolean};tower?:{floor:number;nextAt?:number;runes?:number[]};revision?:number;hunt?:import('./ancient-hunts').HuntRun;mechanisms?:DungeonMechanisms;ascensionJob?:string;id:number;map:string;leader:string;members:string[];ready:string[];tier:string;level:number;stage:number;gateZ?:number;status:'preparing'|'active'|'complete'|'failed';created:number;expires:number;started:number;finished?:number;rewarded?:boolean;joined:string[];fallen:string[];abandoned?:string[];positions:Record<string,{x:number;y:number;z:number;hp:number}>;seed:number;traps:{x:number;z:number;hitAt:number;started:number}[];trapAt:number;collapsed:number[];collapse?:{index:number;hitAt:number};reason?:string};
 export function dungeonObstacles(run:Pick<DungeonRun,'collapsed'>){return run.collapsed.map(i=>{const p=DUNGEON_PILLARS[i];return {x:p.x+(p.x<0?4:-4),z:p.z,w:10,d:3,h:1.5}})}
 export function dungeonRubbleBlocked(run:Pick<DungeonRun,'collapsed'>,x:number,z:number,r=.6){return dungeonObstacles(run).some(o=>Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)}
 export function dungeonTraps(seed:number){let n=seed>>>0;const rand=()=>{n=(1664525*n+1013904223)>>>0;return n/4294967296};return [82,98,114].map(z=>({x:Math.round((rand()-.5)*24),z:z+Math.round(rand()*4)}))}

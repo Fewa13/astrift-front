@@ -1,3 +1,4 @@
+import {masteryLevel,masteryCost,masteryPower} from './ancient-mastery.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ancientKeyLabel,ancientBindingVersion} from './ancient-input-settings.js';
 import {renderBranchPanel} from './ancient-branch-ui.js?v=20261017-guide-position-1';
@@ -48,6 +49,12 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   chronoshift:['向前跃迁12米；6秒内再按返回，瞄中敌人会引爆残影。','Shift forward 12m. Recast within 6s to return, or aim at an enemy to detonate the anchor.'],
   rewind:['8秒内可回到原生命与位置并恢复其他技能冷却。','Recast within 8s to restore health, position and other cooldowns.'],
   stasis:['冻结12米内普通怪物4秒并延后结算伤害，首领大幅减速。','Freeze regular enemies within 12m for 4s and bank damage. Bosses are heavily slowed.'],
+ };
+ const fusionTypes={
+  prism:['单体 / 恢复 / 增益','Single target / Healing / Buff'],judgment:['群体 / 恢复 / 增益','Area / Healing / Buff'],erosion:['单体','Single target'],siphon:['单体 / 恢复','Single target / Healing'],
+  voidslash:['单体','Single target'],riftassault:['群体 / 位移','Area / Movement'],voiddomain:['群体 / 增益','Area / Buff'],execution:['群体 / 增益','Area / Buff'],
+  abysstouch:['单体 / 恢复','Single target / Healing'],devour:['单体 / 恢复','Single target / Healing'],descent:['群体 / 恢复','Area / Healing'],avatar:['增益 / 恢复','Buff / Healing'],
+  temporalrift:['单体','Single target'],chronoshift:['群体 / 位移','Area / Movement'],rewind:['恢复 / 位移','Healing / Movement'],stasis:['群体','Area'],
  };
  const fusionText=id=>L(...fusionDescriptions[id]);
  function renderProfessions(card){
@@ -113,13 +120,24 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   el('h2',L('技能','Skills'),card);
   if(!job){btn(L('选择职业','Choose profession'),()=>open('professions'),card);return}
   const list=el('div','',card);list.className='ancientSkillList';
-  for(const id of job.skills){
+  for(const id of (isFusionJob(p.profession)?[...job.skills].sort((a,b)=>'XQZC'.indexOf(SKILLS[a].key)-'XQZC'.indexOf(SKILLS[b].key)):job.skills)){
    const skill=SKILLS[id], level=p.skills?.[id]||0, cost=skillTrainingCost(level), books=p.materials[skillBook(id)]||0;
    const item=el('section','',list);item.className='weaponCard ancientSkillCard';
    el('strong',ancientKeyLabel('Key'+skill.key,en())+' · '+holyName(L(skill.name,skill.en),en(),isHoly(p)),item);
    el('small',level?L('技能当前等级','Current skill level')+' · '+level:L('技能解锁等级','Required player level')+' · '+skill.unlock,item);
    if(isFusionSkill(id)){
-    item.querySelector('small').textContent=L('圣级 · 固定技能','Holy · Fixed skill');
+    const rank=masteryLevel(p,id),points=p.mastery?.[id]?.points||0,cost=masteryCost(id,rank);
+    item.querySelector('small').textContent=L('技能等级','Skill level')+' · '+rank;
+    el('span',L('技能类型','Skill type')+' · '+L(...fusionTypes[id]),item);
+    if(rank<100){
+     const bar=el('progress','',item);bar.max=cost;bar.value=points;bar.setAttribute('aria-label',L('技能精通进度','Mastery progress'));
+     el('small',L('技能点','Skill points')+' · '+points+' / '+cost,item);
+    }
+    if(rank>=20){
+     const evolutions={prism:['余震额外连锁一个目标','Arc Echo jumps to an additional target'],judgment:['余震额外连锁一个目标','Arc Echo jumps to an additional target'],voidslash:['印记爆炸波及附近敌人','Mark detonation hits nearby enemies'],abysstouch:['侵蚀可叠至7层','Corruption stacks up to seven'],stasis:['静止领域半径增加2米','Stasis radius increases by 2m']};
+     if(evolutions[id])el('strong',L('机制进化','Skill evolution')+' · '+L(...evolutions[id]),item);
+    }
+    el('small',L('精通强度倍率','Mastery power multiplier')+' ×'+masteryPower(p,id).toFixed(2),item);
     el('p',fusionText(id),item);
     el('small',L('冷却','Cooldown')+' · '+skill.cooldown+'s',item);
     continue;

@@ -38,6 +38,18 @@ export class AncientDungeonStore{
   const now=Date.now(),id=this.sql.exec<{id:number}>("INSERT INTO ancient_dungeon_runs(data) VALUES('{}') RETURNING id").one().id;
   const r:DungeonRun={id,map:'dungeon:'+id,leader:name,members:[name],ready:[name],tier:final?'ascensionFinal':'ascensionTrial',ascensionJob:job,level:80,stage:0,gateZ:62,status:'active',created:now,expires:now+35*60000,started:now,joined:[],fallen:[],positions:{},seed:Math.floor(Math.random()*0xffffffff),traps:[],trapAt:0,collapsed:[]};this.save(r);this.sql.exec('INSERT INTO ancient_dungeon_members VALUES(?,?) ON CONFLICT(name) DO UPDATE SET run=excluded.run',name,id);return null;
  }
+ createArtifactTrial(name:string,id:import('./ancient-artifacts').ArtifactId,stage:number,level:number,minutes:number){
+  const error=this.createAscension(name,'artifact');
+  if(error)return error;
+  const run=this.get(name)!;
+  delete run.ascensionJob;
+  run.artifact={id,stage};
+  run.tier='artifact';
+  run.level=level;
+  run.expires=run.started+minutes*60000;
+  this.save(run);
+  return null;
+ }
  state(name:string){const r=this.get(name),online=this.online();return {run:r?{...r,positions:undefined,members:r.members.map(n=>({name:n,ready:r.ready.includes(n),online:online.has(n),fallen:r.fallen.includes(n)}))}:null}}
  command(name:string,action:string,data:Record<string,unknown>):string|null{
   if(action==='dungeonState')return null;

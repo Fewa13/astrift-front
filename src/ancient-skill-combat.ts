@@ -1,3 +1,5 @@
+import {artifactStage} from './ancient-artifacts';
+import {masteryPower} from './ancient-mastery';
 import {castFusion,tickFusion} from './ancient-fusion-combat';
 import {isFusionSkill} from './ancient-skills';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
@@ -23,7 +25,7 @@ import {starfallPath} from './ancient-starfall';
 import {sanctumPath} from './ancient-sanctum';
 import {blightPath} from './ancient-blight';
 import {cityPath} from './ancient-city';
-export type SkillMonster={frozenUntil?:number;frozenDamage?:{owner:string;amount:number}[];buffUntil?:number;buffPower?:number;id:string;kind:string;hp:number;maxHp:number;x:number;y?:number;z:number;slow?:number;slowUntil?:number;weak?:number;weakUntil?:number;vulnerable?:number;vulnerableUntil?:number;strikes?:{skillId?:string;owner:string;at:number;damage:number}[];dots?:{skillId?:string;owner:string;until:number;next:number;damage:number}[]};
+export type SkillMonster={contributionsForMastery?:Record<string,number>;frozenUntil?:number;frozenDamage?:{owner:string;amount:number;attack?:string}[];masteryMarks?:Record<string,{owner:string;id:string;until:number}>;buffUntil?:number;buffPower?:number;id:string;kind:string;hp:number;maxHp:number;x:number;y?:number;z:number;slow?:number;slowUntil?:number;weak?:number;weakUntil?:number;vulnerable?:number;vulnerableUntil?:number;strikes?:{skillId?:string;owner:string;at:number;damage:number}[];dots?:{skillId?:string;owner:string;until:number;next:number;damage:number}[]};
 export type SkillFXDetails={target:string;level?:number;phase?:string;source?:{x:number;y:number;z:number};links?:{x:number;y:number;z:number;target:string;height:number}[]};
 export function clearPendingSkillDamage(owner:string,targets:Iterable<Partial<Pick<SkillMonster,'strikes'|'dots'>>>){for(const m of targets){m.strikes=(m.strikes||[]).filter(v=>v.owner!==owner);m.dots=(m.dots||[]).filter(v=>v.owner!==owner);}}
 export type SkillContext={motion?:(to:{x:number;y:number;z:number},speed:number)=>void;canMove?:(x:number,z:number,nx:number,nz:number)=>boolean;map:string;monsters:SkillMonster[];damage:(m:SkillMonster,n:number,source?:'summon',attack?:string)=>number;fx:(id:string,x:number,z:number,radius:number,details?:SkillFXDetails)=>void};
@@ -54,7 +56,7 @@ export function selectSkillTarget(a:SkillActor,dir:unknown,range:number,c:SkillC
 export function skillTargetError(a:SkillActor,dir:unknown,range:number,c:SkillContext){if(!Array.isArray(dir)||dir.length!==3||!dir.every(Number.isFinite))return '请瞄准可见的敌人';const hits=c.monsters.filter(m=>m.hp>0).map(m=>({m,hit:rayAncientHitbox(a,dir,m,ancientMapHeight(c.map,m.x,m.z,m.y),Math.max(60,range),.2)})).filter(v=>v.hit).sort((x,y)=>x.hit!.t-y.hit!.t);if(!hits.length)return '请瞄准可见的敌人';return hits[0].hit!.t>range?'目标超出技能范围':'目标被障碍物遮挡';}
 
 export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now=Date.now()){
- if(isFusionSkill(id)){if(a.hp<=0||SKILLS[id].job!==p.profession||!p.fusedJobs?.[p.profession])return '技能尚未修炼';return castFusion(a,p,id,direction,skillSourceContext(c,id),now,ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p));}
+ if(isFusionSkill(id)){if(a.hp<=0||SKILLS[id].job!==p.profession||!p.fusedJobs?.[p.profession])return '技能尚未修炼';return castFusion(a,p,id,direction,skillSourceContext(c,id),now,ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p)*masteryPower(p,id)*(p.artifactEquipped==='divinity'&&SKILLS[id].key==='C'?1+.12*artifactStage(p):1));}
  const recalling=id==='shadowreturn'&&shadowRecallReady(a,now);
  const d=equippedGear(p,'weapon'),combo=d?.combo&&d.combo===p.profession?GROWTH_COMBOS[d.combo]:undefined,r=runtime(a),ready=!!combo&&!!r.gearChain&&r.gearChain.key===d!.combo&&r.gearChain.until>now&&id===combo.to;
  const start={x:a.x,z:a.z},relic=activeRelic(p),range=skillCastRange(id,p.skills?.[id]||1),target=['icebolt','stoneprison','storm'].includes(id)?selectSkillTarget(a,direction,range,c):undefined;
