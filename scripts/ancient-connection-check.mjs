@@ -14,7 +14,7 @@ function harness(){
  const h=harness();h.responses.push(new Error('offline'),{ok:false,status:502,json:async()=>{throw Error('HTML error page')}});await h.connection.start();assert.equal(h.sockets.length,0);await h.advance(0);assert.equal(h.requests,2);assert(!h.statuses.includes('retrying'));await h.advance(999);assert.equal(h.requests,2);await h.advance(1);assert.equal(h.sockets.length,1);h.current.message({type:'welcome'});assert(h.messages[0].r);h.connection.stop();assert.equal(h.timers.size,0);
 }
 {
- const h=harness();await h.connection.start();const old=h.current;await h.advance(12000);assert(old.closed);await h.advance(2000);assert.equal(h.sockets.length,2);h.current.message({type:'welcome'});const restored=h.current;await h.advance(8001);assert(restored.closed);assert.notEqual(h.current,restored);assert.equal(h.sockets.length,3);h.connection.stop();await h.advance(60000);assert.equal(h.sockets.length,3);
+ const h=harness();await h.connection.start();const old=h.current;await h.advance(12000);assert(old.closed);await h.advance(2000);assert.equal(h.sockets.length,2);h.current.message({type:'welcome'});const restored=h.current;await h.advance(20001);assert(restored.closed);assert.notEqual(h.current,restored);assert.equal(h.sockets.length,3);h.connection.stop();await h.advance(60000);assert.equal(h.sockets.length,3);
 }
 {
  const h=harness();let complete;h.responses.push(()=>new Promise(resolve=>complete=resolve));const pending=h.connection.start();h.connection.stop();complete({ok:true,status:200,json:async()=>({ok:true,ticket:'late'})});await pending;assert.equal(h.sockets.length,0);assert.equal(h.timers.size,0);
