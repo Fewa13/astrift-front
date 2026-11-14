@@ -244,7 +244,65 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
   surface.removeFromParent();surface.geometry.dispose();surface.material.dispose();
   delete f.fireSea;
  }
- function remove(f){scene.remove(f.group);releaseFireSea(f);for(const m of [f.core,f.soft,f.dark])m.dispose();for(const b of f.batches)b.m.dispose()}
+ function fusionParticles(f, shape, requested, radius, pattern, opacity=.8){
+  const count=Math.max(1,Math.ceil(requested*(f.particles??1)*(f.local?1:.65)));
+  const geometry=new THREE.InstancedBufferGeometry();
+  geometry.index=G[shape].index;
+  geometry.setAttribute('position',G[shape].getAttribute('position'));
+  const seeds=new Float32Array(count*4);
+  for(let i=0;i<count;i++){
+   const a=pattern===2?i/count*TAU:i*2.39996;
+   const r=pattern===2?radius*(i%2?.83:1):radius*Math.sqrt((i+.5)/count);
+   const x=Math.cos(a)*r,z=Math.sin(a)*r;
+   seeds.set([x,f.floor(x,z),z,i],i*4);
+  }
+  geometry.setAttribute('seed',new THREE.InstancedBufferAttribute(seeds,4));
+  geometry.instanceCount=count;
+  const material=new THREE.ShaderMaterial({
+   transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+   uniforms:{age:{value:0},alpha:{value:opacity},tint:{value:f.core.color},mode:{value:pattern}},
+   vertexShader:`
+    attribute vec4 seed;
+    uniform float age,mode;
+    varying float intensity;
+    void main(){
+     float i=seed.w;
+     vec3 center=seed.xyz;
+     vec3 scale;
+     intensity=1.0;
+     if(mode<0.5){
+      float fall=clamp(age*3.8-fract(i*.618)*.9,0.0,1.0);
+      center.y+=1.5+(14.0+mod(i,5.0))*(1.0-fall);
+      scale=vec3(.09,2.3,.09)*step(.001,fall);
+      intensity=1.0-smoothstep(.82,1.0,fall)*.65;
+     }else if(mode<1.5){
+      float u=fract(age*.71+i*.137);
+      center.xz+=vec2(cos(i+age),sin(i+age))*u*.65;
+      center.y+=u*(2.4+mod(i,5.0)*.42);
+      scale=vec3(.09,.34,.09)*(1.0-u*.7);
+      intensity=sin(u*3.14159);
+     }else{
+      float upper=mod(i,2.0);
+      center.y+=.2+upper*1.65;
+      scale=vec3(.055,.2+step(.5,mod(i,8.0)/7.0)*.42,.055);
+      intensity=.55+.45*sin(age*3.0+i*.29)*sin(age*3.0+i*.29);
+     }
+     gl_Position=projectionMatrix*modelViewMatrix*vec4(center+position*scale,1.0);
+    }`,
+   fragmentShader:`
+    uniform vec3 tint;
+    uniform float alpha;
+    varying float intensity;
+    void main(){gl_FragColor=vec4(tint,alpha*intensity);}
+   `,
+  });
+  const mesh=new THREE.Mesh(geometry,material);
+  mesh.frustumCulled=false;
+  f.group.add(mesh);
+  (f.gpu??=[]).push({mesh,count,opacity});
+ }
+ function instanceCount(f){return f.batches.reduce((n,b)=>n+b.m.count,0)+(f.gpu||[]).reduce((n,b)=>n+b.count,0);}
+ function remove(f){scene.remove(f.group);releaseFireSea(f);for(const m of [f.core,f.soft,f.dark])m.dispose();for(const b of f.batches)b.m.dispose();for(const {mesh} of f.gpu||[]){mesh.geometry.dispose();mesh.material.dispose();}}
  function effect(d,ground){if(!Object.hasOwn(spells,d.id)||!Number.isFinite(d.x)||!Number.isFinite(d.z))return;
   const local=!camera?.userData.localName||!d.owner||d.owner===camera.userData.localName,distance=camera?Math.hypot(d.x-camera.position.x,d.z-camera.position.z):0,policy=remoteSpellPolicy({local,distance,pressure:camera?.userData.renderPressure,remoteCount:effects.filter(f=>!f.local).length});
   if(!local&&distance>130&&camera?.userData.renderPressure)return;
@@ -268,8 +326,8 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      break;
     case 'judgment':
      ring(f,radius,.16,'shock');
-     trail(48,(i,t)=>{const a=i*2.4,r=radius*Math.sqrt((i+.5)/48),x=Math.cos(a)*r,z=Math.sin(a)*r,h=14+i%5;const phase=Math.max(0,Math.min(1,t*4-i/78));beam(x,h*(1-phase),z,x,h*(1-phase)+3,z,phase>0?.13:0);});
-     shards('crystal',72,(i,t)=>{const a=i*2.4,r=radius*(.15+(i%11)/13);set(Math.cos(a)*r,.2+Math.abs(Math.sin(t*4+i))*3,Math.sin(a)*r,.14,.45,.14,t,a,i);},true);
+     fusionParticles(f,'beam',96,radius,0);
+     fusionParticles(f,'crystal',144,radius,1,.55);
      break;
     case 'erosion':
      shards('cone',45,(i,t)=>{const a=i*2.4+t*.48,r=radius*(.22+(i%5)*.14);set(Math.cos(a)*r,.6+i%7*.31,Math.sin(a)*r,.2,.72,.2,Math.PI*.6,a,t);});
@@ -305,8 +363,8 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      break;
     case 'descent':
      ring(f,radius,.1,'shock',true);
-     trail(56,(i,t)=>{const a=i*2.4,r=radius*Math.sqrt((i+.5)/56),x=Math.cos(a)*r,z=Math.sin(a)*r,y=f.floor(x,z),h=.4+Math.sin(t*2+i)**2*3.7;beam(x,y,z,x+.5*Math.cos(a+t),y+h,z+.5*Math.sin(a+t),.13);});
-     shards('cone',56,(i,t)=>{const a=i*2.4+t*.25,r=radius*(.28+i%10*.064);set(Math.cos(a)*r,.6+Math.abs(Math.sin(t+i))*2,Math.sin(a)*r,.32,.77,.32,0,a,.3);},true);
+     fusionParticles(f,'cone',224,radius,1);
+     fusionParticles(f,'crystal',90,radius*.8,1,.32);
      break;
     case 'avatar':
      shards('crystal',76,(i,t)=>{const u=i%19/18,side=i%2?1:-1,r=radius*.55*u;set(side*r,1.3+Math.sin(u*Math.PI*.82)*4+(i%4)*.3,Math.sin(u*3+t)*.7,.19,.83,.19,0,t*.3,side*(.6+u));});
@@ -325,13 +383,14 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      shards('ring',8,(i,t)=>{const r=.4+radius*(1-(i*.13+t*.8)%1);set(0,.18+i*.25,0,r,r,r,-Math.PI/2,0,-t);},true);
      break;
     case 'stasis':
-     shards('bar',96,(i,t)=>{const a=angle(i%48,48),row=Math.floor(i/48),r=radius*(row?.83:1);set(Math.cos(a)*r,f.floor(Math.cos(a)*r,Math.sin(a)*r)+.16+row*1.6,Math.sin(a)*r,.08,row?.85:.35,.08,0,0,row?.22*Math.sin(t+i):0);});
+     fusionParticles(f,'bar',168,radius,2);
      shards('arc',18,(i,t)=>{const r=radius*(.62+i%3*.17);set(0,1.3,0,r,r,r,.2+i%6*.48,t*.12+i,0);},true);
      break;
    }
-  }else if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=f.batches.reduce((n,b)=>n+b.m.count,0);while(effects.length&&effects.reduce((n,e)=>n+e.batches.reduce((v,b)=>v+b.m.count,0),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
+  }else if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=instanceCount(f);while(effects.length&&effects.reduce((n,e)=>n+instanceCount(e),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
  }
  function updateEffect(f,t){const p=t/f.duration,fade=Math.min(1,(1-p)*4),r=f.r;f.core.opacity=.82*fade;f.soft.opacity=.24*fade;f.dark.opacity=.7*fade;
+  for(const {mesh,opacity} of f.gpu||[]){mesh.material.uniforms.age.value=t;mesh.material.uniforms.alpha.value=opacity*fade;}
   if(f.fireSea){
    const {surface,start,end}=f.fireSea,age=t-start;
    surface.visible=age>=0&&t<end;
