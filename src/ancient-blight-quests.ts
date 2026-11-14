@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { BLIGHT_KINDS } from './ancient-blight';
 import type {QuestStep} from './ancient-quests';
 export const BLIGHT_NPCS={
  sera:{name:'塞拉',en:'Sera',map:'blight',x:-8,z:18,role:['边境医师','Border Healer'] as [string,string]},
@@ -13,7 +14,7 @@ export const BLIGHT_NPCS={
 };
 const reward={xpFraction:.02};
 const talk=(id:string,npc:string,title:[string,string],dialogue:[string,string],map='blight'):QuestStep=>({id:'blight-'+id,npc,title,dialogue,goal:['与指定人物或地点交互','Interact with the marked person or site'],kind:'talk',map,reward,reply:['继续','Continue']});
-const kill=(id:string,title:[string,string],kinds:string[],count:number,region?:number):QuestStep=>({id:'blight-'+id,title,goal:[`击败 ${count} 个指定敌人`,`Defeat ${count} marked enemies`],kind:'kill',map:'blight',kinds,count,region,reward});
+const kill=(id:string,title:[string,string],kinds:string[],count:number,region?:number):QuestStep=>({id:'blight-'+id,title,goal:[`击败 ${count} 个${kinds.map(kind=>BLIGHT_KINDS[kind].name).join("、")}`,`Defeat ${count} ${kinds.map(kind=>BLIGHT_KINDS[kind].en).join(" / ")}`],kind:'kill',map:'blight',kinds,count,region,reward});
 export const BLIGHT_QUESTS:QuestStep[]=[
  talk('summons','eira',['边境来信','A Letter from the Border'],['王城已经安全了。这次是独立的边境求援：远方村落出现魔化，医师塞拉正在蚀影荒原等待援助。','The royal city is safe. This is a new call for help from the border: a distant village is suffering from blight. Healer Sera awaits you in the Shadowblight Wastes.'],'city'),
  {id:'blight-enter',title:['新的边境','A New Frontier'],goal:['进入蚀影荒原','Enter the Shadowblight Wastes'],kind:'enter',map:'blight',reward},

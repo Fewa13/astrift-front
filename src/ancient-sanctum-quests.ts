@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { SANCTUM_KINDS } from './ancient-sanctum';
 import type {QuestStep} from './ancient-quests';
 export const SANCTUM_NPCS={
  aster:{name:'阿斯特',en:'Aster',map:'sanctum',x:-7,z:18,role:['圣域引路者','Sanctum Guide'] as [string,string]},
@@ -14,7 +15,7 @@ export const SANCTUM_NPCS={
 };
 const reward={xpFraction:.02};
 const talk=(id:string,npc:string,title:[string,string],dialogue:[string,string],map='sanctum'):QuestStep=>({id:'sanctum-'+id,title,goal:['交谈或操作标记地点','Talk or interact at the marked site'],kind:'talk',npc,map,dialogue,reply:['继续','Continue'],reward});
-const kill=(id:string,title:[string,string],kinds:string[],count:number,region?:number):QuestStep=>({id:'sanctum-'+id,title,goal:[`击败 ${count} 个指定敌人`,`Defeat ${count} marked enemies`],kind:'kill',map:'sanctum',kinds,count,region,reward});
+const kill=(id:string,title:[string,string],kinds:string[],count:number,region?:number):QuestStep=>({id:'sanctum-'+id,title,goal:[`击败 ${count} 个${kinds.map(kind=>SANCTUM_KINDS[kind].name).join("、")}`,`Defeat ${count} ${kinds.map(kind=>SANCTUM_KINDS[kind].en).join(" / ")}`],kind:'kill',map:'sanctum',kinds,count,region,reward});
 export const SANCTUM_QUESTS:QuestStep[]=[
  talk('invitation','lyra',['净界之路','The Road to Clarity'],['边境已经安全了。我找到了净界圣域的古老记载，那里也许知道如何解除结晶的代价。带上我们的研究，去找外庭的阿斯特。别把洁白的建筑误当成善意的保证。','The border is safe. I found old records of the Sanctum of the Veil; its people may know how to reverse the crystals’ price. Take our findings to Aster in the outer court. White stone does not guarantee a welcome.'],'blight'),
  {id:'sanctum-enter',title:['越过白石门','Beyond the White Gate'],goal:['进入净界圣域','Enter the Sanctum of the Veil'],kind:'enter',map:'sanctum',reward},

@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { BLIGHT_KINDS } from "./ancient-blight";
 const BLIGHT_NPCS = {
   sera: { name: "\u585E\u62C9", en: "Sera", map: "blight", x: -8, z: 18, role: ["\u8FB9\u5883\u533B\u5E08", "Border Healer"] },
   bren: { name: "\u5E03\u4F26", en: "Bren", map: "blight", x: 8, z: 195, role: ["\u8425\u5730\u5B88\u536B", "Camp Watchman"] },
@@ -12,7 +13,7 @@ const BLIGHT_NPCS = {
 };
 const reward = { xpFraction: 0.02 };
 const talk = (id, npc, title, dialogue, map = "blight") => ({ id: "blight-" + id, npc, title, dialogue, goal: ["\u4E0E\u6307\u5B9A\u4EBA\u7269\u6216\u5730\u70B9\u4EA4\u4E92", "Interact with the marked person or site"], kind: "talk", map, reward, reply: ["\u7EE7\u7EED", "Continue"] });
-const kill = (id, title, kinds, count, region) => ({ id: "blight-" + id, title, goal: [`\u51FB\u8D25 ${count} \u4E2A\u6307\u5B9A\u654C\u4EBA`, `Defeat ${count} marked enemies`], kind: "kill", map: "blight", kinds, count, region, reward });
+const kill = (id, title, kinds, count, region) => ({ id: "blight-" + id, title, goal: [`\u51FB\u8D25 ${count} \u4E2A${kinds.map((kind) => BLIGHT_KINDS[kind].name).join("\u3001")}`, `Defeat ${count} ${kinds.map((kind) => BLIGHT_KINDS[kind].en).join(" / ")}`], kind: "kill", map: "blight", kinds, count, region, reward });
 const BLIGHT_QUESTS = [
   talk("summons", "eira", ["\u8FB9\u5883\u6765\u4FE1", "A Letter from the Border"], ["\u738B\u57CE\u5DF2\u7ECF\u5B89\u5168\u4E86\u3002\u8FD9\u6B21\u662F\u72EC\u7ACB\u7684\u8FB9\u5883\u6C42\u63F4\uFF1A\u8FDC\u65B9\u6751\u843D\u51FA\u73B0\u9B54\u5316\uFF0C\u533B\u5E08\u585E\u62C9\u6B63\u5728\u8680\u5F71\u8352\u539F\u7B49\u5F85\u63F4\u52A9\u3002", "The royal city is safe. This is a new call for help from the border: a distant village is suffering from blight. Healer Sera awaits you in the Shadowblight Wastes."], "city"),
   { id: "blight-enter", title: ["\u65B0\u7684\u8FB9\u5883", "A New Frontier"], goal: ["\u8FDB\u5165\u8680\u5F71\u8352\u539F", "Enter the Shadowblight Wastes"], kind: "enter", map: "blight", reward },

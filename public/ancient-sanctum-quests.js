@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { SANCTUM_KINDS } from "./ancient-sanctum";
 const SANCTUM_NPCS = {
   aster: { name: "\u963F\u65AF\u7279", en: "Aster", map: "sanctum", x: -7, z: 18, role: ["\u5723\u57DF\u5F15\u8DEF\u8005", "Sanctum Guide"] },
   iris: { name: "\u4F0A\u8389\u4E1D", en: "Iris", map: "sanctum", x: 8, z: 165, role: ["\u51C0\u5316\u5B66\u8005", "Cleansing Scholar"] },
@@ -13,7 +14,7 @@ const SANCTUM_NPCS = {
 };
 const reward = { xpFraction: 0.02 };
 const talk = (id, npc, title, dialogue, map = "sanctum") => ({ id: "sanctum-" + id, title, goal: ["\u4EA4\u8C08\u6216\u64CD\u4F5C\u6807\u8BB0\u5730\u70B9", "Talk or interact at the marked site"], kind: "talk", npc, map, dialogue, reply: ["\u7EE7\u7EED", "Continue"], reward });
-const kill = (id, title, kinds, count, region) => ({ id: "sanctum-" + id, title, goal: [`\u51FB\u8D25 ${count} \u4E2A\u6307\u5B9A\u654C\u4EBA`, `Defeat ${count} marked enemies`], kind: "kill", map: "sanctum", kinds, count, region, reward });
+const kill = (id, title, kinds, count, region) => ({ id: "sanctum-" + id, title, goal: [`\u51FB\u8D25 ${count} \u4E2A${kinds.map((kind) => SANCTUM_KINDS[kind].name).join("\u3001")}`, `Defeat ${count} ${kinds.map((kind) => SANCTUM_KINDS[kind].en).join(" / ")}`], kind: "kill", map: "sanctum", kinds, count, region, reward });
 const SANCTUM_QUESTS = [
   talk("invitation", "lyra", ["\u51C0\u754C\u4E4B\u8DEF", "The Road to Clarity"], ["\u8FB9\u5883\u5DF2\u7ECF\u5B89\u5168\u4E86\u3002\u6211\u627E\u5230\u4E86\u51C0\u754C\u5723\u57DF\u7684\u53E4\u8001\u8BB0\u8F7D\uFF0C\u90A3\u91CC\u4E5F\u8BB8\u77E5\u9053\u5982\u4F55\u89E3\u9664\u7ED3\u6676\u7684\u4EE3\u4EF7\u3002\u5E26\u4E0A\u6211\u4EEC\u7684\u7814\u7A76\uFF0C\u53BB\u627E\u5916\u5EAD\u7684\u963F\u65AF\u7279\u3002\u522B\u628A\u6D01\u767D\u7684\u5EFA\u7B51\u8BEF\u5F53\u6210\u5584\u610F\u7684\u4FDD\u8BC1\u3002", "The border is safe. I found old records of the Sanctum of the Veil; its people may know how to reverse the crystals\u2019 price. Take our findings to Aster in the outer court. White stone does not guarantee a welcome."], "blight"),
   { id: "sanctum-enter", title: ["\u8D8A\u8FC7\u767D\u77F3\u95E8", "Beyond the White Gate"], goal: ["\u8FDB\u5165\u51C0\u754C\u5723\u57DF", "Enter the Sanctum of the Veil"], kind: "enter", map: "sanctum", reward },
