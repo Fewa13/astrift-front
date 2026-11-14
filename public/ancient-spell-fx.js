@@ -155,7 +155,7 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
   }
  }
  function holyFlourish(f){buildHolySpell(f,{mesh,ring,batch,set,beam,swords})}
- function fireSea(f,start,end){
+ function fireSea(f,start,end,r=f.r){
   const pressure=!!camera?.userData.renderPressure;
   const budget=pressure?1:2;
   const surfaces=effects.filter(effect=>effect.fireSea);
@@ -164,15 +164,15 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
    if(remote<0&&!f.local)return;
    releaseFireSea(surfaces.splice(remote<0?0:remote,1)[0]);
   }
-  const r=f.r,segments=Math.min(pressure?12:20,Math.max(8,Math.ceil(r*.65)));
+  const segments=Math.min(pressure?24:36,Math.max(12,Math.ceil(r*1.5)));
   const geometry=new THREE.PlaneGeometry(r*2,r*2,segments,segments).rotateX(-Math.PI/2);
   const positions=geometry.attributes.position;
   for(let i=0;i<positions.count;i++){
    const x=positions.getX(i),z=positions.getZ(i);
-   positions.setY(i,f.ground(f.group.position.x+x,f.group.position.z+z)-f.group.position.y+.14);
+   positions.setY(i,f.floor(x,z)+.055);
   }
   const material=new THREE.ShaderMaterial({
-   transparent:true,depthWrite:false,side:THREE.DoubleSide,
+   transparent:true,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,
    uniforms:{age:{value:0},strength:{value:0},radius:{value:r},holy:{value:f.holy?1:0},pattern:{value:f.id==='firewave'?0:f.id==='firestorm'?1:2}},
    vertexShader:`
     varying vec2 groundUV;
@@ -206,10 +206,23 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      float opacity=(.12+.75*flame*(.55+.45*flame))*edge*front;
      if(holy>.5){
       float crack=1.0-smoothstep(.03,.17,abs(sin(p.x*1.55+sin(p.y*1.8)*1.35)+.44*sin(p.y*2.5)));
-      float molten=max(crack*.88,flame*.7);
-      color=mix(vec3(.16,.018,.009),vec3(1.0,.49,.065),molten);
-      color=mix(color,vec3(1.0,.82,.38),flame*flame*flame*flame*flame*.72);
-      opacity=(.72+.23*molten)*edge*front;
+      float molten;
+      if(pattern<.5){
+       // A rolling lava front leaves a cracked crust behind it.
+       float crest=exp(-18.0*abs(dist-min(.94,age*.65)));
+       molten=max(crack*.62,crest);
+      }else if(pattern<1.5){
+       // Three channels of circulating magma, separated by dark rock.
+       float channel=angle*3.0-dist*8.0+age*.95;
+       molten=max(crack*.27,smoothstep(.62,.98,sin(channel))*.92);
+      }else{
+       // Impact crater with radial fissures and a molten center.
+       float rays=1.0-smoothstep(.02,.23,abs(sin(angle*7.0+.8*sin(dist*10.0))));
+       molten=max(max(rays*(1.0-dist)*.95,crack*.48),1.0-smoothstep(.08,.38,dist));
+      }
+      color=mix(vec3(.075,.023,.022),vec3(.91,.12,.009),smoothstep(.13,.65,molten));
+      color=mix(color,vec3(1.0,.74,.22),smoothstep(.66,.98,molten));
+      opacity=(.85+.13*molten)*edge*front;
      }
      gl_FragColor=vec4(color,opacity*strength);
      #include <colorspace_fragment>
@@ -230,11 +243,14 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
   const local=!camera?.userData.localName||!d.owner||d.owner===camera.userData.localName,distance=camera?Math.hypot(d.x-camera.position.x,d.z-camera.position.z):0,policy=remoteSpellPolicy({local,distance,pressure:camera?.userData.renderPressure,remoteCount:effects.filter(f=>!f.local).length});
   if(!local&&distance>130&&camera?.userData.renderPressure)return;
   if(d.id==='shadowreturn'&&d.phase==='return')for(let i=effects.length-1;i>=0;i--)if(effects[i].id==='shadowreturn'&&effects[i].owner===d.owner){remove(effects[i]);effects.splice(i,1)}
-  while(effects.length>=12){let victim=effects.findIndex(f=>!f.local);if(victim<0){if(!local)return;victim=0}remove(effects.splice(victim,1)[0])}const [color,duration]=spells[d.id],group=new THREE.Group(),y=ground(d.x,d.z)+.08;group.position.set(d.x,y,d.z);group.userData.skill=d.id;
+  while(effects.length>=12){let victim=effects.findIndex(f=>!f.local);if(victim<0){if(!local)return;victim=0}remove(effects.splice(victim,1)[0])}const [color,duration]=spells[d.id],group=new THREE.Group(),anchor=d.target?resolveOwner?.('@monster:'+d.target):d.source||resolveOwner?.(d.owner),feet=Number.isFinite(anchor?.y)?anchor.y-1.65:undefined,y=ground(d.x,d.z,feet)+.08;group.position.set(d.x,y,d.z);group.userData.skill=d.id;
   const core=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.85,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}),soft=core.clone();soft.opacity=.25;
   const dark=new THREE.MeshBasicMaterial({color:0x17051f,transparent:true,opacity:.65,depthWrite:false}),owner=d.source||resolveOwner?.(d.owner),source=new THREE.Vector3(Number.isFinite(owner?.x)?owner.x-d.x:0,Number.isFinite(owner?.y)?owner.y-y:1.3,Number.isFinite(owner?.z)?owner.z-d.z:-4);if(source.length()>65)source.set(0,1.3,-4);
   const links=d.id==='chain'?(Array.isArray(d.links)?d.links.filter(p=>[p.x,p.y,p.z,p.height].every(Number.isFinite)).slice(0,32):[{x:d.x,y:y+1.2,z:d.z,height:1.2,target:d.target}]):[];
-  const life=(d.id==='shadowreturn'&&d.phase==='return'?1.2:d.holy?Math.max(1.6,duration):duration)+Math.max(0,links.length-1)*.13,f={local,particles:policy.particles,id:d.id,owner:d.owner,phase:d.phase,holy:!!d.holy,group,core,soft,dark,batches:[],source,links,nodes:links.map(p=>new THREE.Vector3(p.x-d.x,p.y-y,p.z-d.z)),r:Math.max(.7,Number(d.radius)||1),detail:policy.detail,duration:life,life,target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=f.batches.reduce((n,b)=>n+b.m.count,0);while(effects.length&&effects.reduce((n,e)=>n+e.batches.reduce((v,b)=>v+b.m.count,0),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
+  const life=(d.id==='shadowreturn'&&d.phase==='return'?1.2:d.holy?Math.max(1.6,duration):duration)+Math.max(0,links.length-1)*.13,f={local,particles:policy.particles,id:d.id,owner:d.owner,phase:d.phase,holy:!!d.holy,group,core,soft,dark,batches:[],source,links,nodes:links.map(p=>new THREE.Vector3(p.x-d.x,p.y-y,p.z-d.z)),r:Math.max(.7,Number(d.radius)||1),detail:policy.detail,duration:life,life,floor(x,z){
+   const height=ground(group.position.x+x,group.position.z+z,group.position.y);
+   return Number.isFinite(height)?height-group.position.y:0;
+  },target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=f.batches.reduce((n,b)=>n+b.m.count,0);while(effects.length&&effects.reduce((n,e)=>n+e.batches.reduce((v,b)=>v+b.m.count,0),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
  }
  function updateEffect(f,t){const p=t/f.duration,fade=Math.min(1,(1-p)*4),r=f.r;f.core.opacity=.82*fade;f.soft.opacity=.24*fade;f.dark.opacity=.7*fade;
   if(f.fireSea){

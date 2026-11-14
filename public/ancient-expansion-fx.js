@@ -16,38 +16,38 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea}){
  const blade=(count,pose)=>{for(const [geo,y,scale]of [['bar',0,[.1,1.1,.06]],['cone',.68,[.15,.3,.08]],['bar',-.5,[.38,.07,.1]]])batch(f,geo,count,(i,t)=>{const [x,yy,z,s,angle]=pose(i,t);set(x-Math.sin(angle)*y*s,yy+Math.cos(angle)*y*s,z,scale[0]*s,scale[1]*s,scale[2]*s,0,0,angle)})};
  const spread=(normal,holy,cap=96)=>Math.min(cap,Math.ceil((h?holy:normal)*Math.sqrt(Math.max(1,r/5))));
  if(f.id==='firebolt'){
-  f.soft.color.setHex(0xf45d26);
-  batch(f,'orb',h?9:6,(i,t)=>{
+  f.core.color.setHex(h?0xffc16c:0xff843c);
+  f.soft.color.setHex(h?0x9c2112:0xf45d26);
+  batch(f,h?'meteor':'orb',h?9:6,(i,t)=>{
    const u=(t-i*.025)/.23,p=Math.max(0,Math.min(1,u));
    const size=u>=0&&u<1?(i===0?.46:.26-i*.019)*(h?1.25:1):0;
    set(f.source.x*(1-p),1.2+(f.source.y-1.2)*(1-p),f.source.z*(1-p),size,size,size);
   });
   batch(f,'ring',h?2:1,(i,t)=>{
    const u=t-.23-i*.08,s=ease(u*4)*fade(u,0,4.7)*(1.15+i*.28);
-   set(0,.09+i*.05,0,s,s,s,Math.PI/2);
+   set(0,f.floor(0,0)+.09+i*.05,0,s,s,s,Math.PI/2);
   },true);
   shards(h?12:7,.23,1.35);
+  if(h)fireSea(f,.23,5,Math.min(r,1.6));
  }else if(f.id==='firewave'){
   const count=spread(22,32,54);
-  batch(f,'flame',count,(i,t)=>{
+  batch(f,h?'meteor':'flame',count,(i,t)=>{
    const a=i/count*TAU,u=t-.035*(i%3),reach=r*(.76+.21*(.5+.5*Math.sin(i*2.399)))*ease(u*2.8);
    const s=fade(u,0,5.8)*Math.max(.22,reach*TAU/count*.66);
-   set(Math.cos(a)*reach,.09,Math.sin(a)*reach,s*.52,s*(1.55+(i%5)*.26),s*.43,0,-a+Math.PI/2,-.22);
+   const x=Math.cos(a)*reach,z=Math.sin(a)*reach;
+   set(x,f.floor(x,z)+(h?.3:.09),z,s*.52,s*(h?.44:1.55+(i%5)*.26),s*.43,0,-a+Math.PI/2,-.22);
   });
   fireSea(f,.36,6);
-  ring(f,r,.1,'shock',true);
+
  }else if(f.id==='firestorm'){
   const count=spread(18,27,46);
-  batch(f,'flame',count,(i,t)=>{
+  batch(f,h?'meteor':'flame',count,(i,t)=>{
    const ribbon=i%3,along=Math.floor(i/3)/Math.ceil(count/3),a=ribbon*TAU/3+along*2.3+t*1.9;
    const s=ease(t*4)*fade(Math.max(t,3.1),3.1,7.8);
    const reach=r*(.26+.58*along);
-   set(Math.cos(a)*reach,.1,Math.sin(a)*reach,Math.min(.85,r*.075)*s,(1.15+along*2.1)*s,.52*s,0,-a,-.22);
+   const x=Math.cos(a)*reach,z=Math.sin(a)*reach;
+   set(x,f.floor(x,z)+(h?.5+along*1.8:.1),z,Math.min(.85,r*.075)*s,(h?.45:1.15+along*2.1)*s,.52*s,0,-a,-.22);
   });
-  batch(f,'ring',h?2:1,(i,t)=>{
-   const s=r*(.78+i*.14)*ease(t*3)*fade(Math.max(t,3.4),3.4,8);
-   set(0,.1+i*.08,0,s,s,s,Math.PI/2);
-  },true);
   fireSea(f,.22,8);
  }else if(f.id==='inferno'){
   f.core.color.setHex(h?0xffde8a:0xffa34f);
@@ -61,10 +61,6 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea}){
    const lag=i*.012,u=t-lag,p=Math.max(0,Math.min(1,u/.55))**1.45,a=i*2.399;
    const s=u>=0&&u<.55?(.65+(i%5)*.09)*(1-i/42):0;
    set((1-p)*5+Math.cos(a)*.65,1+(1-p)*16,Math.sin(a)*.66,s,3.8*s,s,0,a,-.3);
-  },true);
-  batch(f,'ring',h?3:2,(i,t)=>{
-   const u=t-.55-i*.2,s=ease(u*2.7)*r*(1-i*.13)*fade(u,0,10.3);
-   set(0,.12+i*.06,0,s,s,s,Math.PI/2);
   },true);
   fireSea(f,.55,11);
   if(h)batch(f,'arc',8,(i,t)=>{
