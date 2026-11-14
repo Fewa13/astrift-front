@@ -257,34 +257,77 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
    const height=ground(group.position.x+x,group.position.z+z,group.position.y);
    return Number.isFinite(height)?height-group.position.y:0;
   },target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(fusionFx[d.id]){
-   const [, , points]=fusionFx[d.id];
-   const radius=Math.max(3,Math.min(19,f.r*1.52));
-   const rank=Object.keys(fusionFx).indexOf(d.id),family=Math.floor(rank/4),variant=rank%4;
-   const spread=variant===1?1.4:1;
-   ring(f,radius,.16,'shock');
-   ring(f,radius*.85,.35,'counter',true);
-   ring(f,radius*.56,.8,'spin');
-   batch(f,'arc',12,(i,t)=>{
-    const a=i/12*TAU+t*(family%2?-1:1),r=radius*(.4+.19*(i%3));
-    set(Math.cos(a)*r*.48,1+i%3*.8,Math.sin(a)*r*.48,r*.62,r*.62,r*.62,Math.PI*.38+i%2*.8,a,t*.8);
-   },true);
-   batch(f,family===2?'cone':family===3?'bar':'crystal',points*9,(i,t)=>{
-    const a=i*2.39996+t*(1+variant*.3),lift=(t*.58+i*.137)%1;
-    const r=radius*(.18+.75*((i%13)/12))*spread;
-    const size=(.09+.13*Math.sin(i*3)**2)*(1-lift*.65);
-    set(Math.cos(a)*r,f.floor(Math.cos(a)*r,Math.sin(a)*r)+.16+lift*(2.6+variant),Math.sin(a)*r,size,size*(2+family*.7),size, a,t+i,a*.5);
-   });
-   batch(f,'beam',points*3,(i,t)=>{
-    const a=i/points*TAU+t*.75,r=radius*(.42+.46*(i%4)/3),x=Math.cos(a)*r,z=Math.sin(a)*r;
-    const y=f.floor(x,z),pulse=.35+.65*Math.sin(t*8+i)**2;
-    const high=(family===0?6.5:family===1?3.4:family===2?4.3:5.2)*pulse;
-    beam(x,y+.12,z,x*(family===3?.88:.68),y+high,z*(family===3?.88:.68),.032+pulse*.055);
-   });
-   if(['prism','siphon','riftassault','chronoshift','temporalrift'].includes(d.id)){
-    batch(f,'beam',9,(i,t)=>{
-     const a=i*TAU/9+t*7,r=.12+i%3*.11;
-     beam(source.x,source.y+Math.cos(a)*r,source.z+Math.sin(a)*r,Math.cos(a)*r,1.2+Math.sin(a)*r,0,i===0?.15:.045);
-    });
+   const radius=Math.max(3,Math.min(18,f.r*1.45));
+   const trail=(n,pose,soft=false)=>batch(f,'beam',n,pose,soft);
+   const shards=(shape,n,pose,soft=false)=>batch(f,shape,n,pose,soft);
+   const angle=(i,n)=>i/n*TAU;
+   switch(d.id){
+    case 'prism':
+     shards('crystal',48,(i,t)=>{const a=i*2.4+t*7,k=Math.max(0,1-t*3),r=k*(i%8)*.34;set(Math.cos(a)*r,1.1+Math.sin(a)*r*.7,Math.sin(a*2)*r,.13,.55,.13,a,t,a);});
+     trail(16,(i,t)=>{const a=angle(i,16)+t*4,r=.6+(i%4)*.18;beam(source.x,source.y,source.z,Math.cos(a)*r,1.25+Math.sin(a)*r,0,.055);});
+     break;
+    case 'judgment':
+     ring(f,radius,.16,'shock');
+     trail(48,(i,t)=>{const a=i*2.4,r=radius*Math.sqrt((i+.5)/48),x=Math.cos(a)*r,z=Math.sin(a)*r,h=14+i%5;const phase=Math.max(0,Math.min(1,t*4-i/78));beam(x,h*(1-phase),z,x,h*(1-phase)+3,z,phase>0?.13:0);});
+     shards('crystal',72,(i,t)=>{const a=i*2.4,r=radius*(.15+(i%11)/13);set(Math.cos(a)*r,.2+Math.abs(Math.sin(t*4+i))*3,Math.sin(a)*r,.14,.45,.14,t,a,i);},true);
+     break;
+    case 'erosion':
+     shards('cone',45,(i,t)=>{const a=i*2.4+t*.48,r=radius*(.22+(i%5)*.14);set(Math.cos(a)*r,.6+i%7*.31,Math.sin(a)*r,.2,.72,.2,Math.PI*.6,a,t);});
+     trail(30,(i,t)=>{const a=i*2.4+t*2,r=radius*.7;beam(Math.cos(a)*r,.1,Math.sin(a)*r,Math.cos(a+.7)*r*.4,2+i%4*.5,Math.sin(a+.7)*r*.4,.065);},true);
+     break;
+    case 'siphon':
+     trail(18,(i,t)=>{const a=angle(i,18)+t*8,r=.45+i%3*.2;beam(0,1.5+Math.sin(a)*r,0,source.x,source.y+Math.cos(a)*r,source.z,.05);},true);
+     shards('orb',48,(i,t)=>{const u=(t*1.8+i/48)%1,a=i*2.4+t*3,r=Math.sin(u*Math.PI)*.8;set(source.x*u+Math.cos(a)*r,1.4+(source.y-1.4)*u+Math.sin(a)*r,source.z*u,.17,.17,.17);});
+     break;
+    case 'voidslash':
+     shards('arc',15,(i,t)=>{const r=1.6+i*.14;set(0,1+i%5*.25,0,r,r,r,.4+i*.07,.2,t*2.2+i*.12);});
+     trail(32,(i,t)=>{const u=i/31-.5;beam(u*7,1.4+u*3,0,u*8,1.6+u*3,Math.sin(i*9)*.8,.07);},true);
+     break;
+    case 'riftassault':
+     shards('arc',26,(i,t)=>{const u=i/25,r=.45+Math.sin(u*Math.PI)*1.4;set(source.x*u,1.35,source.z*u,r,r,r,0,Math.atan2(source.x,source.z),i*.43+t*4);},true);
+     trail(24,(i,t)=>{const a=i*2.4+t*6;beam(source.x,source.y+Math.sin(a)*.6,source.z,Math.cos(a)*1.5,1.4+Math.sin(a)*1.5,0,.045);});
+     break;
+    case 'voiddomain':
+     ring(f,radius,.13,'counter');
+     shards('arc',32,(i,t)=>{const a=angle(i,32)+t*.24;set(Math.cos(a)*radius*.84,1.8+i%4*.5,Math.sin(a)*radius*.84,1.8,2.8,1.8,0,-a,t*.55+i);},true);
+     shards('crystal',60,(i,t)=>{const a=i*2.4-t*.7,r=radius*(.28+i%8*.08);set(Math.cos(a)*r,.3+i%5*.7,Math.sin(a)*r,.14,.55,.14,t,a,t);});
+     break;
+    case 'execution':
+     shards('arc',35,(i,t)=>{const cut=Math.floor(i/7),a=cut*TAU/5,phase=t-cut*.17,r=radius*(.65+i%7*.045),size=phase>=0&&phase<.95?r:0;set(0,1.6,0,size,size,size,a,.6+a,phase*3);});
+     shards('crystal',80,(i,t)=>{const a=i*2.4,r=Math.max(0,t-.75)*radius*(.2+i%9*.12);set(Math.cos(a)*r,.2+Math.abs(Math.sin(i))*r*.45,Math.sin(a)*r,r?.16:0,r?.48:0,r?.16:0,t,a,i);},true);
+     break;
+    case 'abysstouch':
+     shards('cone',54,(i,t)=>{const finger=Math.floor(i/9),u=i%9/8,a=angle(finger,6)+.16*Math.sin(u*5+t*7),r=radius*(1-u*.75);set(Math.cos(a)*r,.2+Math.sin(u*Math.PI)*2.8,Math.sin(a)*r,.15,.58,.15,1-u,a,t);});
+     break;
+    case 'devour':
+     shards('orb',70,(i,t)=>{const u=(i/70+t*1.2)%1,a=i*2.4+t*5,r=radius*u;set(Math.cos(a)*r,1.25+Math.sin(a*2)*r*.42,Math.sin(a)*r,.15+u*.12,.18,.15);});
+     shards('arc',12,(i,t)=>{const r=radius*(1-(i*.19+t)%1);set(0,1.3,0,r,r,r,i*.68,t*2,i);},true);
+     break;
+    case 'descent':
+     ring(f,radius,.1,'shock',true);
+     trail(56,(i,t)=>{const a=i*2.4,r=radius*Math.sqrt((i+.5)/56),x=Math.cos(a)*r,z=Math.sin(a)*r,y=f.floor(x,z),h=.4+Math.sin(t*2+i)**2*3.7;beam(x,y,z,x+.5*Math.cos(a+t),y+h,z+.5*Math.sin(a+t),.13);});
+     shards('cone',56,(i,t)=>{const a=i*2.4+t*.25,r=radius*(.28+i%10*.064);set(Math.cos(a)*r,.6+Math.abs(Math.sin(t+i))*2,Math.sin(a)*r,.32,.77,.32,0,a,.3);},true);
+     break;
+    case 'avatar':
+     shards('crystal',76,(i,t)=>{const u=i%19/18,side=i%2?1:-1,r=radius*.55*u;set(side*r,1.3+Math.sin(u*Math.PI*.82)*4+(i%4)*.3,Math.sin(u*3+t)*.7,.19,.83,.19,0,t*.3,side*(.6+u));});
+     shards('arc',18,(i,t)=>{const r=.5+i*.14;set(0,1.6+i*.12,0,r,r,r,1.2,t+i*.21,0);},true);
+     break;
+    case 'temporalrift':
+     shards('bar',48,(i,t)=>{const a=angle(i,48),r=radius*(.52+.11*Math.sin(t*7+i));set(Math.cos(a)*r,1.5+Math.sin(a)*r,0,.055,i%4===0?.47:.18,.055,0,0,a-Math.PI/2);});
+     trail(12,(i,t)=>{const a=t*5+i*.24;beam(0,1.5,0,Math.cos(a)*radius*.53,1.5+Math.sin(a)*radius*.53,0,.055);});
+     break;
+    case 'chronoshift':
+     shards('bar',52,(i,t)=>{const u=i/51,a=i*2.4+t*4,r=.4+u*1.8;set(source.x*u+Math.cos(a)*r,1.5+Math.sin(a)*r,source.z*u,.063,.063,.65,0,a,t);});
+     shards('ring',12,(i,t)=>{const u=i/11,r=.7+Math.sin(u*Math.PI)*1.5;set(source.x*u,1.4,source.z*u,r,r,r,0,Math.atan2(source.x,source.z),t);},true);
+     break;
+    case 'rewind':
+     shards('crystal',72,(i,t)=>{const u=1-(t*.85+i*.043)%1,a=i*2.4-t*4,r=.25+u*radius;set(Math.cos(a)*r,1+u*2.8,Math.sin(a)*r,.13,.29,.13,-t,a,-t);});
+     shards('ring',8,(i,t)=>{const r=.4+radius*(1-(i*.13+t*.8)%1);set(0,.18+i*.25,0,r,r,r,-Math.PI/2,0,-t);},true);
+     break;
+    case 'stasis':
+     shards('bar',96,(i,t)=>{const a=angle(i%48,48),row=Math.floor(i/48),r=radius*(row?.83:1);set(Math.cos(a)*r,f.floor(Math.cos(a)*r,Math.sin(a)*r)+.16+row*1.6,Math.sin(a)*r,.08,row?.85:.35,.08,0,0,row?.22*Math.sin(t+i):0);});
+     shards('arc',18,(i,t)=>{const r=radius*(.62+i%3*.17);set(0,1.3,0,r,r,r,.2+i%6*.48,t*.12+i,0);},true);
+     break;
    }
   }else if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=f.batches.reduce((n,b)=>n+b.m.count,0);while(effects.length&&effects.reduce((n,e)=>n+e.batches.reduce((v,b)=>v+b.m.count,0),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
  }
