@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import { BLIGHT_KINDS } from "./ancient-blight";
+import { BLIGHT_KINDS } from "./ancient-blight.js";
 const BLIGHT_NPCS = {
   sera: { name: "\u585E\u62C9", en: "Sera", map: "blight", x: -8, z: 18, role: ["\u8FB9\u5883\u533B\u5E08", "Border Healer"] },
   bren: { name: "\u5E03\u4F26", en: "Bren", map: "blight", x: 8, z: 195, role: ["\u8425\u5730\u5B88\u536B", "Camp Watchman"] },

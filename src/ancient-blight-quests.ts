@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import { BLIGHT_KINDS } from './ancient-blight';
+import { BLIGHT_KINDS } from './ancient-blight.js';
 import type {QuestStep} from './ancient-quests';
 export const BLIGHT_NPCS={
  sera:{name:'塞拉',en:'Sera',map:'blight',x:-8,z:18,role:['边境医师','Border Healer'] as [string,string]},

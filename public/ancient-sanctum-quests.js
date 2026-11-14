@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import { SANCTUM_KINDS } from "./ancient-sanctum";
+import { SANCTUM_KINDS } from "./ancient-sanctum.js";
 const SANCTUM_NPCS = {
   aster: { name: "\u963F\u65AF\u7279", en: "Aster", map: "sanctum", x: -7, z: 18, role: ["\u5723\u57DF\u5F15\u8DEF\u8005", "Sanctum Guide"] },
   iris: { name: "\u4F0A\u8389\u4E1D", en: "Iris", map: "sanctum", x: 8, z: 165, role: ["\u51C0\u5316\u5B66\u8005", "Cleansing Scholar"] },

@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import { SANCTUM_KINDS } from './ancient-sanctum';
+import { SANCTUM_KINDS } from './ancient-sanctum.js';
 import type {QuestStep} from './ancient-quests';
 export const SANCTUM_NPCS={
  aster:{name:'阿斯特',en:'Aster',map:'sanctum',x:-7,z:18,role:['圣域引路者','Sanctum Guide'] as [string,string]},
