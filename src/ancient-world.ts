@@ -71,7 +71,7 @@ import {AncientPartyStore,ancientPartyShare} from './ancient-party';
 import {rollGearItem,craftAncientGear,ancientCraftMaterials,ensureAncientGear,equipAncientGear,gearKeys,equippedGear,ancientGearStats,ancientProfileHealth,ancientMeleeDamage,ancientMeleeInterval,ancientGearLoot,ancientFieldReward,salvageAncientGear,ANCIENT_FORGE,GROWTH_MATERIALS,gearDefinition} from './ancient-gear';
 import {tickAncientBoss,bossAreaHit,isAncientBoss,type BossCast} from './ancient-boss';
 import {selectSkillTarget,clearPendingSkillDamage} from './ancient-skill-combat';
-import {advanceQuest,currentQuest,questCanTalk} from './ancient-quests';
+import {advanceQuest,currentQuest,questCanTalk,mapSecret,questState} from './ancient-quests';
 import {mapObjects,canUseMapObject,grantMapObject} from './ancient-interactables';
 import {PROFESSIONS,SKILLS,ensureBasicSkills,trainSkill,skillDrops,runtime,activeSkill,skillHealth,skillIncoming,skillDamageMultiplier,skillSpeedMultiplier,skillFireMultiplier,type SkillRuntime} from './ancient-skills';
 import {castAncientSkill,ancientAuxShot,tickAncientSkills,monsterIncoming,monsterOutgoing,monsterSpeed,type SkillMonster} from './ancient-skill-combat';
@@ -642,6 +642,21 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
   if(d.type==='blightDefend'){const p=this.read(a.name);if(map==='blight'&&a.hp>0&&currentQuest(p)?.id==='blight-defend'&&Math.hypot(a.x,a.z-275)<5&&!a.defenseUntil){a.defenseUntil=now+30000;const world=this.world(map);for(const [dx,dz]of [[-8,-7],[8,-7],[-8,7],[8,7]])if(world.monsters.length<36)world.monsters.push({...this.makeMonster('blight_stalker',100,dx,275+dz,1),map,temporary:true,expiresAt:now+60000,target:a.name});this.persist(world);}ws.serializeAttachment(a);return;}
   if(d.type==='mapInteract'){const o=mapObjects(map).find(o=>o.id===d.id),key='mapObjects:'+map,row=this.ctx.storage.sql.exec<{data:string}>('SELECT data FROM ancient_abilities WHERE name=?',key).toArray()[0],ready:Record<string,number>=row?JSON.parse(row.data):{};if(o&&canUseMapObject(a,o,now,ready[o.id]||0,clear)){const p=this.read(a.name),reward=grantMapObject(p,o.kind);ready[o.id]=now+180000;this.ctx.storage.sql.exec('INSERT INTO ancient_abilities VALUES(?,?) ON CONFLICT(name) DO UPDATE SET data=excluded.data',key,JSON.stringify(ready));this.save(a.name,p);this.send(ws,{type:'mapObjectReward',id:o.id,readyAt:ready[o.id],reward,profile:p});for(const peer of this.ctx.getWebSockets())if(((peer.deserializeAttachment() as Player|null)?.map||'tribe')===map)this.send(peer,{type:'mapObjects',ready});}ws.serializeAttachment(a);return;}
   if(d.type==='branchMentor'){const p=this.read(a.name);if(p.level>=30&&p.profession&&map==='tribe'&&a.hp>0&&Math.hypot(a.x+10,a.z-14)<=7&&clear(a.x,a.y,a.z,-10,ground(-10,14)+1.5,14)){(p.branchGuides??={})[p.profession]=true;this.save(a.name,p);this.send(ws,{type:'branchGuided',profile:p});}return;}
+  if(d.type==='mapSecret'){
+   const secret=mapSecret(map),p=this.read(a.name);
+   if(!secret||a.hp<=0||questState(p).step<=secret.index||Math.hypot(a.x-secret.x,a.z-secret.z)>2.6)return;
+   if(!clear(a.x,a.y,a.z,secret.x,ground(secret.x,secret.z)+.5,secret.z))return;
+   const progress=p.secrets?.[map];
+   if(!progress){
+    (p.secrets??={})[map]=1;
+    this.save(a.name,p);
+   }else if(progress===1&&d.choice===secret.story.answer){
+    p.secrets![map]=2;
+    this.save(a.name,p);
+   }
+   this.send(ws,{type:'mapSecret',profile:p,solved:p.secrets?.[map]===2,wrong:progress===1&&typeof d.choice==='number'&&d.choice!==secret.story.answer});
+   return;
+  }
   if(d.type==='questTalk'||d.type==='questAccept'){const p=this.read(a.name),npc=String(d.npc||''),q=currentQuest(p);if(q&&questCanTalk(p,npc,a,(ax,az,bx,bz)=>clear(ax,ground(ax,az)+1.5,az,bx,ground(bx,bz)+1.5,bz))){if(d.type==='questTalk')this.send(ws,{type:'questDialogue',id:q.id,npc,profile:p});else if(d.id===q.id){const feature=questChapterFeature(map,npc);if(feature)this.saveChapterState(map,useChapterFeature(this.chapterState(map),feature,true));const completed=advanceQuest(p,{kind:'talk',npc,map});this.save(a.name,p);this.syncQuestHealth(a,p);this.send(ws,{type:'questUpdate',profile:p,completed});}else this.send(ws,{type:'questSync',profile:p});}else this.send(ws,{type:'questSync',profile:p});this.persistAbilities(a);this.persistHealth(a);ws.serializeAttachment(a);return;}
   if(['skill','slot','auxShot','melee','respawn'].includes(String(d.type)))delete a.leisure;
   if(d.type==='skill'||d.type==='slot'||d.type==='auxShot'){const p=this.read(a.name),oldPosition={x:a.x,y:a.y,z:a.z},world=this.world(map),c=this.skillContext(ws,a,world.monsters,map);let error:string|null|undefined;if(d.type==='skill')error=castAncientSkill(a,p,String(d.id||''),d.direction,c,now);else if(d.type==='auxShot')error=ancientAuxShot(a,p,d.direction,c,now);else{const slot=Number(d.slot),r=runtime(a);if(slot===1)r.mode=1;else if(!activeSkill(a,'transform',now)&&p.profession==='summoner'&&((slot===2&&(r.summon||(p.skills?.weaken||0)>0))||(slot===3&&r.summon&&(p.skills?.weaken||0)>0)))r.mode=slot;}if(optics&&!optics.opened&&sanctumGateCrosses(oldPosition.x,oldPosition.z,a.x,a.z))Object.assign(a,oldPosition);if(dungeon&&dungeonRubbleBlocked(dungeon,a.x,a.z)){const safe=dungeon.positions[a.name];if(safe){a.x=safe.x;a.z=safe.z}}if(!error&&d.type==='skill'&&['haste','shadowstep'].includes(String(d.id)))this.send(ws,{type:'skillDash',x:a.x,y:a.y,z:a.z});if(error)this.send(ws,{type:'skillError',error});else if(d.type==='skill'){for(const peer of this.ctx.getWebSockets())if((peer.deserializeAttachment() as Player|null)?.map===map)this.send(peer,{type:'skillGesture',owner:a.name,id:String(d.id),holy:!!a.holy});const latest=this.read(a.name),completed=advanceQuest(latest,{kind:'skill',id:String(d.id||''),map});if(completed.length){this.save(a.name,latest);this.syncQuestHealth(a,latest);this.send(ws,{type:'questUpdate',profile:latest,completed})}}this.persist(world);c.flush();this.persistAbilities(a);this.persistHealth(a);ws.serializeAttachment(a);return;}

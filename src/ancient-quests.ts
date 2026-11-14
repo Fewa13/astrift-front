@@ -6,7 +6,8 @@ import {FROSTCOURT_NPCS,FROSTCOURT_QUESTS} from './ancient-frostcourt-quests.js'
 import {STARFALL_NPCS,STARFALL_QUESTS} from './ancient-starfall-quests.js';
 import {BESTIARY_HUNTS,bestiaryQuestSteps} from './ancient-bestiary-quests.js';
 import {BLIGHT_NPCS,BLIGHT_QUESTS} from './ancient-blight-quests.js';
-import {tribeCompactZ,gainXP,xpNeeded,xpRewardBase,type AncientProfile} from './ancient-rules.js';
+import {ANCIENT_SECRETS,SECRET_ORIGINS,secretLocation} from './ancient-secrets.js';
+import {blocked,ancientMapHeight,tribeCompactZ,gainXP,xpNeeded,xpRewardBase,type AncientProfile} from './ancient-rules.js';
 import {PROFESSIONS,SKILLS,skillBook} from './ancient-skills.js';
 export type QuestState={step:number;count:number;revision?:number};
 type Text=[string,string];
@@ -235,6 +236,14 @@ for(const q of FROSTCOURT_QUESTS)if(q.kind==='talk'&&q.npc){const n=QUEST_NPCS[q
 steps.push(...FROSTCOURT_QUESTS);
 Object.assign(QUEST_NPCS,SKYREACH_NPCS);for(const q of SKYREACH_QUESTS)if(q.kind==='talk'&&q.npc){const n=QUEST_NPCS[q.npc];q.goal=[(q.npc.endsWith('seal')?'操作':'与')+n.name+(q.npc.endsWith('seal')?'':'交谈'),(q.npc.endsWith('seal')?'Interact with ':'Talk to ')+n.en]}steps.push(...SKYREACH_QUESTS);
 Object.assign(QUEST_NPCS,DUNES_NPCS);for(const q of DUNES_QUESTS)if(q.kind==='talk'&&q.npc){const n=QUEST_NPCS[q.npc];q.goal=[(q.npc.endsWith('seal')?'操作':'与')+n.name+(q.npc.endsWith('seal')?'':'交谈'),(q.npc.endsWith('seal')?'Interact with ':'Talk to ')+n.en]}steps.push(...DUNES_QUESTS);
+export function mapSecret(map:string){
+ if(!Object.hasOwn(SECRET_ORIGINS,map))return null;
+ const index=steps.findIndex(q=>q.id===SECRET_ORIGINS[map]);
+ const origin=steps[index],npc=origin?.npc&&QUEST_NPCS[origin.npc];
+ if(!npc)return null;
+ const point=secretLocation(map,npc,(x,z)=>!blocked(x,z,1,map,ancientMapHeight(map,x,z)));
+ return point&&{...point,index,origin:origin.id,story:ANCIENT_SECRETS[map]};
+}
 export const MAIN_QUESTS:readonly QuestStep[]=steps;
 // Preserve numeric saves while retiring the opening combat gate and extra dialogue.
 for(const id of ['grox-five','gruk-reward'])steps.find(q=>q.id===id)!.kind='openingSkip';

@@ -6,7 +6,8 @@ import { FROSTCOURT_NPCS, FROSTCOURT_QUESTS } from "./ancient-frostcourt-quests.
 import { STARFALL_NPCS, STARFALL_QUESTS } from "./ancient-starfall-quests.js";
 import { BESTIARY_HUNTS, bestiaryQuestSteps } from "./ancient-bestiary-quests.js";
 import { BLIGHT_NPCS, BLIGHT_QUESTS } from "./ancient-blight-quests.js";
-import { tribeCompactZ, gainXP, xpNeeded, xpRewardBase } from "./ancient-rules.js";
+import { ANCIENT_SECRETS, SECRET_ORIGINS, secretLocation } from "./ancient-secrets.js";
+import { blocked, ancientMapHeight, tribeCompactZ, gainXP, xpNeeded, xpRewardBase } from "./ancient-rules.js";
 import { PROFESSIONS, SKILLS, skillBook } from "./ancient-skills.js";
 const QUEST_NPCS = {
   gruk: { name: "\u683C\u9C81\u514B", en: "Gruk", map: "tribe", x: -10, z: 14, role: ["\u90E8\u843D\u5B88\u671B\u8005", "Tribal Watchkeeper"] },
@@ -295,6 +296,14 @@ for (const q of DUNES_QUESTS) if (q.kind === "talk" && q.npc) {
   q.goal = [(q.npc.endsWith("seal") ? "\u64CD\u4F5C" : "\u4E0E") + n.name + (q.npc.endsWith("seal") ? "" : "\u4EA4\u8C08"), (q.npc.endsWith("seal") ? "Interact with " : "Talk to ") + n.en];
 }
 steps.push(...DUNES_QUESTS);
+function mapSecret(map) {
+  if (!Object.hasOwn(SECRET_ORIGINS, map)) return null;
+  const index = steps.findIndex((q) => q.id === SECRET_ORIGINS[map]);
+  const origin = steps[index], npc = origin?.npc && QUEST_NPCS[origin.npc];
+  if (!npc) return null;
+  const point = secretLocation(map, npc, (x, z) => !blocked(x, z, 1, map, ancientMapHeight(map, x, z)));
+  return point && { ...point, index, origin: origin.id, story: ANCIENT_SECRETS[map] };
+}
 const MAIN_QUESTS = steps;
 for (const id of ["grox-five", "gruk-reward"]) steps.find((q) => q.id === id).kind = "openingSkip";
 function questState(p) {
@@ -429,6 +438,7 @@ export {
   REVISION_SIX_IDS,
   advanceQuest,
   currentQuest,
+  mapSecret,
   questCanTalk,
   questReward,
   questRewardInfo,

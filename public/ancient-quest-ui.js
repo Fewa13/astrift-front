@@ -5,7 +5,7 @@ import {formatAncientHints,ancientKeyLabel} from './ancient-input-settings.js';
 import {createBlightCreature} from './ancient-blight-scene.js?v=20261012-new-player-flow-1';
 import {ancientMapHeight,ANCIENT_POTIONS} from './ancient-rules.js?v=20261022-world-fixes-1';
 import * as THREE from './three.module.js';
-import {MAIN_QUESTS,QUEST_NPCS,questRewardInfo,currentQuest,questText,questCanTalk} from './ancient-quests.js?v=20261021-skyreach-market-1';
+import {MAIN_QUESTS,QUEST_NPCS,questRewardInfo,currentQuest,questText,questCanTalk,mapSecret} from './ancient-quests.js?v=hidden-stories-1';
 import {PROFESSIONS,SKILLS} from './ancient-skills.js?v=20261021-skyreach-market-1';
 import {createAncientNPC} from './ancient-scene.js?v=20261021-skyreach-market-1';
 import {createObjectActionFX,objectActionKind} from './ancient-object-action.js?v=20261012-new-player-flow-1';
@@ -14,7 +14,28 @@ export function createAncientQuestUI({scene,camera,getProfile,getPlayer,getMap,e
  const tracker=el('section','',document.getElementById('ancientHud'));tracker.id='ancientQuestTracker';
  const interact=btn('',()=>interactNPC(),document.getElementById('ancientHud'));interact.id='ancientNpcInteract';interact.hidden=true;
  const overlay=el('div','',document.body);overlay.id='ancientDialogue';overlay.hidden=true;overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
- const actors=new Map();let lastKey='',lastDraw=0,dialogue=null,nearNpc=null,pending=false,objectAction=null;
+ const actors=new Map();let secret=null,secretMap=null,nearSecret=false;
+ const relic=new THREE.Group();
+ const relicMaterial=new THREE.MeshStandardMaterial({color:0x777268,roughness:.92});
+ const relicAccent=new THREE.MeshStandardMaterial({color:0x8b7052,roughness:.72});
+ const base=new THREE.Mesh(new THREE.CylinderGeometry(.32,.43,.19,8),relicMaterial);
+ const carving=new THREE.Mesh(new THREE.TorusGeometry(.19,.024,5,16),relicAccent);
+ carving.rotation.x=Math.PI/2;carving.position.y=.105;
+ relic.add(base,carving);relic.visible=false;scene.add(relic);
+ const relicShapes={
+  tribe:new THREE.CylinderGeometry(.28,.16,.16,12,true),
+  forest:new THREE.BoxGeometry(.54,.09,.32),
+  city:new THREE.BoxGeometry(.48,.31,.07),
+  blight:new THREE.BoxGeometry(.62,.10,.35),
+  sanctum:new THREE.OctahedronGeometry(.24),
+  starfall:new THREE.SphereGeometry(.23,12,7,0,Math.PI*2,0,Math.PI/2),
+  frostcourt:new THREE.BoxGeometry(.56,.16,.24),
+  skyreach:new THREE.TorusGeometry(.22,.052,5,12),
+  dunes:new THREE.CylinderGeometry(.12,.17,.36,6)
+ };
+ const artifact=new THREE.Mesh(relicShapes.tribe,relicAccent);
+ artifact.position.y=.22;relic.add(artifact);
+ let lastKey='',lastDraw=0,dialogue=null,nearNpc=null,pending=false,objectAction=null;
  const actionFX=createObjectActionFX(scene,camera),actionHud=el('section','',document.body);actionHud.id='ancientObjectAction';actionHud.hidden=true;
  function startObject(q){beginDialogue();dialogue=q;pending=false;objectAction={q,kind:objectActionKind(q.npc),start:performance.now(),duration:3200,sent:false};overlay.hidden=true;actionHud.hidden=false;actionHud.replaceChildren();const texts={hammer:['敲击修复','Hammer & repair'],pack:['整理补给','Pack supplies'],inspect:['翻检线索','Inspect clues'],channel:['接通相位回路','Reconnect phase circuit']};el('strong',L(...texts[objectAction.kind]),actionHud);const track=el('div','',actionHud);track.className='objectActionTrack';objectAction.bar=el('i','',track);btn(L('取消','Cancel'),()=>close(),actionHud);actionFX.start(objectAction.kind,actors.get(q.npc))}
  function updateObject(time,active){if(!objectAction)return;const a=objectAction,p=getProfile(),player=getPlayer();if(!active||player?.hp<=0||currentQuest(p)?.id!==a.q.id||!questCanTalk(p,a.q.npc,{...player,map:getMap()},clear)){close();return}const progress=Math.min(1,Math.max(0,(time-a.start)/a.duration));actionFX.update(progress,time);a.bar.style.width=progress*100+'%';if(progress>=1&&!a.sent){a.sent=true;pending=true;send({type:'questAccept',id:a.q.id,npc:a.q.npc})}if(time-a.start>12000)close()}
@@ -23,11 +44,35 @@ for(const [id,npc]of Object.entries(QUEST_NPCS)){const mesh=id==='blightcureseal
  function rewards(parent,q,p,showNone=false){const r=questRewardInfo(p,q)||{},parts=[];if(r.xp)parts.push('+'+r.xp.toLocaleString()+' XP');if(r.coins)parts.push('+'+formatAncientNumber(r.coins,2)+' '+L('远古金币','Ancient Gold'));for(const [k,n]of Object.entries(r.materials||{}))parts.push(material(k)+' × '+n);for(const [k,n]of Object.entries(r.potions||{})){const d=ANCIENT_POTIONS[k];parts.push((en()?d.en:d.name)+' × '+n)}const job=p.profession&&PROFESSIONS[p.profession],index=r.qBook?0:q.id==='tok-second'?1:q.id==='tok-third'?2:-1;if(job&&index>=0)parts.push(material('skillbook:'+job.skills[index])+' × 1');if(parts.length||showNone)el('p',(showNone?L('任务奖励：','Reward: '):'')+(parts.length?parts.join(' · '):L('无','None')),parent).className='ancientQuestRewards'}
  function guidance(parent,q){if(!q)return;const actions={enter:q.map==='dunes'?['maps',L('进入暮沙迷城','Enter Duskglass Labyrinth')]:q.map==='skyreach'?['maps',L('进入寂雷天穹','Enter Silent Storm Skyreach')]:q.map==='frostcourt'?['maps',L('进入霜烬王庭','Enter the Frostfire Court')]:q.map==='starfall'?['maps',L('进入沉星遗境','Enter the Sunken Star Ruins')]:q.map==='sanctum'?['maps',L('进入净界圣域','Enter the Sanctum of the Veil')]:q.map==='blight'?['maps',L('进入蚀影荒原','Enter the Shadowblight Wastes')]:q.map==='city'?['maps',L('选择失落王城','Choose the Lost Royal City')]:q.map==='forest'?['maps',L('选择森林','Choose the Forest')]:['maps',L('进入部落','Enter the Tribe')],profession:['skills',L('选择职业','Choose a profession')],trainQ:['skills',L('修炼 Q 技能','Train Q skill')],trainZ:['skills',L('修炼 Z 技能','Train Z skill')],trainC:['skills',L('修炼 C 技能','Train C skill')],equipGear:['bag',L('穿戴武器','Equip a weapon')],upgrade:['bag',L('查看背包','Open Inventory')],buyPotion:['shop',L('购买血瓶','Buy a health potion')]};const a=actions[q.kind];if(a)return btn(a[1],()=>{overlay.hidden=true;dialogue=null;openPanel(a[0])},parent)}
 function renderSummary(parent){if(getMap?.()?.startsWith('community:'))return;const p=getProfile(),q=p&&currentQuest(p),box=el('section','',parent);box.className='ancientQuestSummary';el('small',L('主线任务','MAIN STORY'),box);if(!q){el('strong',L('远古世纪主线 · 已完成','Ancient Age story · Completed'),box);return}el('strong',questText(q.title,p,en()),box);appendQuestLocation(box,q,getMap(),en());let goal=questText(q.goal,p,en());if(q.kind==='kill'||q.kind==='absorb')goal+=' · '+(p.quest?.count||0)+' / '+q.count;if(q.kind==='level')goal+=Number.isInteger(q.level)?' · '+p.level+' / '+q.level:' · '+p.level+' Lv';el('p',goal,box);rewards(box,q,p,true);guidance(box,q)}
-function show(d){const p=getProfile(),q=currentQuest(p);if(!q||q.id!==d.id||q.npc!==d.npc)return;if(q.npc.endsWith('seal')){if(!objectAction)startObject(q);return}beginDialogue();dialogue=q;pending=false;overlay.hidden=false;overlay.replaceChildren();const card=el('section','',overlay);card.className='ancientDialogueCard';const n=QUEST_NPCS[d.npc];el('small',L('主线 · ','STORY · ')+questText(q.title,p,en()),card);el('h2',en()?n.en:n.name,card);el('p',questText(q.dialogue,p,en()),card).className='ancientDialogueText';rewards(card,q,p);const row=el('div','',card);row.className='ancientDialogueActions';const accept=btn(questText(q.reply||['好的','All right.'],p,en()),()=>{if(pending)return;pending=true;accept.disabled=true;send({type:'questAccept',id:q.id,npc:q.npc})},row);btn(L('暂时离开','Not now'),()=>close(),row);accept.focus()}
+function show(d){const p=getProfile(),q=currentQuest(p);if(!q||q.id!==d.id||q.npc!==d.npc)return;if(q.npc.endsWith('seal')){if(!objectAction)startObject(q);return}beginDialogue();dialogue=q;pending=false;overlay.hidden=false;overlay.replaceChildren();const card=el('section','',overlay);card.className='ancientDialogueCard';const n=QUEST_NPCS[d.npc];el('small',L('主线 · ','STORY · ')+questText(q.title,p,en()),card);el('h2',en()?n.en:n.name,card);const clue=mapSecret(q.map);
+ const text=questText(q.dialogue,p,en());
+ el('p',text+(clue?.origin===q.id?' '+L(...clue.story.clue):''),card).className='ancientDialogueText';rewards(card,q,p);const row=el('div','',card);row.className='ancientDialogueActions';const accept=btn(questText(q.reply||['好的','All right.'],p,en()),()=>{if(pending)return;pending=true;accept.disabled=true;send({type:'questAccept',id:q.id,npc:q.npc})},row);btn(L('暂时离开','Not now'),()=>close(),row);accept.focus()}
 function accepted(){if(!dialogue)return;if(objectAction){close();return}pending=false;const previous=dialogue,p=getProfile(),q=currentQuest(p);overlay.replaceChildren();const card=el('section','',overlay);card.className='ancientDialogueCard';el('small',L('主线已推进','STORY UPDATED'),card);el('h2',questText(previous.title,p,en()),card);rewards(card,previous,p);if(q)el('p',questText(q.goal,p,en()),card).className='ancientDialogueText';else el('p',L('远古世纪的当前故事已完成。','The current Ancient Age story is complete.'),card);const row=el('div','',card);row.className='ancientDialogueActions';const guide=guidance(row,q);if(q&&(q.kind==='profession'||['trainQ','trainZ','trainC'].includes(q.kind))){guide?.focus()}else{const back=btn(L('继续','Continue'),()=>close(),row);back.focus()}}
 function close(){actionFX.reset();actionHud.hidden=true;objectAction=null;overlay.hidden=true;dialogue=null;pending=false;endDialogue()}
 function dismiss(){actionFX.reset();actionHud.hidden=true;objectAction=null;overlay.hidden=true;dialogue=null;pending=false;lastKey=''}
-function interactNPC(){if(overlay.hidden&&!objectAction&&nearNpc){send({type:'questTalk',npc:nearNpc});return true}return false;}
-function update(time,active,paused){if(getMap?.()?.startsWith('community:')){tracker.hidden=true;interact.hidden=true;nearNpc=null;for(const a of actors.values())a.mesh.visible=false;dismiss();return}updateObject(time,active);if(time-lastDraw<120)return;lastDraw=time;const p=getProfile(),q=p&&currentQuest(p),map=getMap();updateLabels(q);for(const [id,a]of actors){a.mesh.visible=active&&QUEST_NPCS[id].map===map&&(!id.endsWith('seal')||q?.npc===id);a.mesh.userData.body.position.y=Math.sin(time*.002+a.mesh.id)*.012;if(a.mesh.userData.rune){const relevant=q?.npc===id;a.mesh.userData.rune.material.color.setHex(relevant?0xffda77:0x71efdc)}}nearNpc=null;tracker.hidden=!active||paused;interact.hidden=true;if(!active||!p)return;const key=[p.quest?.step,p.quest?.count,p.level,p.profession,map,en()].join();if(lastKey!==key){lastKey=key;tracker.replaceChildren();renderSummary(tracker)}if(paused||getPlayer()?.hp<=0)return;if(q?.kind==='talk'){const player={...getPlayer(),x:camera.position.x,z:camera.position.z,map};if(questCanTalk(p,q.npc,player,clear)&&questCanTalk(p,q.npc,{...getPlayer(),map},clear)){nearNpc=q.npc;const npc=QUEST_NPCS[nearNpc];interact.textContent=nearNpc.endsWith('seal')?L('F · 操作'+npc.name,'F · Interact with '+npc.en):L('F · 与'+npc.name+'交谈','F · Talk to '+npc.en);interact.hidden=false}else{const n=QUEST_NPCS[q.npc];if(n.map===map){const distance=Math.round(Math.hypot(n.x-player.x,n.z-player.z));const distanceEl=tracker.querySelector('.ancientQuestDistance')||el('span','',tracker);distanceEl.className='ancientQuestDistance';const dx=n.x-player.x,dz=n.z-player.z,yaw=camera.rotation.y,angle=Math.atan2(dx*Math.cos(yaw)-dz*Math.sin(yaw),-dx*Math.sin(yaw)-dz*Math.cos(yaw)),arrow=Math.abs(angle)<.45?'↑':Math.abs(angle)>2.5?'↓':angle>0?'→':'←';distanceEl.textContent=arrow+' '+(en()?n.en:n.name)+' · '+distance+' m'}}}}
-return {update,renderSummary,show,accepted,dismiss,close,interact:interactNPC,isOpen:()=>!!objectAction||!overlay.hidden};
+function showSecret(d){
+ if(!secret)return;
+ beginDialogue();overlay.hidden=false;overlay.replaceChildren();
+ const card=el('section','',overlay);card.className='ancientDialogueCard ancientSecretCard';
+ el('small',L('彩蛋支线','HIDDEN STORY'),card);
+ el('h2',L(...secret.story.title),card);
+ el('p',L(...(d.solved?secret.story.ending:secret.story.question)),card);
+ if(d.wrong)el('p',L('旧物沉寂下来。再想想那段往事。','The relic falls quiet. Think back to the story.'),card).setAttribute('role','status');
+ if(!d.solved)secret.story.choices.forEach((choice,index)=>btn(L(...choice),()=>send({type:'mapSecret',choice:index}),card));
+ btn(L('离开','Leave'),close,card);
+ }
+ function interactNPC(){if(overlay.hidden&&nearSecret){send({type:'mapSecret'});return true}if(overlay.hidden&&!objectAction&&nearNpc){send({type:'questTalk',npc:nearNpc});return true}return false;}
+function update(time,active,paused){if(getMap?.()?.startsWith('community:')){tracker.hidden=true;interact.hidden=true;nearNpc=null;nearSecret=false;relic.visible=false;for(const a of actors.values())a.mesh.visible=false;dismiss();return}updateObject(time,active);if(time-lastDraw<120)return;lastDraw=time;const p=getProfile(),q=p&&currentQuest(p),map=getMap();if(secretMap!==map){secretMap=map;secret=mapSecret(map);if(secret){artifact.geometry=relicShapes[map];relic.position.set(secret.x,ancientMapHeight(map,secret.x,secret.z)+.12,secret.z)}}
+ relic.visible=!!secret&&active;
+ nearSecret=false;
+ updateLabels(q);for(const [id,a]of actors){a.mesh.visible=active&&QUEST_NPCS[id].map===map&&(!id.endsWith('seal')||q?.npc===id);a.mesh.userData.body.position.y=Math.sin(time*.002+a.mesh.id)*.012;if(a.mesh.userData.rune){const relevant=q?.npc===id;a.mesh.userData.rune.material.color.setHex(relevant?0xffda77:0x71efdc)}}nearNpc=null;tracker.hidden=!active||paused;interact.hidden=true;if(!active||!p)return;const key=[p.quest?.step,p.quest?.count,p.level,p.profession,p.secrets?.[map],map,en()].join();if(lastKey!==key){lastKey=key;tracker.replaceChildren();renderSummary(tracker);
+ if(secret&&p.secrets?.[map]===1){
+  const side=el('section','',tracker);side.className='ancientSecretSummary';
+  el('small',L('彩蛋支线','HIDDEN STORY'),side);el('strong',L(...secret.story.title),side);el('p',L(...secret.story.question),side);
+ }
+ }if(paused||getPlayer()?.hp<=0)return;if(secret&&p.quest?.step>secret.index&&Math.hypot(camera.position.x-secret.x,camera.position.z-secret.z)<2.3&&clear(camera.position.x,camera.position.z,secret.x,secret.z)){
+  nearSecret=true;interact.textContent=L('F · 查看旧物','F · Examine relic');interact.hidden=false;return;
+ }
+ if(q?.kind==='talk'){const player={...getPlayer(),x:camera.position.x,z:camera.position.z,map};if(questCanTalk(p,q.npc,player,clear)&&questCanTalk(p,q.npc,{...getPlayer(),map},clear)){nearNpc=q.npc;const npc=QUEST_NPCS[nearNpc];interact.textContent=nearNpc.endsWith('seal')?L('F · 操作'+npc.name,'F · Interact with '+npc.en):L('F · 与'+npc.name+'交谈','F · Talk to '+npc.en);interact.hidden=false}else{const n=QUEST_NPCS[q.npc];if(n.map===map){const distance=Math.round(Math.hypot(n.x-player.x,n.z-player.z));const distanceEl=tracker.querySelector('.ancientQuestDistance')||el('span','',tracker);distanceEl.className='ancientQuestDistance';const dx=n.x-player.x,dz=n.z-player.z,yaw=camera.rotation.y,angle=Math.atan2(dx*Math.cos(yaw)-dz*Math.sin(yaw),-dx*Math.sin(yaw)-dz*Math.cos(yaw)),arrow=Math.abs(angle)<.45?'↑':Math.abs(angle)>2.5?'↓':angle>0?'→':'←';distanceEl.textContent=arrow+' '+(en()?n.en:n.name)+' · '+distance+' m'}}}}
+return {update,renderSummary,show,showSecret,accepted,dismiss,close,interact:interactNPC,isOpen:()=>!!objectAction||!overlay.hidden};
 }

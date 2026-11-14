@@ -93,7 +93,7 @@ import {motionPoint} from './ancient-forced-motion.js?v=20261022-world-fixes-1';
 import {createMonsterProjectile} from './ancient-projectile-model.js?v=20261022-world-fixes-1';
 import * as THREE from './three.module.js';
 import {createMapObjectUI} from './ancient-interactable-ui.js?v=20261012-new-player-flow-1';
-import {createAncientQuestUI} from './ancient-quest-ui.js?v=20261021-skyreach-market-1';
+import {createAncientQuestUI} from './ancient-quest-ui.js?v=hidden-stories-1';
 import {currentQuest} from './ancient-quests.js?v=20261021-skyreach-market-1';
 import {ancientMovementMultiplier} from './ancient-rules.js';
 import {PROFESSIONS,SKILLS,skillBookName,skillDamageMultiplier,activeSkill,skillSpeedMultiplier,skillFireMultiplier} from './ancient-skills.js?v=20261109-cast-range-60';
@@ -281,6 +281,7 @@ function handleWorldMessage(d,reconnect){if(d.chapterState){setChapterState(curr
   if(d.type==='blightAbsorbed'){profile=d.profile;if(me)me.corrupted=d.corrupted;identity();quickbar.update();combatNotices.push('+'+d.xp.toLocaleString()+' XP'+(d.corrupted?L(' · 已魔化',' · Corrupted'):''),4000);if(paused)renderPanel()}
   if(d.type==='mapObjects')objectUI.state(d.ready);
   if(d.type==='mapObjectReward'){profile=d.profile;objectUI.result(d);identity();combatNotices.push(L('已收集 · ','Collected · ')+(d.reward.potion?L(ANCIENT_POTIONS[d.reward.potion].name,ANCIENT_POTIONS[d.reward.potion].en):d.reward.coins?'+'+d.reward.coins+' '+L('金币','Gold'):L('燧石','Flint')+' ×3'),2200)}
+  if(d.type==='mapSecret'){profile=d.profile;questUI.showSecret(d)}
   if(d.type==='questUpdate'){profile=d.profile;identity();questUI.accepted()}
   if(d.type==='profile'){profile=d.profile;identity();if(paused)renderPanel()}
   if(d.type==='forcedMotion'){resetMoves();forcedMotion={...d.motion,started:Date.now()};vy=0;}
