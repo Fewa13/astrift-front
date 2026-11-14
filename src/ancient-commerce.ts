@@ -1,4 +1,4 @@
-import {PROFESSION_FUSIONS,isFusionJob} from './ancient-skills';
+import {PROFESSION_FUSIONS,isFusionJob} from './ancient-skills.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import type {AncientProfile} from './ancient-rules';
 import {PROFESSIONS,SKILLS,skillBook,ensureBasicSkills} from './ancient-skills.js';

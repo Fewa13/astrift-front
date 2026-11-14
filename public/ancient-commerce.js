@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import { PROFESSION_FUSIONS, isFusionJob } from "./ancient-skills";
+import { PROFESSION_FUSIONS, isFusionJob } from "./ancient-skills.js";
 import { PROFESSIONS, SKILLS, skillBook, ensureBasicSkills } from "./ancient-skills.js";
 const ANCIENT_SUPPLIES = {
   purity: { name: "\u51C0\u5316\u5370\u8BB0", en: "Purification Sigil", price: 0, kind: "cleanse" },
