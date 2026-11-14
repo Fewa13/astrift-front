@@ -348,6 +348,10 @@ function drawPanel(){closeArtifactPreview?.();closeArtifactPreview=undefined;if(
  else if(view==='trials'){trialUI.render(node('div','',card))}
  else if(view==='maps'){card.classList.add('ancientMapSelectCard');const tabs=node('nav','',card);tabs.className='communityActions';for(const [id,zh,eng]of [['normal','正常地图','Official maps'],['community','社区地图','Community maps'],['mine','我的地图','My maps']]){const b=button(L(zh,eng),()=>{mapCategory=id;renderPanel()},tabs);b.classList.toggle('selected',mapCategory===id)}if(mapCategory!=='normal'){void communityUI.render(card,mapCategory==='mine');return}node('h2',L('官方地图','Official maps'),card);
  const atlas=node('div','',card);atlas.className='ancientRegionMap';
+ const landmark={
+  skyreach:'▲ ϟ ▲',frostcourt:'❄ ▲ ♨',sanctum:'✧ ▥ ✧',starfall:'✦ ◇ ✦',city:'▥ ▦ ▥',
+  blight:'◆ ◈ ◆',forest:'♠ ♠ ♠',tribe:'⌂ ⌂',dunes:'◒ ◓ ◒',tower:'♜',puzzle:'▧',
+ };
  const regions=[
   ['skyreach','寂雷天穹','Silent Storm Skyreach',SKYREACH_LEVEL],
   ['frostcourt','霜烬王庭','Frostfire Court',FROSTCOURT_LEVEL],
@@ -358,19 +362,27 @@ function drawPanel(){closeArtifactPreview?.();closeArtifactPreview=undefined;if(
   ['forest','森林','The Forest',30],
   ['tribe','部落','The Tribe',1],
   ['dunes','暮沙迷城','Duskglass Labyrinth',DUNES_LEVEL],
+  ['tower','试炼之塔','Trial Tower',1],
+  ['puzzle','万象机关廊','Mechanism Archive',1],
  ];
  for(const [id,zh,english,level] of regions){
   const locked=profile.level<level,here=active&&currentMap===id;
-  const region=button('',()=>void selectMap(id),atlas);
+  const region=button('',()=>{
+   if(id==='tower'){towerPanel.hidden=!towerPanel.hidden;if(!towerPanel.hidden)towerPanel.scrollIntoView({block:'nearest'});return;}
+   if(id==='puzzle'){void puzzleUI.open().catch(error=>status(error.message));return;}
+   void selectMap(id);
+  },atlas);
   region.className='ancientRegion';
   region.dataset.region=id;
   region.disabled=locked;
   if(here)region.setAttribute('aria-current','location');
+  const icon=node('span',landmark[id],region);icon.className='ancientRegionLandmark';icon.setAttribute('aria-hidden','true');
   node('strong',L(zh,english),region);
   node('small',here?L('当前位置','Current location'):locked?L('需要等级 ','Requires Lv. ')+level:L('等级 ','Lv. ')+level,region);
  }
- const grid=node('div','',card);grid.className='ancientGrid';
- const challenges=node('section','',grid);challenges.className='ancientSpecialMap';node('h3',L('挑战地图','Challenge maps'),challenges);renderTowerCard(challenges,{en,profile,request:activityRequest,onProfile:activityProfile,join:selectMap});const puzzle=node('div','',challenges);puzzle.className='weaponCard';puzzle.style.borderColor='#7de9c7';node('strong',L('万象机关廊','The Mechanism Archive'),puzzle);node('p',L('1 级开启','Level 1'),puzzle);button(L('进入解谜','Enter puzzle map'),()=>void puzzleUI.open().catch(error=>status(error.message)),puzzle)}
+ const towerPanel=node('section','',card);towerPanel.hidden=true;
+ renderTowerCard(towerPanel,{en,profile,request:activityRequest,onProfile:activityProfile,join:selectMap});
+}
  else if(view==='weapons'){node('h2',L('武器','Weapons'),card);const tabs=node('div','',card);tabs.className='ancientTabs';for(const [k,zh,eng]of [['owned','已有武器','Owned weapons'],['craft','碎片合成','Fragment crafting'],['stars','升星','Upgrade stars'],['rank','品阶升级','Quality ascension']])button(L(zh,eng),()=>{tab=k;renderPanel()},tabs).classList.toggle('selected',tab===k);resources(card);const grid=node('div','',card);grid.className='ancientGrid';if(tab==='craft'){for(const [gun,recipe]of Object.entries(RECIPES)){const item=node('div','',grid);item.className='weaponCard';node('div',gun,item).className='ancientWeaponArt';node('strong',`[${L('普通','Common')}] ${gun} [${L('1级1星','Lv.1 · 1★')}]`,item);node('small',Object.entries(recipe).map(([k,n])=>`${material(k)} ${(profile.materials[k]||0)} / ${n}`).join(' · '),item);button(L('合成','Craft'),()=>void action('craft',{gun}),item).disabled=Object.entries(recipe).some(([k,n])=>(profile.materials[k]||0)<n)}}else{for(const w of profile.weapons){const item=node('div','',grid);item.className='weaponCard';node('div',w.gun,item).className='ancientWeaponArt';node('strong',label(w),item);node('small',`${L('伤害 头 / 身 / 手','Damage Head / Body / Arm')} ${weaponDamage(w,'head')} / ${weaponDamage(w)} / ${weaponDamage(w,'arm')}`,item);if(tab==='rank'){if(w.quality>=3){node('small',L('当前品阶已达上限','Highest available quality'),item)}else{const next={...w,quality:w.quality+1},blueprint='blueprint:'+next.quality+':'+w.gun,stone='ascend:'+next.quality+':'+w.gun;node('strong',label(next),item);node('small',`${L('升级后伤害 头 / 身 / 手','New damage Head / Body / Arm')} ${weaponDamage(next,'head')} / ${weaponDamage(next)} / ${weaponDamage(next,'arm')}`,item);for(const key of [blueprint,stone])node('small',`${material(key)} · ${(profile.materials[key]||0)} / 1`,item);node('small',L('保留等级和星数','Level and stars are preserved'),item);button(L('升级品阶','Ascend quality'),()=>void action('ascend',{id:w.id}),item).disabled=busy||(profile.materials[blueprint]||0)<1||(profile.materials[stone]||0)<1}}else if(tab==='stars'){const cost=upgradeCost(w);node('small',`${material('core')} × ${cost}${w.stars===5?' · '+L('消耗一把同品质同级同武器五星副本','Consumes an identical-quality, same-level 5★ duplicate'):''}`,item);const dup=profile.weapons.some(c=>c.id!==w.id&&c.gun===w.gun&&c.level===w.level&&c.quality===w.quality&&c.stars===5);button(w.stars===5?L('突破下一等级','Advance to next level'):L('升星','Upgrade star'),()=>void action('upgrade',{id:w.id}),item).disabled=(profile.materials.core||0)<cost||w.stars===5&&!dup}else button(profile.equipped===w.id?L('已装备','Equipped'):L('装备','Equip'),()=>void action('equip',{id:w.id}),item).disabled=profile.equipped===w.id}}}
  else if(view==='shop'){card.classList.add('ancientShopCard');node('h2',L('商店','Shop'),card);button(L('市场','Market'),()=>openMenu('market'),card);wallet(card);const tabs=node('nav','',card);tabs.className='ancientActivityFilters';for(const [id,zh,eng]of [['health','血瓶','Health potions'],['books','技能与转职书','Skill & profession books'],['boosts','药水','Potions'],['daily','限时','Limited-time'],['rough','原石','Rough stones']]){const b=button(L(zh,eng),()=>{shopCategory=id;renderPanel()},tabs);b.classList.toggle('selected',shopCategory===id);}if(shopCategory==='daily')dailyShopUI.render(card);else if(shopCategory==='rough')roughShopUI.render(card);else if(shopCategory!=='health')supplyUI.render(card,true,{category:shopCategory==='books'?'books':'consumables'});else{node('h3',L('血瓶','Health potions'),card);const grid=node('div','',card);grid.className='ancientGrid';for(const [id,p]of Object.entries(ANCIENT_POTIONS)){const item=node('div','',grid);item.className='weaponCard potionCard';node('div','✚',item).className='potionIcon potion-'+id;node('strong',L(p.name,p.en),item);node('small',`${L('回复','Restores')} ${p.heal.toLocaleString()} HP`,item);node('small',`${formatAncientNumber(p.price)} ${L('远古金币 / 瓶','Ancient Gold / bottle')}`,item);const quantity=node('input','',item);quantity.type='number';quantity.min='1';quantity.max='999';quantity.value='1';quantity.setAttribute('aria-label',L('购买数量','Quantity'));const buy=button('',()=>void action('buyPotion',{id,quantity:Number(quantity.value)}),item);const update=()=>{const n=Number(quantity.value),valid=Number.isSafeInteger(n)&&n>=1&&n<=999;buy.textContent=L('购买','Buy')+' · '+formatAncientNumber((valid?p.price*n:0));buy.disabled=!valid||(profile.coins||0)<p.price*n||busy};quantity.oninput=update;update()}}}
  else if(view==='bag'){inventoryUI.render(card);const links=node('nav','',card);links.className='ancientWorkspaceLinks';button(L('原石工坊','Stone Workshop'),()=>openMenu('stones'),links);button(L('藏品','Collections'),()=>openMenu('collections'),links);card.querySelector('.ancientInventoryTabs')?.before(links)}
