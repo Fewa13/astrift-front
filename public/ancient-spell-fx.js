@@ -4,7 +4,7 @@ import {EXPANSION_FX,buildExpansionSpell} from './ancient-expansion-fx.js?v=2026
 import * as THREE from './three.module.js';
 import {buildHolySpell} from './ancient-holy-spells.js?v=20261014-new-professions-1';
 // Reuse geometry, not spell designs. Every skill has its own composition.
-const G={ring:new THREE.TorusGeometry(1,.035,5,48),arc:new THREE.TorusGeometry(1,.075,5,40,Math.PI*1.35),crystal:new THREE.OctahedronGeometry(1,0),orb:new THREE.IcosahedronGeometry(1,2),bar:new THREE.BoxGeometry(1,1,1),beam:new THREE.CylinderGeometry(1,1,1,5),cone:new THREE.ConeGeometry(1,1,6)};
+const G={fusionBlade:new THREE.TorusGeometry(1,.024,5,40,Math.PI*1.35),ring:new THREE.TorusGeometry(1,.035,5,48),arc:new THREE.TorusGeometry(1,.075,5,40,Math.PI*1.35),crystal:new THREE.OctahedronGeometry(1,0),orb:new THREE.IcosahedronGeometry(1,2),bar:new THREE.BoxGeometry(1,1,1),beam:new THREE.CylinderGeometry(1,1,1,5),cone:new THREE.ConeGeometry(1,1,6)};
 const flame=new THREE.SphereGeometry(1,9,8);
 const flameVertices=flame.attributes.position;
 for(let i=0;i<flameVertices.count;i++){
@@ -338,8 +338,8 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      shards('orb',48,(i,t)=>{const u=(t*1.8+i/48)%1,a=i*2.4+t*3,r=Math.sin(u*Math.PI)*.8;set(source.x*u+Math.cos(a)*r,1.4+(source.y-1.4)*u+Math.sin(a)*r,source.z*u,.17,.17,.17);});
      break;
     case 'voidslash':
-     shards('arc',15,(i,t)=>{const r=1.6+i*.14;set(0,1+i%5*.25,0,r,r,r,.4+i*.07,.2,t*2.2+i*.12);});
-     trail(32,(i,t)=>{const u=i/31-.5;beam(u*7,1.4+u*3,0,u*8,1.6+u*3,Math.sin(i*9)*.8,.07);},true);
+     shards('fusionBlade',15,(i,t)=>{const r=1.6+i*.14;set(0,1+i%5*.25,0,r,r,r,.4+i*.07,.2,t*2.2+i*.12);});
+     trail(32,(i,t)=>{const u=i/31-.5;beam(u*7,1.4+u*3,0,u*8,1.6+u*3,Math.sin(i*9)*.8,.034);},true);
      break;
     case 'riftassault':
      shards('arc',26,(i,t)=>{const u=i/25,r=.45+Math.sin(u*Math.PI)*1.4;set(source.x*u,1.35,source.z*u,r,r,r,0,Math.atan2(source.x,source.z),i*.43+t*4);},true);
@@ -351,7 +351,7 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      shards('crystal',60,(i,t)=>{const a=i*2.4-t*.7,r=radius*(.28+i%8*.08);set(Math.cos(a)*r,.3+i%5*.7,Math.sin(a)*r,.14,.55,.14,t,a,t);});
      break;
     case 'execution':
-     shards('arc',35,(i,t)=>{const cut=Math.floor(i/7),a=cut*TAU/5,phase=t-cut*.17,r=radius*(.65+i%7*.045),size=phase>=0&&phase<.95?r:0;set(0,1.6,0,size,size,size,a,.6+a,phase*3);});
+     shards('fusionBlade',35,(i,t)=>{const cut=Math.floor(i/7),a=cut*TAU/5,phase=t-cut*.17,r=radius*(.65+i%7*.045),size=phase>=0&&phase<.95?r:0;set(0,1.6,0,size,size,size,a,.6+a,phase*3);});
      shards('crystal',80,(i,t)=>{const a=i*2.4,r=Math.max(0,t-.75)*radius*(.2+i%9*.12);set(Math.cos(a)*r,.2+Math.abs(Math.sin(i))*r*.45,Math.sin(a)*r,r?.16:0,r?.48:0,r?.16:0,t,a,i);},true);
      break;
     case 'abysstouch':
