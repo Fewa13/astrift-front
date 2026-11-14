@@ -12,3 +12,20 @@
 [data-quality="7"]{--gear-accent:#8ebeff;border-color:#8ebeff88!important}[data-quality="8"]{--gear-accent:#e9a0ff;border-color:#e9a0ff99!important}
 
 .ancientJadeFusion{display:flex;flex-direction:column;gap:12px;min-width:0}.ancientJadeFusion>label{display:flex;flex-direction:column;gap:7px}.ancientJadeFusion select{width:100%;min-width:0;max-width:100%;padding:10px;background:#102632;color:#dcf6f2;border:1px solid #527782}.ancientJadeFusion h3,.ancientJadeFusion h4,.ancientJadeFusion p{margin:3px 0}.ancientFusionCandidates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:340px;overflow:auto;touch-action:pan-y}.ancientFusionCandidates label{display:flex;align-items:center;gap:10px;padding:10px;background:#10222b;border:1px solid #36545e;font-size:12px;overflow-wrap:anywhere}.ancientFusionCandidates input{width:18px;height:18px;flex:none;accent-color:#6fe3c1}.ancientFusionChance{color:#8effcf!important;font-weight:700}@media(max-width:650px){.ancientFusionCandidates{grid-template-columns:1fr;max-height:280px}}
+
+.ancientInventoryCard input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.ancientShopCard input[type="number"] {
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #486776;
+  border-radius: 6px;
+  background: #101d28;
+  color: #e8f5fa;
+  font: inherit;
+  color-scheme: dark;
+}
+.ancientInventoryCard input:focus-visible,
+.ancientShopCard input[type="number"]:focus-visible {
+  outline: 2px solid #87c6d6;
+  outline-offset: 2px;
+}
