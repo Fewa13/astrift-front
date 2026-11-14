@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import { skillRadius } from "./ancient-skills.js";
-const ASCENSION_SKILLS = { shadowblade: ["shadowstep", "shadowreturn", "nightfall", "riftblade"], stonewright: ["faultline", "stoneprison", "mountainfall", "stonefist"], warrior: ["vitality", "power", "rage", "slash"], summoner: ["summon", "weaken", "transform", "soulbolt"], ice: ["icebolt", "icearmor", "blizzard", "frostburst"], lightning: ["chain", "haste", "storm", "tempest"], fire: ["firewave", "firestorm", "inferno", "firebolt"], curse: ["hex", "drain", "doom"], swordsman: ["triplecut", "swordrain", "phantomblade", "swordwave"] };
+import { PROFESSIONS, skillRadius } from "./ancient-skills.js";
+const ASCENSION_SKILLS = Object.fromEntries(Object.entries(PROFESSIONS).map(([job, definition]) => [job, definition.skills]));
 function ascensionProgress(p, job = p.profession || "") {
   return p.ascension?.jobs?.[job];
 }

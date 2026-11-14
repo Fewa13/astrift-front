@@ -18,7 +18,7 @@ const server=new module.exports.AncientWorld(ctx,{}),cmd=(n,a,d={})=>server.comm
 function add(name,level=20){const p=server.read(name);p.level=level;server.save(name,p);let actor={name,map:'tribe',x:0,y:1.7,z:50,hp:50000,maxHp:50000,seen:now,weapon:p.weapons[0],skills:{},lastShot:0,lastMove:now,moveCredit:2,deadAt:0};messages.set(name,[]);const ws={deserializeAttachment:()=>structuredClone(actor),serializeAttachment:a=>actor=structuredClone(a),send:s=>messages.get(name).push(JSON.parse(s)),close(){this.closed=true}};sockets.push(ws);return ws}
 
 const {ASCENSION_SKILLS,ascensionProgress,ascensionKill,ascensionAttempts,isHoly}=await import('../public/ancient-ascension.js');
-const ws=add('ascender',79);let p=server.read('ascender');p.profession='lightning';p.skills={chain:5,haste:5,storm:5};server.save('ascender',p);
+const ws=add('ascender',79);let p=server.read('ascender');p.profession='lightning';p.skills=Object.fromEntries(ASCENSION_SKILLS.lightning.map(id=>[id,5]));server.save('ascender',p);
 assert.equal((await cmd('ascender','ascensionStart')).ok,false,'level gate');p.level=80;p.skills.storm=4;server.save('ascender',p);assert.equal((await cmd('ascender','ascensionStart')).ok,false,'every skill gate');p.skills.storm=5;server.save('ascender',p);
 assert.equal((await cmd('ascender','dungeonCreate',{tier:'ascensionTrial'})).ok,false,'cannot bypass daily gate');
 assert.equal((await cmd('ascender','ascensionFinalStart')).ok,false,'cannot skip permit/sidequest');

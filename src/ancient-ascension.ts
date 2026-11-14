@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import type {AncientProfile} from './ancient-rules';
-import {skillRadius} from './ancient-skills.js';
-export const ASCENSION_SKILLS:Record<string,string[]>={shadowblade:['shadowstep','shadowreturn','nightfall','riftblade'],stonewright:['faultline','stoneprison','mountainfall','stonefist'],warrior:['vitality','power','rage','slash'],summoner:['summon','weaken','transform','soulbolt'],ice:['icebolt','icearmor','blizzard','frostburst'],lightning:['chain','haste','storm','tempest'],fire:['firewave','firestorm','inferno','firebolt'],curse:['hex','drain','doom'],swordsman:['triplecut','swordrain','phantomblade','swordwave']};
+import {PROFESSIONS,skillRadius} from './ancient-skills.js';
+export const ASCENSION_SKILLS = Object.fromEntries(Object.entries(PROFESSIONS).map(([job, definition]) => [job, definition.skills]));
 export type AscensionProgress={permit:boolean;step:number;count:number;holy:boolean};
 export type AscensionState={day:string;attempts:number;jobs:Record<string,AscensionProgress>};
 export function ascensionProgress(p:AncientProfile,job=p.profession||''){return p.ascension?.jobs?.[job]}
