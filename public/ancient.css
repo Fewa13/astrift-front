@@ -191,3 +191,74 @@ body:has(#menu:not(.active)) #openWorld{display:none}
   outline: 2px solid #efd293;
   outline-offset: 2px;
 }
+
+/* Distinct Ancient Age panels share the same controls and close affordance. */
+.ancientPage .ancientCard[data-theme] { border-color: var(--panel-accent); }
+.ancientPage .ancientCard[data-theme] button.selected { border-color: var(--panel-accent); }
+.ancientCard[data-theme="equipment"] {
+  --panel-accent: #77bad0;
+  background: linear-gradient(155deg, #1c3444, #0a1723 52%);
+}
+.ancientWorkspaceLinks, .ancientAtlasRoutes, .ancientSocialLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.ancientCard[data-theme="profession"] {
+  --panel-accent: #b39ee4;
+  background: radial-gradient(ellipse at 50% 12%, #34294b, #101725 68%);
+}
+.ancientCard[data-theme="profession"] .ancientProfessionGrid { padding-block: 12px; }
+.ancientCard[data-theme="profession"] .ancientProfessionConfirm { border-color: var(--panel-accent); }
+.ancientCard[data-theme="atlas"] {
+  --panel-accent: #b5a477;
+  background: linear-gradient(150deg, #363022, #182028 54%);
+}
+.ancientAtlasHeader {
+  display: grid;
+  align-content: end;
+  min-height: 155px;
+  margin: 10px 0 16px;
+  padding: 16px;
+  border: 1px solid #b5a47775;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #171711ef, #17171140), url("./world-entry-ancient.webp") center 54% / cover;
+}
+.ancientAtlasHeader h2, .ancientAtlasHeader p { margin: 0 0 8px; }
+.ancientAtlasRoutes { margin-bottom: 0; }
+.ancientSpecialMap {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  border-top: 1px solid #b5a47775;
+  padding-top: 12px;
+}
+.ancientSpecialMap h3 { grid-column: 1 / -1; margin: 0; }
+.ancientCard[data-theme="store"] {
+  --panel-accent: #d6ab6d;
+  background: linear-gradient(160deg, #3b2b22, #151c26 58%);
+}
+.ancientCard[data-theme="store"] > .ancientActivityFilters {
+  padding: 10px;
+  background: #100d0b66;
+  border-radius: 8px;
+}
+.ancientCard[data-theme="social"] {
+  --panel-accent: #7ecab0;
+  background: linear-gradient(155deg, #193c36, #0d1d29 60%);
+}
+.ancientSocialLinks { padding-inline-end: 44px; }
+.ancientProfessionSpotlight {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px solid #b39ee477;
+  border-radius: 8px;
+  background: linear-gradient(105deg, #46355b, #211a32);
+}
+.ancientProfessionSpotlight h3 { flex: 1 0 100%; margin: 0 0 4px; }

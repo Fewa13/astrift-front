@@ -37,15 +37,16 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   el('p',L('已修炼等级永久保留，头目与 BOSS 必定掉落一本技能书。','Trained levels are retained. Each boss drops one skill book.'),card);
   if(!previewJob){el('p',L('选择一个职业','Choose a profession'),card);return}
   const selected=previewJob,job=PROFESSIONS[selected],current=p.profession===selected;
-  el('h3',job.icon+' '+holyName(en()?job.en:job.name,en(),holyView),card);
-  btn(holyView?L('普通级详情','Normal Details'):L('圣级详情','Holy Details'),()=>{holyView=!holyView;refreshPreview()},card);
-  btn(L('3D技能预览','3D Skill Preview'),()=>openSkillPreview(selected,{en,level:3,skin:current?equippedAncientSkin(p):undefined}),card);
+  const spotlight=el('section','',card);spotlight.className='ancientProfessionSpotlight';
+  el('h3',job.icon+' '+holyName(en()?job.en:job.name,en(),holyView),spotlight);
+  btn(holyView?L('普通级详情','Normal Details'):L('圣级详情','Holy Details'),()=>{holyView=!holyView;refreshPreview()},spotlight);
+  btn(L('3D技能预览','3D Skill Preview'),()=>openSkillPreview(selected,{en,level:3,skin:current?equippedAncientSkin(p):undefined}),spotlight);
   if(holyView&&!current)renderAscensionPanel(card,{getProfile,en,job:selected,request,join,refresh:refreshPreview});
   const confirm=btn(current?L('当前职业','Current profession'):p.profession?L('更改职业','Change profession'):L('选择职业','Choose profession'),async()=>{
    const latest=getProfile();if(submitting||latest.profession===selected||(latest.materials['supply:transfer']||0)<1)return;
    submitting=true;refreshPreview();
    try{await action('chooseProfession',{job:selected})}finally{submitting=false;refreshPreview()}
-  },card);confirm.className='ancientProfessionConfirm';confirm.disabled=current||submitting||(p.materials['supply:transfer']||0)<1;
+  },spotlight);confirm.className='ancientProfessionConfirm';confirm.disabled=current||submitting||(p.materials['supply:transfer']||0)<1;
   if(choosing){confirm.classList.add('ancientGuideTarget');btn(L('下一步：定位确认按钮 ↓','Next: find the confirm button ↓'),()=>{confirm.scrollIntoView({block:'center',behavior:'smooth'});confirm.focus({preventScroll:true})},coach);}
   renderBranchPanel(card,{p,job:selected,en,action,refresh:refreshPreview});
   const grid=el('div','',card);grid.className='ancientGrid';
