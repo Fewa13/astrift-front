@@ -11,7 +11,7 @@ export function renderAscensionPanel(parent,{getProfile,en,job,request,join}){
  const current=p.profession===job;if(!current)return;
  const b=el('button',s?.permit?L('进入圣职仪式','Enter Sacred Rite'):L('开始升华考验','Begin Ascension Trial'));b.type='button';b.disabled=!ascensionEligible(p)||(s?.permit?s.step!==2:ascensionAttempts(p)>=2);
  const feedback=el('p','');feedback.setAttribute('role','status');feedback.hidden=true;
- let confirmed=false;
+ if(!s?.permit)el('p',L('开始后消耗今日一次考验机会，失败不返还。','Starting spends one of today’s attempts, even on defeat.'));
  b.onclick=async()=>{
   if(b.disabled)return;
   b.disabled=true;feedback.hidden=false;
@@ -19,12 +19,6 @@ export function renderAscensionPanel(parent,{getProfile,en,job,request,join}){
   try{
    const existing=await request('dungeonState'),run=existing.dungeonState?.run;
    if(run?.ascensionJob===job&&run.status==='active'){await join(run.map);return}
-   if(!s?.permit&&!confirmed){
-    confirmed=true;
-    feedback.textContent=L('开始后消耗今日一次考验机会，失败不返还。','Starting spends one of today’s attempts, even on defeat.');
-    b.textContent=L('确认开始考验','Confirm Trial');
-    return;
-   }
    feedback.textContent=L('正在进入试炼…','Entering trial…');
    const result=await request(s?.permit?'ascensionFinalStart':'ascensionStart');
    const map=result.dungeonState?.run?.map;
@@ -33,6 +27,6 @@ export function renderAscensionPanel(parent,{getProfile,en,job,request,join}){
   }catch(e){feedback.textContent=error(e)}
   finally{b.disabled=false}
  };
- const resume=el('button',L('恢复进行中的考验','Resume Active Trial'));resume.type='button';resume.onclick=async()=>{resume.disabled=true;try{const r=await request('dungeonState'),run=r.dungeonState?.run;if(run?.ascensionJob&&run.status==='active')await join(run.map);else el('p',L('没有进行中的考验','No active trial'))}catch(e){el('p',error(e))}finally{resume.disabled=false}};
+ const resume=el('button',L('恢复进行中的考验','Resume Active Trial'));resume.type='button';resume.onclick=async()=>{resume.disabled=true;try{const r=await request('dungeonState'),run=r.dungeonState?.run;feedback.hidden=false;if(run?.ascensionJob===job&&run.status==='active')await join(run.map);else feedback.textContent=L('没有进行中的考验','No active trial')}catch(e){feedback.hidden=false;feedback.textContent=error(e)}finally{resume.disabled=false}};
 }
 export function createAscensionTracker({getProfile,en}){const box=document.createElement('aside');box.id='ancientAscensionTracker';box.hidden=true;box.style.cssText='position:fixed;left:18px;top:105px;width:min(245px,38vw);padding:10px 12px;background:#101b28dc;border-left:2px solid #b29ce8;border-radius:5px;color:#ecddff;font:12px/1.5 system-ui;pointer-events:none;z-index:7';document.body.append(box);let signature='';return {update(active,paused){const p=getProfile(),s=p&&ascensionProgress(p);box.hidden=!active||paused||!s?.permit||s.holy;if(box.hidden)return;const key=[p.profession,s.step,s.count,en()].join(':');if(signature===key)return;signature=key;box.replaceChildren();const title=document.createElement('strong');title.textContent=en()?'ASCENSION SIDE QUEST':'升华支线';box.append(title);const text=document.createElement('div');text.textContent=(ASCENSION_STEPS[s.step]?.[en()?1:0]||'')+(s.step<2?' · '+s.count+'/'+(s.step===0?20:2):'');box.append(text)}}}

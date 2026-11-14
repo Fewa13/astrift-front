@@ -19,7 +19,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   const coach=guided?el('aside','',card):null;
   if(coach){coach.className='ancientSkillCoach';coach.setAttribute('aria-live','polite');el('strong',choosing?L('选择职业 · 第 1 / 2 步','Choose your profession · Step 1 / 2'):L('激活技能 · 第 2 / 2 步','Activate your skill · Step 2 / 2'),coach);el('p',choosing?(previewJob?L('已选中预览。查看下面的技能，满意后点击发光的「选择职业」按钮才会正式选择。','Preview selected. Review the abilities below, then click the highlighted “Choose profession” button to confirm.'):L('① 点击下方一个职业按钮查看技能。② 再点击「选择职业」确认；仅点击职业名字不会消耗转职书。','① Click a profession below to view its abilities. ② Click “Choose profession” to confirm. Previewing a name does not spend your change book.')):L('格鲁克赠送的技能书已经放入背包，无需手动使用。点击下方 Q 技能的「修炼至 1」，消耗 1 本对应技能书即可激活，不需要金币或相位核心。','Gruk’s gift is already in your inventory; do not use the book manually. Click “Train to 1” on the Q ability below. Activation costs one matching skill book, with no Gold or Phase Cores.'),coach);}
   el('h2',L('技能 · 职业','Skills · Profession'),card);
-  if(p.profession){
+  if(p.profession&&!ascensionProgress(p)?.holy){
    const progress=ascensionProgress(p),ready=ascensionEligible(p),entry=el('details','',card);
    entry.className='ancientAscensionEntry';entry.style.cssText='margin:12px 0 20px;padding:16px;border:1px solid #d7bb70;border-radius:10px;background:linear-gradient(120deg,#27332e,#152334);';
    const summary=el('summary',L('✦ 职业升华 · 成为圣级职业','✦ Profession Ascension · Become Holy'),entry);summary.style.cssText='cursor:pointer;font-size:18px;font-weight:700;color:#f3d68c;';
