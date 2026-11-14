@@ -257,13 +257,34 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
    const height=ground(group.position.x+x,group.position.z+z,group.position.y);
    return Number.isFinite(height)?height-group.position.y:0;
   },target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(fusionFx[d.id]){
-   const [, , points]=fusionFx[d.id], radius=Math.min(12,f.r);
-   ring(f,radius,.12,'spin');
-   ring(f,radius*.72,.2,'spin',true);
-   if(['prism','siphon','riftassault','chronoshift','temporalrift'].includes(d.id))batch(f,'beam',1,()=>beam(source.x,source.y,source.z,0,1.2,0,.09));
-   for(let i=0;i<points;i++){
-    const a=i/points*Math.PI*2;
-    mesh(f,'ring',[Math.cos(a)*radius*.78,.85,Math.sin(a)*radius*.78],[.35,.65,.35],[0,a,0],'spin',i%2===0);
+   const [, , points]=fusionFx[d.id];
+   const radius=Math.max(3,Math.min(19,f.r*1.52));
+   const rank=Object.keys(fusionFx).indexOf(d.id),family=Math.floor(rank/4),variant=rank%4;
+   const spread=variant===1?1.4:1;
+   ring(f,radius,.16,'shock');
+   ring(f,radius*.85,.35,'counter',true);
+   ring(f,radius*.56,.8,'spin');
+   batch(f,'arc',12,(i,t)=>{
+    const a=i/12*TAU+t*(family%2?-1:1),r=radius*(.4+.19*(i%3));
+    set(Math.cos(a)*r*.48,1+i%3*.8,Math.sin(a)*r*.48,r*.62,r*.62,r*.62,Math.PI*.38+i%2*.8,a,t*.8);
+   },true);
+   batch(f,family===2?'cone':family===3?'bar':'crystal',points*9,(i,t)=>{
+    const a=i*2.39996+t*(1+variant*.3),lift=(t*.58+i*.137)%1;
+    const r=radius*(.18+.75*((i%13)/12))*spread;
+    const size=(.09+.13*Math.sin(i*3)**2)*(1-lift*.65);
+    set(Math.cos(a)*r,f.floor(Math.cos(a)*r,Math.sin(a)*r)+.16+lift*(2.6+variant),Math.sin(a)*r,size,size*(2+family*.7),size, a,t+i,a*.5);
+   });
+   batch(f,'beam',points*3,(i,t)=>{
+    const a=i/points*TAU+t*.75,r=radius*(.42+.46*(i%4)/3),x=Math.cos(a)*r,z=Math.sin(a)*r;
+    const y=f.floor(x,z),pulse=.35+.65*Math.sin(t*8+i)**2;
+    const high=(family===0?6.5:family===1?3.4:family===2?4.3:5.2)*pulse;
+    beam(x,y+.12,z,x*(family===3?.88:.68),y+high,z*(family===3?.88:.68),.032+pulse*.055);
+   });
+   if(['prism','siphon','riftassault','chronoshift','temporalrift'].includes(d.id)){
+    batch(f,'beam',9,(i,t)=>{
+     const a=i*TAU/9+t*7,r=.12+i%3*.11;
+     beam(source.x,source.y+Math.cos(a)*r,source.z+Math.sin(a)*r,Math.cos(a)*r,1.2+Math.sin(a)*r,0,i===0?.15:.045);
+    });
    }
   }else if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=f.batches.reduce((n,b)=>n+b.m.count,0);while(effects.length&&effects.reduce((n,e)=>n+e.batches.reduce((v,b)=>v+b.m.count,0),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
  }
