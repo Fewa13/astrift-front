@@ -30,12 +30,16 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea}){
   shards(h?12:7,.23,1.35);
   if(h)fireSea(f,.23,5,Math.min(r,1.6));
  }else if(f.id==='firewave'){
-  const count=spread(22,32,54);
+  const count=spread(32,42,64);
+  const visibleReach=Math.min(r,26);
   batch(f,h?'meteor':'flame',count,(i,t)=>{
-   const a=i/count*TAU,u=t-.035*(i%3),reach=r*(.76+.21*(.5+.5*Math.sin(i*2.399)))*ease(u*2.8);
-   const s=fade(u,0,5.8)*Math.max(.22,reach*TAU/count*.66);
+   const a=i*2.39996,u=t-.055*(i%5);
+   const band=(i+.5)/count;
+   const reach=visibleReach*Math.sqrt(band)*ease(u*2.5);
+   const size=Math.min(1.3,.5+visibleReach*.035)*fade(u,0,6);
    const x=Math.cos(a)*reach,z=Math.sin(a)*reach;
-   set(x,f.floor(x,z)+(h?.3:.09),z,s*.52,s*(h?.44:1.55+(i%5)*.26),s*.43,0,-a+Math.PI/2,-.22);
+   const height=size*(h?.5:1.35+(i%5)*.24);
+   set(x,f.floor(x,z)+(h?height:.12),z,size*.65,height,size*.54,0,-a+Math.PI/2,-.12);
   });
   fireSea(f,.36,6);
 
@@ -44,7 +48,7 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea}){
   batch(f,h?'meteor':'flame',count,(i,t)=>{
    const ribbon=i%3,along=Math.floor(i/3)/Math.ceil(count/3),a=ribbon*TAU/3+along*2.3+t*1.9;
    const s=ease(t*4)*fade(Math.max(t,3.1),3.1,7.8);
-   const reach=r*(.26+.58*along);
+   const reach=Math.min(r,30)*(.12+.78*along);
    const x=Math.cos(a)*reach,z=Math.sin(a)*reach;
    set(x,f.floor(x,z)+(h?.5+along*1.8:.1),z,Math.min(.85,r*.075)*s,(h?.45:1.15+along*2.1)*s,.52*s,0,-a,-.22);
   });

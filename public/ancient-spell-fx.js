@@ -185,7 +185,7 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      float dist=length(groundUV);
      float edge=1.0-smoothstep(.88,1.0,dist);
      if(edge<=0.0)discard;
-     vec2 p=groundUV*radius;
+     vec2 p=groundUV*min(radius,24.0);
      float angle=atan(p.y,p.x+.0001);
      float grain=sin(p.x*4.1+sin(p.y*3.2+age*2.4))*sin(p.y*3.6-age*2.8);
      float shape;
