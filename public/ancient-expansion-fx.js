@@ -52,21 +52,36 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea}){
  }else if(f.id==='inferno'){
   f.core.color.setHex(h?0xffde8a:0xffa34f);
   f.soft.color.setHex(0xe95224);
-  const rocks=h?3:1;
-  batch(f,'meteor',rocks,(i,t)=>{
-   const u=t-i*.025,p=Math.max(0,Math.min(1,u/.55))**1.45,size=u>=0&&u<.55?(i===0?1.48:.57):0;
-   set((1-p)*5+i*.8,.8+(1-p)*(16+i*.9),i%2?1.1:0,size,size*.9,size*1.13,t*4,i,t*2);
+  // Inferno's radius encodes its level in both the live cast and the preview.
+  const upgrades=Math.max(0,Number.isSafeInteger(f.level)?f.level-1:Math.round((r/(h?1.5:1)-8)*2));
+  const scale=Math.exp(Math.min(Math.log(256),(Math.log(h?3:1)+upgrades*Math.log(1.1))/3));
+  const fallTime=.55, altitude=16*scale, impactY=f.floor(0,0);
+  batch(f,'meteor',1,(_,t)=>{
+   const progress=Math.min(1,t/fallTime)**1.45;
+   const size=t<fallTime?1.48*scale:0;
+   set((1-progress)*5,impactY+(1-progress)*altitude+size,0,size,size*.9,size*1.13,t*4,0,t*2);
   });
-  batch(f,'flame',h?32:22,(i,t)=>{
-   const lag=i*.012,u=t-lag,p=Math.max(0,Math.min(1,u/.55))**1.45,a=i*2.399;
-   const s=u>=0&&u<.55?(.65+(i%5)*.09)*(1-i/42):0;
-   set((1-p)*5+Math.cos(a)*.65,1+(1-p)*16,Math.sin(a)*.66,s,3.8*s,s,0,a,-.3);
+  batch(f,'flame',h?28:18,(i,t)=>{
+   const u=t-i*.009,progress=Math.max(0,Math.min(1,u/fallTime))**1.45,a=i*2.399;
+   const size=u>=0&&t<fallTime?(.65+(i%5)*.09)*(1-i/42)*scale:0;
+   set((1-progress)*5+Math.cos(a)*scale,impactY+(1-progress)*altitude+2*scale,Math.sin(a)*scale,size,3.8*size,size,0,a,-.3);
   },true);
-  fireSea(f,.55,11);
-  if(h)batch(f,'arc',8,(i,t)=>{
-   const a=i*TAU/8+t*.45,u=t-.68,s=r*.34*ease(u*3)*fade(u,0,10.3);
-   set(Math.cos(a)*r*.62,2.1+s*.45,Math.sin(a)*r*.62,s,s,.28,Math.PI/2,0,a);
+  batch(f,'orb',1,(_,t)=>{
+   const u=t-fallTime,size=scale*(.55+2*ease(u*8))*fade(t,fallTime,fallTime+.28);
+   set(0,impactY+size*.45,0,size,size*.64,size);
+  });
+  const blastRadius=Math.min(r,5*scale);
+  batch(f,'ring',2,(i,t)=>{
+   const u=t-fallTime-i*.07,reach=blastRadius*ease(u*3.8),size=reach*fade(u,0,.75);
+   set(0,impactY+.22+i*.24,0,size,size,size,Math.PI/2);
   },true);
+  batch(f,'meteor',h?20:12,(i,t)=>{
+   const u=t-fallTime,a=i*2.399,reach=blastRadius*ease(u*2.3)*(.5+.5*(i%5)/4);
+   const x=Math.cos(a)*reach,z=Math.sin(a)*reach;
+   const size=(.17+.035*(i%5))*scale*fade(u,0,1.05);
+   set(x,f.floor(x,z)+Math.max(0,u*(4-4*u))*scale,z,size,size,size,t*5,a,t*3);
+  });
+  fireSea(f,fallTime,11);
  }else if(f.id==='tempest'){
   f.core.color.setHex(h?0xf3f8ff:0xb9e6ff);f.soft.color.setHex(h?0x816bff:0x448dff);
   const bolts=spread(9,15,24);

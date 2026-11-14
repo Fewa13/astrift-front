@@ -21,7 +21,7 @@ import {sanctumPath} from './ancient-sanctum';
 import {blightPath} from './ancient-blight';
 import {cityPath} from './ancient-city';
 export type SkillMonster={buffUntil?:number;buffPower?:number;id:string;kind:string;hp:number;maxHp:number;x:number;y?:number;z:number;slow?:number;slowUntil?:number;weak?:number;weakUntil?:number;vulnerable?:number;vulnerableUntil?:number;strikes?:{skillId?:string;owner:string;at:number;damage:number}[];dots?:{skillId?:string;owner:string;until:number;next:number;damage:number}[]};
-export type SkillFXDetails={target:string;phase?:string;source?:{x:number;y:number;z:number};links?:{x:number;y:number;z:number;target:string;height:number}[]};
+export type SkillFXDetails={target:string;level?:number;phase?:string;source?:{x:number;y:number;z:number};links?:{x:number;y:number;z:number;target:string;height:number}[]};
 export function clearPendingSkillDamage(owner:string,targets:Iterable<Partial<Pick<SkillMonster,'strikes'|'dots'>>>){for(const m of targets){m.strikes=(m.strikes||[]).filter(v=>v.owner!==owner);m.dots=(m.dots||[]).filter(v=>v.owner!==owner);}}
 export type SkillContext={motion?:(to:{x:number;y:number;z:number},speed:number)=>void;canMove?:(x:number,z:number,nx:number,nz:number)=>boolean;map:string;monsters:SkillMonster[];damage:(m:SkillMonster,n:number,source?:'summon',attack?:string)=>number;fx:(id:string,x:number,z:number,radius:number,details?:SkillFXDetails)=>void};
 function skillSourceContext(c:SkillContext,id:string):SkillContext{return {...c,damage:(m,n,source)=>c.damage(m,n,source,id)}}
@@ -108,7 +108,7 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
     target.dots.push({skillId:id,owner:a.name,until:now+(impact.seconds+1)*1000,next:now+1000,damage:burn});
    }
   }
-  c.fx(id,target.x,target.z,radius||1,{target:impact.seconds&&radius?'':target.id,source:{x:a.x,y:a.y-.25,z:a.z}});
+  c.fx(id,target.x,target.z,radius||1,{level:n,target:impact.seconds&&radius?'':target.id,source:{x:a.x,y:a.y-.25,z:a.z}});
   return null;
  }
  if(id==='frostburst'){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(const m of skillAreaTargets(target!,radius,c))c.damage(m,body*(2.6+.25*n));c.fx(id,target!.x,target!.z,radius,{target:target!.id});return null;}
