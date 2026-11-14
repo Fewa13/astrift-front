@@ -67,6 +67,11 @@ export function unlockAncientSkin(profile:SkinProfile,id:string){
 }
 
 export const SKIN_PROFESSIONS={
+ elementalist:{zh:'元素战士',en:'Elemental Warrior',cloth:0x243c49,accent:0xffcd68},
+ voidsword:{zh:'虚空剑圣',en:'Void Swordmaster',cloth:0x221634,accent:0xb095fa},
+ abyssal:{zh:'深渊领主',en:'Abyssal Overlord',cloth:0x30121b,accent:0xe24a7f},
+ chrono:{zh:'时空行者',en:'Chrono Walker',cloth:0x13373d,accent:0x79f5e0},
+
  fire:{zh:'火焰法师',en:'Fire Mage',cloth:0x542218,accent:0xff9b48},
  warrior:{zh:'战士',en:'Warrior',cloth:0x77463b,accent:0xdfa773},
  summoner:{zh:'召唤师',en:'Summoner',cloth:0x45715e,accent:0x9ee2a3},

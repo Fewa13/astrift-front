@@ -26,7 +26,13 @@ meteorRock.setAttribute('color',new THREE.Float32BufferAttribute(rockColors,3));
 meteorRock.computeVertexNormals();G.meteor=meteorRock;
 const meteorMaterial=new THREE.MeshBasicMaterial({vertexColors:true});
 const TAU=Math.PI*2,ease=t=>1-(1-Math.max(0,Math.min(1,t)))**3;
-const spells={...EXPANSION_FX,frostburst:[0x88ddff,1.8],swordwave:[0x68ff9b,.8],triplecut:[0x22ed70,1.1],swordrain:[0x83ffb2,3.4],phantomblade:[0x4bff88,3.6],vitality:[0x58ee92,2.8],power:[0xffc342,1.3],rage:[0xff4825,1.6],slash:[0xffdda0,.65],summon:[0x38ffb8,2],weaken:[0xaaff42,1.4],transform:[0xff9e36,2.1],soulbolt:[0x29f2d4,.85],icebolt:[0x65ddff,1],icearmor:[0x94eaff,1.8],blizzard:[0x86bbff,6],chain:[0xffe568,.65],haste:[0x55aaff,1.4],storm:[0xb6a4ff,4],hex:[0xb94aff,1.6],drain:[0xff387a,1.25],doom:[0x9c37ff,8],mark:[0xffd367,.8],claw:[0xffb767,.4],petHit:[0x58ffcf,.45]};
+const fusionFx={
+ prism:[0xffc95b,1.6,3],judgment:[0xffe7a9,2.3,12],erosion:[0x63f6c5,2,6],siphon:[0x8dfce9,2.2,7],
+ voidslash:[0xb58aff,1.4,3],riftassault:[0xdaabff,2.4,6],voiddomain:[0x7946ed,8,12],execution:[0xe7aaff,2.6,9],
+ abysstouch:[0xff457e,1.6,4],devour:[0xffa061,2,9],descent:[0xc92569,8,12],avatar:[0xf62557,3,10],
+ temporalrift:[0x92ffe8,1.6,5],chronoshift:[0x5ce9e8,2.3,6],rewind:[0xffda85,2,8],stasis:[0x7df6ff,4,12],
+};
+const spells={...fusionFx,...EXPANSION_FX,frostburst:[0x88ddff,1.8],swordwave:[0x68ff9b,.8],triplecut:[0x22ed70,1.1],swordrain:[0x83ffb2,3.4],phantomblade:[0x4bff88,3.6],vitality:[0x58ee92,2.8],power:[0xffc342,1.3],rage:[0xff4825,1.6],slash:[0xffdda0,.65],summon:[0x38ffb8,2],weaken:[0xaaff42,1.4],transform:[0xff9e36,2.1],soulbolt:[0x29f2d4,.85],icebolt:[0x65ddff,1],icearmor:[0x94eaff,1.8],blizzard:[0x86bbff,6],chain:[0xffe568,.65],haste:[0x55aaff,1.4],storm:[0xb6a4ff,4],hex:[0xb94aff,1.6],drain:[0xff387a,1.25],doom:[0x9c37ff,8],mark:[0xffd367,.8],claw:[0xffb767,.4],petHit:[0x58ffcf,.45]};
 export const ANCIENT_FX_IDS=Object.keys(spells);
 export function createAncientMagicFX(scene,resolveOwner,camera=null){
  const effects=[],dummy=new THREE.Object3D(),up=new THREE.Vector3(0,1,0),dir=new THREE.Vector3();
@@ -250,7 +256,16 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
   const life=(d.id==='shadowreturn'&&d.phase==='return'?1.2:d.holy?Math.max(1.6,duration):duration)+Math.max(0,links.length-1)*.13,f={local,particles:policy.particles,id:d.id,owner:d.owner,phase:d.phase,level:d.level,holy:!!d.holy,group,core,soft,dark,batches:[],source,links,nodes:links.map(p=>new THREE.Vector3(p.x-d.x,p.y-y,p.z-d.z)),r:Math.max(.7,Number(d.radius)||1),detail:policy.detail,duration:life,life,floor(x,z){
    const height=ground(group.position.x+x,group.position.z+z,group.position.y);
    return Number.isFinite(height)?height-group.position.y:0;
-  },target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=f.batches.reduce((n,b)=>n+b.m.count,0);while(effects.length&&effects.reduce((n,e)=>n+e.batches.reduce((v,b)=>v+b.m.count,0),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
+  },target:d.id==='chain'?undefined:d.target,ground};if(d.id==='chain'){core.color.set(0xc9edff);soft.color.set(0x79afff);core.side=soft.side=THREE.FrontSide}if(fusionFx[d.id]){
+   const [, , points]=fusionFx[d.id], radius=Math.min(12,f.r);
+   ring(f,radius,.12,'spin');
+   ring(f,radius*.72,.2,'spin',true);
+   if(['prism','siphon','riftassault','chronoshift','temporalrift'].includes(d.id))batch(f,'beam',1,()=>beam(source.x,source.y,source.z,0,1.2,0,.09));
+   for(let i=0;i<points;i++){
+    const a=i/points*Math.PI*2;
+    mesh(f,'ring',[Math.cos(a)*radius*.78,.85,Math.sin(a)*radius*.78],[.35,.65,.35],[0,a,0],'spin',i%2===0);
+   }
+  }else if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=f.batches.reduce((n,b)=>n+b.m.count,0);while(effects.length&&effects.reduce((n,e)=>n+e.batches.reduce((v,b)=>v+b.m.count,0),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
  }
  function updateEffect(f,t){const p=t/f.duration,fade=Math.min(1,(1-p)*4),r=f.r;f.core.opacity=.82*fade;f.soft.opacity=.24*fade;f.dark.opacity=.7*fade;
   if(f.fireSea){

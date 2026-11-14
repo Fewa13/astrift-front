@@ -11,6 +11,22 @@ const PROFESSIONS = {
   lightning: { name: "\u96F7\u7535\u6CD5\u5E08", en: "Lightning Mage", icon: "\u03DF", skills: ["chain", "haste", "storm", "tempest"] },
   curse: { name: "\u8BC5\u5492\u6CD5\u5E08", en: "Curse Mage", icon: "\u263D", skills: ["hex", "drain", "doom"] }
 };
+const PROFESSION_FUSIONS = {
+  elementalist: { name: "\u5143\u7D20\u6218\u58EB", en: "Elemental Warrior", sources: ["lightning", "fire", "ice", "curse", "warrior", "stonewright"] },
+  voidsword: { name: "\u865A\u7A7A\u5251\u5723", en: "Void Swordmaster", sources: ["swordsman", "shadowblade"] },
+  abyssal: { name: "\u6DF1\u6E0A\u9886\u4E3B", en: "Abyssal Overlord", sources: ["summoner", "curse"] },
+  chrono: { name: "\u65F6\u7A7A\u884C\u8005", en: "Chrono Walker", sources: ["lightning", "ice"] }
+};
+const FUSION_SKILL_REQUIREMENT = 5;
+const FUSION_SKILLS = {
+  elementalist: [["judgment", "\u795E\u7F5A", "Divine Judgment", "Q", 18], ["erosion", "\u5143\u7D20\u4FB5\u8680", "Elemental Erosion", "Z", 22], ["siphon", "\u5143\u7D20\u7A83\u53D6", "Elemental Siphon", "C", 26], ["prism", "\u5143\u7D20\u5F39", "Prismatic Bolt", "X", 5]],
+  voidsword: [["riftassault", "\u88C2\u7A7A\u7A81\u88AD", "Rift Assault", "Q", 12], ["voiddomain", "\u865A\u7A7A\u9886\u57DF", "Void Domain", "Z", 25], ["execution", "\u6B21\u5143\u7EC8\u7ED3", "Dimensional Execution", "C", 38], ["voidslash", "\u865A\u7A7A\u65A9", "Void Slash", "X", 5]],
+  abyssal: [["devour", "\u7075\u9B42\u541E\u566C", "Soul Devour", "Q", 10], ["descent", "\u6DF1\u6E0A\u964D\u4E34", "Abyssal Descent", "Z", 24], ["avatar", "\u6DF1\u6E0A\u5316\u8EAB", "Avatar of the Abyss", "C", 34], ["abysstouch", "\u6DF1\u6E0A\u4E4B\u89E6", "Abyssal Touch", "X", 5]],
+  chrono: [["chronoshift", "\u65F6\u7A7A\u8DC3\u8FC1", "Chrono Shift", "Q", 12], ["rewind", "\u65F6\u95F4\u56DE\u6EAF", "Time Rewind", "Z", 28], ["stasis", "\u65F6\u95F4\u9759\u6B62", "Chronostasis", "C", 40], ["temporalrift", "\u65F6\u95F4\u88C2\u9699", "Temporal Rift", "X", 5]]
+};
+function isFusionJob(id) {
+  return Object.hasOwn(PROFESSION_FUSIONS, id);
+}
 const SKILLS = {
   firebolt: { job: "fire", name: "\u4F59\u70EC\u5F39", en: "Ember Bolt", unlock: 0, key: "X", duration: 5, cooldown: 5 },
   firewave: { job: "fire", name: "\u71CE\u539F\u706B\u6D6A", en: "Wildfire Wave", unlock: 0, key: "Q", duration: 6, cooldown: 9 },
@@ -48,6 +64,14 @@ const SKILLS = {
   drain: { job: "curse", name: "\u751F\u547D\u6C72\u53D6", en: "Life Drain", unlock: 5, key: "Z", duration: 0, cooldown: 10 },
   doom: { job: "curse", name: "\u707E\u5384\u9886\u57DF", en: "Doom Field", unlock: 20, key: "C", duration: 8, cooldown: 28 }
 };
+for (const job of Object.keys(FUSION_SKILLS)) {
+  const recipe = PROFESSION_FUSIONS[job];
+  PROFESSIONS[job] = { name: recipe.name, en: recipe.en, icon: "\u2726", skills: FUSION_SKILLS[job].map((skill) => skill[0]) };
+  for (const [id, name, en, key, cooldown] of FUSION_SKILLS[job]) SKILLS[id] = { job, name, en, key, cooldown, unlock: 0, duration: 0 };
+}
+function isFusionSkill(id) {
+  return isFusionJob(SKILLS[id]?.job || "");
+}
 const ELEMENTAL_IMPACTS = {
   firebolt: { hit: 0.75, growth: 0.07, burn: 0.42, burnGrowth: 0.04, seconds: 4 },
   firewave: { hit: 1, growth: 0.09, burn: 0.62, burnGrowth: 0.055, seconds: 5 },
@@ -104,7 +128,7 @@ function skillTrainingCost(current) {
 }
 function trainSkill(p, id) {
   const s = Object.hasOwn(SKILLS, id) ? SKILLS[id] : void 0;
-  if (!s || p.profession !== s.job) return "\u804C\u4E1A\u4E0D\u5339\u914D";
+  if (!s || isFusionSkill(id) || p.profession !== s.job) return "\u804C\u4E1A\u4E0D\u5339\u914D";
   if (p.level < s.unlock) return "\u73A9\u5BB6\u7B49\u7EA7\u4E0D\u8DB3";
   const next = (p.skills?.[id] || 0) + 1, cost = skillTrainingCost(next - 1);
   if (!Object.values(cost).every(Number.isSafeInteger)) return "\u6280\u80FD\u7B49\u7EA7\u5DF2\u8FBE\u4E0A\u9650";
@@ -117,6 +141,76 @@ function trainSkill(p, id) {
   if (cost.coins) p.coins = Math.round((p.coins - cost.coins) * 100) / 100;
   (p.skills ??= {})[id] = next;
   return null;
+}
+function skillDirectMultiplier(id, level) {
+  const impact = ELEMENTAL_IMPACTS[id];
+  if (impact) return impact.hit + impact.growth * level;
+  switch (id) {
+    case "haste":
+    case "power":
+    case "icearmor":
+    case "icebolt":
+    case "chain":
+      return 3 + 0.3 * level;
+    case "rage":
+    case "drain":
+      return 4 + 0.4 * level;
+    case "slash":
+      return 3.2 + 0.3 * level;
+    case "soulbolt":
+      return 3.3 + 0.3 * level;
+    case "frostburst":
+      return 2.6 + 0.25 * level;
+    case "swordwave":
+      return 3 + 0.25 * level;
+    case "phantomblade":
+      return (6.5 + 0.6 * level) * 1.3;
+    case "triplecut":
+      return 3.3 + 0.3 * level;
+    case "swordrain":
+      return 1.4 + 0.16 * level;
+    case "hex":
+      return curseHitMultiplier("hex", level);
+    case "weaken":
+      return 2.8 + 0.3 * level;
+    default:
+      return 0;
+  }
+}
+function skillDamagePreview(id, level) {
+  const direct = skillDirectMultiplier(id, level);
+  const impact = ELEMENTAL_IMPACTS[id];
+  if (impact) return { direct, tick: impact.burn + impact.burnGrowth * level };
+  switch (id) {
+    case "blizzard":
+      return { tick: 1.25 + 0.1 * level };
+    case "storm":
+      return { tick: 1.6 + 0.15 * level };
+    case "doom":
+      return { tick: 0.8 + 0.08 * level };
+    case "riftblade":
+      return { direct: (3 + 0.25 * level) * 0.5 };
+    case "shadowstep":
+      return { direct: 2.6 + 0.22 * level };
+    case "shadowreturn":
+      return { direct: 2.2 + 0.2 * level, conditional: (2.2 + 0.2 * level) * 1.1 };
+    case "nightfall":
+      return { direct: 4 + 0.35 * level };
+    case "stonefist":
+      return { direct: 3.2 + 0.3 * level };
+    case "stoneprison":
+      return { direct: 3 + 0.3 * level };
+    case "faultline":
+      return { direct: 1.8 + 0.15 * level };
+    case "mountainfall":
+      return { direct: 7 + 0.6 * level };
+    case "drain":
+      return { direct, conditional: direct * 1.5 };
+    case "transform":
+      return { direct: 1.25 + 0.1 * level };
+    default:
+      return { direct };
+  }
 }
 function skillDescription(id, n, en = false) {
   const level = Math.max(1, n), cd = skillCooldown(id, level), range = skillCastRange(id, level);
@@ -161,11 +255,11 @@ function activeSkill(a, id, now = Date.now()) {
   return e && e.until > now ? e.level : 0;
 }
 function skillDamageMultiplier(a, now = Date.now()) {
-  return (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
+  return (activeSkill(a, "voiddomain", now) ? 1.25 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
 }
 function skillSpeedMultiplier(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), h = activeSkill(a, "haste", now);
-  return (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
+  return (activeSkill(a, "voiddomain", now) ? 1.3 : 1) * (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
 }
 function skillFireMultiplier(a, now = Date.now()) {
   const h = activeSkill(a, "haste", now);
@@ -173,7 +267,7 @@ function skillFireMultiplier(a, now = Date.now()) {
 }
 function skillIncoming(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), i = activeSkill(a, "icearmor", now);
-  return ((a.boosts?.defense || 0) > now ? 0.5 : 1) * (1 - (a.gearReduction || 0)) * (activeSkill(a, "rage", now) ? 2 : 1) * (t ? 1 - Math.min(0.35, 0.1 + 0.01 * t) : 1) * (i ? 1 - Math.min(0.5, 0.15 + 0.02 * i) : 1) * (1 - (bossFormStats(a, now)?.reduction || 0));
+  return (activeSkill(a, "execution", now) ? 0 : 1 - activeSkill(a, "prism", now) / 100) * ((a.boosts?.defense || 0) > now ? 0.5 : 1) * (1 - (a.gearReduction || 0)) * (activeSkill(a, "rage", now) ? 2 : 1) * (t ? 1 - Math.min(0.35, 0.1 + 0.01 * t) : 1) * (i ? 1 - Math.min(0.5, 0.15 + 0.02 * i) : 1) * (1 - (bossFormStats(a, now)?.reduction || 0));
 }
 function skillHealth(a, base, now) {
   const t = activeSkill(a, "transform", now);
@@ -185,23 +279,30 @@ function skillHealth(a, base, now) {
 function skillDrops(kind, random = Math.random) {
   const boss = kind === "buried_marshal" || kind === "hourglass_regent" || kind === "sky_sovereign" || kind === "thunder_warden" || kind === "frost_crowned" || kind === "furnace_regent" || kind === "starbound_heart" || kind === "immaculate_judge" || kind === "blight_lord" || kind === "oathknight" || kind === "emptyking" || kind === "chief" || kind === "lord" || kind === "rootwarden" || ["metal", "wood", "water", "fire", "earth"].some((e) => kind === "crystal_" + e);
   if (!boss) return {};
-  const ids = Object.keys(SKILLS), id = ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
+  const ids = Object.keys(SKILLS).filter((id2) => !isFusionSkill(id2)), id = ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
   return { [skillBook(id)]: 1 };
 }
 export {
   ELEMENTAL_IMPACTS,
+  FUSION_SKILLS,
+  FUSION_SKILL_REQUIREMENT,
   PROFESSIONS,
+  PROFESSION_FUSIONS,
   SKILLS,
   activeSkill,
   curseHitMultiplier,
   ensureBasicSkills,
+  isFusionJob,
+  isFusionSkill,
   runtime,
   skillBook,
   skillBookName,
   skillCastRange,
   skillCooldown,
   skillDamageMultiplier,
+  skillDamagePreview,
   skillDescription,
+  skillDirectMultiplier,
   skillDrops,
   skillFireMultiplier,
   skillHealth,

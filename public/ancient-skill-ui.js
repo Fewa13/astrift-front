@@ -1,66 +1,150 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ancientKeyLabel,ancientBindingVersion} from './ancient-input-settings.js';
 import {renderBranchPanel} from './ancient-branch-ui.js?v=20261017-guide-position-1';
-import {PROFESSIONS,SKILLS,skillBook,skillTrainingCost,skillDescription,activeSkill} from './ancient-skills.js?v=20261109-cast-range-60';
+import {PROFESSIONS,PROFESSION_FUSIONS,FUSION_SKILL_REQUIREMENT,isFusionJob,isFusionSkill,SKILLS,skillBook,skillTrainingCost,skillDescription,skillDamagePreview,activeSkill} from './ancient-skills.js?v=20261109-cast-range-60';
 import {renderAscensionPanel} from './ancient-ascension-ui.js?v=20261012-ascension-1';
 import {openSkillPreview} from './ancient-skill-preview.js?v=20261109-cast-range-60';
-import {isHoly,holyName,holySkillDetails,ascensionEligible,ascensionProgress,ASCENSION_STEPS} from './ancient-ascension.js?v=20261014-new-professions-1';
+import {isHoly,holyPower,holyName,holySkillDetails,ascensionEligible,ascensionProgress} from './ancient-ascension.js?v=20261014-new-professions-1';
+import {ancientGearStats,ancientSkillDamage} from './ancient-gear.js';
 import {equippedAncientSkin} from './ancient-skins.js';
-import {currentQuest} from './ancient-quests.js';
-export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,request,join}){
+export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,request,join,open}){
  const L=(zh,english)=>en()?english:zh,el=(tag,text,parent)=>{const n=document.createElement(tag);n.textContent=text;parent?.append(n);return n},btn=(text,fn,parent)=>{const n=el('button',text,parent);n.type='button';n.onclick=fn;return n};
  const hud=el('div','',document.getElementById('ancientHud'));hud.id='ancientSkillHud';const bar=el('div','',hud);bar.className='ancientSkillBar';const buttons=new Map();const tools=el('div','',hud);tools.className='ancientSkillTools';const hint=el('small','',hud);let lastJob='',lastTools='',lastDraw=0;
- let previewJob='',observedProfession,submitting=false,holyView=false,refreshPreview=()=>{};
- function render(card){const host=el('div','',card);refreshPreview=()=>{if(host.isConnected!==false){host.replaceChildren();paint(host)}};paint(host)}
- function paint(card){
-  const p=getProfile(),signature=(p.profession||'')+':'+isHoly(p);if(observedProfession!==signature){observedProfession=signature;previewJob=p.profession||'';holyView=isHoly(p)}
-  const quest=currentQuest(p),choosing=quest?.kind==='profession',trainingFirst=quest?.kind==='trainQ',guided=choosing||trainingFirst;
-  if(trainingFirst){previewJob=p.profession;holyView=false}
-  const coach=guided?el('aside','',card):null;
-  if(coach){coach.className='ancientSkillCoach';coach.setAttribute('aria-live','polite');el('strong',choosing?L('选择职业 · 第 1 / 2 步','Choose your profession · Step 1 / 2'):L('激活技能 · 第 2 / 2 步','Activate your skill · Step 2 / 2'),coach);el('p',choosing?(previewJob?L('已选中预览。查看下面的技能，满意后点击发光的「选择职业」按钮才会正式选择。','Preview selected. Review the abilities below, then click the highlighted “Choose profession” button to confirm.'):L('① 点击下方一个职业按钮查看技能。② 再点击「选择职业」确认；仅点击职业名字不会消耗转职书。','① Click a profession below to view its abilities. ② Click “Choose profession” to confirm. Previewing a name does not spend your change book.')):L('格鲁克赠送的技能书已经放入背包，无需手动使用。点击下方 Q 技能的「修炼至 1」，消耗 1 本对应技能书即可激活，不需要金币或相位核心。','Gruk’s gift is already in your inventory; do not use the book manually. Click “Train to 1” on the Q ability below. Activation costs one matching skill book, with no Gold or Phase Cores.'),coach);}
-  el('h2',L('技能 · 职业','Skills · Profession'),card);
-  if(p.profession&&!ascensionProgress(p)?.holy){
-   const progress=ascensionProgress(p),ready=ascensionEligible(p),entry=el('details','',card);
-   entry.className='ancientAscensionEntry';entry.style.cssText='margin:12px 0 20px;padding:16px;border:1px solid #d7bb70;border-radius:10px;background:linear-gradient(120deg,#27332e,#152334);';
-   const summary=el('summary',L('✦ 职业升华 · 成为圣级职业','✦ Profession Ascension · Become Holy'),entry);summary.style.cssText='cursor:pointer;font-size:18px;font-weight:700;color:#f3d68c;';
-   el('p',progress?.holy?L('当前职业已升华','Current profession is Holy'):progress?.permit?L('下一步：','Next: ')+ASCENSION_STEPS[progress.step]?.[en()?1:0]:ready?L('条件已满足 · 展开这里，开始升华考验','Requirements met · Open here to begin your ascension trial'):L('解锁条件：80级，当前职业全部技能达到5级','Requires level 80 and every current profession skill at level 5'),summary);
-   renderAscensionPanel(entry,{getProfile,en,job:p.profession,request,join,refresh:refreshPreview});
+ const descriptions={
+  shadowblade:['位移多，能打完撤回。','需要瞄准和把握返回时机。','Dash in and retreat quickly.','Requires aim and well-timed returns.'],
+  stonewright:['范围控制强，适合成群敌人。','重击有蓄力，移动目标容易躲开。','Controls groups with wide attacks.','Heavy attacks take time to land.'],
+  swordsman:['连斩和巨剑能快速打出爆发。','缺少回复，打空后要等冷却。','Combines rapid cuts with heavy burst.','Little healing and costly misses.'],
+  warrior:['回血和增伤适合近身作战。','狂暴时受到的伤害也会增加。','Healing and buffs support close combat.','Rage also increases damage taken.'],
+  summoner:['铁甲兽能帮你打怪和吸引火力。','要管理召唤兽和技能印记。','Your beast fights alongside you.','Requires managing the beast and its marks.'],
+  ice:['减速和护甲能缓解被围攻的压力。','持续范围技能需要敌人留在原地。','Slows enemies and reduces incoming damage.','Persistent attacks need enemies to stay in range.'],
+  fire:['持续火焰能覆盖一片区域。','敌人离开火焰后，持续伤害会落空。','Keeps an area burning for sustained damage.','Mobile enemies can leave the flames.'],
+  lightning:['连锁攻击适合成群敌人，也能快速位移。','敌人分得太开时，连锁效果会变弱。','Chains through groups and moves quickly.','Chains lose value against scattered foes.'],
+  curse:['能削弱敌人，也能靠汲取回血。','先挂诅咒再输出才能发挥强度。','Weakens enemies and steals health.','Works best after setting up a curse.'],
+ };
+ const types={
+  shadowstep:[1,3],shadowreturn:[1,3],nightfall:[1,2],riftblade:[0],
+  faultline:[1],stoneprison:[1],mountainfall:[1],stonefist:[1],
+  triplecut:[0],swordrain:[1],phantomblade:[0],swordwave:[0],
+  vitality:[2,4],power:[1,2],rage:[1,2],slash:[1],
+  summon:[2],weaken:[0],transform:[2],soulbolt:[0],
+  icebolt:[0],icearmor:[1,2],blizzard:[1],frostburst:[1],
+  firewave:[1],firestorm:[1],inferno:[1],firebolt:[0],
+  chain:[1],haste:[1,2,3],storm:[1],tempest:[1],hex:[0],drain:[0,4],doom:[1],
+ };
+ const fusionDescriptions={
+  prism:['单体 280% 攻击，概率触发多种元素，连锁余震造成75%伤害。立即回复实伤15%，减伤20%持续4秒。','280% single-target damage with elemental procs and a 75% Arc Echo. Heal 15% of damage and gain 20% reduction for 4s.'],
+  judgment:['目标周围10米造成340%攻击，概率触发元素，回复实伤20%，减伤35%持续4秒。','340% damage within 10m of the target, elemental procs, 20% healing and 35% reduction for 4s.'],
+  erosion:['7秒内目标受伤+20%、攻击和移速−15%，每秒造成10%攻击。','For 7s: target takes 20% more damage, loses 15% attack and speed, and takes 10% attack per second.'],
+  siphon:['6秒内每秒造成20%攻击，返还实际伤害的75%为生命。','For 6s, deal 20% attack per second and recover 75% of damage dealt.'],
+  voidslash:['300%攻击，标记目标。再斩引爆，造成480%攻击。','300% damage and a mark. The next slash detonates for 480%.'],
+  riftassault:['突袭至目标身后，沿途280%攻击。6秒内再按返回。','Dash behind the target for 280% path damage. Recast within 6s to return.'],
+  voiddomain:['持续8秒，减速敌人，强化攻击与移动，允许突袭越过部分障碍。','Slows enemies, boosts attack and movement, and lets Rift Assault cross some barriers for 8s.'],
+  execution:['连续五斩，每斩115%，期间短暂无敌。引爆印记并波及周围。','Five cuts for 115% each with brief invulnerability. Detonates the mark and damages nearby enemies.'],
+  abysstouch:['240%攻击，侵蚀最多叠5层，每层每秒16%。','240% damage and up to five corruption stacks, each dealing 16% per second.'],
+  devour:['吞噬侵蚀，180%攻击加每层60%，回血35%；击杀传播。','Consume corruption for 180% plus 60% per stack. Heal 35% and spread on kill.'],
+  descent:['消耗12%最大生命，生成8秒领域，压低敌方攻击并汲取生命。','Spend 12% max HP for an 8s field that weakens enemies and drains life.'],
+  avatar:['消耗30深渊能量。化身持续10秒，持续失血并强化侵蚀与吸血。','Spend 30 Abyssal Energy. Transform for 10s, losing health while empowering corruption and lifesteal.'],
+  temporalrift:['300%攻击，扰乱时间，重复攻击引爆为480%。','300% damage and time disruption. Repeated hits detonate for 480%.'],
+  chronoshift:['向前跃迁12米；6秒内再按返回，瞄中敌人会引爆残影。','Shift forward 12m. Recast within 6s to return, or aim at an enemy to detonate the anchor.'],
+  rewind:['8秒内可回到原生命与位置并恢复其他技能冷却。','Recast within 8s to restore health, position and other cooldowns.'],
+  stasis:['冻结12米内普通怪物4秒并延后结算伤害，首领大幅减速。','Freeze regular enemies within 12m for 4s and bank damage. Bosses are heavily slowed.'],
+ };
+ const fusionText=id=>L(...fusionDescriptions[id]);
+ function renderProfessions(card){
+  const p=getProfile(), refresh=()=>{if(card.isConnected)open('professions')};
+  el('h2',L('职业','Professions'),card);
+  if(p.profession){
+   btn(L('查看技能','View skills'),()=>open('skills'),card);
+   btn(L('职业试炼','Profession Trials'),()=>open('trials'),card);
+   if(!ascensionProgress(p)?.holy){
+    const trial=el('details','',card);trial.className='ancientAscensionEntry';trial.open=ascensionEligible(p)||!!ascensionProgress(p)?.permit;
+    el('summary',L('圣级试炼','Holy Ascension Trial'),trial);
+    renderAscensionPanel(trial,{getProfile,en,job:p.profession,request,join,refresh});
+   }
+   renderBranchPanel(card,{p,job:p.profession,en,action,refresh});
+   el('p',L('15级开放转职，每次消耗一本转职书。','Changing profession unlocks at level 15 and costs one change book.'),card);
   }
-  const jobs=el('div','',card);jobs.className='ancientProfessionGrid';
-  for(const [id,j]of Object.entries(PROFESSIONS)){
-   const b=btn(j.icon+' '+(en()?j.en:j.name),()=>{previewJob=id;refreshPreview()},jobs);
-   b.classList.toggle('selected',previewJob===id);b.setAttribute('aria-pressed',String(previewJob===id));b.disabled=submitting;
-   if(choosing)b.classList.add('ancientGuideTarget');
+  const fusion=el('details','',card);
+  fusion.className='ancientAscensionEntry';
+  el('summary',L('职业融合','Profession fusion'),fusion);
+  const roles={
+   elementalist:['多元素联动，能回血和减伤，缺少主动位移。','Combines elemental effects, healing and defense. No active dash.'],
+   voidsword:['印记、突进和回撤组成爆发连招，恢复能力较弱。','Marks and dashes set up burst combos. Limited healing.'],
+   abyssal:['用生命换取持续输出，再从敌人身上汲取生命。','Trades health for sustained damage and steals it back.'],
+   chrono:['靠时间锚点、回溯和静止改变战斗节奏，依赖释放时机。','Uses anchors, rewinds and stasis to control combat timing.'],
+  };
+  for(const [id, recipe] of Object.entries(PROFESSION_FUSIONS)){
+   const item=el('article','',fusion);
+   item.className='weaponCard';
+   el('strong',L(recipe.name,recipe.en),item);
+   el('span',L(...roles[id]),item);
+   for(const source of recipe.sources){
+    const job=PROFESSIONS[source];
+    const trained=job.skills.filter(skill=>(p.skills?.[skill]||0)>=FUSION_SKILL_REQUIREMENT).length;
+    el('small',L(job.name,job.en)+' · '+trained+'/'+job.skills.length+' '+L('个技能达到5级','skills at level 5'),item);
+   }
+   const ready=recipe.sources.every(source=>!p.consumedJobs?.[source]&&PROFESSIONS[source].skills.every(skill=>(p.skills?.[skill]||0)>=5));
+   for(const skill of PROFESSIONS[id].skills)el('small',L(SKILLS[skill].name,SKILLS[skill].en)+' · '+fusionText(skill),item);
+   const fuse=btn(p.fusedJobs?.[id]?L('已解锁','Unlocked'):L('融合并转职','Fuse and equip'),()=>{
+    if(window.confirm(L('融合会永久消耗所列职业。确认融合？','Fusion permanently consumes the listed professions. Continue?')))void action('fuseProfession',{job:id});
+   },item);
+   fuse.disabled=p.level<15||!ready||!!p.fusedJobs?.[id];
   }
-  el('p',L('转职书：','Profession Change Books: ')+(p.materials['supply:transfer']||0),card);
-  el('p',L('选择或切换职业消耗一本转职书，可在商店购买。','Choosing or changing profession consumes one change book, available in the shop.'),card);
-  el('p',L('已修炼等级永久保留，头目与 BOSS 必定掉落一本技能书。','Trained levels are retained. Each boss drops one skill book.'),card);
-  if(!previewJob){el('p',L('选择一个职业','Choose a profession'),card);return}
-  const selected=previewJob,job=PROFESSIONS[selected],current=p.profession===selected;
-  const spotlight=el('section','',card);spotlight.className='ancientProfessionSpotlight';
-  el('h3',job.icon+' '+holyName(en()?job.en:job.name,en(),holyView),spotlight);
-  btn(holyView?L('普通级详情','Normal Details'):L('圣级详情','Holy Details'),()=>{holyView=!holyView;refreshPreview()},spotlight);
-  btn(L('3D技能预览','3D Skill Preview'),()=>openSkillPreview(selected,{en,level:3,skin:current?equippedAncientSkin(p):undefined}),spotlight);
-  if(holyView&&!current)renderAscensionPanel(card,{getProfile,en,job:selected,request,join,refresh:refreshPreview});
-  const confirm=btn(current?L('当前职业','Current profession'):p.profession?L('更改职业','Change profession'):L('选择职业','Choose profession'),async()=>{
-   const latest=getProfile();if(submitting||latest.profession===selected||(latest.materials['supply:transfer']||0)<1)return;
-   submitting=true;refreshPreview();
-   try{await action('chooseProfession',{job:selected})}finally{submitting=false;refreshPreview()}
-  },spotlight);confirm.className='ancientProfessionConfirm';confirm.disabled=current||submitting||(p.materials['supply:transfer']||0)<1;
-  if(choosing){confirm.classList.add('ancientGuideTarget');btn(L('下一步：定位确认按钮 ↓','Next: find the confirm button ↓'),()=>{confirm.scrollIntoView({block:'center',behavior:'smooth'});confirm.focus({preventScroll:true})},coach);}
-  renderBranchPanel(card,{p,job:selected,en,action,refresh:refreshPreview});
-  const grid=el('div','',card);grid.className='ancientGrid';
-  for(const id of job.skills){
-   const s=SKILLS[id],n=p.skills?.[id]||0,training=skillTrainingCost(n),cost=training.books,count=p.materials[skillBook(id)]||0,item=el('section','',grid);item.className='weaponCard ancientSkillCard';
-   el('strong',`${ancientKeyLabel('Key'+s.key,en())} · ${holyName(en()?s.en:s.name,en(),holyView)} · ${L('等级','Lv.')} ${n}`,item);
-   el('small',`${L('玩家等级','Player level')} ${s.unlock}`,item);el('p',skillDescription(id,n,en()),item);if(holyView)el('strong',holySkillDetails(id,n,en()),item);
-   if(!n)el('small',L('等级0不可使用；下方显示1级效果','Level 0 is inactive; showing level 1 effects'),item);
-   el('small',`${en()?job.en:job.name}-${en()?s.en:s.name}${L('技能书',' Skill Book')} · ${count} / ${cost}`,item);
-   if(n)el('small',L('相位核心：','Phase Cores: ')+(p.materials.core||0)+' / '+training.cores+' · '+L('金币：','Gold: ')+(p.coins||0).toLocaleString()+' / '+training.coins.toLocaleString(),item);
-   if(n)el('p',L('下一级：','Next level: ')+skillDescription(id,n+1,en()),item);
-   if(current){const b=btn(L('修炼至','Train to')+' '+(n+1),()=>void action('trainSkill',{id}),item);b.disabled=submitting||p.level<s.unlock||count<cost||(p.materials.core||0)<training.cores||(p.coins||0)<training.coins||!Number.isSafeInteger(cost);if(trainingFirst&&id===job.skills[0]){item.classList.add('ancientGuided');b.classList.add('ancientGuideTarget');btn(L('定位 Q 技能激活按钮 ↓','Find the Q activation button ↓'),()=>{b.scrollIntoView({block:'center',behavior:'smooth'});b.focus({preventScroll:true})},coach);el('p',L('激活成功后关闭技能面板，在战斗中按 Q（或点击下方 Q 技能按钮）使用。','After activation, close Skills and press Q in combat (or click the Q ability on the HUD).'),item);if(b.disabled)el('p',count<cost?L('尚未收到技能书：关闭面板，回到格鲁克身边按 F 领取赠书。','Book not received yet: close this panel, return to Gruk and press F to collect his gift.'):L('等待操作完成后再点击。','Wait for the current operation to finish.'),item);}}
+  const list=el('div','',card);list.className='ancientProfessionList';
+  for(const [id,job] of Object.entries(PROFESSIONS)){
+   if(p.consumedJobs?.[id]||isFusionJob(id)&&!p.fusedJobs?.[id])continue;
+   const item=el('article','',list);item.className='weaponCard';
+   el('strong',job.icon+' '+L(job.name,job.en),item);
+   const [good,bad,goodEn,badEn]=descriptions[id]||[L('自带圣级技能','Holy skills unlocked'),'固定技能等级','Holy skills unlocked','Fixed skill level'];
+   el('span',L('优点','Strength')+' · '+L(good,goodEn),item);
+   el('small',L('缺点','Trade-off')+' · '+L(bad,badEn),item);
+   const controls=el('div','',item);controls.className='ancientWorkspaceLinks';
+   btn(L('3D 技能预览','3D skill preview'),()=>openSkillPreview(id,{en,level:3,skin:id===p.profession?equippedAncientSkin(p):undefined}),controls);
+   const choose=btn(id===p.profession?L('当前职业','Current profession'):p.profession?L('转职','Change profession'):L('选择职业','Choose profession'),async()=>{
+    choose.disabled=true;
+    await action('chooseProfession',{job:id});
+    if(choose.isConnected)choose.disabled=false;
+   },controls);
+   choose.disabled=id===p.profession||!!p.profession&&(p.level<15||(p.materials['supply:transfer']||0)<1);
   }
  }
- function update(time,paused=false){if(time-lastDraw<100)return;lastDraw=time;const p=getProfile(),a=getPlayer(),job=PROFESSIONS[p?.profession];hud.hidden=paused||!job||!a||a.hp<=0;if(!job||paused)return;const key=p.profession+':'+en();if(key!==lastJob){lastJob=key;bar.replaceChildren();buttons.clear();for(const id of job.skills){const b=btn('',()=>cast(id),bar);b.dataset.layoutKey='skill-'+SKILLS[id].key;buttons.set(id,b)}}for(const [id,b]of buttons){const s=SKILLS[id],n=p.skills?.[id]||0,cd=Math.max(0,Math.ceil(((a.skillRuntime?.cooldowns?.[id]||0)-Date.now())/1000)),duration=Math.max(0,Math.ceil(((id==='summon'?a.skillRuntime?.summon?.until||0:a.skillRuntime?.effects?.[id]?.until||0)-Date.now())/1000));const label=`${ancientKeyLabel('Key'+s.key,en())} · ${holyName(en()?s.en:s.name,en(),!!a.holy)}${duration?' · '+duration+'s':cd?' · '+cd+'s':n?'':' · Lv.0'}`;if(b.textContent!==label)b.textContent=label;b.disabled=n===0||(cd>0&&!(id==='shadowreturn'&&(a.skillRuntime?.shadowAnchor?.until||0)>Date.now()))||!!activeSkill(a,'transform')||id==='summon'&&!!a.skillRuntime?.summon;b.classList.toggle('selected',duration>0||id==='summon'&&!!a.skillRuntime?.summon)}const pet=a.skillRuntime?.summon,form=activeSkill(a,'transform'),weaken=(p.skills?.weaken||0)>0;const toolKey=[p.profession,!!pet,form>0,weaken,en(),ancientBindingVersion()].join(':');if(lastTools!==toolKey){lastTools=toolKey;tools.replaceChildren();if(form)btn(L('1 · 爪子','1 · Claws'),()=>slot(1),tools);else if(p.profession==='summoner'){btn(L('1 · 主手','1 · Melee'),()=>slot(1),tools);if(pet)btn(L('2 · 锁定印记','2 · Command sigil'),()=>slot(2),tools);if(weaken)btn((pet?'3':'2')+' · '+L('削弱印记','Weakening sigil'),()=>slot(pet?3:2),tools)}}for(const [index,b]of [...tools.children].entries()){b.dataset.layoutKey='tool-'+index;b.dataset.toolSlot=String(index+1);const label=ancientKeyLabel('Digit'+(index+1),en())+' · '+b.textContent.split(' · ').slice(1).join(' · ');if(b.textContent!==label)b.textContent=label;}const text=form?L('变身中 · 左键爪击','BEAST FORM · LMB claw attack'):pet?`${L('铁甲兽','Armored Beast')} ${Math.ceil(pet.hp)}/${pet.maxHp} · ${Math.max(0,Math.ceil((pet.until-Date.now())/1000))}s · ${L('2锁定印记命中怪物指挥攻击','2 command sigil: hit a monster to mark it')}`:p.profession==='summoner'&&weaken?L('1主手 · 2削弱印记 · 左键命中生效','1 melee · 2 weakening sigil · LMB hit to apply'):'';const mappedText=text.replace(/LMB|左键/g,ancientKeyLabel('Mouse0',en())).replace(/([123])(?=锁定|主手|削弱| command| melee| weakening)/g,(_,n)=>ancientKeyLabel('Digit'+n,en()));if(hint.textContent!==mappedText)hint.textContent=mappedText;for(const b of tools.children){const chosen=Number(b.dataset.toolSlot)===(a.skillRuntime?.mode||1);b.classList.toggle('selected',chosen)}}
- return {render,update};
+ function render(card){
+  const p=getProfile(),job=PROFESSIONS[p.profession];
+  el('h2',L('技能','Skills'),card);
+  if(!job){btn(L('选择职业','Choose profession'),()=>open('professions'),card);return}
+  const list=el('div','',card);list.className='ancientSkillList';
+  for(const id of job.skills){
+   const skill=SKILLS[id], level=p.skills?.[id]||0, cost=skillTrainingCost(level), books=p.materials[skillBook(id)]||0;
+   const item=el('section','',list);item.className='weaponCard ancientSkillCard';
+   el('strong',ancientKeyLabel('Key'+skill.key,en())+' · '+holyName(L(skill.name,skill.en),en(),isHoly(p)),item);
+   el('small',level?L('技能当前等级','Current skill level')+' · '+level:L('技能解锁等级','Required player level')+' · '+skill.unlock,item);
+   if(isFusionSkill(id)){
+    item.querySelector('small').textContent=L('圣级 · 固定技能','Holy · Fixed skill');
+    el('p',fusionText(id),item);
+    el('small',L('冷却','Cooldown')+' · '+skill.cooldown+'s',item);
+    continue;
+   }
+   const labels=L(['单体','群体','增益','位移','恢复'],['Single target','Area','Buff','Movement','Healing']);
+   el('span',L('技能类型','Skill type')+' · '+types[id].map(index=>labels[index]).join(' / '),item);
+   el('p',skillDescription(id,level,en()),item);
+   const {direct,tick,conditional}=skillDamagePreview(id,level);
+   if(level){
+    const base=ancientSkillDamage(p)*holyPower(p);
+    const amount=value=>Math.floor(base*value).toLocaleString();
+    const parts=[];
+    if(direct)parts.push(L('每次命中','Per hit')+' '+amount(direct));
+    if(tick)parts.push(L('每秒','Per second')+' '+amount(tick));
+    if(conditional)parts.push((id==='drain'?L('目标带印记','Marked target'):L('回撤斩击','Return strike'))+' '+amount(conditional));
+    if(id==='summon')parts.push(L('召唤兽每次攻击','Beast attack')+' '+amount((.75+.05*level)*(1+ancientGearStats(p).pet)));
+    if(parts.length)el('span',L('无药水伤害','Unbuffed damage')+' · '+parts.join(' · '),item);
+   }
+   if(isHoly(p))el('small',holySkillDetails(id,level,en()),item);
+   else el('small',L('圣级要求 · 玩家80级，当前职业全部技能5级，通过升华试炼。','Holy requirements · Level 80, every skill at level 5, and completion of the ascension trial.'),item);
+   el('small',L('技能书','Skill books')+' '+books+'/'+cost.books+(level?' · '+L('相位核心','Phase Cores')+' '+cost.cores+' · '+L('金币','Gold')+' '+cost.coins:''),item);
+   const upgrade=btn(level?L('升级技能','Upgrade skill'):L('解锁技能','Unlock skill'),()=>void action('trainSkill',{id}),item);
+   upgrade.disabled=p.level<skill.unlock||books<cost.books||(p.materials.core||0)<cost.cores||(p.coins||0)<cost.coins||!Number.isSafeInteger(cost.books);
+  }
+ }
+ function update(time,paused=false){if(time-lastDraw<100)return;lastDraw=time;const p=getProfile(),a=getPlayer(),job=PROFESSIONS[p?.profession];hud.hidden=paused||!job||!a||a.hp<=0;if(!job||paused)return;const key=p.profession+':'+en();if(key!==lastJob){lastJob=key;bar.replaceChildren();buttons.clear();for(const id of job.skills){const b=btn('',()=>cast(id),bar);b.dataset.layoutKey='skill-'+SKILLS[id].key;buttons.set(id,b)}}for(const [id,b]of buttons){const s=SKILLS[id],n=p.skills?.[id]||0,cd=Math.max(0,Math.ceil(((a.skillRuntime?.cooldowns?.[id]||0)-Date.now())/1000)),duration=Math.max(0,Math.ceil(((id==='summon'?a.skillRuntime?.summon?.until||0:a.skillRuntime?.effects?.[id]?.until||0)-Date.now())/1000));const label=`${ancientKeyLabel('Key'+s.key,en())} · ${holyName(en()?s.en:s.name,en(),!!a.holy)}${duration?' · '+duration+'s':cd?' · '+cd+'s':n?'':' · Lv.0'}`;if(b.textContent!==label)b.textContent=label;b.disabled=n===0||(cd>0&&!((id==='shadowreturn'&&(a.skillRuntime?.shadowAnchor?.until||0)>Date.now()||['riftassault','chronoshift'].includes(id)&&(a.skillRuntime?.fusion?.anchor?.until||0)>Date.now()||id==='rewind'&&(a.skillRuntime?.fusion?.rewind?.until||0)>Date.now())))||!!activeSkill(a,'transform')||id==='summon'&&!!a.skillRuntime?.summon;b.classList.toggle('selected',duration>0||id==='summon'&&!!a.skillRuntime?.summon)}const pet=a.skillRuntime?.summon,form=activeSkill(a,'transform'),weaken=(p.skills?.weaken||0)>0;const toolKey=[p.profession,!!pet,form>0,weaken,en(),ancientBindingVersion()].join(':');if(lastTools!==toolKey){lastTools=toolKey;tools.replaceChildren();if(form)btn(L('1 · 爪子','1 · Claws'),()=>slot(1),tools);else if(p.profession==='summoner'){btn(L('1 · 主手','1 · Melee'),()=>slot(1),tools);if(pet)btn(L('2 · 锁定印记','2 · Command sigil'),()=>slot(2),tools);if(weaken)btn((pet?'3':'2')+' · '+L('削弱印记','Weakening sigil'),()=>slot(pet?3:2),tools)}}for(const [index,b]of [...tools.children].entries()){b.dataset.layoutKey='tool-'+index;b.dataset.toolSlot=String(index+1);const label=ancientKeyLabel('Digit'+(index+1),en())+' · '+b.textContent.split(' · ').slice(1).join(' · ');if(b.textContent!==label)b.textContent=label;}const text=form?L('变身中 · 左键爪击','BEAST FORM · LMB claw attack'):pet?`${L('铁甲兽','Armored Beast')} ${Math.ceil(pet.hp)}/${pet.maxHp} · ${Math.max(0,Math.ceil((pet.until-Date.now())/1000))}s · ${L('2锁定印记命中怪物指挥攻击','2 command sigil: hit a monster to mark it')}`:p.profession==='summoner'&&weaken?L('1主手 · 2削弱印记 · 左键命中生效','1 melee · 2 weakening sigil · LMB hit to apply'):'';const mappedText=text.replace(/LMB|左键/g,ancientKeyLabel('Mouse0',en())).replace(/([123])(?=锁定|主手|削弱| command| melee| weakening)/g,(_,n)=>ancientKeyLabel('Digit'+n,en()));if(hint.textContent!==mappedText)hint.textContent=mappedText;for(const b of tools.children){const chosen=Number(b.dataset.toolSlot)===(a.skillRuntime?.mode||1);b.classList.toggle('selected',chosen)}}
+ return {render,renderProfessions,update};
 }

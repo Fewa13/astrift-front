@@ -62,6 +62,10 @@ function unlockAncientSkin(profile, id) {
   return null;
 }
 const SKIN_PROFESSIONS = {
+  elementalist: { zh: "\u5143\u7D20\u6218\u58EB", en: "Elemental Warrior", cloth: 2374729, accent: 16764264 },
+  voidsword: { zh: "\u865A\u7A7A\u5251\u5723", en: "Void Swordmaster", cloth: 2233908, accent: 11572730 },
+  abyssal: { zh: "\u6DF1\u6E0A\u9886\u4E3B", en: "Abyssal Overlord", cloth: 3150363, accent: 14830207 },
+  chrono: { zh: "\u65F6\u7A7A\u884C\u8005", en: "Chrono Walker", cloth: 1259325, accent: 7992800 },
   fire: { zh: "\u706B\u7130\u6CD5\u5E08", en: "Fire Mage", cloth: 5513752, accent: 16751432 },
   warrior: { zh: "\u6218\u58EB", en: "Warrior", cloth: 7816763, accent: 14657395 },
   summoner: { zh: "\u53EC\u5524\u5E08", en: "Summoner", cloth: 4551006, accent: 10412707 },

@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 export const ANCIENT_NAV_GROUPS=[
  ['背包','Inventory',[['bag','装备与物品','Gear & Items'],['collections','藏品','Collections'],['stones','原石工坊','Stone Workshop']]],
- ['角色','Character',[['skills','职业与技能','Profession & Skills'],['skins','皮肤','Skins'],['titles','称号','Titles']]],
+ ['角色','Character',[['professions','职业','Professions'],['skills','技能','Skills'],['skins','皮肤','Skins'],['titles','称号','Titles']]],
  ['冒险','Adventure',[['maps','地图','Maps'],['dungeon','副本与挑战','Dungeons & Challenges'],['research','怪物图鉴','Bestiary'],['leaderboard','排行榜','Rankings']]],
  ['社交','Social',[['friends','好友','Friends'],['party','队伍','Party'],['online','本图玩家','Players Nearby'],['invite','邀请','Invite'],['trade','交易','Trade'],['chat','聊天','Chat']]],
  ['商店','Shop',[['shop','NPC 商店','NPC Shop'],['market','玩家市场','Player Market']]]

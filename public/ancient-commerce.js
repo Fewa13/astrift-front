@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { PROFESSION_FUSIONS, isFusionJob } from "./ancient-skills";
 import { PROFESSIONS, SKILLS, skillBook, ensureBasicSkills } from "./ancient-skills.js";
 const ANCIENT_SUPPLIES = {
   purity: { name: "\u51C0\u5316\u5370\u8BB0", en: "Purification Sigil", price: 0, kind: "cleanse" },
@@ -56,7 +57,7 @@ function ancientSkillBooksRemaining(p, id, now = Date.now()) {
 function useAncientSupply(p, id, now = Date.now(), random = Math.random) {
   const d = Object.hasOwn(ANCIENT_SUPPLIES, id) ? ANCIENT_SUPPLIES[id] : void 0, key = supplyKey(id);
   if (!d || (p.materials[key] || 0) < 1) return "\u7269\u54C1\u4E0D\u8DB3";
-  if (d.kind === "transfer") return "\u8BF7\u5728\u6280\u80FD\u9875\u9762\u9009\u62E9\u804C\u4E1A";
+  if (d.kind === "transfer") return "\u8BF7\u5728\u804C\u4E1A\u9875\u9762\u9009\u62E9\u804C\u4E1A";
   if (d.kind === "cleanse") {
     if (!p.purificationUnlocked) return "\u5C1A\u672A\u5B66\u4F1A\u51C0\u5316";
     if (!p.corrupted) return "\u5F53\u524D\u6CA1\u6709\u9B54\u5316";
@@ -75,17 +76,35 @@ function useAncientSupply(p, id, now = Date.now(), random = Math.random) {
   return null;
 }
 function chooseAncientProfession(p, job) {
-  if (!Object.hasOwn(PROFESSIONS, job)) return "\u804C\u4E1A\u4E0D\u5B58\u5728";
+  if (!Object.hasOwn(PROFESSIONS, job) || p.consumedJobs?.[job] || isFusionJob(job) && !p.fusedJobs?.[job]) return "\u804C\u4E1A\u4E0D\u53EF\u7528";
   if (p.profession === job) return "\u5DF2\u662F\u5F53\u524D\u804C\u4E1A";
   const key = supplyKey("transfer");
-  if ((p.materials[key] || 0) < 1) return "\u8F6C\u804C\u4E66\u4E0D\u8DB3";
-  p.materials[key]--;
+  if (p.profession) {
+    if (p.level < 15) return "15\u7EA7\u5F00\u653E\u8F6C\u804C";
+    if ((p.materials[key] || 0) < 1) return "\u8F6C\u804C\u4E66\u4E0D\u8DB3";
+    p.materials[key]--;
+  }
   p.profession = job;
   ensureBasicSkills(p);
   return null;
 }
 function ancientBoostsRemaining(p, id, now = Date.now()) {
   return p.shopBoosts?.day === ancientShopDay(now) ? Math.max(0, 5 - Math.max(0, p.shopBoosts.counts?.[id] || 0)) : 5;
+}
+function fuseAncientProfession(p, job) {
+  if (p.level < 15) return "15\u7EA7\u5F00\u653E\u8F6C\u804C";
+  if (!isFusionJob(job) || p.fusedJobs?.[job]) return "\u804C\u4E1A\u65E0\u6CD5\u878D\u5408";
+  const recipe = PROFESSION_FUSIONS[job];
+  for (const source of recipe.sources) {
+    if (p.consumedJobs?.[source] || !PROFESSIONS[source].skills.every((id) => (p.skills?.[id] || 0) >= 5)) return "\u878D\u5408\u804C\u4E1A\u7684\u6240\u6709\u6750\u6599\u6280\u80FD\u987B\u8FBE\u52305\u7EA7\uFF0C\u4E14\u804C\u4E1A\u5C1A\u672A\u88AB\u6D88\u8017";
+  }
+  (p.fusedJobs ??= {})[job] = true;
+  for (const source of recipe.sources) (p.consumedJobs ??= {})[source] = true;
+  p.ascension ??= { day: "", attempts: 0, jobs: {} };
+  p.ascension.jobs[job] = { holy: true, permit: true, step: 2, count: 0 };
+  for (const id of PROFESSIONS[job].skills) (p.skills ??= {})[id] = 1;
+  p.profession = job;
+  return null;
 }
 export {
   ANCIENT_SUPPLIES,
@@ -94,6 +113,7 @@ export {
   ancientSkillBooksRemaining,
   buyAncientSupply,
   chooseAncientProfession,
+  fuseAncientProfession,
   supplyDescription,
   supplyKey,
   useAncientSupply

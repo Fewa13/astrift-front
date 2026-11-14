@@ -317,7 +317,23 @@ export function createAncientSkinModel(id,profession){
  const choices=ancientProfessionSkins(profession);
  const skin=choices.find(item=>item.id===id)||choices[0];
  const key=skin.profession+':'+skin.id;
- if(!templates.has(key))templates.set(key,makeModel(skin));
+ if(!templates.has(key)){
+  const model=makeModel(skin);
+  const palette={elementalist:[0x52cbff,0xfc6442,0xfbd673,0xbd62ff,0x6cffe4,0x94b578],voidsword:[0xae78ff,0x4c2b80],abyssal:[0xee3d73,0x54162c],chrono:[0x77f9d5,0xffd374]}[profession];
+  if(palette){
+   const body=model.getObjectByName('body')||model;
+   const gem=new T.OctahedronGeometry(.14,0);
+   const metals=palette.map(color=>new T.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.45,metalness:.65,roughness:.25}));
+   for(let i=0;i<12;i++){
+    const angle=i*Math.PI/6,mesh=new T.Mesh(gem,metals[i%metals.length]);
+    mesh.position.set(Math.cos(angle)*.69,.46+Math.sin(angle)*.65,.37);
+    mesh.rotation.z=-angle;mesh.scale.set(.65,1.7,.65);body.add(mesh);
+   }
+   const crown=new T.Mesh(new T.TorusGeometry(.48,.023,5,36),metals[0]);
+   crown.rotation.x=Math.PI/2; crown.position.y=2.34;model.add(crown);
+  }
+  templates.set(key,model);
+ }
  const root=templates.get(key).clone(true);
  const joints=prefix=>[0,1].map(i=>root.getObjectByName(prefix+i));
  root.userData={height:skin.rarity===5?2.67:skin.rarity===4?2.46:skin.rarity===3?2.28:2.06,body:root.getObjectByName('body'),arms:joints('arm'),legs:joints('leg'),knees:joints('knee')};

@@ -262,3 +262,12 @@ body:has(#menu:not(.active)) #openWorld{display:none}
   background: linear-gradient(105deg, #46355b, #211a32);
 }
 .ancientProfessionSpotlight h3 { flex: 1 0 100%; margin: 0 0 4px; }
+.ancientProfessionList, .ancientSkillList { display: grid; gap: 12px; margin-top: 16px; }
+.ancientProfessionList { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.ancientProfessionList .ancientWorkspaceLinks { margin: auto 0 0; }
+.ancientSkillList p { margin: 0; }
+.ancientSkillList small { color: #9caab5; }
+.ancientSkillList button { align-self: flex-start; }
+.ancientAscensionEntry { margin-block: 12px; padding: 16px; border: 1px solid #d7bb70; border-radius: 8px; }
+.ancientAscensionEntry summary { cursor: pointer; color: #f3d68c; font-weight: 700; }
+.ancientAscensionEntry > .weaponCard { margin-top: 10px; }

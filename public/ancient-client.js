@@ -168,7 +168,7 @@ const node=(tag,text,parent)=>{const n=document.createElement(tag);n.textContent
 const skinUI=createAncientSkinUI();
 const gearUI=createAncientGearUI({getProfile:()=>profile,en,action:(kind,data)=>action(kind,data),refresh:renderPanel});const growthHud=createGrowthHud($('ancientHud'),en);
 const branchGuide=createBranchGuide({getProfile:()=>profile,getPlayer:()=>me,getMap:()=>currentMap,camera,en,send,clear:(...v)=>mapLineClear(...v,currentMap)});
-const skillUI=createAncientSkillUI({getProfile:()=>profile,getPlayer:()=>me,en,action:(kind,data)=>action(kind,data),cast:castSkill,slot:selectSkillSlot,request:async(kind,data={})=>{const r=await accountApi('ancient/profile',{...accountSession(),action:kind,...data});if(r.profile){profile=r.profile;identity()}return r},join:selectMap});
+const skillUI=createAncientSkillUI({open:openMenu,getProfile:()=>profile,getPlayer:()=>me,en,action:(kind,data)=>action(kind,data),cast:castSkill,slot:selectSkillSlot,request:async(kind,data={})=>{const r=await accountApi('ancient/profile',{...accountSession(),action:kind,...data});if(r.profile){profile=r.profile;identity()}return r},join:selectMap});
 const questUI=createAncientQuestUI({scene,camera,getProfile:()=>profile,getPlayer:()=>me,getMap:()=>active?currentMap:'tribe',en,send,material,clear:(ax,az,bx,bz)=>mapLineClear(ax,ground(ax,az)+1.5,az,bx,ground(bx,bz)+1.5,bz,currentMap),openPanel:openQuestPanel,beginDialogue:()=>{paused=true;unlock();$('ancientPanel').replaceChildren();$('ancientNav').hidden=false},endDialogue:()=>{paused=false;renderPanel();lock()}});
 const deathUI=createAncientDeathUI({container:$('ancientDeath'),en,node,button,names,skills:SKILLS,respawn:()=>send({type:'respawn'}),watch:name=>spectateName=name,leave:()=>void selectMap('tribe')});
 const blightUI=createBlightUI({scene,camera,getMap:()=>currentMap,getPlayer:()=>me,getQuest:()=>profile&&currentQuest(profile),en,send,clear:(...args)=>mapLineClear(...args,currentMap)});
@@ -233,7 +233,7 @@ const navigationResize=new ResizeObserver(measureAncientNavigation);navigationRe
 
 function renderPanel(){panelMemory.capture();drawPanel();if(profile)panelMemory.restore(view+':'+(view==='bag'?inventoryUI.category:view==='shop'?shopCategory:tab));}
 function drawPanel(){if(view!=='skins'||!profile||active&&!paused)skinUI.dispose();marketUI.dispose();collectionUI.dispose();stoneworkUI.dispose();roughShopUI.dispose();dailyShopUI.dispose();researchUI.dispose();trialUI.dispose();const panel=$('ancientPanel');panel.replaceChildren();$('ancientHeader').hidden=false;nav();if(!profile){identity();if(!accountSession())loginPanel();else{const loading=node('section','',panel);loading.className='ancientCard';node('h2',L('Ancient Age','Ancient Age'),loading);accountPanel(loading);node('p',busy?L('正在加载存档…','Loading save…'):L('存档暂未加载','Save not loaded'),loading);button(busy?L('加载中…','Loading…'):L('重新连接','Retry connection'),()=>void action('profile'),loading).disabled=busy;}return}identity();if(active&&!paused)return;const card=node('section','',panel);card.className='ancientCard';if(view!=='lobby'){const close=button('×',()=>{questUI.dismiss();if(active){paused=false;view='pause';renderPanel();quickbar.update();lock()}else{view='lobby';renderPanel()}},card);close.className='ancientPanelClose';close.setAttribute('aria-label',L('关闭','Close'));}
- const panelTheme={bag:'equipment',skills:'profession',maps:'atlas',shop:'store',friends:'social',invite:'social',party:'social',online:'social'}[view];
+ const panelTheme={bag:'equipment',skills:'profession',professions:'profession',maps:'atlas',shop:'store',friends:'social',invite:'social',party:'social',online:'social'}[view];
  if(panelTheme)card.dataset.theme=panelTheme;
  if(view==='lobby'){card.classList.add('ancientLobby');node('small','ASTRIFT // ANCIENT AGE',card).className='ancientEyebrow';node('h1',L('远古世纪','ANCIENT AGE'),card);accountPanel(card);questUI.renderSummary(card)}
  else if(view==='menu'){node('h2',L('已暂停','Paused'),card);node('p',L('从上方分类直接选择功能。','Choose a function directly from the groups above.'),card);}
@@ -251,7 +251,8 @@ function drawPanel(){if(view!=='skins'||!profile||active&&!paused)skinUI.dispose
  dungeonUI.render(card);void dungeonUI.poll()} else if(view==='trade'){tradeUI.render(card);void tradeUI.poll()} else if(view==='party'){partyUI.render(card);void partyUI.poll()}
  else if(view==='online'){node('h2',L('本地图在线玩家','Players in this map'),card);const list=node('div','',card);list.className='ancientOnlinePlayers';for(const p of onlineRoster){const row=node('div','',list);row.className='ancientPartyRow';node('strong',p.name,row);node('span',L('等级 ','Lv. ')+p.level,row);}if(!onlineRoster.length)node('p',rosterLoading?L('加载中…','Loading…'):L('暂无在线玩家','No players online'),list);button(L('刷新','Refresh'),()=>void loadOnlineRoster(),card).disabled=rosterLoading;}
  else if(view==='testSkills'&&accountSession()?.name?.toLowerCase()==='admintest'){renderTestSkills(card)}
- else if(view==='skills'){button(L('职业试炼','Profession Trials'),()=>openMenu('trials'),card);skillUI.render(card)}
+ else if(view==='skills'){skillUI.render(card)}
+ else if(view==='professions'){skillUI.renderProfessions(card)}
  else if(view==='research'){
  const links=node('nav','',card);links.className='ancientActivityFilters';
  button(L('狩猎','Hunts'),()=>openMenu('hunts'),links);
@@ -265,7 +266,7 @@ function drawPanel(){if(view!=='skins'||!profile||active&&!paused)skinUI.dispose
  else if(view==='collections'||view==='stones'){card.classList.add('ancientWorkspaceCard');node('h2',view==='collections'?L('藏品','Collections'):L('原石工坊','Stone Workshop'),card);const body=node('section','',card);body.className='ancientWorkspaceBody';if(view==='collections')collectionUI.render(body);else stoneworkUI.render(body)}
  else if(view==='controls'){node('h2',L('设置','Settings'),card);button(L('账号','Account'),()=>accountEmailUI.openSettings(),card);controls.render(card)}
 
- const q=currentQuest(profile);if(q?.kind==='profession'&&view==='skills')card.querySelector('.ancientProfessionGrid')?.classList.add('ancientGuided');if(q?.kind?.startsWith('train')&&view==='skills'){const index={trainQ:0,trainZ:1,trainC:2}[q.kind];card.querySelectorAll('.ancientSkillCard')[index]?.classList.add('ancientGuided')}if(q&&['skills','weapons','shop'].includes(view))questUI.renderSummary(card);
+ const q=currentQuest(profile);if(q?.kind?.startsWith('train')&&view==='skills'){const index={trainQ:0,trainZ:1,trainC:2}[q.kind];card.querySelectorAll('.ancientSkillCard')[index]?.classList.add('ancientGuided')}if(q&&['skills','weapons','shop'].includes(view))questUI.renderSummary(card);
  if(active){const back=button(L('返回战斗','Back to combat'),()=>{paused=false;renderPanel();lock()},card);if(['bag','collections','stones'].includes(view))back.classList.add('ancientInventoryReturn')}
 }
 const hurtOverlay=node('div','',document.body);hurtOverlay.id='ancientHurt';hurtOverlay.setAttribute('aria-hidden','true');let hurtAnimation=null;
@@ -320,7 +321,7 @@ function handleWorldMessage(d,reconnect){if(d.chapterState){setChapterState(curr
   if(d.type==='kill'){hitFeedback.kill(d.id);profile=d.profile;identity();const m=d.monster||monsters.get(d.id)?.data;combatNotices.kill(d,{kind:m?.kind,map:currentMap,boss:!!d.boss||bossKind(m?.kind),name:m?.title?L(...m.title):L(...(names[m?.kind]||[m?.kind||'怪物',m?.kind||'Enemy'])),en:en(),material,gearName,gearDefinition});if(paused)renderPanel()}
   if(d.type==='bossDeath')bossDown(d.id);
   if(d.type==='bossFx')bossFX.effect(d,ground);if(d.type==='bestiaryFx')bestiaryFX.effect(d,ground);
-  if(d.type==='branchGuided'){profile=d.profile;openMenu('skills');}
+  if(d.type==='branchGuided'){profile=d.profile;openMenu('professions');}
   if(d.type==='skillGesture')return; // Casting hand wind-ups temporarily hidden; skill effects remain.
   if(d.type==='skillFx'){skillVisuals.effect(d,ground);if(d.owner===me?.name&&(d.id==='mark'||d.id==='weaken')){combatNotices.push(d.id==='mark'?L('已锁定 · 铁甲兽正在追击','TARGET MARKED · Beast pursuing'):L('削弱命中 · 敌人攻击降低','WEAKENED · Enemy damage reduced'),1800)}}
   if(d.type==='slam'||d.type==='roar'){const ring=new THREE.Mesh(new THREE.RingGeometry(d.radius-.35,d.radius,48),new THREE.MeshBasicMaterial({color:({slash:0xffcf6b,soulbolt:0x89ffb8,icebolt:0x90eaff,icearmor:0x90eaff,blizzard:0x90eaff,chain:0xf0d75b,haste:0xf0d75b,storm:0xf0d75b,hex:0xc06df7,drain:0xc06df7,doom:0xc06df7,summon:0x89ffb8,mark:0x62ead8,weaken:0xc97de9,transform:0x89ffb8,claw:0xcfe1ba,petHit:0x89ffb8,rage:0xff7058,vitality:0x89ffb8,power:0xffcf6b}[d.id]||({metal:0xffd56b,wood:0x71e391,water:0x62ccff,fire:0xff7058,earth:0xdab078}[d.element]||(d.type==='slam'?0xffa04b:0xb5c958))),transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(d.x,(d.y||0)+.15,d.z);scene.add(ring);effects.push({mesh:ring,expires:performance.now()+1200,kind:'ring'})}

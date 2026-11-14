@@ -1,3 +1,4 @@
+import {PROFESSION_FUSIONS,isFusionJob} from './ancient-skills';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import type {AncientProfile} from './ancient-rules';
 import {PROFESSIONS,SKILLS,skillBook,ensureBasicSkills} from './ancient-skills.js';
@@ -15,6 +16,23 @@ export function buyAncientSupply(p:AncientProfile,id:string,quantity:number,now=
 const shopCalendar=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'});
 export function ancientShopDay(now=Date.now()){const parts=shopCalendar.formatToParts(new Date(now)),get=(type:string)=>parts.find(p=>p.type===type)!.value;return get('year')+'-'+get('month')+'-'+get('day')}
 export function ancientSkillBooksRemaining(p:AncientProfile,id:string,now=Date.now()){const limit=id==='transfer'?2:8;return p.shopSkillBooksByKind?.day===ancientShopDay(now)?Math.max(0,limit-Math.max(0,p.shopSkillBooksByKind.counts?.[id]||0)):limit}
-export function useAncientSupply(p:AncientProfile,id:string,now=Date.now(),random=Math.random){const d=Object.hasOwn(ANCIENT_SUPPLIES,id)?ANCIENT_SUPPLIES[id]:undefined,key=supplyKey(id);if(!d||(p.materials[key]||0)<1)return '物品不足';if(d.kind==='transfer')return '请在技能页面选择职业';if(d.kind==='cleanse'){if(!p.purificationUnlocked)return '尚未学会净化';if(!p.corrupted)return '当前没有魔化';p.corrupted=false;delete p.corruptedMap}else if(d.kind==='boost'){p.boosts??={};p.boosts[id]=now+d.duration!}else{const ids=PROFESSIONS[d.job!].skills.filter(id=>SKILLS[id]?.job===d.job);if(!ids.length)return '该职业没有可用技能书';const book=skillBook(ids[Math.min(ids.length-1,Math.floor(random()*ids.length))]);p.materials[book]=(p.materials[book]||0)+1}p.materials[key]--;return null}
-export function chooseAncientProfession(p:AncientProfile,job:string){if(!Object.hasOwn(PROFESSIONS,job))return '职业不存在';if(p.profession===job)return '已是当前职业';const key=supplyKey('transfer');if((p.materials[key]||0)<1)return '转职书不足';p.materials[key]--;p.profession=job;ensureBasicSkills(p);return null}
+export function useAncientSupply(p:AncientProfile,id:string,now=Date.now(),random=Math.random){const d=Object.hasOwn(ANCIENT_SUPPLIES,id)?ANCIENT_SUPPLIES[id]:undefined,key=supplyKey(id);if(!d||(p.materials[key]||0)<1)return '物品不足';if(d.kind==='transfer')return '请在职业页面选择职业';if(d.kind==='cleanse'){if(!p.purificationUnlocked)return '尚未学会净化';if(!p.corrupted)return '当前没有魔化';p.corrupted=false;delete p.corruptedMap}else if(d.kind==='boost'){p.boosts??={};p.boosts[id]=now+d.duration!}else{const ids=PROFESSIONS[d.job!].skills.filter(id=>SKILLS[id]?.job===d.job);if(!ids.length)return '该职业没有可用技能书';const book=skillBook(ids[Math.min(ids.length-1,Math.floor(random()*ids.length))]);p.materials[book]=(p.materials[book]||0)+1}p.materials[key]--;return null}
+export function chooseAncientProfession(p:AncientProfile,job:string){if(!Object.hasOwn(PROFESSIONS,job)||p.consumedJobs?.[job]||isFusionJob(job)&&!p.fusedJobs?.[job])return '职业不可用';if(p.profession===job)return '已是当前职业';const key=supplyKey('transfer');if(p.profession){if(p.level<15)return '15级开放转职';if((p.materials[key]||0)<1)return '转职书不足';p.materials[key]--;}p.profession=job;ensureBasicSkills(p);return null}
 export function ancientBoostsRemaining(p:AncientProfile,id:string,now=Date.now()){return p.shopBoosts?.day===ancientShopDay(now)?Math.max(0,5-Math.max(0,p.shopBoosts.counts?.[id]||0)):5}
+
+
+export function fuseAncientProfession(p:AncientProfile,job:string){
+ if(p.level<15)return '15级开放转职';
+ if(!isFusionJob(job)||p.fusedJobs?.[job])return '职业无法融合';
+ const recipe=PROFESSION_FUSIONS[job as keyof typeof PROFESSION_FUSIONS];
+ for(const source of recipe.sources){
+  if(p.consumedJobs?.[source]||!PROFESSIONS[source].skills.every(id=>(p.skills?.[id]||0)>=5))return '融合职业的所有材料技能须达到5级，且职业尚未被消耗';
+ }
+ (p.fusedJobs??={})[job]=true;
+ for(const source of recipe.sources)(p.consumedJobs??={})[source]=true;
+ p.ascension??={day:'',attempts:0,jobs:{}};
+ p.ascension.jobs[job]={holy:true,permit:true,step:2,count:0};
+ for(const id of PROFESSIONS[job].skills)(p.skills??={})[id]=1;
+ p.profession=job;
+ return null;
+}

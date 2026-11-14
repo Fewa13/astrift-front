@@ -13,6 +13,21 @@ export const PROFESSIONS:Record<string,{name:string;en:string;icon:string;skills
  lightning:{name:'雷电法师',en:'Lightning Mage',icon:'ϟ',skills:['chain','haste','storm','tempest']},
  curse:{name:'诅咒法师',en:'Curse Mage',icon:'☽',skills:['hex','drain','doom']}
 };
+export const PROFESSION_FUSIONS = {
+ elementalist: {name:'元素战士',en:'Elemental Warrior',sources:['lightning','fire','ice','curse','warrior','stonewright']},
+ voidsword: {name:'虚空剑圣',en:'Void Swordmaster',sources:['swordsman','shadowblade']},
+ abyssal: {name:'深渊领主',en:'Abyssal Overlord',sources:['summoner','curse']},
+ chrono: {name:'时空行者',en:'Chrono Walker',sources:['lightning','ice']},
+} as const;
+export const FUSION_SKILL_REQUIREMENT = 5;
+
+export const FUSION_SKILLS = {
+ elementalist: [['judgment','神罚','Divine Judgment','Q',18],['erosion','元素侵蚀','Elemental Erosion','Z',22],['siphon','元素窃取','Elemental Siphon','C',26],['prism','元素弹','Prismatic Bolt','X',5]],
+ voidsword: [['riftassault','裂空突袭','Rift Assault','Q',12],['voiddomain','虚空领域','Void Domain','Z',25],['execution','次元终结','Dimensional Execution','C',38],['voidslash','虚空斩','Void Slash','X',5]],
+ abyssal: [['devour','灵魂吞噬','Soul Devour','Q',10],['descent','深渊降临','Abyssal Descent','Z',24],['avatar','深渊化身','Avatar of the Abyss','C',34],['abysstouch','深渊之触','Abyssal Touch','X',5]],
+ chrono: [['chronoshift','时空跃迁','Chrono Shift','Q',12],['rewind','时间回溯','Time Rewind','Z',28],['stasis','时间静止','Chronostasis','C',40],['temporalrift','时间裂隙','Temporal Rift','X',5]],
+} as const;
+export function isFusionJob(id:string){return Object.hasOwn(PROFESSION_FUSIONS,id)}
 export const SKILLS:Record<string,{job:string;name:string;en:string;unlock:number;key:string;duration:number;cooldown:number}>={
  firebolt:{job:'fire',name:'余烬弹',en:'Ember Bolt',unlock:0,key:'X',duration:5,cooldown:5},
  firewave:{job:'fire',name:'燎原火浪',en:'Wildfire Wave',unlock:0,key:'Q',duration:6,cooldown:9},
@@ -50,6 +65,12 @@ export const SKILLS:Record<string,{job:string;name:string;en:string;unlock:numbe
  drain:{job:'curse',name:'生命汲取',en:'Life Drain',unlock:5,key:'Z',duration:0,cooldown:10},
  doom:{job:'curse',name:'灾厄领域',en:'Doom Field',unlock:20,key:'C',duration:8,cooldown:28}
 };
+for(const job of Object.keys(FUSION_SKILLS) as (keyof typeof FUSION_SKILLS)[]){
+ const recipe=PROFESSION_FUSIONS[job];
+ PROFESSIONS[job]={name:recipe.name,en:recipe.en,icon:'✦',skills:FUSION_SKILLS[job].map(skill=>skill[0])};
+ for(const [id,name,en,key,cooldown] of FUSION_SKILLS[job])SKILLS[id]={job,name,en,key,cooldown,unlock:0,duration:0};
+}
+export function isFusionSkill(id:string){return isFusionJob(SKILLS[id]?.job||'')}
 export const ELEMENTAL_IMPACTS:Record<string,{hit:number;growth:number;burn:number;burnGrowth:number;seconds:number}>={
  firebolt:{hit:0.75,growth:0.07,burn:0.42,burnGrowth:0.04,seconds:4},
  firewave:{hit:1,growth:0.09,burn:0.62,burnGrowth:0.055,seconds:5},
@@ -57,7 +78,7 @@ export const ELEMENTAL_IMPACTS:Record<string,{hit:number;growth:number;burn:numb
  inferno:{hit:4.5,growth:0.375,burn:0,burnGrowth:0,seconds:0},
  tempest:{hit:8,growth:0.65,burn:0,burnGrowth:0,seconds:0},
 };
-export type SkillRuntime={fireFields?:{id:string;map:string;x:number;z:number;radius:number;next:number;until:number;hit:number;damage:number}[];branch?:import('./ancient-branch-combat').BranchRuntime;relic?:import('./ancient-relic-combat').RelicRuntime;gearChain?:{key:string;until:number};shadowAnchor?:{map:string;x:number;y:number;z:number;until:number};bossForm?:import('./ancient-boss-cards').BossForm;cooldowns:Record<string,number>;effects:Record<string,{until:number;level:number}>;mode:number;lastAux:number;baseHp?:number;summon?:{x:number;z:number;hp:number;maxHp:number;damage:number;until:number;attackAt:number;target:string;level:number;path?:{x:number;z:number}[];pathAt?:number;pathX?:number;pathZ?:number};lastRegen?:number};
+export type SkillRuntime={fusion?:import("./ancient-fusion-combat").FusionRuntime;fireFields?:{id:string;map:string;x:number;z:number;radius:number;next:number;until:number;hit:number;damage:number}[];branch?:import('./ancient-branch-combat').BranchRuntime;relic?:import('./ancient-relic-combat').RelicRuntime;gearChain?:{key:string;until:number};shadowAnchor?:{map:string;x:number;y:number;z:number;until:number};bossForm?:import('./ancient-boss-cards').BossForm;cooldowns:Record<string,number>;effects:Record<string,{until:number;level:number}>;mode:number;lastAux:number;baseHp?:number;summon?:{x:number;z:number;hp:number;maxHp:number;damage:number;until:number;attackAt:number;target:string;level:number;path?:{x:number;z:number}[];pathAt?:number;pathX?:number;pathZ?:number};lastRegen?:number};
 export type SkillActor={holy?:boolean;corrupted?:boolean;name:string;x:number;y:number;z:number;hp:number;maxHp?:number;weapon:AncientWeapon;profession?:string;skills?:Record<string,number>;skillRuntime?:SkillRuntime;gearReduction?:number;boosts?:Record<string,number>;skillBaseHp?:number};
 export function runtime(a:SkillActor){return a.skillRuntime??={cooldowns:{},effects:{},mode:1,lastAux:0}}
 export function skillBook(id:string){return 'skillbook:'+id}
@@ -77,7 +98,47 @@ export function curseHitMultiplier(id:'hex'|'drain',level:number,hexed=false){re
 export function skillCooldown(id:string,level:number){return id==='vitality'||id==='power'?Math.max(50,100-level*2):SKILLS[id]?.cooldown||0}
 export function ensureBasicSkills(p:AncientProfile){const id=p.profession==='fire'?'firebolt':p.profession==='shadowblade'?'riftblade':p.profession==='stonewright'?'stonefist':p.profession==='swordsman'?'swordwave':p.profession==='warrior'?'slash':p.profession==='summoner'?'soulbolt':p.profession==='ice'?'frostburst':null;if(!id||p.skills?.[id]!==undefined)return false;(p.skills??={})[id]=1;return true}
 export function skillTrainingCost(current:number){const next=current+1;return {books:2**current,cores:current>0?next:0,coins:current>0?50*next**2:0}}
-export function trainSkill(p:AncientProfile,id:string){const s=Object.hasOwn(SKILLS,id)?SKILLS[id]:undefined;if(!s||p.profession!==s.job)return '职业不匹配';if(p.level<s.unlock)return '玩家等级不足';const next=(p.skills?.[id]||0)+1,cost=skillTrainingCost(next-1);if(!Object.values(cost).every(Number.isSafeInteger))return '技能等级已达上限';const key=skillBook(id);if((p.materials[key]||0)<cost.books)return '技能书不足';if((p.materials.core||0)<cost.cores)return '相位核心不足';if((p.coins||0)<cost.coins)return '远古金币不足';p.materials[key]-=cost.books;if(cost.cores)p.materials.core-=cost.cores;if(cost.coins)p.coins=Math.round((p.coins-cost.coins)*100)/100;(p.skills??={})[id]=next;return null}
+export function trainSkill(p:AncientProfile,id:string){const s=Object.hasOwn(SKILLS,id)?SKILLS[id]:undefined;if(!s||isFusionSkill(id)||p.profession!==s.job)return '职业不匹配';if(p.level<s.unlock)return '玩家等级不足';const next=(p.skills?.[id]||0)+1,cost=skillTrainingCost(next-1);if(!Object.values(cost).every(Number.isSafeInteger))return '技能等级已达上限';const key=skillBook(id);if((p.materials[key]||0)<cost.books)return '技能书不足';if((p.materials.core||0)<cost.cores)return '相位核心不足';if((p.coins||0)<cost.coins)return '远古金币不足';p.materials[key]-=cost.books;if(cost.cores)p.materials.core-=cost.cores;if(cost.coins)p.coins=Math.round((p.coins-cost.coins)*100)/100;(p.skills??={})[id]=next;return null}
+// Damage coefficients shared by combat and the unbuffed skill preview.
+export function skillDirectMultiplier(id:string, level:number){
+ const impact=ELEMENTAL_IMPACTS[id];
+ if(impact)return impact.hit+impact.growth*level;
+ switch(id){
+  case 'haste': case 'power': case 'icearmor': case 'icebolt': case 'chain': return 3+.3*level;
+  case 'rage': case 'drain': return 4+.4*level;
+  case 'slash': return 3.2+.3*level;
+  case 'soulbolt': return 3.3+.3*level;
+  case 'frostburst': return 2.6+.25*level;
+  case 'swordwave': return 3+.25*level;
+  case 'phantomblade': return (6.5+.6*level)*1.3;
+  case 'triplecut': return 3.3+.3*level;
+  case 'swordrain': return 1.4+.16*level;
+  case 'hex': return curseHitMultiplier('hex',level);
+  case 'weaken': return 2.8+.3*level;
+  default: return 0;
+ }
+}
+export function skillDamagePreview(id:string, level:number){
+ const direct=skillDirectMultiplier(id,level);
+ const impact=ELEMENTAL_IMPACTS[id];
+ if(impact)return {direct,tick:impact.burn+impact.burnGrowth*level};
+ switch(id){
+  case 'blizzard': return {tick:1.25+.1*level};
+  case 'storm': return {tick:1.6+.15*level};
+  case 'doom': return {tick:.8+.08*level};
+  case 'riftblade': return {direct:(3+.25*level)*.5};
+  case 'shadowstep': return {direct:2.6+.22*level};
+  case 'shadowreturn': return {direct:2.2+.2*level,conditional:(2.2+.2*level)*1.1};
+  case 'nightfall': return {direct:4+.35*level};
+  case 'stonefist': return {direct:3.2+.3*level};
+  case 'stoneprison': return {direct:3+.3*level};
+  case 'faultline': return {direct:1.8+.15*level};
+  case 'mountainfall': return {direct:7+.6*level};
+  case 'drain': return {direct,conditional:direct*1.5};
+  case 'transform': return {direct:1.25+.1*level};
+  default: return {direct};
+ }
+}
 export function skillDescription(id:string,n:number,en=false){const level=Math.max(1,n),cd=skillCooldown(id,level),range=skillCastRange(id,level);const texts:Record<string,[string,string]>={
  riftblade:[`${range}米裂影双刃，总计${300+25*level}%基础攻击伤害；冷却4秒。自带1级，按X使用。`,`${range}m twin rift blades: ${300+25*level}% base attack damage in total. Cooldown 4s. Starts at level 1; press X.`],
  shadowstep:[`沿朝向突进最多10米，沿途敌人各受一次${260+22*level}%基础攻击伤害；不能穿墙，冷却7秒。`,`Dash up to 10m forward; each enemy along the path takes ${260+22*level}% base attack damage once. Cannot cross walls. Cooldown 7s.`],
@@ -112,9 +173,9 @@ export function skillDescription(id:string,n:number,en=false){const level=Math.m
  };const impact=ELEMENTAL_IMPACTS[id],hit=impact&&Math.round((impact.hit+impact.growth*level)*100),burn=impact&&Math.round((impact.burn+impact.burnGrowth*level)*100);
  const text=impact?(en?`Hit: ${hit}% base attack. ${range}m targeting. Cooldown ${cd}s.`+(impact.seconds?` ${id==='firebolt'?'Burns the target':'Burns enemies in the area'} for ${impact.seconds}s at ${burn}% per second, even after the cast ends.`:''):`命中造成${hit}%基础攻击伤害，锁定距离${range}米，冷却${cd}秒。`+(impact.seconds?`${id==='firebolt'?'目标':'区域内敌人'}燃烧持续${impact.seconds}秒，每秒${burn}%基础攻击伤害，施法结束后仍生效。`:'')):texts[id]?.[en?1:0]||'',radius=skillRadius(id,level);return text+(radius?(en?` Area radius: ${radius}m (+0.5m per skill level).`:` 作用半径：${radius}米（每升一级+0.5米）。`):'')}
 export function activeSkill(a:SkillActor,id:string,now=Date.now()){const e=a.skillRuntime?.effects[id];return e&&e.until>now?e.level:0}
-export function skillDamageMultiplier(a:SkillActor,now=Date.now()){return (a.corrupted?1.3:1)*((a.boosts?.damage||0)>now?2:1)*(activeSkill(a,'nightfall',now)?1.25:1)*(1+activeSkill(a,'power',now)*.02)*(1+activeSkill(a,'rage',now)*.3)*(1+(bossFormStats(a,now)?.damage||0))}
-export function skillSpeedMultiplier(a:SkillActor,now=Date.now()){const t=activeSkill(a,'transform',now),h=activeSkill(a,'haste',now);return (activeSkill(a,'nightfall',now)?1.3:1)*(1+activeSkill(a,'rage',now)*.2)*(t?1+Math.min(.4,.1+.02*t):1)*(h?1+Math.min(.4,.15+.02*h):1)*(1+(bossFormStats(a,now)?.speed||0))}
+export function skillDamageMultiplier(a:SkillActor,now=Date.now()){return (activeSkill(a,'voiddomain',now)?1.25:1)*(activeSkill(a,'avatar',now)?1.35:1)*(a.corrupted?1.3:1)*((a.boosts?.damage||0)>now?2:1)*(activeSkill(a,'nightfall',now)?1.25:1)*(1+activeSkill(a,'power',now)*.02)*(1+activeSkill(a,'rage',now)*.3)*(1+(bossFormStats(a,now)?.damage||0))}
+export function skillSpeedMultiplier(a:SkillActor,now=Date.now()){const t=activeSkill(a,'transform',now),h=activeSkill(a,'haste',now);return (activeSkill(a,'voiddomain',now)?1.3:1)*(activeSkill(a,'nightfall',now)?1.3:1)*(1+activeSkill(a,'rage',now)*.2)*(t?1+Math.min(.4,.1+.02*t):1)*(h?1+Math.min(.4,.15+.02*h):1)*(1+(bossFormStats(a,now)?.speed||0))}
 export function skillFireMultiplier(a:SkillActor,now=Date.now()){const h=activeSkill(a,'haste',now);return h?1-Math.min(.25,.08+.01*h):1}
-export function skillIncoming(a:SkillActor,now=Date.now()){const t=activeSkill(a,'transform',now),i=activeSkill(a,'icearmor',now);return ((a.boosts?.defense||0)>now?.5:1)*(1-(a.gearReduction||0))*(activeSkill(a,'rage',now)?2:1)*(t?1-Math.min(.35,.1+.01*t):1)*(i?1-Math.min(.5,.15+.02*i):1)*(1-(bossFormStats(a,now)?.reduction||0))}
+export function skillIncoming(a:SkillActor,now=Date.now()){const t=activeSkill(a,'transform',now),i=activeSkill(a,'icearmor',now);return (activeSkill(a,"execution",now)?0:1-activeSkill(a,"prism",now)/100)*((a.boosts?.defense||0)>now?.5:1)*(1-(a.gearReduction||0))*(activeSkill(a,'rage',now)?2:1)*(t?1-Math.min(.35,.1+.01*t):1)*(i?1-Math.min(.5,.15+.02*i):1)*(1-(bossFormStats(a,now)?.reduction||0))}
 export function skillHealth(a:SkillActor,base:number,now:number){const t=activeSkill(a,'transform',now);a.skillBaseHp=base;runtime(a).baseHp=base;a.maxHp=Math.floor(base*(1+activeSkill(a,'vitality',now)*.03+(t?Math.min(1,.2+.04*t):0))*(1+(bossFormStats(a,now)?.health||0)));a.hp=Math.min(a.hp,a.maxHp)}
-export function skillDrops(kind:string,random=Math.random){const boss=kind==='buried_marshal'||kind==='hourglass_regent'||kind==='sky_sovereign'||kind==='thunder_warden'||kind==='frost_crowned'||kind==='furnace_regent'||kind==='starbound_heart'||kind==='immaculate_judge'||kind==='blight_lord'||kind==='oathknight'||kind==='emptyking'||kind==='chief'||kind==='lord'||kind==='rootwarden'||['metal','wood','water','fire','earth'].some(e=>kind==='crystal_'+e);if(!boss)return {};const ids=Object.keys(SKILLS),id=ids[Math.min(ids.length-1,Math.floor(random()*ids.length))];return {[skillBook(id)]:1}}
+export function skillDrops(kind:string,random=Math.random){const boss=kind==='buried_marshal'||kind==='hourglass_regent'||kind==='sky_sovereign'||kind==='thunder_warden'||kind==='frost_crowned'||kind==='furnace_regent'||kind==='starbound_heart'||kind==='immaculate_judge'||kind==='blight_lord'||kind==='oathknight'||kind==='emptyking'||kind==='chief'||kind==='lord'||kind==='rootwarden'||['metal','wood','water','fire','earth'].some(e=>kind==='crystal_'+e);if(!boss)return {};const ids=Object.keys(SKILLS).filter(id=>!isFusionSkill(id)),id=ids[Math.min(ids.length-1,Math.floor(random()*ids.length))];return {[skillBook(id)]:1}}

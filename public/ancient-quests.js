@@ -304,6 +304,7 @@ function mapSecret(map) {
   const point = secretLocation(map, npc, (x, z) => !blocked(x, z, 1, map, ancientMapHeight(map, x, z)));
   return point && { ...point, index, origin: origin.id, story: ANCIENT_SECRETS[map] };
 }
+steps.push({ id: "holy-trial", kind: "holyTrial", title: ["\u5723\u7EA7\u8BD5\u70BC", "Holy Ascension Trial"], goal: ["\u6253\u5F00\u804C\u4E1A\u9875\u9762\u3002\u8FBE\u523080\u7EA7\u5E76\u5C06\u5F53\u524D\u804C\u4E1A\u7684\u5168\u90E8\u6280\u80FD\u5347\u52305\u7EA7\uFF0C\u5B8C\u6210\u8003\u9A8C\u3001\u5347\u534E\u652F\u7EBF\u548C\u5723\u804C\u4EEA\u5F0F\u3002", "Open Professions. Reach level 80 and train every skill of your current profession to level 5, then complete the trial, ascension quest and Sacred Rite."] });
 const MAIN_QUESTS = steps;
 for (const id of ["grox-five", "gruk-reward"]) steps.find((q) => q.id === id).kind = "openingSkip";
 function questState(p) {
@@ -375,6 +376,7 @@ function questReward(p, q) {
 }
 function fulfilled(p, q, e) {
   const job = p.profession && PROFESSIONS[p.profession];
+  if (q.kind === "holyTrial") return Object.values(p.ascension?.jobs || {}).some((job2) => job2.holy);
   if (q.kind === "openingSkip") return true;
   if (q.kind === "level") {
     const target = q.level, whole = Math.floor(target);
