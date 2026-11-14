@@ -42,4 +42,23 @@ function makeWeapon(key){
  const bounds=new T.Box3().setFromObject(root);root.name='ancient-weapon-'+key;Object.assign(root.userData,{weaponKey:key,weaponLength:bounds.max.y,designId:design[0],designFeatures:design[1],materialStyle:style});return root;
 }
 export function createAncientWeaponModel(key){const d=gearDefinition(key);if(!d||d.slot!=='weapon')return null;if(!templates.has(key))templates.set(key,makeWeapon(key));return templates.get(key).clone(true);}
+const heldTemplates=new Map();
+export function createAncientHeldWeaponModel(key){
+ if(!heldTemplates.has(key)){
+  const model=createAncientWeaponModel(key);
+  if(!model)return null;
+  for(const mesh of model.children){
+   const geometry=mesh.geometry.clone();
+   const normals=geometry.attributes.normal,colors=geometry.attributes.color;
+   for(let i=0;i<colors.count;i++){
+    const light=.62+.38*Math.max(0,normals.getX(i)*.35+normals.getY(i)*.55+normals.getZ(i)*.76);
+    colors.setXYZ(i,colors.getX(i)*light,colors.getY(i)*light,colors.getZ(i)*light);
+   }
+   mesh.geometry=geometry;
+   mesh.material=new T.MeshBasicMaterial({vertexColors:true});
+  }
+  heldTemplates.set(key,model);
+ }
+ return heldTemplates.get(key).clone(true);
+}
 export function releaseAncientWeaponModel(root){if(!root)return;root.removeFromParent();root.traverse(o=>{if(o.userData.corruptMaterial){o.userData.corruptMaterial.dispose();delete o.userData.corruptMaterial;}});}

@@ -2,7 +2,7 @@
 import {clearAncientRemotePotion} from './ancient-potion-visuals.js';
 import * as THREE from './three.module.js';
 import {PROFESSION_LOOKS} from './ancient-profession-models.js?v=20261014-new-professions-1';
-import {createAncientWeaponModel,releaseAncientWeaponModel} from './ancient-weapon-models.js?v=20261101-distinct-weapons-1';
+import {createAncientHeldWeaponModel,createAncientWeaponModel,releaseAncientWeaponModel} from './ancient-weapon-models.js?v=20261113-held-lighting-1';
 import {equippedGear} from './ancient-gear.js?v=20261021-skyreach-market-1';
 import {castGestureProfile,castGesturePhase} from './ancient-cast-gestures.js?v=20261018-cast-hands-1';
 import {activeSkill} from './ancient-skills.js?v=20261021-skyreach-market-1';
@@ -21,7 +21,7 @@ export function createAncientMeleeVisuals(camera){
   const d=p&&equippedGear(p,'weapon');group.visible=!suppressed&&!!d&&!!a&&a.hp>0&&!activeSkill(a,'transform')&&(a.skillRuntime?.mode||1)===1;if(!group.visible)return;
   const look=PROFESSION_LOOKS[p.profession]||PROFESSION_LOOKS.adventurer;bracerMat.color.set(p.corrupted?0x333039:look.metal);bracerMat.emissive.set(look.glow);bracerMat.emissiveIntensity=.08;
   const item=p.gear?.find(i=>i.id===p.gearEquipped?.weapon),key=item?.key||'';
-  if(key!==lastKey){lastKey=key;releaseAncientWeaponModel(sword);sword=createAncientWeaponModel(key);if(sword){sword.scale.setScalar(.8);sword.position.y=.01;wrist.add(sword);}}
+  if(key!==lastKey){lastKey=key;releaseAncientWeaponModel(sword);sword=createAncientHeldWeaponModel(key);if(sword){sword.scale.setScalar(.8);sword.position.y=.01;wrist.add(sword);}}
   swing=Math.max(0,swing-dt);const progress=1-swing/swingDuration,ease=t=>t*t*(3-2*t);let roll=0;
   if(swing>0)roll=progress<.5?1.35*ease(progress/.5):1.35*(1-ease((progress-.5)/.5));
   const drive=Math.sin(progress*Math.PI)*(swing>0?1:0);group.position.set(.46-drive*.055,-.29+drive*.025,-.98-drive*.045);group.rotation.set(-.25,-.18,-.12);wrist.rotation.set(-drive*.18,drive*.12,roll);if(sword)sword.position.y=.01+Math.sin(time*.003)*.003;
