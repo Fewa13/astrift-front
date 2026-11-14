@@ -15,7 +15,7 @@ const SKILLS = {
   firebolt: { job: "fire", name: "\u4F59\u70EC\u5F39", en: "Ember Bolt", unlock: 0, key: "X", duration: 5, cooldown: 5 },
   firewave: { job: "fire", name: "\u71CE\u539F\u706B\u6D6A", en: "Wildfire Wave", unlock: 0, key: "Q", duration: 6, cooldown: 9 },
   firestorm: { job: "fire", name: "\u7194\u706B\u6DA1\u6D41", en: "Molten Vortex", unlock: 5, key: "Z", duration: 8, cooldown: 18 },
-  inferno: { job: "fire", name: "\u711A\u5929\u9668\u661F", en: "Solar Cataclysm", unlock: 20, key: "C", duration: 11, cooldown: 32 },
+  inferno: { job: "fire", name: "\u711A\u5929\u9668\u661F", en: "Solar Cataclysm", unlock: 20, key: "C", duration: 2, cooldown: 32 },
   tempest: { job: "lightning", name: "\u4E5D\u9704\u96F7\u7F5A", en: "Heavenfall Judgment", unlock: 25, key: "X", duration: 0, cooldown: 34 },
   riftblade: { job: "shadowblade", name: "\u88C2\u5F71\u5203", en: "Rift Blades", unlock: 0, key: "X", duration: 0, cooldown: 4 },
   shadowstep: { job: "shadowblade", name: "\u7A7F\u5F71", en: "Shadowstep", unlock: 0, key: "Q", duration: 0, cooldown: 7 },
@@ -52,7 +52,7 @@ const ELEMENTAL_IMPACTS = {
   firebolt: { hit: 0.75, growth: 0.07, burn: 0.42, burnGrowth: 0.04, seconds: 4 },
   firewave: { hit: 1, growth: 0.09, burn: 0.62, burnGrowth: 0.055, seconds: 5 },
   firestorm: { hit: 0.9, growth: 0.08, burn: 0.7, burnGrowth: 0.065, seconds: 7 },
-  inferno: { hit: 1.8, growth: 0.15, burn: 1.05, burnGrowth: 0.09, seconds: 10 },
+  inferno: { hit: 4.5, growth: 0.375, burn: 0, burnGrowth: 0, seconds: 0 },
   tempest: { hit: 8, growth: 0.65, burn: 0, burnGrowth: 0, seconds: 0 }
 };
 function runtime(a) {

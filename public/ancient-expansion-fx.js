@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 // Both live network effects and the preview call this same bounded, instanced builder.
 export const EXPANSION_FX={
- firebolt:[0xff843c,5],firewave:[0xff7a31,6],firestorm:[0xff5c27,8],inferno:[0xffae48,11],tempest:[0x83c7ff,3.15],
+ firebolt:[0xff843c,5],firewave:[0xff7a31,6],firestorm:[0xff5c27,8],inferno:[0xffae48,2],tempest:[0x83c7ff,3.15],
  riftblade:[0x9e88ff,.8],shadowstep:[0x8671ff,1.1],shadowreturn:[0xba9dff,6],nightfall:[0x8279ff,8],
  stonefist:[0xf2bd75,1],faultline:[0xf5b862,1.7],stoneprison:[0xd7ac71,3.7],mountainfall:[0xffcc7b,3.3]
 };
@@ -85,7 +85,6 @@ export function buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea}){
    const size=(.17+.035*(i%5))*scale*fade(u,0,1.05);
    set(x,f.floor(x,z)+Math.max(0,u*(4-4*u))*scale,z,size,size,size,t*5,a,t*3);
   });
-  fireSea(f,fallTime,11);
  }else if(f.id==='tempest'){
   f.core.color.setHex(h?0xf3f8ff:0xb9e6ff);f.soft.color.setHex(h?0x816bff:0x448dff);
   const bolts=spread(9,15,24);

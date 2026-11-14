@@ -92,7 +92,7 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
  if(impact){
   const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id),delay=id==='inferno'?550:id==='tempest'?300:0;
   const damage=body*(impact.hit+impact.growth*n),burn=body*(impact.burn+impact.burnGrowth*n);
-  if(impact.seconds&&radius){
+  if(radius&&(impact.seconds||id==='inferno')){
    r.fireFields=(r.fireFields||[]).filter(field=>field.until>=now&&field.map===c.map&&field.id!==id);
    r.fireFields.push({id,map:c.map,x:target.x,z:target.z,radius,next:now+delay,until:now+delay+impact.seconds*1000,hit:damage,damage:burn});
   }else{
@@ -108,7 +108,7 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
     target.dots.push({skillId:id,owner:a.name,until:now+(impact.seconds+1)*1000,next:now+1000,damage:burn});
    }
   }
-  c.fx(id,target.x,target.z,radius||1,{level:n,target:impact.seconds&&radius?'':target.id,source:{x:a.x,y:a.y-.25,z:a.z}});
+  c.fx(id,target.x,target.z,radius||1,{level:n,target:radius?'':target.id,source:{x:a.x,y:a.y-.25,z:a.z}});
   return null;
  }
  if(id==='frostburst'){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(const m of skillAreaTargets(target!,radius,c))c.damage(m,body*(2.6+.25*n));c.fx(id,target!.x,target!.z,radius,{target:target!.id});return null;}
@@ -144,10 +144,10 @@ export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,d
  tickRelic(a,p,c,now);tickBranch(a,p,c,now);
  const branchTicks=new Map<string,SkillContext>();const tickContext=(id:string)=>{if(!branchTicks.has(id))branchTicks.set(id,branchContext(a,p,id,skillSourceContext(c,id),now));return branchTicks.get(id)!;};
  if(r.fireFields){
-  r.fireFields=r.fireFields.filter(field=>field.map===c.map&&p.profession==='fire'&&now<field.until+1000);
+  r.fireFields=r.fireFields.filter(field=>field.map===c.map&&p.profession==='fire'&&(field.id==='inferno'?field.hit>0:now<field.until+1000));
   for(const field of r.fireFields){
    if(field.next>now||field.next>field.until)continue;
-   const amount=field.hit||field.damage;
+   const amount=field.id==='inferno'&&field.damage>0?field.hit*2.5:field.hit||field.damage;
    field.hit=0;field.next=Math.min(field.until+1000,field.next+1000);
    const context=tickContext(field.id);
    for(const m of c.monsters)if(m.hp>0&&Math.hypot(m.x-field.x,m.z-field.z)<=field.radius+ancientHitbox(m.kind).radius)context.damage(m,amount);

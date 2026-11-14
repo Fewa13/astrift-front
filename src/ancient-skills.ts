@@ -17,7 +17,7 @@ export const SKILLS:Record<string,{job:string;name:string;en:string;unlock:numbe
  firebolt:{job:'fire',name:'余烬弹',en:'Ember Bolt',unlock:0,key:'X',duration:5,cooldown:5},
  firewave:{job:'fire',name:'燎原火浪',en:'Wildfire Wave',unlock:0,key:'Q',duration:6,cooldown:9},
  firestorm:{job:'fire',name:'熔火涡流',en:'Molten Vortex',unlock:5,key:'Z',duration:8,cooldown:18},
- inferno:{job:'fire',name:'焚天陨星',en:'Solar Cataclysm',unlock:20,key:'C',duration:11,cooldown:32},
+ inferno:{job:'fire',name:'焚天陨星',en:'Solar Cataclysm',unlock:20,key:'C',duration:2,cooldown:32},
  tempest:{job:'lightning',name:'九霄雷罚',en:'Heavenfall Judgment',unlock:25,key:'X',duration:0,cooldown:34},
  riftblade:{job:'shadowblade',name:'裂影刃',en:'Rift Blades',unlock:0,key:'X',duration:0,cooldown:4},
  shadowstep:{job:'shadowblade',name:'穿影',en:'Shadowstep',unlock:0,key:'Q',duration:0,cooldown:7},
@@ -54,7 +54,7 @@ export const ELEMENTAL_IMPACTS:Record<string,{hit:number;growth:number;burn:numb
  firebolt:{hit:0.75,growth:0.07,burn:0.42,burnGrowth:0.04,seconds:4},
  firewave:{hit:1,growth:0.09,burn:0.62,burnGrowth:0.055,seconds:5},
  firestorm:{hit:0.9,growth:0.08,burn:0.7,burnGrowth:0.065,seconds:7},
- inferno:{hit:1.8,growth:0.15,burn:1.05,burnGrowth:0.09,seconds:10},
+ inferno:{hit:4.5,growth:0.375,burn:0,burnGrowth:0,seconds:0},
  tempest:{hit:8,growth:0.65,burn:0,burnGrowth:0,seconds:0},
 };
 export type SkillRuntime={fireFields?:{id:string;map:string;x:number;z:number;radius:number;next:number;until:number;hit:number;damage:number}[];branch?:import('./ancient-branch-combat').BranchRuntime;relic?:import('./ancient-relic-combat').RelicRuntime;gearChain?:{key:string;until:number};shadowAnchor?:{map:string;x:number;y:number;z:number;until:number};bossForm?:import('./ancient-boss-cards').BossForm;cooldowns:Record<string,number>;effects:Record<string,{until:number;level:number}>;mode:number;lastAux:number;baseHp?:number;summon?:{x:number;z:number;hp:number;maxHp:number;damage:number;until:number;attackAt:number;target:string;level:number;path?:{x:number;z:number}[];pathAt?:number;pathX?:number;pathZ?:number};lastRegen?:number};
