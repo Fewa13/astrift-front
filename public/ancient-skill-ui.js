@@ -1,11 +1,12 @@
-import {ADVANCED_PROFESSIONS} from './ancient-advanced-professions.js';
+import {advancementDescription} from './ancient-advancement-descriptions.js';
+import {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,advancementCastKey} from './ancient-advanced-professions.js';
 import {masteryLevel,masteryCost,masteryPower} from './ancient-mastery.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ancientKeyLabel,ancientBindingVersion} from './ancient-input-settings.js';
 import {renderBranchPanel} from './ancient-branch-ui.js?v=20261017-guide-position-1';
 import {PROFESSIONS,PROFESSION_FUSIONS,FUSION_SKILL_REQUIREMENT,isFusionJob,isFusionSkill,SKILLS,skillBook,skillTrainingCost,skillDescription,skillDamagePreview,activeSkill} from './ancient-skills.js?v=20261109-cast-range-60';
 import {renderAscensionPanel} from './ancient-ascension-ui.js?v=ascension-entry';
-import {openSkillPreview} from './ancient-skill-preview.js?v=20261109-cast-range-60';
+import {openSkillPreview} from './ancient-skill-preview.js?v=advancement';
 import {isHoly,holyPower,holyName,holySkillDetails,ascensionEligible,ascensionProgress} from './ancient-ascension.js?v=20261014-new-professions-1';
 import {ancientGearStats,ancientSkillDamage} from './ancient-gear.js';
 import {equippedAncientSkin} from './ancient-skins.js';
@@ -57,6 +58,8 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   abysstouch:['单体 / 恢复','Single target / Healing'],devour:['单体 / 恢复','Single target / Healing'],descent:['群体 / 恢复','Area / Healing'],avatar:['增益 / 恢复','Buff / Healing'],
   temporalrift:['单体','Single target'],chronoshift:['群体 / 位移','Area / Movement'],rewind:['恢复 / 位移','Healing / Movement'],stasis:['群体','Area'],
  };
+ const selectedRoute=p=>ADVANCED_PROFESSIONS[p?.profession]?.find(route=>route.id===p.advancements?.[p.profession]?.route);
+ const masteryGoal=level=>Math.ceil((25+level*level*12)*1.2);
  const fusionText=id=>L(...fusionDescriptions[id]);
  function renderProfessions(card){
   const p=getProfile(), refresh=()=>{if(card.isConnected)open('professions')};
@@ -78,7 +81,19 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
     const item=el('article','',routes);
     item.className='weaponCard';
     el('strong',L(...route.name),item);
-    route.skills.forEach((name,index)=>el('span','XQZC'[index]+' · '+L(...name),item));
+    route.skills.forEach((name,index)=>{
+     el('strong',ADVANCEMENT_KEYS[index]+' · '+L(...name),item);
+     el('span',advancementDescription(route.id,index,en()),item);
+    });
+    el('small',L('被动与机制','Passive and mechanics')+' · '+advancementDescription(route.id,4,en()),item);
+    btn(L('3D 技能与外观','3D skills and appearance'),()=>openSkillPreview(select.value,{en,advancement:route}),item);
+    const current=select.value===p.profession;
+    const selected=p.advancements?.[select.value]?.route;
+    if(selected===route.id)el('small',L('当前路线','Current path'),item);
+    else if(current&&isHoly(p)&&!selected)btn(L('选择此路线','Choose this path'),async()=>{
+     if(!window.confirm(L('升华路线只能选择一次。确定选择 '+L(...route.name)+'？','This choice is permanent. Choose '+L(...route.name)+'?')))return;
+     await action('chooseAdvancement',{route:route.id});
+    },item);
    }
   }
   select.value=ADVANCED_PROFESSIONS[p.profession]?p.profession:Object.keys(ADVANCED_PROFESSIONS)[0];
@@ -144,6 +159,23 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   el('h2',L('技能','Skills'),card);
   if(!job){btn(L('选择职业','Choose profession'),()=>open('professions'),card);return}
   const list=el('div','',card);list.className='ancientSkillList';
+  const route=selectedRoute(p);
+  if(route){
+   for(const [index,key] of ADVANCEMENT_KEYS.entries()){
+    const skill=p.advancements[p.profession].skills[key],goal=masteryGoal(skill.level);
+    const item=el('section','',list);item.className='weaponCard ancientSkillCard';
+    el('strong',ancientKeyLabel('Key'+key,en())+' · '+L(...route.skills[index]),item);
+    el('small',L('技能等级','Skill level')+' · '+skill.level,item);
+    el('p',advancementDescription(route.id,index,en()),item);
+    if(skill.level<100){
+     const progress=el('progress','',item);progress.max=goal;progress.value=skill.points;
+     progress.setAttribute('aria-label',L('技能精通进度','Mastery progress'));
+     el('small',skill.points+' / '+goal,item);
+    }
+   }
+   return;
+  }
+
   for(const id of (isFusionJob(p.profession)?[...job.skills].sort((a,b)=>'XQZC'.indexOf(SKILLS[a].key)-'XQZC'.indexOf(SKILLS[b].key)):job.skills)){
    const skill=SKILLS[id], level=p.skills?.[id]||0, cost=skillTrainingCost(level), books=p.materials[skillBook(id)]||0;
    const item=el('section','',list);item.className='weaponCard ancientSkillCard';
@@ -187,6 +219,19 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    upgrade.disabled=p.level<skill.unlock||books<cost.books||(p.materials.core||0)<cost.cores||(p.coins||0)<cost.coins||!Number.isSafeInteger(cost.books);
   }
  }
- function update(time,paused=false){if(time-lastDraw<100)return;lastDraw=time;const p=getProfile(),a=getPlayer(),job=PROFESSIONS[p?.profession];hud.hidden=paused||!job||!a||a.hp<=0;if(!job||paused)return;const key=p.profession+':'+en();if(key!==lastJob){lastJob=key;bar.replaceChildren();buttons.clear();for(const id of job.skills){const b=btn('',()=>cast(id),bar);b.dataset.layoutKey='skill-'+SKILLS[id].key;buttons.set(id,b)}}for(const [id,b]of buttons){const s=SKILLS[id],n=p.skills?.[id]||0,cd=Math.max(0,Math.ceil(((a.skillRuntime?.cooldowns?.[id]||0)-Date.now())/1000)),duration=Math.max(0,Math.ceil(((id==='summon'?a.skillRuntime?.summon?.until||0:a.skillRuntime?.effects?.[id]?.until||0)-Date.now())/1000));const label=`${ancientKeyLabel('Key'+s.key,en())} · ${holyName(en()?s.en:s.name,en(),!!a.holy)}${duration?' · '+duration+'s':cd?' · '+cd+'s':n?'':' · Lv.0'}`;if(b.textContent!==label)b.textContent=label;b.disabled=n===0||(cd>0&&!((id==='shadowreturn'&&(a.skillRuntime?.shadowAnchor?.until||0)>Date.now()||['riftassault','chronoshift'].includes(id)&&(a.skillRuntime?.fusion?.anchor?.until||0)>Date.now()||id==='rewind'&&(a.skillRuntime?.fusion?.rewind?.until||0)>Date.now())))||!!activeSkill(a,'transform')||id==='summon'&&!!a.skillRuntime?.summon;b.classList.toggle('selected',duration>0||id==='summon'&&!!a.skillRuntime?.summon)}const pet=a.skillRuntime?.summon,form=activeSkill(a,'transform'),weaken=(p.skills?.weaken||0)>0;const toolKey=[p.profession,!!pet,form>0,weaken,en(),ancientBindingVersion()].join(':');if(lastTools!==toolKey){lastTools=toolKey;tools.replaceChildren();if(form)btn(L('1 · 爪子','1 · Claws'),()=>slot(1),tools);else if(p.profession==='summoner'){btn(L('1 · 主手','1 · Melee'),()=>slot(1),tools);if(pet)btn(L('2 · 锁定印记','2 · Command sigil'),()=>slot(2),tools);if(weaken)btn((pet?'3':'2')+' · '+L('削弱印记','Weakening sigil'),()=>slot(pet?3:2),tools)}}for(const [index,b]of [...tools.children].entries()){b.dataset.layoutKey='tool-'+index;b.dataset.toolSlot=String(index+1);const label=ancientKeyLabel('Digit'+(index+1),en())+' · '+b.textContent.split(' · ').slice(1).join(' · ');if(b.textContent!==label)b.textContent=label;}const text=form?L('变身中 · 左键爪击','BEAST FORM · LMB claw attack'):pet?`${L('铁甲兽','Armored Beast')} ${Math.ceil(pet.hp)}/${pet.maxHp} · ${Math.max(0,Math.ceil((pet.until-Date.now())/1000))}s · ${L('2锁定印记命中怪物指挥攻击','2 command sigil: hit a monster to mark it')}`:p.profession==='summoner'&&weaken?L('1主手 · 2削弱印记 · 左键命中生效','1 melee · 2 weakening sigil · LMB hit to apply'):'';const mappedText=text.replace(/LMB|左键/g,ancientKeyLabel('Mouse0',en())).replace(/([123])(?=锁定|主手|削弱| command| melee| weakening)/g,(_,n)=>ancientKeyLabel('Digit'+n,en()));if(hint.textContent!==mappedText)hint.textContent=mappedText;for(const b of tools.children){const chosen=Number(b.dataset.toolSlot)===(a.skillRuntime?.mode||1);b.classList.toggle('selected',chosen)}}
+ function update(time,paused=false){if(time-lastDraw<100)return;lastDraw=time;const p=getProfile(),a=getPlayer(),job=PROFESSIONS[p?.profession];hud.hidden=paused||!job||!a||a.hp<=0;if(!job||paused)return;const route=selectedRoute(p),key=p.profession+':'+(route?.id||'')+':'+en();if(route){
+  if(key!==lastJob){lastJob=key;bar.replaceChildren();buttons.clear();tools.replaceChildren();hint.textContent='';for(const key of ADVANCEMENT_KEYS){
+   const id='advanced:'+key,b=btn('',()=>cast(id),bar);b.dataset.layoutKey='skill-'+key;buttons.set(id,b);
+  }}
+  for(const [id,b] of buttons){
+   const key=advancementCastKey(id),index=ADVANCEMENT_KEYS.indexOf(key),now=Date.now(),runtime=a.skillRuntime;
+   const cd=Math.max(0,Math.ceil(((runtime?.cooldowns[id]||0)-now)/1000));
+   const ready=route.id==='time-sovereign'&&(key==='Z'&&(runtime?.advancedTime?.rewind?.until||0)>now||key==='Q'&&(runtime?.advancedTime?.anchor?.until||0)>now)||key==='Q'&&(route.id==='shadowhunter'&&runtime?.advancedShadow?.anchor||route.id==='riftlord'&&(runtime?.advancedRift?.anchor?.until||0)>now||route.id==='voltstalker'&&(runtime?.volt?.followupUntil||0)>now);
+   b.textContent=ancientKeyLabel('Key'+key,en())+' · '+L(...route.skills[index])+(cd&&!ready?' · '+cd+'s':'');
+   b.disabled=cd>0&&!ready;
+   b.classList.toggle('selected',!!ready);
+  }
+  return;
+ }if(key!==lastJob){lastJob=key;bar.replaceChildren();buttons.clear();for(const id of job.skills){const b=btn('',()=>cast(id),bar);b.dataset.layoutKey='skill-'+SKILLS[id].key;buttons.set(id,b)}}for(const [id,b]of buttons){const s=SKILLS[id],n=p.skills?.[id]||0,cd=Math.max(0,Math.ceil(((a.skillRuntime?.cooldowns?.[id]||0)-Date.now())/1000)),duration=Math.max(0,Math.ceil(((id==='summon'?a.skillRuntime?.summon?.until||0:a.skillRuntime?.effects?.[id]?.until||0)-Date.now())/1000));const label=`${ancientKeyLabel('Key'+s.key,en())} · ${holyName(en()?s.en:s.name,en(),!!a.holy)}${duration?' · '+duration+'s':cd?' · '+cd+'s':n?'':' · Lv.0'}`;if(b.textContent!==label)b.textContent=label;b.disabled=n===0||(cd>0&&!((id==='shadowreturn'&&(a.skillRuntime?.shadowAnchor?.until||0)>Date.now()||['riftassault','chronoshift'].includes(id)&&(a.skillRuntime?.fusion?.anchor?.until||0)>Date.now()||id==='rewind'&&(a.skillRuntime?.fusion?.rewind?.until||0)>Date.now())))||!!activeSkill(a,'transform')||id==='summon'&&!!a.skillRuntime?.summon;b.classList.toggle('selected',duration>0||id==='summon'&&!!a.skillRuntime?.summon)}const pet=a.skillRuntime?.summon,form=activeSkill(a,'transform'),weaken=(p.skills?.weaken||0)>0;const toolKey=[p.profession,!!pet,form>0,weaken,en(),ancientBindingVersion()].join(':');if(lastTools!==toolKey){lastTools=toolKey;tools.replaceChildren();if(form)btn(L('1 · 爪子','1 · Claws'),()=>slot(1),tools);else if(p.profession==='summoner'){btn(L('1 · 主手','1 · Melee'),()=>slot(1),tools);if(pet)btn(L('2 · 锁定印记','2 · Command sigil'),()=>slot(2),tools);if(weaken)btn((pet?'3':'2')+' · '+L('削弱印记','Weakening sigil'),()=>slot(pet?3:2),tools)}}for(const [index,b]of [...tools.children].entries()){b.dataset.layoutKey='tool-'+index;b.dataset.toolSlot=String(index+1);const label=ancientKeyLabel('Digit'+(index+1),en())+' · '+b.textContent.split(' · ').slice(1).join(' · ');if(b.textContent!==label)b.textContent=label;}const text=form?L('变身中 · 左键爪击','BEAST FORM · LMB claw attack'):pet?`${L('铁甲兽','Armored Beast')} ${Math.ceil(pet.hp)}/${pet.maxHp} · ${Math.max(0,Math.ceil((pet.until-Date.now())/1000))}s · ${L('2锁定印记命中怪物指挥攻击','2 command sigil: hit a monster to mark it')}`:p.profession==='summoner'&&weaken?L('1主手 · 2削弱印记 · 左键命中生效','1 melee · 2 weakening sigil · LMB hit to apply'):'';const mappedText=text.replace(/LMB|左键/g,ancientKeyLabel('Mouse0',en())).replace(/([123])(?=锁定|主手|削弱| command| melee| weakening)/g,(_,n)=>ancientKeyLabel('Digit'+n,en()));if(hint.textContent!==mappedText)hint.textContent=mappedText;for(const b of tools.children){const chosen=Number(b.dataset.toolSlot)===(a.skillRuntime?.mode||1);b.classList.toggle('selected',chosen)}}
  return {render,renderProfessions,update};
 }

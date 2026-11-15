@@ -54,6 +54,12 @@ const ADVANCED_PROFESSIONS = {
     route("time-weaver", ["\u56E0\u679C\u7EC7\u8005", "Causality Weaver"], ["\u5EF6\u65F6\u5370\u8BB0", "Delayed Mark"], ["\u56E0\u679C\u8FDE\u7EBF", "Causal Link"], ["\u672A\u6765\u501F\u4F4D", "Borrowed Position"], ["\u56E0\u679C\u5012\u7F6E", "Causal Inversion"])
   ]
 };
+const ADVANCEMENT_KEYS = ["X", "Q", "Z", "C"];
+function advancementCastKey(id) {
+  return /^advanced:[XQZC]$/.test(id) ? id.slice(-1) : void 0;
+}
 export {
-  ADVANCED_PROFESSIONS
+  ADVANCED_PROFESSIONS,
+  ADVANCEMENT_KEYS,
+  advancementCastKey
 };

@@ -1,3 +1,4 @@
+import {castAdvancement,tickPaladin,tickStormcaller,tickVoltstalker,tickCrystalist,tickWinterwarden,tickAdvancedFire,tickAdvancedCurse,tickAdvancedSword,tickAdvancedShadow,tickAdvancedStone,tickAdvancedSummon,tickAdvancedElements,tickAdvancedRift,tickAdvancedAbyss,tickAdvancedTime,reconcileAdvancementRuntime} from './ancient-advancement-combat';
 import {artifactStage} from './ancient-artifacts';
 import {masteryPower} from './ancient-mastery';
 import {castFusion,tickFusion} from './ancient-fusion-combat';
@@ -25,7 +26,7 @@ import {starfallPath} from './ancient-starfall';
 import {sanctumPath} from './ancient-sanctum';
 import {blightPath} from './ancient-blight';
 import {cityPath} from './ancient-city';
-export type SkillMonster={contributionsForMastery?:Record<string,number>;frozenUntil?:number;frozenDamage?:{owner:string;amount:number;attack?:string}[];masteryMarks?:Record<string,{owner:string;id:string;until:number}>;buffUntil?:number;buffPower?:number;id:string;kind:string;hp:number;maxHp:number;x:number;y?:number;z:number;slow?:number;slowUntil?:number;weak?:number;weakUntil?:number;vulnerable?:number;vulnerableUntil?:number;strikes?:{skillId?:string;owner:string;at:number;damage:number}[];dots?:{skillId?:string;owner:string;until:number;next:number;damage:number}[]};
+export type SkillMonster={sanctuaryUntil?:number;charm?:{owner:string;until:number;next:number};judgment?:{owner:string;until:number;maxHp:number};contributionsForMastery?:Record<string,number>;frozenUntil?:number;frozenDamage?:{owner:string;amount:number;attack?:string}[];masteryMarks?:Record<string,{owner:string;id:string;until:number}>;buffUntil?:number;buffPower?:number;id:string;kind:string;hp:number;maxHp:number;x:number;y?:number;z:number;slow?:number;slowUntil?:number;weak?:number;weakUntil?:number;vulnerable?:number;vulnerableUntil?:number;strikes?:{skillId?:string;owner:string;at:number;damage:number}[];dots?:{skillId?:string;owner:string;until:number;next:number;damage:number}[]};
 export type SkillFXDetails={target:string;level?:number;phase?:string;source?:{x:number;y:number;z:number};links?:{x:number;y:number;z:number;target:string;height:number}[]};
 export function clearPendingSkillDamage(owner:string,targets:Iterable<Partial<Pick<SkillMonster,'strikes'|'dots'>>>){for(const m of targets){m.strikes=(m.strikes||[]).filter(v=>v.owner!==owner);m.dots=(m.dots||[]).filter(v=>v.owner!==owner);}}
 export type SkillContext={motion?:(to:{x:number;y:number;z:number},speed:number)=>void;canMove?:(x:number,z:number,nx:number,nz:number)=>boolean;map:string;monsters:SkillMonster[];damage:(m:SkillMonster,n:number,source?:'summon',attack?:string)=>number;fx:(id:string,x:number,z:number,radius:number,details?:SkillFXDetails)=>void};
@@ -44,7 +45,7 @@ export function skillAreaTargets(target:SkillMonster,radius:number,c:SkillContex
  return c.monsters.filter(m=>m.id===target.id?m.hp>0:skillAreaHits(target,m,radius,c.map));
 }
 export function monsterIncoming(m:SkillMonster,now:number){return (m.kind==='oathknight'&&(m as SkillMonster & {bossCast?:{id:string}}).bossCast?.id==='oathGuard'?.35:1)*(m.vulnerableUntil&&m.vulnerableUntil>now?1+(m.vulnerable||0):1)}
-export function monsterOutgoing(m:SkillMonster,now:number){return (m.weakUntil&&m.weakUntil>now?1-(m.weak||0):1)*((m.buffUntil||0)>now?m.buffPower||1:1)}
+export function monsterOutgoing(m:SkillMonster,now:number){return ((m.sanctuaryUntil||0)>now?.8:1)*(m.weakUntil&&m.weakUntil>now?1-(m.weak||0):1)*((m.buffUntil||0)>now?m.buffPower||1:1)}
 export function monsterSpeed(m:SkillMonster,now:number){return m.slowUntil&&m.slowUntil>now?1-(m.slow||0):1}
 function slow(m:SkillMonster,n:number,until:number){const amount=FOREST_KINDS[m.kind]?.boss||m.kind==='chief'||m.kind==='lord'?n/2:n;if(!m.slowUntil||m.slowUntil<=Date.now()||amount>=(m.slow||0)){m.slow=amount;m.slowUntil=until}}
 function weaken(m:SkillMonster,n:number,until:number){if(!m.weakUntil||m.weakUntil<=Date.now()||n>=(m.weak||0)){m.weak=n;m.weakUntil=until}}
@@ -56,6 +57,8 @@ export function selectSkillTarget(a:SkillActor,dir:unknown,range:number,c:SkillC
 export function skillTargetError(a:SkillActor,dir:unknown,range:number,c:SkillContext){if(!Array.isArray(dir)||dir.length!==3||!dir.every(Number.isFinite))return '请瞄准可见的敌人';const hits=c.monsters.filter(m=>m.hp>0).map(m=>({m,hit:rayAncientHitbox(a,dir,m,ancientMapHeight(c.map,m.x,m.z,m.y),Math.max(60,range),.2)})).filter(v=>v.hit).sort((x,y)=>x.hit!.t-y.hit!.t);if(!hits.length)return '请瞄准可见的敌人';return hits[0].hit!.t>range?'目标超出技能范围':'目标被障碍物遮挡';}
 
 export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now=Date.now()){
+ const advanced=castAdvancement(a,p,id,direction,c,now);
+ if(advanced!==undefined)return advanced;
  if(isFusionSkill(id)){if(a.hp<=0||SKILLS[id].job!==p.profession||!p.fusedJobs?.[p.profession])return '技能尚未修炼';return castFusion(a,p,id,direction,skillSourceContext(c,id),now,ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p)*masteryPower(p,id)*(p.artifactEquipped==='divinity'&&SKILLS[id].key==='C'?1+.12*artifactStage(p):1));}
  const recalling=id==='shadowreturn'&&shadowRecallReady(a,now);
  const d=equippedGear(p,'weapon'),combo=d?.combo&&d.combo===p.profession?GROWTH_COMBOS[d.combo]:undefined,r=runtime(a),ready=!!combo&&!!r.gearChain&&r.gearChain.key===d!.combo&&r.gearChain.until>now&&id===combo.to;
@@ -135,13 +138,30 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
  c.fx(id,target.x,target.z,skillRadius(id,n,isHoly(p))*branchRadius(p,id)||1);return null;
 }
 export function ancientAuxShot(a:SkillActor,p:AncientProfile,direction:unknown,c:SkillContext,now=Date.now()){
+ if(p.advancements?.[p.profession||''])return '升华职业不使用旧职业印记';
  const r=runtime(a),form=activeSkill(a,'transform',now);if(form){if(now-r.lastAux<600)return;r.lastAux=now;const target=selectSkillTarget(a,direction,4.5,c);c.fx('claw',a.x,a.z,1);if(target){c.damage(target,ancientSkillDamage(p)*((125+10*form)/100)*skillDamageMultiplier(a,now)*holyPower(p),undefined,'claw');queueBranchFinisher(a,p,'claw',target,now);}return}
  if(r.mode===1)return;if(now-r.lastAux<350)return;r.lastAux=now;const target=selectSkillTarget(a,direction,60,c);if(!target)return '请瞄准可见的敌人';
  if(r.mode===2&&r.summon){r.summon.target=target.id;c.fx('mark',target.x,target.z,1);return}
  const n=p.skills?.weaken||0;if(p.profession!=='summoner'||n<=0)return '技能尚未修炼';if((r.cooldowns.weaken||0)>now)return '技能冷却中';r.cooldowns.weaken=now+12000*(1-ancientGearStats(p).cooldown);c.damage(target,ancientSkillDamage(p)*(2.8+.3*n)*skillDamageMultiplier(a,now)*holyPower(p),undefined,'weaken');weaken(target,Math.min(.8,.05*n),now+n*8000);queueBranchFinisher(a,p,'weaken',target,now);c.fx('weaken',target.x,target.z,1);
 }
 export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,dt:number,now=Date.now()){
+ reconcileAdvancementRuntime(a,p,c.map,a.hp<=0);
  tickFusion(a,c,now,dt);
+ tickPaladin(a,p,c,now);
+ tickStormcaller(a,p,c,now);
+ tickVoltstalker(a,p,c,now);
+ tickCrystalist(a,p,c,now);
+ tickWinterwarden(a,p,c,now);
+ tickAdvancedFire(a,p,c,now);
+ tickAdvancedCurse(a,p,c,now);
+ tickAdvancedSword(a,p,c,now);
+ tickAdvancedShadow(a,p,c,now);
+ tickAdvancedStone(a,p,c,now);
+ tickAdvancedSummon(a,p,c,dt,now);
+ tickAdvancedElements(a,p,c,now);
+ tickAdvancedRift(a,p,c,now);
+ tickAdvancedAbyss(a,p,c,now);
+ tickAdvancedTime(a,p,c,now);
  if(a.hp<=0)clearPendingSkillDamage(a.name,c.monsters);
  const r=runtime(a);if(r.shadowAnchor&&r.shadowAnchor.until<=now){
   if(a.hp>0&&p.profession==='shadowblade'&&r.shadowAnchor.map===c.map)castExpansionSkill(a,p,'shadowreturn',undefined,skillSourceContext(c,'shadowreturn'),now,ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p),undefined,true);
@@ -161,5 +181,5 @@ export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,d
   }
  }
  for(const m of c.monsters){const due=(m.strikes||[]).filter(v=>v.owner===a.name&&v.at<=now);m.strikes=(m.strikes||[]).filter(v=>!(v.owner===a.name&&v.at<=now));for(const hit of due)if(m.hp>0)tickContext(hit.skillId||'periodic').damage(m,hit.damage);for(const d of m.dots||[])if(d.owner===a.name&&d.next<=now&&d.until>now&&m.hp>0){d.next=now+1000;tickContext(d.skillId||'periodic').damage(m,d.damage)}m.dots=(m.dots||[]).filter(d=>d.until>now)}
- const pet=r.summon;if(pet){if(pet.hp<=0||pet.until<=now){delete r.summon;r.cooldowns.summon=(pet.hp<=0?now:pet.until)+100000*(1-ancientGearStats(p).cooldown);r.mode=1}else{let target=c.monsters.find(m=>m.id===pet.target&&m.hp>0);const visible=(m:SkillMonster)=>lineClear(pet.x,(ancientMapHeight(c.map,pet.x,pet.z))+1,pet.z,m.x,(ancientMapHeight(c.map,m.x,m.z,m.y))+1,m.z,c.map);if(!target)target=c.monsters.filter(m=>m.hp>0&&Math.hypot(m.x-pet.x,m.z-pet.z)<20&&visible(m)).sort((x,y)=>Math.hypot(x.x-pet.x,x.z-pet.z)-Math.hypot(y.x-pet.x,y.z-pet.z))[0];const tx=target?.x??a.x,tz=target?.z??a.z,distance=Math.hypot(tx-pet.x,tz-pet.z);if(target&&distance<2.8&&visible(target)){if(now>=pet.attackAt){pet.attackAt=now+1000;pet.damage=Math.max(1,Math.floor(ancientSkillDamage(p)*(.75+.05*pet.level)*(1+ancientGearStats(p).pet)*skillDamageMultiplier(a,now)*holyPower(p)));const key=activeBranch(p);c.damage(target,pet.damage*(key==='beastlord'?1.25:key==='spiritpack'?.8:1),'summon');if(key==='spiritpack')queueBranchFinisher(a,p,'petEcho',target,now,pet.damage);c.fx('petHit',target.x,target.z,1)}}else if(distance>2||target&&!visible(target)){if(c.map==='dunes'||c.map==='forest'||c.map==='city'||c.map==='blight'||c.map==='skyreach'||c.map==='frostcourt'||c.map==='starfall'||c.map==='sanctum'){if(now>=(pet.pathAt||0)||Math.hypot(tx-(pet.pathX??tx),tz-(pet.pathZ??tz))>5){pet.path=(c.map==='dunes'?dunesPath:c.map==='skyreach'?skyreachPath:c.map==='frostcourt'?frostcourtPath:c.map==='starfall'?starfallPath:c.map==='sanctum'?sanctumPath:c.map==='blight'?blightPath:c.map==='city'?cityPath:forestPath)(pet.x,pet.z,tx,tz);pet.pathAt=now+2000;pet.pathX=tx;pet.pathZ=tz}while(pet.path?.length&&Math.hypot(pet.path[0].x-pet.x,pet.path[0].z-pet.z)<.7)pet.path.shift()}const waypoint=pet.path?.[0],dx=(waypoint?.x??tx)-pet.x,dz=(waypoint?.z??tz)-pet.z,d=Math.hypot(dx,dz)||1,step=Math.min(d,dt*((r.relic?.petRushUntil||0)>now?11:7)),x=pet.x+dx/d*step,z=pet.z+dz/d*step;if(!blocked(x,z,.8,c.map)){pet.x=x;pet.z=z}else if(!blocked(x,pet.z,.8,c.map))pet.x=x;else if(!blocked(pet.x,z,.8,c.map))pet.z=z}}}
+ const pet=r.summon;if(pet){if(pet.hp<=0||pet.until<=now){delete r.summon;r.cooldowns.summon=(pet.hp<=0?now:pet.until)+100000*(1-ancientGearStats(p).cooldown);r.mode=1}else{let target=c.monsters.find(m=>m.id===pet.target&&m.hp>0);const visible=(m:SkillMonster)=>lineClear(pet.x,(ancientMapHeight(c.map,pet.x,pet.z))+1,pet.z,m.x,(ancientMapHeight(c.map,m.x,m.z,m.y))+1,m.z,c.map);if(!target)target=c.monsters.filter(m=>m.hp>0&&Math.hypot(m.x-pet.x,m.z-pet.z)<20&&visible(m)).sort((x,y)=>Math.hypot(x.x-pet.x,x.z-pet.z)-Math.hypot(y.x-pet.x,y.z-pet.z))[0];const tx=target?.x??a.x,tz=target?.z??a.z,distance=Math.hypot(tx-pet.x,tz-pet.z);if(target&&distance<2.8&&visible(target)){if(now>=pet.attackAt){pet.attackAt=now+1000;pet.damage=Math.max(1,Math.floor(ancientSkillDamage(p)*(.75+.05*pet.level)*(1+ancientGearStats(p).pet)*skillDamageMultiplier(a,now)*holyPower(p)));const key=activeBranch(p);c.damage(target,pet.damage*(key==='beastlord'?1.25:key==='spiritpack'?.8:1),'summon',a.advancement==='spiritcaller'?'advancement:spiritcaller:X':undefined);if(key==='spiritpack')queueBranchFinisher(a,p,'petEcho',target,now,pet.damage);c.fx('petHit',target.x,target.z,1)}}else if(distance>2||target&&!visible(target)){if(c.map==='dunes'||c.map==='forest'||c.map==='city'||c.map==='blight'||c.map==='skyreach'||c.map==='frostcourt'||c.map==='starfall'||c.map==='sanctum'){if(now>=(pet.pathAt||0)||Math.hypot(tx-(pet.pathX??tx),tz-(pet.pathZ??tz))>5){pet.path=(c.map==='dunes'?dunesPath:c.map==='skyreach'?skyreachPath:c.map==='frostcourt'?frostcourtPath:c.map==='starfall'?starfallPath:c.map==='sanctum'?sanctumPath:c.map==='blight'?blightPath:c.map==='city'?cityPath:forestPath)(pet.x,pet.z,tx,tz);pet.pathAt=now+2000;pet.pathX=tx;pet.pathZ=tz}while(pet.path?.length&&Math.hypot(pet.path[0].x-pet.x,pet.path[0].z-pet.z)<.7)pet.path.shift()}const waypoint=pet.path?.[0],dx=(waypoint?.x??tx)-pet.x,dz=(waypoint?.z??tz)-pet.z,d=Math.hypot(dx,dz)||1,step=Math.min(d,dt*((r.relic?.petRushUntil||0)>now?11:7)),x=pet.x+dx/d*step,z=pet.z+dz/d*step;if(!blocked(x,z,.8,c.map)){pet.x=x;pet.z=z}else if(!blocked(x,pet.z,.8,c.map))pet.x=x;else if(!blocked(pet.x,z,.8,c.map))pet.z=z}}}
 }

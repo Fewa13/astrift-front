@@ -256,11 +256,13 @@ function activeSkill(a, id, now = Date.now()) {
   return e && e.until > now && (e.starts ?? 0) <= now ? e.level : 0;
 }
 function skillDamageMultiplier(a, now = Date.now()) {
-  return (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.25 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
+  const blood = a.advancement === "berserker" ? 1 + 0.35 * Math.max(0, 1 - a.hp / (a.maxHp || 100)) : 1;
+  const legion = a.advancement === "necromancer" ? a.skillRuntime?.advancedSummon?.legion.filter((pet) => pet.until > now).length || 0 : 0;
+  return (activeSkill(a, "abyssKingForm", now) ? 1.3 : 1) * (activeSkill(a, "riftDomain", now) ? 1.2 : 1) * (activeSkill(a, "elementCycle", now) ? 1.15 : 1) * (activeSkill(a, "elementFire", now) ? 1.18 : 1) * (1 + legion * 0.025) * (activeSkill(a, "spiritAscendant", now) ? 1.5 : 1) * (activeSkill(a, "radiantRecovery", now) ? 1.3 : 1) * blood * (1 + Math.min(1.5, activeSkill(a, "bloodSacrifice", now) * 0.04)) * (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.25 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
 }
 function skillSpeedMultiplier(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), h = activeSkill(a, "haste", now);
-  return (activeSkill(a, "voiddomain", now) ? 1.3 : 1) * (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
+  return (activeSkill(a, "elementStorm", now) ? 1.2 : 1) * (activeSkill(a, "spiritAscendant", now) ? 1.2 : 1) * (activeSkill(a, "shadowStride", now) ? 1.25 : 1) * (activeSkill(a, "voiddomain", now) ? 1.3 : 1) * (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
 }
 function skillFireMultiplier(a, now = Date.now()) {
   const h = activeSkill(a, "haste", now);
@@ -268,13 +270,13 @@ function skillFireMultiplier(a, now = Date.now()) {
 }
 function skillIncoming(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), i = activeSkill(a, "icearmor", now);
-  return (activeSkill(a, "execution", now) ? 0 : 1 - activeSkill(a, "prism", now) / 100) * ((a.boosts?.defense || 0) > now ? 0.5 : 1) * (1 - (a.gearReduction || 0)) * (activeSkill(a, "rage", now) ? 2 : 1) * (t ? 1 - Math.min(0.35, 0.1 + 0.01 * t) : 1) * (i ? 1 - Math.min(0.5, 0.15 + 0.02 * i) : 1) * (1 - (bossFormStats(a, now)?.reduction || 0));
+  return (activeSkill(a, "riftGuard", now) ? 0.4 : 1) * (activeSkill(a, "elementEarth", now) ? 0.8 : 1) * (activeSkill(a, "elementIce", now) ? 0.9 : 1) * (activeSkill(a, "lineGuard", now) ? 0.35 : 1) * (activeSkill(a, "winterShield", now) ? 0.75 : 1) * (activeSkill(a, "voltGuard", now) ? 0.7 : 1) * (a.advancement === "paladin" ? 0.85 : 1) * (activeSkill(a, "radiantRecovery", now) ? 0.8 : 1) * (activeSkill(a, "execution", now) ? 0 : 1 - activeSkill(a, "prism", now) / 100) * ((a.boosts?.defense || 0) > now ? 0.5 : 1) * (1 - (a.gearReduction || 0)) * (activeSkill(a, "rage", now) ? 2 : 1) * (t ? 1 - Math.min(0.35, 0.1 + 0.01 * t) : 1) * (i ? 1 - Math.min(0.5, 0.15 + 0.02 * i) : 1) * (1 - (bossFormStats(a, now)?.reduction || 0));
 }
 function skillHealth(a, base, now) {
   const t = activeSkill(a, "transform", now);
   a.skillBaseHp = base;
   runtime(a).baseHp = base;
-  a.maxHp = Math.floor(base * (1 + activeSkill(a, "vitality", now) * 0.03 + (t ? Math.min(1, 0.2 + 0.04 * t) : 0)) * (1 + (bossFormStats(a, now)?.health || 0)));
+  a.maxHp = Math.floor(base * (1 + activeSkill(a, "vitality", now) * 0.03 + (t ? Math.min(1, 0.2 + 0.04 * t) : 0)) * (1 + (bossFormStats(a, now)?.health || 0)) * (activeSkill(a, "bloodSacrifice", now) ? 0.7 : 1));
   a.hp = Math.min(a.hp, a.maxHp);
 }
 function skillDrops(kind, random = Math.random) {

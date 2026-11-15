@@ -59,3 +59,8 @@ export const ADVANCED_PROFESSIONS: Readonly<Record<string, readonly [Route, Rout
   route('time-weaver',['因果织者','Causality Weaver'],['延时印记','Delayed Mark'],['因果连线','Causal Link'],['未来借位','Borrowed Position'],['因果倒置','Causal Inversion']),
  ],
 };
+
+export const ADVANCEMENT_KEYS = ['X','Q','Z','C'] as const;
+export function advancementCastKey(id:string){
+ return /^advanced:[XQZC]$/.test(id)?id.slice(-1):undefined;
+}
