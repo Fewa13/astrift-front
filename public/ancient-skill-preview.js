@@ -45,12 +45,12 @@ export function openSkillPreview(job,{en,level=3,skin,gallery=false,advancement}
   const event=advancementPreviewEvent(advancement.id,Number(skills.value));
   if(event)advancedFX.effect(event,()=>0);
   if(event?.id==='stormcaller-heavenfall'){
-   previewWaves=[
-    {delay:300,event:{...event,radius:4}},
-    {delay:850,event:{...event,x:4,z:-3,radius:4}},
-    {delay:1400,event:{...event,x:2,z:0,radius:5}},
-    {delay:1400,event:{...event,x:4,z:-3,radius:5}},
-   ];
+   const points=[target.position,extraTargets[0].position];
+   previewWaves=points.map(({x,z},index)=>({
+    delay:300+550*index,event:{...event,id:'stormcaller-seal',x,z,radius:3},
+   }));
+   for(const {x,z} of points)previewWaves.push({delay:1400,event:{...event,x,z,radius:Math.min(6,event.radius*.36)}});
+
   }
   if(event?.x>=0)target.scale.setScalar(1.08);
   return;
