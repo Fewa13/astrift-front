@@ -6,12 +6,12 @@ const module=await build({stdin:{contents:`
  export {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS} from './src/ancient-advanced-professions';
  export {reconcileAdvancementRuntime,summonTarget,recordNecromancerKill,tickAdvancedSummon} from './src/ancient-advancement-combat';
  export {chooseAdvancement,advancementCost,awardAdvancementMastery} from './src/ancient-advancement-progress';
- export {castAncientSkill,tickAncientSkills} from './src/ancient-skill-combat';
+ export {castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed} from './src/ancient-skill-combat';
  export {newAncientProfile} from './src/ancient-rules';
  export {fuseAncientProfession,chooseAncientProfession} from './src/ancient-commerce';
  export {PROFESSION_FUSIONS,PROFESSIONS,SKILLS,isFusionJob} from './src/ancient-skills';
  `,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob}=await import(
+const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob}=await import(
  'data:text/javascript;base64,'+Buffer.from(module.outputFiles[0].text).toString('base64')
 );
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
@@ -251,4 +251,19 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  for(const source of sources)assert.equal(chooseAncientProfession(saved,source),'职业不可用');
  assert(chooseAdvancement(saved,ADVANCED_PROFESSIONS[job][1].id),job);
  for(const key of ADVANCEMENT_KEYS)assert.deepEqual(saved.advancements[job].skills[key],{level:1,points:0});
+}
+
+{
+ const monster={
+  judgment:{owner:'paladin',until:11000,maxHp:1000},
+  weak:.55,weakUntil:6000,slow:.15,slowUntil:16000,
+ };
+ const expect=(now,damage,speed)=>{
+  assert(Math.abs(monsterOutgoing(monster,now)-damage)<1e-9);
+  assert(Math.abs(monsterSpeed(monster,now)-speed)<1e-9);
+ };
+ expect(5000,.45,.7);
+ expect(6000,.7,.7);
+ expect(11000,1,.85);
+ expect(16000,1,1);
 }
