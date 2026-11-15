@@ -134,8 +134,6 @@ function castPaladin(a:SkillActor,p:AncientProfile,key:string,id:string,directio
   target.judgment={owner:a.name,until:now+10000,maxHp:target.maxHp};
   target.maxHp=Math.max(1,Math.floor(target.maxHp*.7));
   target.hp=Math.min(target.hp,target.maxHp);
-  target.weak=.3;target.weakUntil=now+10000;
-  target.slow=.3;target.slowUntil=now+10000;
   (target.masteryMarks??={})[a.name+':judgment']={owner:a.name,id:'advancement:paladin:C',until:now+10000};
   c.fx('paladin-judgment',target.x,target.z,4);
  }

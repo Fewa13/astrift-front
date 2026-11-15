@@ -885,7 +885,7 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
   m.strikes??=[];
   if(m.strikes.length<64)m.strikes.push({owner:a.name,skillId:'artifact:void',at:procAt+350,damage:amount*(.2+artifact.stage*.05)});
  }
- if(!artifactHit&&artifact.id==='elements'&&[m.slowUntil,m.weakUntil,m.vulnerableUntil].filter(until=>(until||0)>procAt).length>=2&&trigger('elements',4)){
+ if(!artifactHit&&artifact.id==='elements'&&[Math.max(m.slowUntil||0,m.judgment?.until||0),Math.max(m.weakUntil||0,m.judgment?.until||0),m.vulnerableUntil].filter(until=>(until||0)>procAt).length>=2&&trigger('elements',4)){
   amount*=1.10+artifact.stage*.05;
   if(artifact.stage>=3&&a.profession==='elementalist'){
    for(const neighbor of this.world(a.map).monsters.filter(v=>v!==m&&v.hp>0&&Math.hypot(v.x-m.x,v.z-m.z)<=7).slice(0,3)){

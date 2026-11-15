@@ -45,8 +45,8 @@ export function skillAreaTargets(target:SkillMonster,radius:number,c:SkillContex
  return c.monsters.filter(m=>m.id===target.id?m.hp>0:skillAreaHits(target,m,radius,c.map));
 }
 export function monsterIncoming(m:SkillMonster,now:number){return (m.kind==='oathknight'&&(m as SkillMonster & {bossCast?:{id:string}}).bossCast?.id==='oathGuard'?.35:1)*(m.vulnerableUntil&&m.vulnerableUntil>now?1+(m.vulnerable||0):1)}
-export function monsterOutgoing(m:SkillMonster,now:number){return ((m.sanctuaryUntil||0)>now?.8:1)*(m.weakUntil&&m.weakUntil>now?1-(m.weak||0):1)*((m.buffUntil||0)>now?m.buffPower||1:1)}
-export function monsterSpeed(m:SkillMonster,now:number){return m.slowUntil&&m.slowUntil>now?1-(m.slow||0):1}
+export function monsterOutgoing(m:SkillMonster,now:number){return ((m.sanctuaryUntil||0)>now?.8:1)*(1-Math.max((m.weakUntil||0)>now?m.weak||0:0,(m.judgment?.until||0)>now?.3:0))*((m.buffUntil||0)>now?m.buffPower||1:1)}
+export function monsterSpeed(m:SkillMonster,now:number){return 1-Math.max((m.slowUntil||0)>now?m.slow||0:0,(m.judgment?.until||0)>now?.3:0)}
 function slow(m:SkillMonster,n:number,until:number){const amount=FOREST_KINDS[m.kind]?.boss||m.kind==='chief'||m.kind==='lord'?n/2:n;if(!m.slowUntil||m.slowUntil<=Date.now()||amount>=(m.slow||0)){m.slow=amount;m.slowUntil=until}}
 function weaken(m:SkillMonster,n:number,until:number){if(!m.weakUntil||m.weakUntil<=Date.now()||n>=(m.weak||0)){m.weak=n;m.weakUntil=until}}
 export function selectSkillTarget(a:SkillActor,dir:unknown,range:number,c:SkillContext){
