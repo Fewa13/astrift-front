@@ -74,6 +74,18 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   tickAncientSkills(actor,profile,context,.2,start+1950);
   assert.equal(damageEvents.slice(third).filter(event=>event.id==='advancement:stormcaller:C').length,c.length);
  }
+ if(route.id==='voltstalker'){
+  resetPosition();
+  monsters.push(
+   {id:'dash-ground',kind:'grox',x:0,y:0,z:14,hp:9e12,maxHp:9e12},
+   {id:'dash-upper',kind:'grox',x:0,y:4,z:14,hp:9e12,maxHp:9e12},
+  );
+  const first=damageEvents.length;
+  assert.equal(castAncientSkill(actor,profile,'advanced:Q',aim,context,130000),null);
+  const hits=damageEvents.slice(first).filter(event=>event.id==='advancement:voltstalker:Q');
+  assert(hits.some(event=>event.target==='dash-ground'));
+  assert(!hits.some(event=>event.target==='dash-upper'),'dash must not hit an enemy on the floor above');
+ }
  const saved=structuredClone(actor.skillRuntime);
  const returning={...actor,skillRuntime:structuredClone(saved)};
  reconcileAdvancementRuntime(returning,profile,'tribe');

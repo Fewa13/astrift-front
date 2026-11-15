@@ -349,19 +349,23 @@ function castVoltstalker(a:SkillActor,p:AncientProfile,key:string,id:string,dire
   const dx=direction[0]/length,dz=direction[2]/length;
   const limit=Math.min(26,11+level*.3);
   let distance=0,y=a.y;
+  const pathHeights=[origin.y-1.7];
   for(let d=.5;d<=limit;d+=.5){
    const x=a.x+dx*d,z=a.z+dz*d,feet=ancientMapHeight(c.map,x,z,y-1.7);
    if(blocked(x,z,.65,c.map,feet)||Math.abs(feet+1.7-y)>1.2||c.canMove&&!c.canMove(a.x,a.z,x,z))break;
    distance=d;y=feet+1.7;
+   pathHeights.push(feet);
   }
   if(!distance)return '冲刺路径被阻挡';
   const end={x:a.x+dx*distance,y,z:a.z+dz*distance};
   delete volt.followupUntil;
   volt.pursuitUntil=now+4500;
   for(const m of c.monsters){
-   if(m.hp<=0||Math.abs((m.y??ancientMapHeight(c.map,m.x,m.z))-y)>3)continue;
+   if(m.hp<=0)continue;
    const mx=m.x-origin.x,mz=m.z-origin.z,along=mx*dx+mz*dz;
    if(along<0||along>distance||Math.abs(mx*dz-mz*dx)>2)continue;
+   const pathFeet=pathHeights[Math.round(along*2)];
+   if(Math.abs((m.y??ancientMapHeight(c.map,m.x,m.z,pathFeet))-pathFeet)>3)continue;
    if(!followup&&(volt.marks[m.id]||0)>now)volt.followupUntil=now+3000;
    voltHit(a,c,m,'Q',power*3.2,now);
   }
