@@ -4,13 +4,13 @@ import {build} from 'esbuild';
 
 const module=await build({stdin:{contents:`
  export {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS} from './src/ancient-advanced-professions';
- export {reconcileAdvancementRuntime} from './src/ancient-advancement-combat';
+ export {reconcileAdvancementRuntime,summonTarget,recordNecromancerKill} from './src/ancient-advancement-combat';
  export {chooseAdvancement} from './src/ancient-advancement-progress';
  export {castAncientSkill,tickAncientSkills} from './src/ancient-skill-combat';
  export {newAncientProfile} from './src/ancient-rules';
  export {PROFESSIONS,isFusionJob} from './src/ancient-skills';
  `,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,isFusionJob}=await import(
+const {summonTarget,recordNecromancerKill,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,isFusionJob}=await import(
  'data:text/javascript;base64,'+Buffer.from(module.outputFiles[0].text).toString('base64')
 );
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
@@ -85,6 +85,24 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   const hits=damageEvents.slice(first).filter(event=>event.id==='advancement:voltstalker:Q');
   assert(hits.some(event=>event.target==='dash-ground'));
   assert(!hits.some(event=>event.target==='dash-upper'),'dash must not hit an enemy on the floor above');
+ }
+ if(route.id==='spiritcaller'||route.id==='necromancer'){
+  const dormant={...monsters[0],id:'dormant',z:12,dormant:true,target:actor.name};
+  const attacker={...monsters[0],id:'attacker',z:22,target:actor.name};
+  const preferred={...monsters[0],id:'preferred',z:26};
+  const selection={...context,monsters:[dormant,monsters[0],attacker,preferred]};
+  actor.skillRuntime.advancedPriority=dormant.id;
+  assert.equal(summonTarget(actor,selection,0,10)?.id,attacker.id);
+  actor.skillRuntime.advancedPriority=preferred.id;
+  assert.equal(summonTarget(actor,selection,0,10)?.id,preferred.id);
+ }
+ if(route.id==='necromancer'){
+  const now=103800;
+  assert.equal(recordNecromancerKill(actor,profile,{level:20,kind:'grox'},now),false);
+  assert.equal(recordNecromancerKill(actor,profile,{level:150,kind:'grox'},now),true);
+  assert.equal(profile.necromancerStrength,7.5);
+  assert.equal(recordNecromancerKill(actor,profile,{level:150,kind:'grox'},now+12000),false);
+  assert.equal(profile.necromancerStrength,7.5);
  }
  const saved=structuredClone(actor.skillRuntime);
  const returning={...actor,skillRuntime:structuredClone(saved)};
