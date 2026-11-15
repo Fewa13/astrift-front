@@ -4,13 +4,13 @@ import {build} from 'esbuild';
 
 const module=await build({stdin:{contents:`
  export {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS} from './src/ancient-advanced-professions';
- export {reconcileAdvancementRuntime,summonTarget,recordNecromancerKill} from './src/ancient-advancement-combat';
+ export {reconcileAdvancementRuntime,summonTarget,recordNecromancerKill,tickAdvancedSummon} from './src/ancient-advancement-combat';
  export {chooseAdvancement} from './src/ancient-advancement-progress';
  export {castAncientSkill,tickAncientSkills} from './src/ancient-skill-combat';
  export {newAncientProfile} from './src/ancient-rules';
  export {PROFESSIONS,isFusionJob} from './src/ancient-skills';
  `,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {summonTarget,recordNecromancerKill,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,isFusionJob}=await import(
+const {summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,isFusionJob}=await import(
  'data:text/javascript;base64,'+Buffer.from(module.outputFiles[0].text).toString('base64')
 );
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
@@ -34,7 +34,7 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
  const events=[],damageEvents=[];
  const context={
   map:'tribe',monsters,
-  damage(target,amount,source,id){damageEvents.push({target:target.id,id});assert(Number.isFinite(amount)&&amount>=0,id);if(target.hp<=0)return 0;const actual=Math.min(target.hp,amount);target.hp-=actual;return actual;},
+  damage(target,amount,source,id){damageEvents.push({target:target.id,id,amount});assert(Number.isFinite(amount)&&amount>=0,id);if(target.hp<=0)return 0;const actual=Math.min(target.hp,amount);target.hp-=actual;return actual;},
   fx(id,x,z,radius){assert(fxIds.has(id)||id==='petHit',id);assert([x,z,radius].every(Number.isFinite),id);events.push(id);},
   motion(point){Object.assign(actor,point);},
  };
@@ -112,6 +112,29 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert.equal(state.legion.length,1);
   assert.equal(state.legion[0].slot,0);
   assert.equal(state.reserve.length,0);
+  const pet=state.legion[0];
+  const target={...monsters[0],x:pet.x,z:pet.z+2};
+  const duel={...context,monsters:[target]};
+  const hit=field=>{
+   state.field=field;
+   pet.next=now;
+   tickAdvancedSummon(actor,profile,duel,.2,now);
+   assert.equal(damageEvents.at(-1).id,'advancement:necromancer:Q');
+   return damageEvents.at(-1).amount;
+  };
+  const normal=hit(undefined);
+  const field={x:pet.x,y:0,z:pet.z,until:now+1000,radius:4};
+  assert.equal(hit(field),normal*1.2);
+  assert.equal(target.weak,.2);
+  const advance=field=>{
+   state.field=field;
+   pet.z=fieldOrigin;
+   tickAdvancedSummon(actor,profile,{...context,monsters:[{...target,z:fieldOrigin+8}]},.2,now);
+   return pet.z-fieldOrigin;
+  };
+  const fieldOrigin=pet.z;
+  assert(Math.abs(advance(field)-advance(undefined)*1.2)<1e-9);
+
  }
  if(route.id==='spiritcaller'){
   const now=200000;
