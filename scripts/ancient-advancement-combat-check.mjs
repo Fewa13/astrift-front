@@ -8,9 +8,9 @@ const module=await build({stdin:{contents:`
  export {chooseAdvancement,advancementCost,awardAdvancementMastery} from './src/ancient-advancement-progress';
  export {castAncientSkill,tickAncientSkills} from './src/ancient-skill-combat';
  export {newAncientProfile} from './src/ancient-rules';
- export {PROFESSIONS,isFusionJob} from './src/ancient-skills';
+ export {PROFESSIONS,SKILLS,isFusionJob} from './src/ancient-skills';
  `,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,isFusionJob}=await import(
+const {summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob}=await import(
  'data:text/javascript;base64,'+Buffer.from(module.outputFiles[0].text).toString('base64')
 );
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
@@ -22,7 +22,10 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
  profile.profession=profession;profile.level=150;
  profile.ascension={jobs:{[profession]:{holy:true}},attempts:0,day:''};
  profile.skills=Object.fromEntries(PROFESSIONS[profession].skills.map(id=>[id,8]));
- if(isFusionJob(profession))profile.fusedJobs={[profession]:true};
+ if(isFusionJob(profession)){
+  profile.fusedJobs={[profession]:true};
+  profile.mastery=Object.fromEntries(PROFESSIONS[profession].skills.map((id,index)=>[id,{level:5+index,points:9+index}]));
+ }
  assert(chooseAdvancement(profile,route.id),route.id);
  const actor={name,profession,advancement:route.id,holy:true,x:0,y:1.7,z:10,hp:50000,maxHp:100000,weapon:profile.weapons[0]};
  const monsters=[
@@ -51,7 +54,10 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert.equal(result,null,route.id+' '+key+': '+result);
   assert(events.length>before,route.id+' '+key+' emitted no effect');
   const rank=profile.advancements[profession].skills[key].level;
-  assert.equal(rank,isFusionJob(profession)?1:PROFESSIONS[profession].skills.length===3&&key==='X'?1:8);
+  const previous=PROFESSIONS[profession].skills.find(id=>SKILLS[id].key===key);
+  const inherited=profile.mastery?.[previous];
+  assert.equal(rank,inherited?.level??(previous?8:1));
+  assert.equal(profile.advancements[profession].skills[key].points,inherited?.points??0);
   tickAncientSkills(actor,profile,context,.2,now+200);
   assert(Number.isFinite(actor.hp)&&[actor.x,actor.y,actor.z].every(Number.isFinite),route.id+' '+key);
   verified++;
@@ -171,9 +177,9 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
  }
  const record=profile.advancements[profession],level=record.skills.X.level;
  const initialQ=structuredClone(record.skills.Q);
- const cost=advancementCost(level);
+ const cost=advancementCost(level)-record.skills.X.points;
  assert.equal(awardAdvancementMastery(profile,route.id,'X',cost-1),false);
- assert.equal(record.skills.X.points,cost-1);
+ assert.equal(record.skills.X.points,advancementCost(level)-1);
  assert.equal(awardAdvancementMastery(profile,route.id,'X',2),true);
  assert.deepEqual(record.skills.X,{level:level+1,points:1});
  assert.deepEqual(record.skills.Q,initialQ);
