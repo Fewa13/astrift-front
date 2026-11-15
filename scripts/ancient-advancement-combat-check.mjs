@@ -103,3 +103,22 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
 }
 assert.equal(verified,104);
 console.log('PASS: all 104 skill slots cast through the authoritative combat entry and emit registered visuals.');
+
+{
+ const profile=newAncientProfile();
+ profile.profession='swordsman';
+ profile.level=150;
+ profile.skills={triplecut:8,swordrain:8};
+ const actor={name:'sword-test',profession:'swordsman',x:0,y:1.7,z:10,hp:100000,maxHp:100000};
+ const target={id:'sword-target',kind:'grox',x:0,y:0,z:16,hp:9e12,maxHp:9e12};
+ const hits=[];
+ const context={map:'tribe',monsters:[target],fx(){},damage(_target,amount,_source,id){hits.push(id);return amount;}};
+ const aim=[0,-.09,Math.sqrt(1-.09**2)];
+ assert.equal(castAncientSkill(actor,profile,'swordrain',aim,context,100000),null);
+ assert.equal(castAncientSkill(actor,profile,'triplecut',aim,context,100250),null);
+ assert.deepEqual(hits,['triplecut']);
+ tickAncientSkills(actor,profile,context,.2,100250);
+ assert.deepEqual(hits,['triplecut','swordrain']);
+ tickAncientSkills(actor,profile,context,.2,100550);
+ assert.deepEqual(hits,['triplecut','swordrain','triplecut']);
+}
