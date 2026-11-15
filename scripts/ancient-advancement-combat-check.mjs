@@ -137,8 +137,22 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
 
  }
  if(route.id==='spiritcaller'){
+  const state=actor.skillRuntime.advancedSummon,pet=actor.skillRuntime.summon;
+  const rebirthAt=112000;
+  assert(state.revivalUntil>rebirthAt);
+  pet.hp=0;
+  tickAdvancedSummon(actor,profile,{...context,monsters:[]},0,rebirthAt);
+  assert.equal(pet.hp,Math.floor(pet.maxHp*.3));
+  assert.equal(state.revivalUntil,undefined);
+  pet.hp=0;
+  tickAdvancedSummon(actor,profile,{...context,monsters:[]},0,rebirthAt+500);
+  assert.equal(pet.hp,0);
+  pet.hp=1;
+  state.field={x:pet.x,y:0,z:pet.z,until:rebirthAt+1500,radius:4};
+  tickAdvancedSummon(actor,profile,{...context,monsters:[]},1,rebirthAt+1000);
+  assert.equal(pet.hp,1+pet.maxHp*.03);
   const now=200000;
-  actor.skillRuntime.summon.until=now;
+  pet.until=now;
   actor.skillRuntime.advancedSummon.revivalUntil=now+1000;
   assert.equal(castAncientSkill(actor,profile,'advanced:C',aim,context,now),'需要一个在场的圣灵护卫');
   assert.equal(castAncientSkill(actor,profile,'advanced:X',aim,context,now),null);
