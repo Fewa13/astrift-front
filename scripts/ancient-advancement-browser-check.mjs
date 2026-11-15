@@ -39,6 +39,14 @@ try{
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
    assert(await dialog.locator('canvas').isVisible());
    if(screenshots)await dialog.locator('canvas').screenshot({path:resolve(screenshots,path.id+'-'+index+'.png')});
+   if(path.id==='stormcaller'&&index===3){
+    const canvas=dialog.locator('canvas');
+    await page.waitForTimeout(900);
+    const second=await canvas.screenshot();
+    await page.waitForTimeout(550);
+    const third=await canvas.screenshot();
+    assert(!second.equals(third),'Heavenfall preview should continue rendering through the final wave');
+   }
   }
   await dialog.getByRole('button',{name:'Close'}).click();
   assert.equal(await page.locator('canvas').count(),0);
