@@ -1402,13 +1402,19 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
 }
 
 export function summonTarget(a:SkillActor,c:SkillContext,x:number,z:number){
- const visible=(m:SkillMonster)=>m.hp>0&&m.kind!=='player'&&Math.hypot(m.x-x,m.z-z)<=24&&
-  lineClear(x,ancientMapHeight(c.map,x,z)+1,z,m.x,firePoint(c,m).y+1,m.z,c.map);
- const score=(m:SkillMonster)=>{
-  const target=(m as SkillMonster&{target?:string}).target;
-  return (a.skillRuntime?.advancedPriority===m.id?100:0)+(target===a.name?30:0)-Math.hypot(m.x-x,m.z-z);
- };
- return c.monsters.filter(visible).sort((x,y)=>score(y)-score(x))[0];
+ const eyeY=ancientMapHeight(c.map,x,z)+1;
+ let best:SkillMonster|undefined,bestScore=-Infinity;
+ for(const m of c.monsters){
+  const monster=m as SkillMonster&{target?:string;dormant?:boolean};
+  if(m.hp<=0||m.kind==='player'||monster.dormant)continue;
+  const distance=Math.hypot(m.x-x,m.z-z);
+  if(distance>24)continue;
+  const score=(a.skillRuntime?.advancedPriority===m.id?100:0)+(monster.target===a.name?30:0)-distance;
+  if(score<=bestScore||!lineClear(x,eyeY,z,m.x,firePoint(c,m).y+1,m.z,c.map))continue;
+  best=m;
+  bestScore=score;
+ }
+ return best;
 }
 
 function legionMove(c:SkillContext,pet:LegionMinion,x:number,z:number,speed:number,dt:number){
