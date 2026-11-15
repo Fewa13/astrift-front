@@ -99,7 +99,7 @@ import {createAncientQuestUI} from './ancient-quest-ui.js?v=hidden-stories-1';
 import {currentQuest} from './ancient-quests.js?v=20261021-skyreach-market-1';
 import {ancientMovementMultiplier} from './ancient-rules.js';
 import {PROFESSIONS,SKILLS,skillBookName,skillDamageMultiplier,activeSkill,skillSpeedMultiplier,skillFireMultiplier} from './ancient-skills.js?v=20261109-cast-range-60';
-import {createAncientSkillUI} from './ancient-skill-ui.js?v=ascension-entry';
+import {createAncientSkillUI} from './ancient-skill-ui.js?v=fusion-balance';
 import {createResearchUI} from './ancient-research-ui.js?v=20261021-skyreach-market-1';
 import {attachTrialBadge} from './ancient-trial-badge.js?v=20261016-activities-1';
 import {createProfessionTrialsUI} from './ancient-trials-ui.js?v=20261017-trial-3d-1';

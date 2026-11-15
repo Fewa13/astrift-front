@@ -33,7 +33,7 @@ import {chooseBranch} from './ancient-branches';
 import {mobRespawnDelay,safeMobRespawn,tribeRespawnFloor} from './ancient-population';
 import {AncientResearch} from './ancient-research';
 import {AncientProfessionTrials} from './ancient-profession-trials';
-import {setTestSkillLevels,setTestPlayerLevel,supplyTestBossCards} from './ancient-test-skills';
+import {setTestSkillLevels,setTestPlayerLevel,supplyTestBossCards,restoreTestProfessions} from './ancient-test-skills';
 import {AncientFriends} from './ancient-friends';
 import {DUNGEON_CONTROLS,useDungeonMechanism,dungeonPuzzleGate} from './ancient-dungeon-mechanisms';
 import {AncientVisits,ANCIENT_MAP_LEVELS} from './ancient-visits';
@@ -433,6 +433,16 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
     if(action==='trialLeave')store.leave(name);
     if(action==='trialEquip'){const badge=String(data.badge||''),[job,tier]=badge.split(':');if(badge&&!store.mastery(name).some(m=>m.job===job&&m.tier===tier&&badge===job+':'+tier))return fail('Complete this trial to unlock its badge.');p.trialBadge=badge;}
     if(error&&action!=='trialInput')return fail(error);const state=store.state(name);store.settle(name,p);this.save(name,p);const current=store.read(name);return {ok:true,profile:p,trialState:{...state,run:current?store.view(current):null,effects:[...effects,...state.effects],error}};
+   });
+  }
+  if(name==='admintest'&&action==='profile'){
+   const marker='adminProfessionRestoreV1';
+   this.ctx.storage.transactionSync(()=>{
+    const sql=this.ctx.storage.sql;
+    if(sql.exec('SELECT name FROM ancient_abilities WHERE name=?',marker).toArray().length)return;
+    restoreTestProfessions(name,p);
+    this.save(name,p);
+    sql.exec('INSERT INTO ancient_abilities VALUES(?,?)',marker,'1');
    });
   }
   if(name==='admintest'&&action==='profile'&&!this.ctx.storage.sql.exec<{data:string}>('SELECT data FROM ancient_abilities WHERE name=?','adminBossCards20261015').toArray()[0]){

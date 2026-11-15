@@ -1,3 +1,4 @@
+import {isAncientBoss} from './ancient-boss';
 import {ARTIFACT_COMBAT,artifactStage} from './ancient-artifacts';
 import {masteryLevel} from './ancient-mastery';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
@@ -49,7 +50,7 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
  const fx=(point:Point|SkillMonster,radius:number)=>c.fx(id,point.x,point.z,radius,{target:'',source:origin});
  const anchor=f.anchor;
  if((id==='riftassault'||id==='chronoshift')&&anchor&&anchor.until>now){
-  if(id==='chronoshift'&&selectSkillTarget(a,direction,60,c)){for(const m of area(anchor,7))c.damage(m,body*2*(hourglass?ARTIFACT_COMBAT.chronoEchoMultiplier:1));fx(anchor,7);}
+  if(id==='chronoshift'&&selectSkillTarget(a,direction,60,c)){for(const m of area(anchor,7))c.damage(m,body*3.4*(hourglass?ARTIFACT_COMBAT.chronoEchoMultiplier:1));fx(anchor,7);}
   else if(!move(a,c,anchor.x,anchor.z,true))return '返回位置被阻挡';
   delete f.anchor;return null;
  }
@@ -72,14 +73,14 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
   const dir=Array.isArray(direction)?direction:[];
   if(dir.length!==3||!dir.every(Number.isFinite)||!move(a,c,a.x+dir[0]*12,a.z+dir[2]*12))return '跃迁位置被阻挡';
   f.anchor={...origin,until:now+6000+(hourglass?ARTIFACT_COMBAT.chronoAnchorExtension:0)};
-  for(const m of area(a,8))if(m.contributionsForMastery?.[a.name])(m.masteryMarks??={})[a.name+':chronoshift']={owner:a.name,id,until:now+8000};
+  for(const m of area(a,8))c.damage(m,body*2.6);
   fx(a,4);
  }
  if(id==='riftassault'&&target){
   const dx=target.x-a.x,dz=target.z-a.z,length=Math.hypot(dx,dz)||1;
   if(!move(a,c,target.x+dx/length*2,target.z+dz/length*2,f.zone?.id==='voiddomain'&&f.zone.until>now))return '突袭位置被阻挡';
   f.anchor={...origin,until:now+6000};
-  for(const m of c.monsters){const t=Math.max(0,Math.min(1,((m.x-origin.x)*dx+(m.z-origin.z)*dz)/length**2));if(Math.hypot(m.x-origin.x-t*dx,m.z-origin.z-t*dz)<2)c.damage(m,body*2.8);}
+  for(const m of c.monsters){const t=Math.max(0,Math.min(1,((m.x-origin.x)*dx+(m.z-origin.z)*dz)/length**2));if(Math.hypot(m.x-origin.x-t*dx,m.z-origin.z-t*dz)<2)c.damage(m,body*4.2);}
   fx(a,4);
  }
  r.cooldowns[id]=now+SKILLS[id].cooldown*1000*(1-ancientGearStats(p).cooldown);
@@ -88,7 +89,7 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
   if(id==='voiddomain')r.effects.voiddomain={level:1,until:now+8000};
   if(id==='descent')a.hp=Math.max(1,a.hp-(a.maxHp||100)*.12);
   const radius=id==='stasis'?12+(evolved?2:0)+(divine?3:0):10;
-  if(id==='stasis')for(const m of area(origin,radius))if(m.kind!=='player'){m.frozenUntil=Math.max(m.frozenUntil||0,now+4000);(m.masteryMarks??={})[a.name]={owner:a.name,id,until:now+6000};}
+  if(id==='stasis')for(const m of area(origin,radius))if(m.kind!=='player'&&!isAncientBoss(m.kind)){m.frozenUntil=Math.max(m.frozenUntil||0,now+4000);(m.masteryMarks??={})[a.name]={owner:a.name,id,until:now+6000};}
   f.zone={id,point:origin,until:now+(id==='stasis'?4000:8000),next:now,body,radius};
   fx(a,radius);
   if(divine)c.fx('artifact-divinity',a.x,a.z,radius);
@@ -104,26 +105,27 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
  }
  const mark=f.marks[target.id],stacks=mark&&mark.until>now?mark.stacks:0;
  if(id==='prism'||id==='judgment'){
-  const victims=id==='judgment'?area(target,10):[target];let total=0;
+  const victims=id==='judgment'?area(target,12):[target];let total=0;
+  const direct=new Set(victims.map(m=>m.id)),echoed=new Set<string>();
   for(const m of victims){
-   const amount=body*(id==='judgment'?3.4:2.8);
+   const amount=body*(id==='judgment'?5.1:4.2);
    total+=c.damage(m,amount);
    if(Math.random()<.35&&m.hp>0)dot(m,a,id,amount*.12,now,4);
    if(Math.random()<.35){m.slow=.3;m.slowUntil=now+3000;}
    if(Math.random()<.25){m.weak=.15;m.weakUntil=now+4000;}
    if(Math.random()<.18){m.slow=.95;m.slowUntil=now+700;}
-   if(Math.random()<.30){const next=area(m,evolved?10:8).filter(v=>v.id!==m.id).slice(0,evolved?2:1);for(const linked of next){total+=c.damage(linked,amount*.75);c.fx(id,linked.x,linked.z,2,{target:linked.id,source:{x:m.x,y:(m.y||0)+1,z:m.z}});}}
+   {const next=area(m,evolved?12:10).filter(v=>!direct.has(v.id)&&!echoed.has(v.id)).slice(0,evolved?2:1);for(const linked of next){echoed.add(linked.id);total+=c.damage(linked,amount*.75);c.fx(id,linked.x,linked.z,2,{target:linked.id,source:{x:m.x,y:(m.y||0)+1,z:m.z}});}}
   }
-  healing(total*(id==='judgment'?.20:.15),victims);r.effects.prism={until:now+4000,level:id==='judgment'?35:20};fx(target,id==='judgment'?10:2);
+  healing(total*(id==='judgment'?.20:.15),victims);r.effects.prism={until:now+4000,level:id==='judgment'?35:20};fx(target,id==='judgment'?12:2);
  }
- if(id==='erosion'){(target.masteryMarks??={})[a.name]={owner:a.name,id,until:now+7000};Object.assign(target,{vulnerable:.2,vulnerableUntil:now+7000,weak:.15,weakUntil:now+7000,slow:.15,slowUntil:now+7000});dot(target,a,id,body*.1,now,7);fx(target,3);}
+ if(id==='erosion'){(target.masteryMarks??={})[a.name]={owner:a.name,id,until:now+7000};Object.assign(target,{vulnerable:.2,vulnerableUntil:now+7000,weak:.15,weakUntil:now+7000,slow:.15,slowUntil:now+7000});dot(target,a,id,body*.28,now,7);fx(target,3);}
  if(id==='siphon'){
-  dot(target,a,id,body*.2,now,6);
+  dot(target,a,id,body*.55,now,6);
   if(divine){for(const m of area(target,7).filter(m=>m!==target).slice(0,3))dot(m,a,id,body*.1,now,6);c.fx('artifact-divinity',target.x,target.z,7);}
   fx(target,4);
  }
  if(id==='voidslash'||id==='temporalrift'){
-  c.damage(target,body*(stacks?4.8:3));if(stacks)delete f.marks[target.id];else f.marks[target.id]={stacks:1,until:now+7000};
+  c.damage(target,body*(stacks?7.2:4.4));if(stacks)delete f.marks[target.id];else f.marks[target.id]={stacks:1,until:now+7000};
   if(id==='temporalrift')Object.assign(target,{slow:.45,slowUntil:now+4000,weak:.2,weakUntil:now+4000});
   if(id==='voidslash'&&stacks&&p.artifactEquipped==='void'&&artifact>=3){
    const rules=ARTIFACT_COMBAT;
@@ -140,20 +142,20 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
  if(id==='execution'){
   r.effects.execution={level:1,until:now+1100};
   target.strikes??=[];
-  for(let i=0;i<(divine?8:5)&&target.strikes.length<64;i++)target.strikes.push({skillId:id,owner:a.name,at:now+i*180,damage:body*1.15});
+  for(let i=0;i<(divine?8:5)&&target.strikes.length<64;i++)target.strikes.push({skillId:id,owner:a.name,at:now+i*180,damage:body*1.65});
   delete f.marks[target.id];
-  for(const m of area(target,6))c.damage(m,body*(1.5+stacks));
+  for(const m of area(target,6))c.damage(m,body*(2.2+stacks*1.5));
   fx(target,6);
   if(divine)c.fx('artifact-divinity',target.x,target.z,9);
  }
  if(id==='abysstouch'){
   const next=Math.min(evolved?7:5,stacks+((f.avatar||0)>now?0:1));f.marks[target.id]={stacks:next,until:now+7000};
-  f.energy=Math.min(100,f.energy+8);c.damage(target,body*2.4);dot(target,a,id,body*.16*next,now,6);fx(target,3);
+  f.energy=Math.min(100,f.energy+8);c.damage(target,body*3.6);dot(target,a,id,body*.26*next,now,6);fx(target,3);
  }
  if(id==='devour'){
   delete f.marks[target.id];target.dots=target.dots?.filter(d=>d.owner!==a.name||d.skillId!=='abysstouch');
-  const damage=c.damage(target,body*(1.8+stacks*.6));healing(damage*.35,[target]);f.energy=Math.min(100,f.energy+stacks*8);
-  if(target.hp<=0&&stacks)for(const m of area(target,7)){f.marks[m.id]={stacks:1,until:now+6000};dot(m,a,'abysstouch',body*.16,now,5);}
+  const damage=c.damage(target,body*(3+stacks*.9));healing(damage*.35,[target]);f.energy=Math.min(100,f.energy+stacks*8);
+  if(target.hp<=0&&stacks)for(const m of area(target,7)){f.marks[m.id]={stacks:1,until:now+6000};dot(m,a,'abysstouch',body*.26,now,5);}
   fx(target,5);
  }
  return null;
@@ -166,11 +168,14 @@ export function tickFusion(a:Actor,c:SkillContext,now:number,dt:number){
  if(zone.until<=now){delete f.zone;return;}
  if(zone.next>now)return;zone.next=now+1000;
  for(const m of skillAreaTargets(zone.point as SkillMonster,zone.radius,c)){
-  if(zone.id==='stasis'&&!m.frozenUntil&&m.kind!=='player'){m.frozenUntil=zone.until;}
+  if(zone.id==='stasis'){
+   if(!m.frozenUntil&&m.kind!=='player'&&!isAncientBoss(m.kind))m.frozenUntil=zone.until;
+   c.damage(m,zone.body*1.05,undefined,'stasis');
+  }
   m.slow=zone.id==='stasis'?.85:.35;m.slowUntil=now+1100;
   if(zone.id==='descent'){
    m.weak=Math.min(.5,.12+.05*Math.floor((8000-zone.until+now)/1000));m.weakUntil=now+1100;
-   const actual=c.damage(m,zone.body*(1.5-a.hp/(a.maxHp||100)),undefined,'descent');heal(a,actual*.3);
+   const actual=c.damage(m,zone.body*(1.95-a.hp/(a.maxHp||100)),undefined,'descent');heal(a,actual*.3);
    if(m.hp<=0)f.energy=Math.min(100,f.energy+10);
   }
  }

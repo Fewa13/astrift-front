@@ -36,4 +36,18 @@ now+=86400000;assert.equal((await cmd('ascender','ascensionStart')).ok,true,'dai
 assert.equal((await cmd('ascender','ascensionFinalStart')).ok,false);for(let i=0;i<20;i++)ascensionKill(p,'city','city_husk',75);assert.equal(ascensionProgress(p).step,1);ascensionKill(p,'tribe','lord',30);assert.equal(ascensionProgress(p).count,0);for(let i=0;i<2;i++)ascensionKill(p,'forest','crystal_fire',65);assert.equal(ascensionProgress(p).step,2);server.save('ascender',p);
 assert.equal((await cmd('ascender','ascensionFinalStart')).ok,true);assert.equal(ascensionAttempts(server.read('ascender'),now),1,'final rite has no daily charge');run=server.dungeons().get('ascender');run.joined=['ascender'];run.stage=2;server.dungeons().save(run);server.completeDungeon(run);p=server.read('ascender');assert(isHoly(p));assert.equal(p.skills.chain,5);server.completeDungeon(run);assert.equal((await cmd('ascender','ascensionStart')).ok,false);
 p.materials['supply:transfer']=2;server.save('ascender',p);assert.equal((await cmd('ascender','chooseProfession',{job:'warrior'})).ok,true);assert(!isHoly(server.read('ascender')));assert.equal((await cmd('ascender','chooseProfession',{job:'lightning'})).ok,true);assert(isHoly(server.read('ascender')),'holy status survives switching professions');
+const test=server.read('admintest');
+test.profession='voidsword';test.fusedJobs={voidsword:true};test.consumedJobs={swordsman:true,shadowblade:true};
+test.mastery={voidslash:{level:19,points:12}};test.skills={triplecut:9};
+server.save('admintest',test);
+const restored=(await cmd('admintest','profile')).profile;
+assert.equal(Object.values(restored.fusedJobs).filter(Boolean).length,4);
+assert.equal(Object.keys(restored.consumedJobs).length,0);
+assert.equal(Object.values(restored.ascension.jobs).filter(job=>job.holy).length,13);
+assert.equal(restored.skills.triplecut,9);
+assert.equal(restored.skills.shadowstep,6);
+assert.equal(restored.mastery.voidslash.level,19);
+assert.equal(restored.mastery.voidslash.points,12);
+assert.equal(restored.profession,'voidsword');
+assert.equal((await cmd('ascender','profile')).profile.fusedJobs?.elementalist,undefined);
 db.close();console.log('PASS: authoritative level/skills gates, daily shared limit, atomic attempts, solo run persistence/resume, failed trial, permit before sidequest, unlimited final rite, idempotent permanent ascension and profession switching.');
