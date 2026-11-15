@@ -80,6 +80,16 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert.equal(actor.skillRuntime.stormcaller.heavenfall,undefined);
   tickAncientSkills(actor,profile,context,.2,start+1950);
   assert.equal(damageEvents.slice(third).filter(event=>event.id==='advancement:stormcaller:C').length,c.length);
+  const lone={...monsters[0],hp:9e12};
+  const duel={...context,monsters:[lone]};
+  const recast=180000;
+  assert.equal(castAncientSkill(actor,profile,'advanced:C',aim,duel,recast),null);
+  for(const delay of [300,850,1400]){
+   const before=damageEvents.length;
+   tickAncientSkills(actor,profile,duel,.2,recast+delay);
+   assert.equal(damageEvents.slice(before).filter(event=>event.id==='advancement:stormcaller:C').length,1);
+  }
+
  }
  if(route.id==='voltstalker'){
   resetPosition();

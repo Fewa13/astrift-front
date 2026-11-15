@@ -241,7 +241,7 @@ export function tickStormcaller(a:SkillActor,p:AncientProfile,c:SkillContext,now
   if(storm.round<2){
    const limit=Math.min(5,Math.max(1,Math.ceil(enemies.length/2)));
    const selected=enemies.filter(m=>!storm.struck.includes(m.id)).slice(0,limit);
-   for(const m of (selected.length?selected:enemies.slice(0,3))){
+   for(const m of (selected.length?selected:enemies.slice(0,limit))){
     storm.struck.push(m.id);
     state.seals[m.id]=now+10000;
     stormDamage(a,c,m,'C',storm.power*3.1,now);
