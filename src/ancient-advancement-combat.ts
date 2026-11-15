@@ -115,7 +115,7 @@ function castPaladin(a:SkillActor,p:AncientProfile,key:string,id:string,directio
  const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
  const radius=Math.min(12,6+level*.15);
  if(key==='X'){
-  const candidates=skillAreaTargets(point,radius,c).filter(m=>m.kind!=='player'&&!isAncientBoss(m.kind)&&!m.judgment&&(!m.charm||m.charm.until<=now));
+  const candidates=skillAreaTargets(point,radius,c).filter(m=>m.kind!=='player'&&!(m as SkillMonster&{dormant?:boolean}).dormant&&!isAncientBoss(m.kind)&&!m.judgment&&(!m.charm||m.charm.until<=now));
   if(!candidates.length)return '附近没有可净化的怪物';
   for(const m of candidates.slice(0,Math.min(5,1+Math.ceil(level/5))))m.charm={owner:a.name,until:now+8000,next:now};
   c.fx('paladin-purify',a.x,a.z,radius);

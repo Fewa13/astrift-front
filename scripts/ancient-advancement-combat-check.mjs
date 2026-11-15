@@ -4,14 +4,14 @@ import {build} from 'esbuild';
 
 const module=await build({stdin:{contents:`
  export {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS} from './src/ancient-advanced-professions';
- export {reconcileAdvancementRuntime,summonTarget,recordNecromancerKill,tickAdvancedSummon} from './src/ancient-advancement-combat';
+ export {reconcileAdvancementRuntime,summonTarget,recordNecromancerKill,tickAdvancedSummon,tickPaladin} from './src/ancient-advancement-combat';
  export {chooseAdvancement,advancementCost,awardAdvancementMastery} from './src/ancient-advancement-progress';
  export {castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed} from './src/ancient-skill-combat';
  export {newAncientProfile} from './src/ancient-rules';
  export {fuseAncientProfession,chooseAncientProfession} from './src/ancient-commerce';
  export {PROFESSION_FUSIONS,PROFESSIONS,SKILLS,isFusionJob} from './src/ancient-skills';
  `,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob}=await import(
+const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTarget,recordNecromancerKill,tickAdvancedSummon,tickPaladin,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob}=await import(
  'data:text/javascript;base64,'+Buffer.from(module.outputFiles[0].text).toString('base64')
 );
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
@@ -198,6 +198,16 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
  assert(chooseAdvancement(profile,route.id));
  assert.equal(chooseAdvancement(profile,routes.find(other=>other.id!==route.id).id),false);
  assert.deepEqual(record.skills.X,{level:level+1,points:1});
+ if(route.id==='paladin'){
+  const now=150000;
+  const ally={...monsters[0],id:'ally',charm:{owner:name,until:now+1000,next:now}};
+  const dormant={...ally,id:'dormant',charm:undefined,dormant:true,z:17};
+  const player={...dormant,id:'player',kind:'player',dormant:false};
+  const expired={...ally,id:'expired',z:18,charm:{owner:name,until:now,next:now}};
+  const before=damageEvents.length;
+  tickPaladin(actor,profile,{...context,monsters:[ally,dormant,player,expired]},now);
+  assert.deepEqual(damageEvents.slice(before).map(hit=>hit.target),['expired']);
+ }
  const saved=structuredClone(actor.skillRuntime);
  const returning={...actor,skillRuntime:structuredClone(saved)};
  reconcileAdvancementRuntime(returning,profile,'tribe');
