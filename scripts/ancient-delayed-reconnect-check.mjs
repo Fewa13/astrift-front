@@ -60,5 +60,21 @@ assert.equal(necroResponse.status,101);
 const rejoined=server.connections().find(ws=>ws.deserializeAttachment().name==='friend');
 assert.equal(friend.deserializeAttachment(),null);
 assert.deepEqual(rejoined.deserializeAttachment().skillRuntime.advancedSummon,beforeReconnect);
+const killWorld=server.world('tribe');
+for(const monster of killWorld.monsters)monster.hp=0;
+const masteryTarget=killWorld.monsters[0];
+Object.assign(masteryTarget,{kind:'grox',level:80,x:0,y:0,z:53,hp:1,maxHp:1});
+masteryTarget.contributions=[];
+const markUntil=Date.now()+60000;
+masteryTarget.masteryMarks={
+ ownFirst:{owner:'friend',id:'advancement:necromancer:C',until:markUntil},
+ ownDuplicate:{owner:'friend',id:'advancement:necromancer:C',until:markUntil},
+ expired:{owner:'friend',id:'advancement:necromancer:X',until:Date.now()-1},
+};
+server.damageMonster(rejoined,rejoined.deserializeAttachment(),masteryTarget,1,'body','friend','skill','advancement:necromancer:Q',killWorld.monsters);
+const credited=server.read('friend').advancements.summoner.skills;
+assert(credited.Q.points>0);
+assert.deepEqual(credited.C,credited.Q,'duplicate marks award the same points as one active skill');
+assert.equal(credited.X.points,0,'expired mark cannot earn mastery');
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
