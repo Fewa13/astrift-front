@@ -168,6 +168,7 @@ type StormPoint = {x:number;y:number;z:number};
 export type StormRuntime = {
  map:string;
  seals:Record<string,number>;
+ heavenfall?:StormPoint & {radius:number;power:number;round:number;next:number;struck:string[]};
  resonance?:Record<string,{mask:number;until:number}>;
  rod?:StormPoint & {until:number;next:number;radius:number;damage:number};
  prison?:StormPoint & {until:number;radius:number;damage:number;seen:Record<string,boolean>;struck:Record<string,boolean>};
@@ -220,15 +221,9 @@ function castStormcaller(a:SkillActor,p:AncientProfile,key:string,id:string,dire
   state.prison={...point,until:now+6500+Math.min(3500,level*100),radius:11,damage:power*3.5,seen:{},struck:{}};
   c.fx('stormcaller-prison',point.x,point.z,11);
  }else{
-  const enemies=stormTargets(c,point,Math.min(20,12+level*.15));
-  for(const [i,m] of enemies.entries()){
-   const marked=(state.seals[m.id]||0)>now;
-   const mark=m.strikes??=[];
-   mark.push({skillId:attack,owner:a.name,at:now+(i%2)*450,damage:power*3});
-   mark.push({skillId:attack,owner:a.name,at:now+900,damage:power*(marked?5:3.8)});
-   delete state.seals[m.id];
-  }
-  c.fx('stormcaller-heavenfall',point.x,point.z,Math.min(20,12+level*.15));
+  const radius=Math.min(20,12+level*.15);
+  state.heavenfall={...point,radius,power,round:0,next:now+300,struck:[]};
+  c.fx('stormcaller-heavenfall',point.x,point.z,radius);
  }
  r.cooldowns[id]=now+({X:5,Q:15,Z:19,C:36}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
  return null;
@@ -240,6 +235,30 @@ export function tickStormcaller(a:SkillActor,p:AncientProfile,c:SkillContext,now
  if(!state||state.map!==c.map)return;
  for(const [id,record] of Object.entries(state.resonance||{}))if(record.until<=now)delete state.resonance![id];
  for(const [id,until] of Object.entries(state.seals))if(until<=now)delete state.seals[id];
+ const storm=state.heavenfall;
+ if(storm&&storm.next<=now){
+  const enemies=stormTargets(c,storm,storm.radius);
+  if(storm.round<2){
+   const limit=Math.min(5,Math.max(1,Math.ceil(enemies.length/2)));
+   const selected=enemies.filter(m=>!storm.struck.includes(m.id)).slice(0,limit);
+   for(const m of (selected.length?selected:enemies.slice(0,3))){
+    storm.struck.push(m.id);
+    state.seals[m.id]=now+10000;
+    stormDamage(a,c,m,'C',storm.power*3.1,now);
+    c.fx('stormcaller-seal',m.x,m.z,3);
+   }
+   storm.round++;storm.next=now+550;
+  }else{
+   delete state.heavenfall;
+   const hits=new Map<SkillMonster,number>();
+   for(const marked of enemies.filter(m=>(state.seals[m.id]||0)>now)){
+    delete state.seals[marked.id];
+    for(const m of skillAreaTargets(marked,Math.min(6,storm.radius*.36),c))hits.set(m,Math.min(2,(hits.get(m)||0)+1));
+    c.fx('stormcaller-heavenfall',marked.x,marked.z,Math.min(6,storm.radius*.36));
+   }
+   for(const [m,count] of hits)stormDamage(a,c,m,'C',storm.power*2.8*count,now);
+  }
+ }
  const rod=state.rod;
  if(rod&&rod.until>now&&rod.next<=now){
   rod.next=now+1000;

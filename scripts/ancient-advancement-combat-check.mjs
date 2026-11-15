@@ -31,10 +31,10 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   {id:'right',kind:'grox',x:4,y:0,z:20,hp:9e12,maxHp:9e12},
   {id:'boss',kind:'chief',x:6,y:0,z:21,hp:9e12,maxHp:9e12},
  ];
- const events=[];
+ const events=[],damageEvents=[];
  const context={
   map:'tribe',monsters,
-  damage(target,amount,source,id){assert(Number.isFinite(amount)&&amount>=0,id);if(target.hp<=0)return 0;const actual=Math.min(target.hp,amount);target.hp-=actual;return actual;},
+  damage(target,amount,source,id){damageEvents.push({target:target.id,id});assert(Number.isFinite(amount)&&amount>=0,id);if(target.hp<=0)return 0;const actual=Math.min(target.hp,amount);target.hp-=actual;return actual;},
   fx(id,x,z,radius){assert(fxIds.has(id)||id==='petHit',id);assert([x,z,radius].every(Number.isFinite),id);events.push(id);},
   motion(point){Object.assign(actor,point);},
  };
@@ -55,6 +55,24 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   tickAncientSkills(actor,profile,context,.2,now+200);
   assert(Number.isFinite(actor.hp)&&[actor.x,actor.y,actor.z].every(Number.isFinite),route.id+' '+key);
   verified++;
+ }
+ if(route.id==='stormcaller'){
+  const start=103600;
+  const first=damageEvents.length;
+  tickAncientSkills(actor,profile,context,.2,start+300);
+  const a=damageEvents.slice(first).filter(event=>event.id==='advancement:stormcaller:C');
+  const second=damageEvents.length;
+  tickAncientSkills(actor,profile,context,.2,start+850);
+  const b=damageEvents.slice(second).filter(event=>event.id==='advancement:stormcaller:C');
+  assert(a.length>0&&b.length>0);
+  assert(b.every(event=>!a.some(prior=>prior.target===event.target)),'different enemies are struck on round two');
+  const third=damageEvents.length;
+  tickAncientSkills(actor,profile,context,.2,start+1400);
+  const c=damageEvents.slice(third).filter(event=>event.id==='advancement:stormcaller:C');
+  assert(c.length>0&&new Set(c.map(event=>event.target)).size===c.length);
+  assert.equal(actor.skillRuntime.stormcaller.heavenfall,undefined);
+  tickAncientSkills(actor,profile,context,.2,start+1950);
+  assert.equal(damageEvents.slice(third).filter(event=>event.id==='advancement:stormcaller:C').length,c.length);
  }
  const saved=structuredClone(actor.skillRuntime);
  const returning={...actor,skillRuntime:structuredClone(saved)};
