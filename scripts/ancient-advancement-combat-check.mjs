@@ -134,6 +134,17 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   };
   const fieldOrigin=pet.z;
   assert(Math.abs(advance(field)-advance(undefined)*1.2)<1e-9);
+  pet.z=fieldOrigin;
+  const start={x:pet.x,z:pet.z};
+  const diagonal={...target,x:start.x+5,z:start.z+5};
+  const path={...context,monsters:[diagonal]};
+  tickAdvancedSummon(actor,profile,{...path,canMove:(_x,z,_nx,nz)=>nz===z},.2,now);
+  assert(pet.x>start.x,'skeleton should slide along the open axis');
+  assert.equal(pet.z,start.z);
+  const besideWall={x:pet.x,z:pet.z};
+  tickAdvancedSummon(actor,profile,{...path,canMove:()=>false},.2,now);
+  assert.deepEqual({x:pet.x,z:pet.z},besideWall,'closed path must keep the skeleton in place');
+
 
  }
  if(route.id==='spiritcaller'){
