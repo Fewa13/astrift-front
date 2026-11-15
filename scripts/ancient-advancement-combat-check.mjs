@@ -8,9 +8,10 @@ const module=await build({stdin:{contents:`
  export {chooseAdvancement,advancementCost,awardAdvancementMastery} from './src/ancient-advancement-progress';
  export {castAncientSkill,tickAncientSkills} from './src/ancient-skill-combat';
  export {newAncientProfile} from './src/ancient-rules';
- export {PROFESSIONS,SKILLS,isFusionJob} from './src/ancient-skills';
+ export {fuseAncientProfession,chooseAncientProfession} from './src/ancient-commerce';
+ export {PROFESSION_FUSIONS,PROFESSIONS,SKILLS,isFusionJob} from './src/ancient-skills';
  `,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob}=await import(
+const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob}=await import(
  'data:text/javascript;base64,'+Buffer.from(module.outputFiles[0].text).toString('base64')
 );
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
@@ -222,4 +223,22 @@ console.log('PASS: all 104 skill slots cast through the authoritative combat ent
  assert.deepEqual(hits,['triplecut','swordrain']);
  tickAncientSkills(actor,profile,context,.2,100550);
  assert.deepEqual(hits,['triplecut','swordrain','triplecut']);
+}
+
+for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
+ const profile=newAncientProfile();
+ profile.level=150;
+ profile.ascension={jobs:{},attempts:0,day:''};
+ for(const source of sources){
+  profile.profession=source;
+  profile.ascension.jobs[source]={holy:true};
+  for(const id of PROFESSIONS[source].skills)(profile.skills??={})[id]=5;
+  assert(chooseAdvancement(profile,ADVANCED_PROFESSIONS[source][0].id),source);
+ }
+ assert.equal(fuseAncientProfession(profile,job),null,job);
+ assert.equal(profile.profession,job);
+ const saved=JSON.parse(JSON.stringify(profile));
+ for(const source of sources)assert.equal(chooseAncientProfession(saved,source),'职业不可用');
+ assert(chooseAdvancement(saved,ADVANCED_PROFESSIONS[job][1].id),job);
+ for(const key of ADVANCEMENT_KEYS)assert.deepEqual(saved.advancements[job].skills[key],{level:1,points:0});
 }
