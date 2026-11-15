@@ -23,11 +23,21 @@ for(const id of ['swordrain','phantomblade']){
  await server.tickMap('tribe');for(const peer of [live,friend])assert.equal(peer.messages.filter(m=>m.type==='hit'&&m.id===target.id).length,count,'no duplicate damage on next tick');
  assert.equal(server.world('tribe').monsters.find(m=>m.id===target.id).strikes.length,0);
 }
+const profile=server.read('caster');
+profile.profession='summoner';
+profile.ascension={jobs:{summoner:{holy:true}},attempts:0,day:''};
+profile.advancements={summoner:{route:'spiritcaller',skills:{X:{level:8,points:0},Q:{level:8,points:0},Z:{level:8,points:0},C:{level:8,points:0}}}};
+server.save('caster',profile);
+await server.webSocketMessage(live,JSON.stringify({type:'skill',id:'advanced:X'}));
+const preReconnect=live.deserializeAttachment().skillRuntime;
+assert(preReconnect?.summon?.hp>0,'guardian spawned on the authoritative socket');
 // Real connection replacement must null the old attachment before asynchronous close.
 const result=await server.command('caster','ticket',{map:'tribe'});const response=await server.fetch(new Request('https://play.astrift.com/api/ancient/connect?map=tribe&ticket='+result.ticket,{headers:{Upgrade:'websocket'}}));
 assert.equal(response.status,101);assert.equal(live.deserializeAttachment(),null);assert.equal(stale.deserializeAttachment(),null);
 assert.equal(server.connections().filter(ws=>ws.deserializeAttachment().name==='caster').length,1);
 const authoritative=server.connections().find(ws=>ws.deserializeAttachment().name==='caster');const hp=authoritative.deserializeAttachment().hp;
+assert.deepEqual(authoritative.deserializeAttachment().skillRuntime.summon,preReconnect.summon);
+assert.equal(authoritative.deserializeAttachment().skillRuntime.advancementIdentity,'tribe|spiritcaller');
 server.webSocketClose(live);assert.equal(authoritative.deserializeAttachment().hp,hp,'old close cannot overwrite new character health');
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
