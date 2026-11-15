@@ -28,7 +28,14 @@ profile.profession='summoner';
 profile.ascension={jobs:{summoner:{holy:true}},attempts:0,day:''};
 profile.advancements={summoner:{route:'spiritcaller',skills:{X:{level:8,points:0},Q:{level:8,points:0},Z:{level:8,points:0},C:{level:8,points:0}}}};
 server.save('caster',profile);
+const detached=socket(null);
+sockets.push(detached);
 await server.webSocketMessage(live,JSON.stringify({type:'skill',id:'advanced:X'}));
+const guardianFx=peer=>peer.messages.findLast(message=>message.type==='skillFx'&&message.id==='spiritcaller-guardian');
+assert(guardianFx(live),'caster receives the guardian visual');
+assert.deepEqual(guardianFx(friend),guardianFx(live),'same-map peer receives identical visual data');
+assert.equal(guardianFx(detached),undefined,'detached socket cannot receive map visuals');
+sockets.pop();
 const preReconnect=live.deserializeAttachment().skillRuntime;
 assert(preReconnect?.summon?.hp>0,'guardian spawned on the authoritative socket');
 // Real connection replacement must null the old attachment before asynchronous close.

@@ -837,7 +837,7 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
    }
    if(attack==='siphon'&&actual>0)a.hp=Math.min(a.maxHp||100,a.hp+actual*.75);
    return actual;
-  },fx:(id:string,x:number,z:number,radius:number,details?:import('./ancient-skill-combat').SkillFXDetails)=>{for(const peer of this.ctx.getWebSockets())if(((peer.deserializeAttachment() as Player|null)?.map||'tribe')===map)this.send(peer,{type:'skillFx',id,x,z,radius,owner:a.name,holy:a.holy,source:{x:a.x,y:a.y-.25,z:a.z},...details})}};
+  },fx:(id:string,x:number,z:number,radius:number,details?:import('./ancient-skill-combat').SkillFXDetails)=>{for(const peer of this.connections())if(((peer.deserializeAttachment() as Player).map||'tribe')===map)this.send(peer,{type:'skillFx',id,x,z,radius,owner:a.name,holy:a.holy,source:{x:a.x,y:a.y-.25,z:a.z},...details})}};
  }
  private artifactFx(a:Player,id:ArtifactId,x=a.x,z=a.z){
   for(const peer of this.ctx.getWebSockets())if((peer.deserializeAttachment() as Player|null)?.map===a.map)this.send(peer,{type:'artifactFx',id:'artifact-'+id,x,z,radius:3,owner:a.name});
