@@ -150,7 +150,7 @@ export function tickPaladin(a:SkillActor,p:AncientProfile,c:SkillContext,now:num
   if(m.hp<=0)continue;
   if(m.charm?.owner===a.name&&m.charm.until>now){
    if(m.charm.next>now)continue;
-   const victim=skillAreaTargets(m,8,c).filter(v=>v!==m&&v.charm?.owner!==a.name).sort((x,y)=>Math.hypot(x.x-m.x,x.z-m.z)-Math.hypot(y.x-m.x,y.z-m.z))[0];
+   const victim=skillAreaTargets(m,8,c).filter(v=>v!==m&&v.kind!=='player'&&!(v as SkillMonster&{dormant?:boolean}).dormant&&(v.charm?.owner!==a.name||v.charm.until<=now)).sort((x,y)=>Math.hypot(x.x-m.x,x.z-m.z)-Math.hypot(y.x-m.x,y.z-m.z))[0];
    if(!victim)continue;
    m.charm.next=now+1100;
    c.damage(victim,ancientSkillDamage(p)*1.5*(inside?.has(m)?1.2:1),undefined,'advancement:paladin:X');
