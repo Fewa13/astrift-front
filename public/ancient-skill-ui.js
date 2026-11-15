@@ -1,3 +1,4 @@
+import {ADVANCED_PROFESSIONS} from './ancient-advanced-professions.js';
 import {masteryLevel,masteryCost,masteryPower} from './ancient-mastery.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ancientKeyLabel,ancientBindingVersion} from './ancient-input-settings.js';
@@ -60,6 +61,29 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
  function renderProfessions(card){
   const p=getProfile(), refresh=()=>{if(card.isConnected)open('professions')};
   el('h2',L('职业','Professions'),card);
+  const preview=el('details','',card);
+  preview.className='ancientAscensionEntry';
+  el('summary',L('升华技能预览','Advanced skill preview'),preview);
+  const label=el('label',L('职业','Profession'),preview);
+  const select=el('select','',label);
+  for(const id of Object.keys(ADVANCED_PROFESSIONS)){
+   const job=PROFESSIONS[id];
+   el('option',L(job.name,job.en),select).value=id;
+  }
+  const routes=el('div','',preview);
+  routes.className='ancientProfessionList';
+  function showRoutes(){
+   routes.replaceChildren();
+   for(const route of ADVANCED_PROFESSIONS[select.value]||[]){
+    const item=el('article','',routes);
+    item.className='weaponCard';
+    el('strong',L(...route.name),item);
+    route.skills.forEach((name,index)=>el('span','XQZC'[index]+' · '+L(...name),item));
+   }
+  }
+  select.value=ADVANCED_PROFESSIONS[p.profession]?p.profession:Object.keys(ADVANCED_PROFESSIONS)[0];
+  select.addEventListener('change',showRoutes);
+  showRoutes();
   if(p.profession){
    btn(L('查看技能','View skills'),()=>open('skills'),card);
    btn(L('职业试炼','Profession Trials'),()=>open('trials'),card);
