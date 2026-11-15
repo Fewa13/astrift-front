@@ -104,6 +104,23 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert.equal(recordNecromancerKill(actor,profile,{level:150,kind:'grox'},now+12000),false);
   assert.equal(profile.necromancerStrength,7.5);
  }
+ if(route.id==='necromancer'){
+  const state=actor.skillRuntime.advancedSummon,now=200000;
+  state.legion=Array.from({length:18},(_,slot)=>({slot,x:0,z:10,until:now,next:now,scale:1}));
+  state.reserve=[1];
+  assert.equal(castAncientSkill(actor,profile,'advanced:Q',aim,context,now),null);
+  assert.equal(state.legion.length,1);
+  assert.equal(state.legion[0].slot,0);
+  assert.equal(state.reserve.length,0);
+ }
+ if(route.id==='spiritcaller'){
+  const now=200000;
+  actor.skillRuntime.summon.until=now;
+  actor.skillRuntime.advancedSummon.revivalUntil=now+1000;
+  assert.equal(castAncientSkill(actor,profile,'advanced:C',aim,context,now),'需要一个在场的圣灵护卫');
+  assert.equal(castAncientSkill(actor,profile,'advanced:X',aim,context,now),null);
+  assert.equal(actor.skillRuntime.advancedSummon.revivalUntil,undefined);
+ }
  const saved=structuredClone(actor.skillRuntime);
  const returning={...actor,skillRuntime:structuredClone(saved)};
  reconcileAdvancementRuntime(returning,profile,'tribe');

@@ -1360,6 +1360,7 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    const position=[[2,0],[-2,0],[0,2],[0,-2]].find(([x,z])=>!blocked(a.x+x,a.z+z,.65,c.map));
    if(!position)return '没有召唤空间';
    const hp=Math.max(1,Math.floor((a.maxHp||100)*(.85+level*.035)*(1+gear.petHealth)));
+   delete state.revivalUntil;
    r.summon={x:a.x+position[0],z:a.z+position[1],hp,maxHp:hp,damage:0,until:now+65000,attackAt:now,target:'',level};
    c.fx('spiritcaller-guardian',r.summon.x,r.summon.z,4);
   }else if(key==='Q'){
@@ -1369,7 +1370,7 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    r.effects.spiritAscendant={until:state.transformUntil,level:1};
    c.fx('spiritcaller-ascendant',a.x,a.z,6);
   }else{
-   if(!r.summon||r.summon.hp<=0)return '需要一个在场的圣灵护卫';
+   if(!r.summon||r.summon.hp<=0||r.summon.until<=now)return '需要一个在场的圣灵护卫';
    state.revivalUntil=now+26000;
    c.fx('spiritcaller-rebirth',r.summon.x,r.summon.z,4);
   }
@@ -1379,6 +1380,7 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    state.reserve.push(1+Math.min(99,level-1)*.055);
    c.fx('necromancer-raise',a.x,a.z,4);
   }else if(key==='Q'){
+   state.legion=state.legion.filter(pet=>pet.until>now);
    const count=Math.min(18-state.legion.length,state.reserve.length,Math.min(12,2+Math.floor(level/2)));
    if(!count)return '没有可释放的骷髅';
    for(let i=0;i<count;i++){
