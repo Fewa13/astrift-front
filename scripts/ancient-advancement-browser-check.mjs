@@ -7,17 +7,19 @@ import {createRequire} from 'node:module';
 const {chromium}=createRequire(resolve('../astrift-promo/record-worlds-v7.mjs'))('playwright');
 const browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader']});
 const screenshots=process.env.ASTRIFT_ADVANCEMENT_SCREENSHOTS;
+const origin=process.env.ASTRIFT_ADVANCEMENT_ORIGIN||'http://advancement.local';
 if(screenshots)mkdirSync(screenshots,{recursive:true});
 try{
  const page=await browser.newPage({viewport:{width:1080,height:720}}),errors=[];
  page.on('pageerror',error=>errors.push(error.message));
- await page.route('http://advancement.local/**',route=>{
+ await page.route(origin+'/**',route=>{
   const {pathname}=new URL(route.request().url());
-  if(pathname==='/')return route.fulfill({contentType:'text/html',body:'<!doctype html><title>Advancement preview</title>'});
+  if(pathname==='/advancement-browser-check')return route.fulfill({contentType:'text/html',body:'<!doctype html><title>Advancement preview</title>'});
+  if(origin!=='http://advancement.local')return route.continue();
   try{return route.fulfill({contentType:'text/javascript',body:readFileSync(resolve('public','.'+pathname))});}
   catch{return route.abort();}
  });
- await page.goto('http://advancement.local/');
+ await page.goto(origin+'/advancement-browser-check');
  const routes=await page.evaluate(async()=>{
   const {ADVANCED_PROFESSIONS}=await import('/ancient-advanced-professions.js');
   const {openSkillPreview}=await import('/ancient-skill-preview.js');
