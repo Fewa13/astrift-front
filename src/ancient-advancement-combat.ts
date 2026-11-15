@@ -1424,7 +1424,11 @@ function legionMove(c:SkillContext,pet:LegionMinion,x:number,z:number,speed:numb
  if(distance<1.8)return;
  const step=Math.min(speed*dt,distance-1.8);
  const tx=pet.x+dx/distance*step,tz=pet.z+dz/distance*step;
- if(!blocked(tx,tz,.45,c.map)){pet.x=tx;pet.z=tz;}
+ const canStep=(nx:number,nz:number)=>!blocked(nx,nz,.45,c.map)&&
+  (!c.canMove||c.canMove(pet.x,pet.z,nx,nz));
+ if(canStep(tx,tz)){pet.x=tx;pet.z=tz;}
+ else if(tx!==pet.x&&canStep(tx,pet.z))pet.x=tx;
+ else if(tz!==pet.z&&canStep(pet.x,tz))pet.z=tz;
 }
 
 export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,dt:number,now:number){
