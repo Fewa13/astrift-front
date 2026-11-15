@@ -48,11 +48,14 @@ for(const key of ['X','Q'])await server.webSocketMessage(friend,JSON.stringify({
 const legion=friend.deserializeAttachment().skillRuntime.advancedSummon;
 assert.equal(legion.legion.length,1);
 assert.equal(legion.reserve.length,0);
+const friendActor=friend.deserializeAttachment();
+friendActor.skillRuntime.advancedSummon.reserve.push(1.25);
+friend.serializeAttachment(friendActor);
 const necroTicket=await server.command('friend','ticket',{map:'tribe'});
 const necroResponse=await server.fetch(new Request('https://play.astrift.com/api/ancient/connect?map=tribe&ticket='+necroTicket.ticket,{headers:{Upgrade:'websocket'}}));
 assert.equal(necroResponse.status,101);
 const rejoined=server.connections().find(ws=>ws.deserializeAttachment().name==='friend');
 assert.equal(friend.deserializeAttachment(),null);
-assert.deepEqual(rejoined.deserializeAttachment().skillRuntime.advancedSummon,legion);
+assert.deepEqual(rejoined.deserializeAttachment().skillRuntime.advancedSummon,{...legion,reserve:[1.25]});
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
