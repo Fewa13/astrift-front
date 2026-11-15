@@ -4,7 +4,7 @@ import {masteryLevel,masteryCost,masteryPower} from './ancient-mastery.js';
 import {ancientKeyLabel,ancientBindingVersion} from './ancient-input-settings.js';
 import {renderBranchPanel} from './ancient-branch-ui.js?v=20261017-guide-position-1';
 import {PROFESSIONS,PROFESSION_FUSIONS,FUSION_SKILL_REQUIREMENT,isFusionJob,isFusionSkill,SKILLS,skillBook,skillTrainingCost,skillDescription,skillDamagePreview,activeSkill} from './ancient-skills.js?v=20261109-cast-range-60';
-import {renderAscensionPanel} from './ancient-ascension-ui.js?v=20261012-ascension-1';
+import {renderAscensionPanel} from './ancient-ascension-ui.js?v=ascension-entry';
 import {openSkillPreview} from './ancient-skill-preview.js?v=20261109-cast-range-60';
 import {isHoly,holyPower,holyName,holySkillDetails,ascensionEligible,ascensionProgress} from './ancient-ascension.js?v=20261014-new-professions-1';
 import {ancientGearStats,ancientSkillDamage} from './ancient-gear.js';

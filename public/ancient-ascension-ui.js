@@ -17,16 +17,14 @@ export function renderAscensionPanel(parent,{getProfile,en,job,request,join}){
   b.disabled=true;feedback.hidden=false;
   feedback.textContent=L('正在检查试炼…','Checking trial…');
   try{
-   const existing=await request('dungeonState'),run=existing.dungeonState?.run;
-   if(run?.ascensionJob===job&&run.status==='active'){await join(run.map);return}
    feedback.textContent=L('正在进入试炼…','Entering trial…');
    const result=await request(s?.permit?'ascensionFinalStart':'ascensionStart');
    const map=result.dungeonState?.run?.map;
    if(!map)throw Error(L('未能创建升华考验，请重试','Could not create the ascension trial. Try again.'));
-   await join(map);
+   await join(map,false,result.dungeonState.run);
   }catch(e){feedback.textContent=error(e)}
   finally{b.disabled=false}
  };
- const resume=el('button',L('恢复进行中的考验','Resume Active Trial'));resume.type='button';resume.onclick=async()=>{resume.disabled=true;try{const r=await request('dungeonState'),run=r.dungeonState?.run;feedback.hidden=false;if(run?.ascensionJob===job&&run.status==='active')await join(run.map);else feedback.textContent=L('没有进行中的考验','No active trial')}catch(e){feedback.hidden=false;feedback.textContent=error(e)}finally{resume.disabled=false}};
+ const resume=el('button',L('恢复进行中的考验','Resume Active Trial'));resume.type='button';resume.onclick=async()=>{resume.disabled=true;try{const r=await request('dungeonState'),run=r.dungeonState?.run;feedback.hidden=false;if(run?.ascensionJob===job&&run.status==='active')await join(run.map,false,run);else feedback.textContent=L('没有进行中的考验','No active trial')}catch(e){feedback.hidden=false;feedback.textContent=error(e)}finally{resume.disabled=false}};
 }
 export function createAscensionTracker({getProfile,en}){const box=document.createElement('aside');box.id='ancientAscensionTracker';box.hidden=true;box.style.cssText='position:fixed;left:18px;top:105px;width:min(245px,38vw);padding:10px 12px;background:#101b28dc;border-left:2px solid #b29ce8;border-radius:5px;color:#ecddff;font:12px/1.5 system-ui;pointer-events:none;z-index:7';document.body.append(box);let signature='';return {update(active,paused){const p=getProfile(),s=p&&ascensionProgress(p);box.hidden=!active||paused||!s?.permit||s.holy;if(box.hidden)return;const key=[p.profession,s.step,s.count,en()].join(':');if(signature===key)return;signature=key;box.replaceChildren();const title=document.createElement('strong');title.textContent=en()?'ASCENSION SIDE QUEST':'升华支线';box.append(title);const text=document.createElement('div');text.textContent=(ASCENSION_STEPS[s.step]?.[en()?1:0]||'')+(s.step<2?' · '+s.count+'/'+(s.step===0?20:2):'');box.append(text)}}}

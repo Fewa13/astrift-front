@@ -464,7 +464,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
   if(action==='onlinePlayers'){const peers=this.ctx.getWebSockets().map(ws=>ws.deserializeAttachment() as Player|null).filter((a):a is Player=>!!a&&Date.now()-a.seen<=15000),self=peers.find(a=>a.name===name);return {ok:true,profile:p,players:self?peers.filter(a=>(a.map||'tribe')===(self.map||'tribe')).map(a=>({name:a.name,level:this.read(a.name).level})).sort((a,b)=>b.level-a.level||a.name.localeCompare(b.name)):[]};}
   if(action==='ascensionStart'||action==='ascensionFinalStart'){
    const final=action==='ascensionFinalStart';let error:string|null=null;
-   this.ctx.storage.transactionSync(()=>{const fresh=this.read(name);error=ascensionStartError(fresh,final);if(error)return;error=this.dungeons().createAscension(name,fresh.profession!,final);if(error)return;if(!final)consumeAscensionAttempt(fresh);this.save(name,fresh)});
+   this.ctx.storage.transactionSync(()=>{const fresh=this.read(name),existing=this.dungeons().get(name);if(existing?.status==='active'&&existing.ascensionJob===fresh.profession&&existing.tier===(final?'ascensionFinal':'ascensionTrial'))return;error=ascensionStartError(fresh,final);if(error)return;error=this.dungeons().createAscension(name,fresh.profession!,final);if(error)return;if(!final)consumeAscensionAttempt(fresh);this.save(name,fresh)});
    if(error)return fail(error);return {ok:true,profile:this.read(name),dungeonState:this.dungeons().state(name)};
   }
   if(action==='huntCreate'){
