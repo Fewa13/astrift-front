@@ -5,12 +5,12 @@ import {build} from 'esbuild';
 const module=await build({stdin:{contents:`
  export {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS} from './src/ancient-advanced-professions';
  export {reconcileAdvancementRuntime,summonTarget,recordNecromancerKill,tickAdvancedSummon} from './src/ancient-advancement-combat';
- export {chooseAdvancement} from './src/ancient-advancement-progress';
+ export {chooseAdvancement,advancementCost,awardAdvancementMastery} from './src/ancient-advancement-progress';
  export {castAncientSkill,tickAncientSkills} from './src/ancient-skill-combat';
  export {newAncientProfile} from './src/ancient-rules';
  export {PROFESSIONS,isFusionJob} from './src/ancient-skills';
  `,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,isFusionJob}=await import(
+const {summonTarget,recordNecromancerKill,tickAdvancedSummon,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,newAncientProfile,PROFESSIONS,isFusionJob}=await import(
  'data:text/javascript;base64,'+Buffer.from(module.outputFiles[0].text).toString('base64')
 );
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
@@ -169,6 +169,18 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert.equal(castAncientSkill(actor,profile,'advanced:X',aim,context,now),null);
   assert.equal(actor.skillRuntime.advancedSummon.revivalUntil,undefined);
  }
+ const record=profile.advancements[profession],level=record.skills.X.level;
+ const initialQ=structuredClone(record.skills.Q);
+ const cost=advancementCost(level);
+ assert.equal(awardAdvancementMastery(profile,route.id,'X',cost-1),false);
+ assert.equal(record.skills.X.points,cost-1);
+ assert.equal(awardAdvancementMastery(profile,route.id,'X',2),true);
+ assert.deepEqual(record.skills.X,{level:level+1,points:1});
+ assert.deepEqual(record.skills.Q,initialQ);
+ assert.equal(awardAdvancementMastery(profile,'unknown','X',cost),false);
+ assert(chooseAdvancement(profile,route.id));
+ assert.equal(chooseAdvancement(profile,routes.find(other=>other.id!==route.id).id),false);
+ assert.deepEqual(record.skills.X,{level:level+1,points:1});
  const saved=structuredClone(actor.skillRuntime);
  const returning={...actor,skillRuntime:structuredClone(saved)};
  reconcileAdvancementRuntime(returning,profile,'tribe');
