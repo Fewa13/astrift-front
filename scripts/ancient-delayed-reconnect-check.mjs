@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import vm from 'node:vm';
 import {build} from 'esbuild';
+import {advancementEffectIds} from '../public/ancient-advancement-fx.js';
 const db=new DatabaseSync(':memory:'),sql={exec(q,...args){const rows=db.prepare(q).all(...args);return {toArray:()=>rows}}};
 const output=await build({entryPoints:['src/ancient-world.ts'],bundle:true,write:false,format:'cjs',platform:'node',external:['cloudflare:workers']}),module={exports:{}},sockets=[];
 function socket(actor){let state=actor;return {readyState:1,messages:[],deserializeAttachment:()=>structuredClone(state),serializeAttachment:a=>state=structuredClone(a),send(s){this.messages.push(JSON.parse(s))},close(){this.readyState=2}}}
@@ -137,5 +138,17 @@ assert.equal(stronger.weak,.55);
 assert.equal(stronger.weakUntil,spreadAt+10000);
 assert.equal(dormant.weakUntil,spreadAt-1);
 assert.equal(distant.weakUntil,spreadAt-1);
+const broadcastActor=authoritative.deserializeAttachment();
+const broadcast=server.skillContext(authoritative,broadcastActor,[],'tribe');
+const watchStart=[authoritative.messages.length,rejoined.messages.length];
+const details={target:'preview-target',source:{x:2,y:3,z:4},links:[{x:6,height:1,z:8,target:'linked'}]};
+for(const id of advancementEffectIds)broadcast.fx(id,1,5,6,details);
+const sent=authoritative.messages.slice(watchStart[0]),observed=rejoined.messages.slice(watchStart[1]);
+assert.deepEqual(sent.map(message=>message.id),advancementEffectIds);
+assert.deepEqual(observed,sent);
+for(const message of sent){
+ assert.deepEqual(message.source,details.source);
+ assert.deepEqual(message.links,details.links);
+}
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
