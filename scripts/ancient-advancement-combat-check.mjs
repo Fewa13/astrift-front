@@ -209,6 +209,20 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert.deepEqual(damageEvents.slice(before).map(hit=>hit.target),['expired']);
  }
  if(route.id==='berserker'){
+  resetPosition();
+  const bolt=(hp,now)=>{
+   actor.hp=hp;
+   const before=damageEvents.length;
+   assert.equal(castAncientSkill(actor,profile,'advanced:X',aim,context,now),null);
+   const [hit]=damageEvents.slice(before);
+   assert.equal(hit.id,'advancement:berserker:X');
+   return hit.amount;
+  };
+  skillHealth(actor,100000,132000);
+
+  const full=bolt(100000,132000);
+  const low=bolt(25000,142000);
+  assert(Math.abs(low/full-(1+.35*.75)*(1+.75))<1e-9);
   actor.hp=90000;
   skillHealth(actor,100000,149999);
   assert.equal(castAncientSkill(actor,profile,'advanced:Q',aim,context,150000),null);
