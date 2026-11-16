@@ -114,7 +114,11 @@ export function tickBerserker(actor:SkillActor,profile:AncientProfile,context:Sk
  if(Math.hypot(actor.x-charge.x,actor.y-charge.y,actor.z-charge.z)>.25)return;
  delete state.bloodCharge;
  const target=context.monsters.find(m=>m.id===charge.target&&m.hp>0);
- if(target&&skillAreaHits({x:actor.x,y:actor.y-1.7,z:actor.z},target,2,context.map))berserkerImpact(context,target,charge.power);
+ if(!target||!skillAreaHits({x:actor.x,y:actor.y-1.7,z:actor.z},target,2,context.map))return;
+ const targetY=(target.y??ancientMapHeight(context.map,target.x,target.z))+1;
+ if(!lineClear(actor.x,actor.y,actor.z,target.x,targetY,target.z,context.map)||
+    context.canMove&&!context.canMove(actor.x,actor.z,target.x,target.z))return;
+ berserkerImpact(context,target,charge.power);
 }
 
 export function consumeBloodRebirth(actor: SkillActor, now: number, attacker?:string) {

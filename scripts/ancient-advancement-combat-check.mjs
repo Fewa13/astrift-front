@@ -228,6 +228,13 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert.equal(castAncientSkill(actor,profile,'advanced:Z',aim,chargeContext,start+60000),null);
   tickAncientSkills(actor,profile,chargeContext,.1,start+61000);
   assert.equal(damageEvents.length,after,'interrupted charge cannot deal damage');
+  resetPosition();
+  const next=start+120000;
+  assert.equal(castAncientSkill(actor,profile,'advanced:Z',aim,chargeContext,next),null);
+  Object.assign(actor,destination);
+  tickAncientSkills(actor,profile,{...chargeContext,canMove:()=>false},.1,next+250);
+  assert.equal(damageEvents.length,after,'a newly closed gate prevents charge impact');
+
  }
  const saved=structuredClone(actor.skillRuntime);
  const returning={...actor,skillRuntime:structuredClone(saved)};
