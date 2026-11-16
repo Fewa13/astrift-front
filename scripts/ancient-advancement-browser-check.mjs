@@ -28,6 +28,19 @@ try{
   return Object.entries(ADVANCED_PROFESSIONS).flatMap(([job,paths])=>paths.map(path=>({job,path})));
  });
  assert.equal(routes.length,26);
+ const messages=await page.evaluate(async()=>{
+  const {createCombatNotices}=await import('/ancient-combat-notices.js');
+  const notices=createCombatNotices();
+  const profile={profession:'summoner',advancements:{summoner:{skills:{Q:{level:9,points:2}}}}};
+  for(const en of [true,false])notices.mastery(['advancement:necromancer:Q'],profile,en);
+  notices.update(performance.now());
+  const text=document.querySelector('.ancientCombatFeed').textContent;
+  notices.clear();
+  return text;
+ });
+ assert(messages.includes('Unleash · Lv. 9'));
+ assert(messages.includes('释放 · 9 级'));
+
  const dispatcherFailures=await page.evaluate(async castEvents=>{
   const THREE=await import('/three.module.js');
   const {advancementEffectIds}=await import('/ancient-advancement-fx.js');

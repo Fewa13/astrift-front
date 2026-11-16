@@ -1,4 +1,3 @@
-import {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS} from './ancient-advanced-professions.js';
 import {previewArtifact} from './ancient-artifact-model.js';
 import {ARTIFACTS,ARTIFACT_TRAILS,ARTIFACT_ROUTES,ARTIFACT_STAGES,artifactRequirement,artifactClueFound,canStartArtifactTrial} from './ancient-artifacts.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
@@ -450,15 +449,10 @@ function handleWorldMessage(d,reconnect){if(d.chapterState){setChapterState(curr
   if(d.type==='skillGesture')return; // Casting hand wind-ups temporarily hidden; skill effects remain.
   if(d.type==='artifactReward'){skillVisuals.effect({id:'artifact-'+d.id,x:camera.position.x,z:camera.position.z,radius:4},ground);profile=d.profile;identity();combatNotices.push(L('神器试炼通过 · ','Artifact trial complete · ')+L(ARTIFACTS[d.id].zh,ARTIFACTS[d.id].en),6500);}
   if(d.type==='artifactDiscovery')combatNotices.push(d.name+L(' 首次发现了起源',' discovered The Origin first'),8500);
-  if(d.type==='kill'&&d.masteryUps?.length){skillVisuals.effect({id:'mastery-rise',x:camera.position.x,z:camera.position.z,radius:3},ground);for(const id of d.masteryUps){
-   const match=/^advancement:([a-z-]+):([XQZC])$/.exec(id);
-   const route=match&&ADVANCED_PROFESSIONS[profile?.profession]?.find(item=>item.id===match[1]);
-   const names=route&&route.skills[ADVANCEMENT_KEYS.indexOf(match[2])];
-   const name=names?L(...names):en()?SKILLS[id]?.en:SKILLS[id]?.name;
-   const level=match?profile?.advancements?.[profile.profession]?.skills?.[match[2]]?.level:profile?.mastery?.[id]?.level;
-   const label=name&&level?L(name+' · '+level+' 级',name+' · Lv. '+level):name;
-   combatNotices.push(L('技能精通升级','Skill mastery increased')+(label?' · '+label:''),3600);
-  }}
+  if(d.type==='kill'&&d.masteryUps?.length){
+   skillVisuals.effect({id:'mastery-rise',x:camera.position.x,z:camera.position.z,radius:3},ground);
+   combatNotices.mastery(d.masteryUps,profile,en());
+  }
   if(d.type==='artifactFx')skillVisuals.effect(d,ground);
   if(d.type==='skillFx'){skillVisuals.effect(d,ground);if(d.owner===me?.name&&(d.id==='mark'||d.id==='weaken')){combatNotices.push(d.id==='mark'?L('已锁定 · 铁甲兽正在追击','TARGET MARKED · Beast pursuing'):L('削弱命中 · 敌人攻击降低','WEAKENED · Enemy damage reduced'),1800)}}
   if(d.type==='slam'||d.type==='roar'){const ring=new THREE.Mesh(new THREE.RingGeometry(d.radius-.35,d.radius,48),new THREE.MeshBasicMaterial({color:({slash:0xffcf6b,soulbolt:0x89ffb8,icebolt:0x90eaff,icearmor:0x90eaff,blizzard:0x90eaff,chain:0xf0d75b,haste:0xf0d75b,storm:0xf0d75b,hex:0xc06df7,drain:0xc06df7,doom:0xc06df7,summon:0x89ffb8,mark:0x62ead8,weaken:0xc97de9,transform:0x89ffb8,claw:0xcfe1ba,petHit:0x89ffb8,rage:0xff7058,vitality:0x89ffb8,power:0xffcf6b}[d.id]||({metal:0xffd56b,wood:0x71e391,water:0x62ccff,fire:0xff7058,earth:0xdab078}[d.element]||(d.type==='slam'?0xffa04b:0xb5c958))),transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(d.x,(d.y||0)+.15,d.z);scene.add(ring);effects.push({mesh:ring,expires:performance.now()+1200,kind:'ring'})}
