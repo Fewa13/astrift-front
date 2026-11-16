@@ -44,6 +44,9 @@ export function openSkillPreview(job,{en,level=3,skin,gallery=false,advancement}
  function cast(){previewWaves=[];recallShown=false;lastCast=performance.now();if(actor)actor.position.x=-2;magic.clear();advancedFX.clear();if(advancement){
   const event=advancementPreviewEvent(advancement.id,Number(skills.value));
   if(event)advancedFX.effect(event,()=>0);
+  if(event?.id==='berserker-rebirth'){
+   previewWaves=[{delay:850,event:{...event,id:'berserker-revival',x:actor.position.x,z:actor.position.z,radius:5}}];
+  }
   if(event?.id==='berserker-charge'){
    previewWaves=[{delay:250,event:{...event,id:'berserker-impact',x:target.position.x,z:target.position.z,radius:6}}];
   }
