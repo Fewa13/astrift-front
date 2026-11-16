@@ -100,7 +100,10 @@ function berserkerImpact(context:SkillContext,target:SkillMonster,power:number){
  const attack='advancement:berserker:Z';
  const victims=skillAreaTargets(target,6,context);
  context.damage(target,power*7.5,undefined,attack);
- for(const victim of victims)if(victim!==target)context.damage(victim,power*3,undefined,attack);
+ for(const victim of victims){
+  if(victim===target||context.canMove&&!context.canMove(target.x,target.z,victim.x,victim.z))continue;
+  context.damage(victim,power*3,undefined,attack);
+ }
  context.fx('berserker-impact',target.x,target.z,6,{target:target.id});
 }
 
