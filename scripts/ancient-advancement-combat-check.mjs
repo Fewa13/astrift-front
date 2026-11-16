@@ -207,6 +207,16 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   const before=damageEvents.length;
   tickPaladin(actor,profile,{...context,monsters:[ally,dormant,player,expired]},now);
   assert.deepEqual(damageEvents.slice(before).map(hit=>hit.target),['expired']);
+  resetPosition();
+  actor.hp=50000;
+  const victim={...monsters[0],id:'recovery-target',z:13,hp:100,maxHp:100};
+  const friendly={...victim,id:'still-purified',z:14,charm:{owner:name,until:now+1000,next:now}};
+  assert.equal(castAncientSkill(actor,profile,'advanced:Q',aim,{...context,monsters:[victim,friendly]},now),null);
+  assert.equal(victim.hp,0);
+  assert.equal(friendly.hp,100);
+  assert.equal(actor.hp,50020,'recovery heals from actual damage rather than overkill');
+  assert.equal(actor.skillRuntime.effects.radiantRecovery.until,now+8000);
+
  }
  if(route.id==='berserker'){
   resetPosition();
