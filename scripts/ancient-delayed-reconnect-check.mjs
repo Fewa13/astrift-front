@@ -115,5 +115,12 @@ assert.deepEqual(revivalVisuals(authoritative),revivalVisuals(rejoined));
 server.applyMapDamage(berserker,1000,projectile,hitAt+1);
 assert.equal(berserker.hp,0,'Blood Rebirth can absorb only one lethal hit per cast');
 assert.equal(revivalVisuals(authoritative).length,1);
+const paladin={...authoritative.deserializeAttachment(),hp:500,maxHp:1000,
+ skillRuntime:{effects:{},cooldowns:{},mode:1,paladin:{map:'tribe',field:{x:0,y:0,z:50,radius:5,until:Date.now()+10000}}}};
+for(const [z,expected] of [[53,520],[75,520]]){
+ const enemy={...released,id:'sanctuary-target-'+z,kind:'grox',x:0,y:0,z,hp:100,maxHp:100,contributions:[],dormant:false};
+ assert.equal(server.damageMonster(authoritative,paladin,enemy,1000,'body','caster','skill'),100);
+ assert.equal(paladin.hp,expected);
+}
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
