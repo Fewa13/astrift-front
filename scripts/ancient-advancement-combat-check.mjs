@@ -17,6 +17,7 @@ const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTa
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
 const fxIds=new Set(advancementEffectIds);
 
+export const castVisuals=[];
 let verified=0;
 for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const route of routes){
  const profile=newAncientProfile(),name='tester';
@@ -39,7 +40,7 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
  const context={
   map:'tribe',monsters,
   damage(target,amount,source,id){damageEvents.push({target:target.id,id,amount});assert(Number.isFinite(amount)&&amount>=0,id);if(target.hp<=0)return 0;const actual=Math.min(target.hp,amount);target.hp-=actual;return actual;},
-  fx(id,x,z,radius){assert(fxIds.has(id)||id==='petHit',id);assert([x,z,radius].every(Number.isFinite),id);events.push(id);},
+  fx(id,x,z,radius,details){assert(fxIds.has(id)||id==='petHit',id);assert([x,z,radius].every(Number.isFinite),id);events.push(id);castVisuals.push({id,x,z,radius,details});},
   motion(point){Object.assign(actor,point);},
  };
  const aim=[0,-.09,Math.sqrt(1-.09**2)];
