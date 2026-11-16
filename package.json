@@ -22,6 +22,7 @@
     "deploy:surge": "npm run build:mirrors && npx surge .static-hosting astrift-front.surge.sh",
     "deploy:firebase": "npm run build:mirrors && npx firebase-tools deploy --only hosting --project astrift-front",
     "deploy:mirrors": "npm run build:mirrors && npx surge .static-hosting astrift-front.surge.sh && npx firebase-tools deploy --only hosting --project astrift-front",
+    "deploy:devbuild": "npm run build:html && node scripts/build-devbuild.mjs && node scripts/stage-dev-hosting.mjs && node scripts/build-static-hosting.mjs && wrangler deploy --minify && wrangler deploy --config wrangler.devbuild.jsonc && npx surge .static-hosting astrift-front.surge.sh && npx firebase-tools deploy --only hosting --project astrift-front",
     "deploy:all": "npm run build:html && node scripts/build-static-hosting.mjs && wrangler deploy --minify && npx surge .static-hosting astrift-front.surge.sh && npx firebase-tools deploy --only hosting --project astrift-front && wrangler deploy --config ../astrift-hub/wrangler.jsonc"
   },
   "devDependencies": {
