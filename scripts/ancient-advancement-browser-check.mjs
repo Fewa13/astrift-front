@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,mkdirSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {createRequire} from 'node:module';
+import {castVisuals} from './ancient-advancement-combat-check.mjs';
 
 const {chromium}=createRequire(resolve('../astrift-promo/record-worlds-v7.mjs'))('playwright');
 const browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader']});
@@ -27,7 +28,7 @@ try{
   return Object.entries(ADVANCED_PROFESSIONS).flatMap(([job,paths])=>paths.map(path=>({job,path})));
  });
  assert.equal(routes.length,26);
- const dispatcherFailures=await page.evaluate(async()=>{
+ const dispatcherFailures=await page.evaluate(async castEvents=>{
   const THREE=await import('/three.module.js');
   const {advancementEffectIds}=await import('/ancient-advancement-fx.js');
   const {createAncientSkillVisuals}=await import('/ancient-skill-visuals.js');
@@ -42,8 +43,18 @@ try{
    visuals.clearMagic();
    if(scene.children.length)failures.push(id+':cleanup');
   }
+  for(const {id,x,z,radius,details} of castEvents){
+   if(!advancementEffectIds.includes(id))continue;
+   visuals.effect({id,x,z,radius,source:{x:0,y:1.45,z:10},...details},()=>0);
+   visuals.updateMagic(performance.now(),.016);
+   if(!scene.children.some(group=>group.children.length))failures.push(id+':cast');
+   scene.traverse(node=>{
+    if(![...node.position,...node.scale,...node.quaternion].every(Number.isFinite))failures.push(id+':transform');
+   });
+   visuals.clearMagic();
+  }
   return failures;
- });
+ },castVisuals);
  assert.deepEqual(dispatcherFailures,[]);
 
  for(const {job,path} of routes){
