@@ -912,7 +912,14 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
  const sanctuaryHeal=field&&field.until>now&&skillAreaHits(field,m,field.radius,a.map||'tribe');
  m.target=attacker;m.hp=Math.max(0,m.hp-actual);recordAdvancedAbyssHit(a,m,actual,attack,a.map||'tribe',now);if(a.advancement==='spiritcaller'&&source!=='summon')runtime(a).advancedPriority=m.id;noteLineOpening(a,a.map||'tribe',m,now);recordPactDamage(a,a.map||'tribe',m.id,actual,attack,now);
  if(sanctuaryHeal&&a.hp>0)a.hp=Math.min(a.maxHp||100,a.hp+actual*.2);
- if(m.hp===0&&m.judgment?.owner===a.name&&m.judgment.until>now){for(const nearby of nearbyMonsters||[])if(nearby.hp>0&&Math.hypot(nearby.x-m.x,nearby.z-m.z)<=8){nearby.weak=Math.max(nearby.weak||0,.2);nearby.weakUntil=Math.max(nearby.weakUntil||0,now+4500);}}
+ if(m.hp===0&&m.judgment?.owner===a.name&&m.judgment.until>now){
+  for(const nearby of nearbyMonsters||[]){
+   if(nearby.dormant||!skillAreaHits(m,nearby,8,a.map||'tribe'))continue;
+   if((nearby.weakUntil||0)>now&&(nearby.weak||0)>.2)continue;
+   nearby.weak=.2;
+   nearby.weakUntil=Math.max(nearby.weakUntil||0,now+4500);
+  }
+ }
  if(m.scripted&&m.hp<=m.maxHp*.45){
  const trial=this.dungeons().get(a.name);
  if(trial&&trial.map===a.map&&trial.status==='active'&&trial.stage===2&&trial.artifact?.id==='hourglass'&&!trial.artifact.bossRewound){
