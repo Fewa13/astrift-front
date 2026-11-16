@@ -1977,6 +1977,15 @@ function timeState(a:SkillActor,map:string){
  return r.advancedTime;
 }
 
+function expireTimeRewind(a:SkillActor,p:AncientProfile,state:TimeAdvancementRuntime,route:string,now:number){
+ const snapshot=state.rewind;
+ if(!snapshot||snapshot.until>now)return;
+ if(route==='time-weaver'){
+  runtime(a).cooldowns[snapshot.castId]=snapshot.until+16000*(1-ancientGearStats(p).cooldown);
+ }
+ delete state.rewind;
+}
+
 function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:string,id:string,direction:unknown,c:SkillContext,now:number,level:number){
  if(a.hp<=0)return '请在存活时使用技能';
  const r=runtime(a),state=timeState(a,c.map),tag='advancement:'+route+':'+key;
@@ -1984,6 +1993,7 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const target=selectSkillTarget(a,direction,60,c);
  const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
  const hit=(m:SkillMonster,multiplier:number)=>c.damage(m,power*multiplier,undefined,tag);
+ expireTimeRewind(a,p,state,route,now);
  const anchor=state.anchor,snapshot=state.rewind;
  if(route==='time-sovereign'&&key==='Q'&&anchor&&anchor.until>now){
   if(target){for(const m of stormTargets(c,anchor,8))c.damage(m,anchor.power*4,undefined,tag);}
@@ -2101,10 +2111,7 @@ export function tickAdvancedTime(a:SkillActor,p:AncientProfile,c:SkillContext,no
  const state=a.skillRuntime?.advancedTime,route=advancementRoute(p)?.id;
  if(!state||state.map!==c.map||a.hp<=0||(route!=='time-sovereign'&&route!=='time-weaver'))return;
  if(state.anchor&&state.anchor.until<=now)delete state.anchor;
- if(state.rewind&&state.rewind.until<=now){
-  if(route==='time-weaver')runtime(a).cooldowns[state.rewind.castId]=now+16000*(1-ancientGearStats(p).cooldown);
-  delete state.rewind;
- }
+ expireTimeRewind(a,p,state,route,now);
  if(state.field&&state.field.until<=now)delete state.field;
  for(const [id,mark] of Object.entries(state.marks)){
   if(mark.until>now)continue;
