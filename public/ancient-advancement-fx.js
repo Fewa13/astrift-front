@@ -2,7 +2,7 @@
 import * as THREE from './three.module.js';
 
 const effects={
- berserker:[0xf74552,0xffc171,{bolt:'bolt',charge:'trail',rebirth:'wings',sacrifice:'bind'}],
+ berserker:[0xf74552,0xffc171,{bolt:'bolt',charge:'trail',impact:'shatter',rebirth:'wings',sacrifice:'bind'}],
  paladin:[0xffdc82,0xffffff,{judgment:'pillar',purify:'halo',recovery:'wings',sanctuary:'ward'}],
  spiritcaller:[0x80ffe0,0xd3fff3,{ascendant:'wings',domain:'ward',guardian:'portal',rebirth:'halo'}],
  necromancer:[0x97fd8b,0xcdb2ff,{consume:'bind',domain:'ward',raise:'spires',release:'portal',strike:'slash'}],

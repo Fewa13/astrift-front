@@ -212,13 +212,15 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   resetPosition();
   let destination;
   const chargeContext={...context,motion(point){destination=point;}};
-  const start=180000,before=damageEvents.length;
+  const start=180000,before=damageEvents.length,firstEffect=events.length;
   assert.equal(castAncientSkill(actor,profile,'advanced:Z',aim,chargeContext,start),null);
   tickAncientSkills(actor,profile,chargeContext,.1,start+100);
   assert.equal(damageEvents.length,before);
+  assert.deepEqual(events.slice(firstEffect),['berserker-charge']);
   Object.assign(actor,destination);
   tickAncientSkills(actor,profile,chargeContext,.1,start+250);
   assert(damageEvents.slice(before).some(hit=>hit.target==='main'&&hit.id==='advancement:berserker:Z'));
+  assert.deepEqual(events.slice(firstEffect),['berserker-charge','berserker-impact']);
   const after=damageEvents.length;
   tickAncientSkills(actor,profile,chargeContext,.1,start+350);
   assert.equal(damageEvents.length,after);

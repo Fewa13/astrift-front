@@ -79,6 +79,7 @@ function castBerserker(actor:SkillActor,profile:AncientProfile,key:string,id:str
   if (blocked(x,z,.65,context.map,floor) || !lineClear(actor.x,actor.y,actor.z,x,floor+1.7,z,context.map) ||
       (context.canMove && !context.canMove(actor.x,actor.z,x,z))) return '冲锋路径被阻挡';
   const destination={x,y:floor+1.7,z};
+  context.fx('berserker-charge',destination.x,destination.z,6,{target:'',source:start});
   if(context.motion){
    state.bloodCharge={...destination,map:context.map,target:target.id,power,until:now+900};
    context.motion(destination,3);
@@ -86,7 +87,6 @@ function castBerserker(actor:SkillActor,profile:AncientProfile,key:string,id:str
    Object.assign(actor,destination);
    berserkerImpact(context,target,power);
   }
-  context.fx('berserker-charge',target.x,target.z,6,{target:target.id,source:start});
  }
  if (key === 'C') {
   state.effects.bloodRebirth = {until:now+10000,level};
@@ -101,6 +101,7 @@ function berserkerImpact(context:SkillContext,target:SkillMonster,power:number){
  const victims=skillAreaTargets(target,6,context);
  context.damage(target,power*7.5,undefined,attack);
  for(const victim of victims)if(victim!==target)context.damage(victim,power*3,undefined,attack);
+ context.fx('berserker-impact',target.x,target.z,6,{target:target.id});
 }
 
 export function tickBerserker(actor:SkillActor,profile:AncientProfile,context:SkillContext,now:number){
