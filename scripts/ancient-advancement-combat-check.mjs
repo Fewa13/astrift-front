@@ -354,3 +354,5 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  expect(11000,1,.85);
  expect(16000,1,1);
 }
+
+export {advancementCost};
