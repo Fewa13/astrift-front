@@ -100,5 +100,16 @@ const released=server.world('tribe').monsters.find(monster=>monster.id===judged.
 assert.equal(released.judgment,undefined);
 assert.equal(released.maxHp,originalCap);
 assert.equal(released.hp,reducedCap,'ending Judgment restores the cap without healing the target');
+const hitAt=Date.now();
+const berserker={...authoritative.deserializeAttachment(),hp:100,maxHp:1000,advancement:'berserker',
+ skillRuntime:{effects:{bloodRebirth:{until:hitAt+5000,level:8}},cooldowns:{},mode:1}};
+const projectile={type:'monster',kind:'hunter',monsterId:'hunter-thrower',attack:'projectile'};
+assert.equal(server.applyMapDamage(berserker,1000,projectile,hitAt),0);
+assert.equal(berserker.hp,400);
+assert.equal(berserker.skillRuntime.bloodRevenge?.attacker,projectile.monsterId);
+assert.equal(berserker.skillRuntime.bloodRevenge?.until,hitAt+10000);
+assert.equal(berserker.skillRuntime.effects.bloodRebirth,undefined);
+server.applyMapDamage(berserker,1000,projectile,hitAt+1);
+assert.equal(berserker.hp,0,'Blood Rebirth can absorb only one lethal hit per cast');
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
