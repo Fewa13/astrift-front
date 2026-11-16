@@ -772,7 +772,8 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
    const route=advancementRoute(p);
    const slot=advancementCastKey(skill);
    const advancedRewind=slot==='Z'&&(route?.id==='time-sovereign'||route?.id==='time-weaver');
-   const rewindReady=advancedRewind?!!a.skillRuntime?.advancedTime?.rewind:!!a.skillRuntime?.fusion?.rewind;
+   const rewind=advancedRewind?a.skillRuntime?.advancedTime?.rewind:a.skillRuntime?.fusion?.rewind;
+   const rewindReady=rewind!==undefined&&rewind.until>now;
    error=castAncientSkill(a,p,skill,d.direction,c,now);
    if(!error&&dungeon?.artifact&&dungeon.status==='active'){
     const skills=dungeon.artifact.skills??=[];
