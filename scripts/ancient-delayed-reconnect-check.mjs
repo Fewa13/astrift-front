@@ -122,5 +122,20 @@ for(const [z,expected] of [[53,520],[75,520]]){
  assert.equal(server.damageMonster(authoritative,paladin,enemy,1000,'body','caster','skill'),100);
  assert.equal(paladin.hp,expected);
 }
+const spreadAt=Date.now();
+const judgedEnemy={...released,id:'judged-spread',kind:'grox',x:0,y:0,z:53,hp:100,maxHp:100,
+ contributions:[],dormant:false,judgment:{owner:'caster',until:spreadAt+10000,maxHp:143}};
+const neighbor={...judgedEnemy,id:'nearby',z:55,judgment:undefined,weak:.55,weakUntil:spreadAt-1};
+const dormant={...neighbor,id:'dormant',dormant:true};
+const stronger={...neighbor,id:'stronger',weakUntil:spreadAt+10000};
+const distant={...neighbor,id:'distant',z:75};
+assert.equal(server.damageMonster(authoritative,paladin,judgedEnemy,1000,'body','caster','skill',
+ undefined,[judgedEnemy,neighbor,dormant,stronger,distant]),100);
+assert.equal(neighbor.weak,.2);
+assert(neighbor.weakUntil>spreadAt);
+assert.equal(stronger.weak,.55);
+assert.equal(stronger.weakUntil,spreadAt+10000);
+assert.equal(dormant.weakUntil,spreadAt-1);
+assert.equal(distant.weakUntil,spreadAt-1);
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
