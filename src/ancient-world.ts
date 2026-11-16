@@ -909,7 +909,7 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
   }else if(m.dots?.some(dot=>dot.owner===a.name&&dot.skillId==='abysstouch'))a.hp=Math.min(a.maxHp||100,a.hp+actual*.08);
  }
  const damage=Number.isFinite(scaledDamage)?Math.max(1,Math.floor(scaledDamage)):actual;const entries=m.contributions??=[];const credit=entries.find(e=>e.name===a.name);if(credit)credit.damage+=actual;else entries.push({name:a.name,damage:actual});if(!m.scripted&&!communityId(a.map))(m.contributionsForMastery??={})[a.name]=1;const life=source==='weapon'?(equippedGear(profile,'weapon')?.lifesteal||0)+stats.lifesteal:0;if(life&&a.hp>0)a.hp=Math.min(a.maxHp||100,a.hp+Math.floor(actual*life));const field=a.skillRuntime?.paladin?.map===(a.map||'tribe')?a.skillRuntime.paladin.field:undefined;
- const sanctuaryHeal=field&&field.until>now&&skillAreaHits(field,m,field.radius,a.map||'tribe');
+ const sanctuaryHeal=field&&field.until>now&&!(m.charm?.owner===a.name&&m.charm.until>now)&&skillAreaHits(field,m,field.radius,a.map||'tribe');
  m.target=attacker;m.hp=Math.max(0,m.hp-actual);recordAdvancedAbyssHit(a,m,actual,attack,a.map||'tribe',now);if(a.advancement==='spiritcaller'&&source!=='summon')runtime(a).advancedPriority=m.id;noteLineOpening(a,a.map||'tribe',m,now);recordPactDamage(a,a.map||'tribe',m.id,actual,attack,now);
  if(sanctuaryHeal&&a.hp>0)a.hp=Math.min(a.maxHp||100,a.hp+actual*.2);
  if(m.hp===0&&m.judgment?.owner===a.name&&m.judgment.until>now){

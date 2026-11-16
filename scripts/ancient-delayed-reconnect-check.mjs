@@ -124,6 +124,10 @@ for(const [z,expected] of [[53,520],[75,520]]){
  assert.equal(server.damageMonster(authoritative,paladin,enemy,1000,'body','caster','skill'),100);
  assert.equal(paladin.hp,expected);
 }
+const purified={...released,id:'sanctuary-friendly',kind:'grox',x:0,y:0,z:53,hp:100,maxHp:100,contributions:[],dormant:false,
+ charm:{owner:paladin.name,until:Date.now()+10000,next:0}};
+server.damageMonster(authoritative,paladin,purified,1,'body','caster','skill');
+assert.equal(paladin.hp,520,'a purified ally does not provide Sanctuary healing');
 const spreadAt=Date.now();
 const judgedEnemy={...released,id:'judged-spread',kind:'grox',x:0,y:0,z:53,hp:100,maxHp:100,
  contributions:[],dormant:false,judgment:{owner:'caster',until:spreadAt+10000,maxHp:143}};
