@@ -78,7 +78,7 @@ import {selectSkillTarget,clearPendingSkillDamage} from './ancient-skill-combat'
 import {advanceQuest,currentQuest,questCanTalk,mapSecret,questState} from './ancient-quests';
 import {mapObjects,canUseMapObject,grantMapObject} from './ancient-interactables';
 import {PROFESSIONS,SKILLS,ensureBasicSkills,trainSkill,skillDrops,runtime,activeSkill,skillHealth,skillIncoming,skillDamageMultiplier,skillSpeedMultiplier,skillFireMultiplier,type SkillRuntime} from './ancient-skills';
-import {castAncientSkill,ancientAuxShot,tickAncientSkills,monsterIncoming,monsterOutgoing,monsterSpeed,type SkillMonster} from './ancient-skill-combat';
+import {castAncientSkill,ancientAuxShot,tickAncientSkills,monsterIncoming,monsterOutgoing,monsterSpeed,skillAreaHits,type SkillMonster} from './ancient-skill-combat';
 import {spawnHunt,tickBeaconRaider} from './ancient-hunt-combat';
 import {nemesisGearQuality,huntDefinition,huntTokens,RELICS,RELIC_COST,HUNT_SLOTS} from './ancient-hunts';
 import {ANCIENT_KINDS,TRIBE_LAYOUT,tribeCompactZ,tribeSafePosition,ancientMapHeight,GUNS,RECIPES,weaponLootInfo,ancientWeaponLoot,ANCIENT_POTIONS,ancientCoinReward,ancientAddCoins,ancientMonsterXP,newAncientProfile,upgradeCost,weaponDamage,gainXP,blocked,lineClear,ancientTarget,ancientAttackReady,ancientAttackCooldown,ancientMaxHealth,ancientSyncHealth,ancientMonsterDamage,ancientMoveCredit,boundedAncientDamage,ancientMovementPath,type AncientProfile,type AncientWeapon} from './ancient-rules';
@@ -908,8 +908,10 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
    if(m.hp<=actual){fusion.avatar=Math.min(now+15000,fusion.avatar!+1500);a.skillRuntime!.effects.avatar.until=fusion.avatar;}
   }else if(m.dots?.some(dot=>dot.owner===a.name&&dot.skillId==='abysstouch'))a.hp=Math.min(a.maxHp||100,a.hp+actual*.08);
  }
- const damage=Number.isFinite(scaledDamage)?Math.max(1,Math.floor(scaledDamage)):actual;const entries=m.contributions??=[];const credit=entries.find(e=>e.name===a.name);if(credit)credit.damage+=actual;else entries.push({name:a.name,damage:actual});if(!m.scripted&&!communityId(a.map))(m.contributionsForMastery??={})[a.name]=1;const life=source==='weapon'?(equippedGear(profile,'weapon')?.lifesteal||0)+stats.lifesteal:0;if(life&&a.hp>0)a.hp=Math.min(a.maxHp||100,a.hp+Math.floor(actual*life));m.target=attacker;m.hp=Math.max(0,m.hp-actual);recordAdvancedAbyssHit(a,m,actual,attack,a.map||'tribe',now);if(a.advancement==='spiritcaller'&&source!=='summon')runtime(a).advancedPriority=m.id;noteLineOpening(a,a.map||'tribe',m,now);recordPactDamage(a,a.map||'tribe',m.id,actual,attack,now);const field=a.skillRuntime?.paladin?.map===a.map?a.skillRuntime?.paladin?.field:undefined;
- if(field&&field.until>now&&Math.hypot(m.x-field.x,m.z-field.z)<=field.radius)a.hp=Math.min(a.maxHp||100,a.hp+actual*.2);
+ const damage=Number.isFinite(scaledDamage)?Math.max(1,Math.floor(scaledDamage)):actual;const entries=m.contributions??=[];const credit=entries.find(e=>e.name===a.name);if(credit)credit.damage+=actual;else entries.push({name:a.name,damage:actual});if(!m.scripted&&!communityId(a.map))(m.contributionsForMastery??={})[a.name]=1;const life=source==='weapon'?(equippedGear(profile,'weapon')?.lifesteal||0)+stats.lifesteal:0;if(life&&a.hp>0)a.hp=Math.min(a.maxHp||100,a.hp+Math.floor(actual*life));const field=a.skillRuntime?.paladin?.map===(a.map||'tribe')?a.skillRuntime.paladin.field:undefined;
+ const sanctuaryHeal=field&&field.until>now&&skillAreaHits(field,m,field.radius,a.map||'tribe');
+ m.target=attacker;m.hp=Math.max(0,m.hp-actual);recordAdvancedAbyssHit(a,m,actual,attack,a.map||'tribe',now);if(a.advancement==='spiritcaller'&&source!=='summon')runtime(a).advancedPriority=m.id;noteLineOpening(a,a.map||'tribe',m,now);recordPactDamage(a,a.map||'tribe',m.id,actual,attack,now);
+ if(sanctuaryHeal&&a.hp>0)a.hp=Math.min(a.maxHp||100,a.hp+actual*.2);
  if(m.hp===0&&m.judgment?.owner===a.name&&m.judgment.until>now){for(const nearby of nearbyMonsters||[])if(nearby.hp>0&&Math.hypot(nearby.x-m.x,nearby.z-m.z)<=8){nearby.weak=Math.max(nearby.weak||0,.2);nearby.weakUntil=Math.max(nearby.weakUntil||0,now+4500);}}
  if(m.scripted&&m.hp<=m.maxHp*.45){
  const trial=this.dungeons().get(a.name);
