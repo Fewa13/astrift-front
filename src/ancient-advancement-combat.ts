@@ -78,11 +78,14 @@ function castBerserker(actor:SkillActor,profile:AncientProfile,key:string,id:str
   const floor = ancientMapHeight(context.map,x,z,actor.y-1.7);
   if (blocked(x,z,.65,context.map,floor) || !lineClear(actor.x,actor.y,actor.z,x,floor+1.7,z,context.map) ||
       (context.canMove && !context.canMove(actor.x,actor.z,x,z))) return '冲锋路径被阻挡';
-  if (context.motion) context.motion({x,y:floor+1.7,z},3);
-  else Object.assign(actor,{x,y:floor+1.7,z});
-  const victims = skillAreaTargets(target,6,context);
-  context.damage(target,power*7.5,undefined,attack);
-  for (const victim of victims) if(victim!==target)context.damage(victim,power*3,undefined,attack);
+  const destination={x,y:floor+1.7,z};
+  if(context.motion){
+   state.bloodCharge={...destination,map:context.map,target:target.id,power,until:now+900};
+   context.motion(destination,3);
+  }else{
+   Object.assign(actor,destination);
+   berserkerImpact(context,target,power);
+  }
   context.fx('berserker-charge',target.x,target.z,6,{target:target.id,source:start});
  }
  if (key === 'C') {
@@ -91,6 +94,26 @@ function castBerserker(actor:SkillActor,profile:AncientProfile,key:string,id:str
  }
  state.cooldowns[id] = now + berserkerCooldowns[key] * 1000 * (1-ancientGearStats(profile).cooldown);
  return null;
+}
+
+function berserkerImpact(context:SkillContext,target:SkillMonster,power:number){
+ const attack='advancement:berserker:Z';
+ const victims=skillAreaTargets(target,6,context);
+ context.damage(target,power*7.5,undefined,attack);
+ for(const victim of victims)if(victim!==target)context.damage(victim,power*3,undefined,attack);
+}
+
+export function tickBerserker(actor:SkillActor,profile:AncientProfile,context:SkillContext,now:number){
+ const state=actor.skillRuntime,charge=state?.bloodCharge;
+ if(!state||!charge)return;
+ if(actor.hp<=0||charge.map!==context.map||now>=charge.until||advancementRoute(profile)?.id!=='berserker'){
+  delete state.bloodCharge;
+  return;
+ }
+ if(Math.hypot(actor.x-charge.x,actor.y-charge.y,actor.z-charge.z)>.25)return;
+ delete state.bloodCharge;
+ const target=context.monsters.find(m=>m.id===charge.target&&m.hp>0);
+ if(target&&skillAreaHits({x:actor.x,y:actor.y-1.7,z:actor.z},target,2,context.map))berserkerImpact(context,target,charge.power);
 }
 
 export function consumeBloodRebirth(actor: SkillActor, now: number, attacker?:string) {
@@ -2087,7 +2110,7 @@ export function tickAdvancedTime(a:SkillActor,p:AncientProfile,c:SkillContext,no
 
 const advancementTransientKeys=[
  'paladin','stormcaller','volt','crystal','winter','advancedFire','advancedCurse','advancedSword',
- 'advancedShadow','advancedStone','advancedSummon','advancedElements','advancedRift','advancedAbyss','advancedTime','advancedPriority','bloodRevenge',
+ 'advancedShadow','advancedStone','advancedSummon','advancedElements','advancedRift','advancedAbyss','advancedTime','advancedPriority','bloodCharge','bloodRevenge',
 ] as const;
 const advancementEffects=[
  'bloodSacrifice','bloodRebirth','radiantRecovery','voltGuard','winterShield','snowVeil','lineGuard','shadowStride',

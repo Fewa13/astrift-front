@@ -1,4 +1,4 @@
-import {castAdvancement,tickPaladin,tickStormcaller,tickVoltstalker,tickCrystalist,tickWinterwarden,tickAdvancedFire,tickAdvancedCurse,tickAdvancedSword,tickAdvancedShadow,tickAdvancedStone,tickAdvancedSummon,tickAdvancedElements,tickAdvancedRift,tickAdvancedAbyss,tickAdvancedTime,reconcileAdvancementRuntime} from './ancient-advancement-combat';
+import {castAdvancement,tickBerserker,tickPaladin,tickStormcaller,tickVoltstalker,tickCrystalist,tickWinterwarden,tickAdvancedFire,tickAdvancedCurse,tickAdvancedSword,tickAdvancedShadow,tickAdvancedStone,tickAdvancedSummon,tickAdvancedElements,tickAdvancedRift,tickAdvancedAbyss,tickAdvancedTime,reconcileAdvancementRuntime} from './ancient-advancement-combat';
 import {artifactStage} from './ancient-artifacts';
 import {masteryPower} from './ancient-mastery';
 import {castFusion,tickFusion} from './ancient-fusion-combat';
@@ -147,6 +147,7 @@ export function ancientAuxShot(a:SkillActor,p:AncientProfile,direction:unknown,c
 export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,dt:number,now=Date.now()){
  reconcileAdvancementRuntime(a,p,c.map,a.hp<=0);
  tickFusion(a,c,now,dt);
+ tickBerserker(a,p,c,now);
  tickPaladin(a,p,c,now);
  tickStormcaller(a,p,c,now);
  tickVoltstalker(a,p,c,now);

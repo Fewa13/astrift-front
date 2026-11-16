@@ -208,6 +208,25 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   tickPaladin(actor,profile,{...context,monsters:[ally,dormant,player,expired]},now);
   assert.deepEqual(damageEvents.slice(before).map(hit=>hit.target),['expired']);
  }
+ if(route.id==='berserker'){
+  resetPosition();
+  let destination;
+  const chargeContext={...context,motion(point){destination=point;}};
+  const start=180000,before=damageEvents.length;
+  assert.equal(castAncientSkill(actor,profile,'advanced:Z',aim,chargeContext,start),null);
+  tickAncientSkills(actor,profile,chargeContext,.1,start+100);
+  assert.equal(damageEvents.length,before);
+  Object.assign(actor,destination);
+  tickAncientSkills(actor,profile,chargeContext,.1,start+250);
+  assert(damageEvents.slice(before).some(hit=>hit.target==='main'&&hit.id==='advancement:berserker:Z'));
+  const after=damageEvents.length;
+  tickAncientSkills(actor,profile,chargeContext,.1,start+350);
+  assert.equal(damageEvents.length,after);
+  resetPosition();
+  assert.equal(castAncientSkill(actor,profile,'advanced:Z',aim,chargeContext,start+60000),null);
+  tickAncientSkills(actor,profile,chargeContext,.1,start+61000);
+  assert.equal(damageEvents.length,after,'interrupted charge cannot deal damage');
+ }
  const saved=structuredClone(actor.skillRuntime);
  const returning={...actor,skillRuntime:structuredClone(saved)};
  reconcileAdvancementRuntime(returning,profile,'tribe');
