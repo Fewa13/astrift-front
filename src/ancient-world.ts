@@ -845,7 +845,14 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
  private applyMapDamage(target:Parameters<typeof applyAncientDamage>[0],amount:number,cause:Parameters<typeof applyAncientDamage>[2],now=Date.now()){const a=target as Player,before=a.hp;
  amount=absorbStoneArmor(a,a.map||'tribe',amount*riftDuelModifiers(a,a.map||'tribe',cause.monsterId,now).incoming,now);
  if(a.name&&before>0&&amount>=before&&Number.isFinite(amount)){
-  if(consumeBloodRebirth(a,now,cause.monsterId||(cause.type==='player'&&cause.name?'@player:'+cause.name:undefined)))return 0;
+  if(consumeBloodRebirth(a,now,cause.monsterId||(cause.type==='player'&&cause.name?'@player:'+cause.name:undefined))){
+   const map=a.map||'tribe';
+   for(const peer of this.connections()){
+    const observer=peer.deserializeAttachment() as Player;
+    if((observer.map||'tribe')===map)this.send(peer,{type:'skillFx',id:'berserker-revival',x:a.x,z:a.z,radius:5,owner:a.name,holy:a.holy});
+   }
+   return 0;
+  }
   const artifact=profileArtifact(this.read(a.name)),r=runtime(a);
   if(artifact.stage&&(artifact.id==='hourglass'||artifact.id==='crown')&&(r.cooldowns.artifactSurvival||0)<=now){
    r.cooldowns.artifactSurvival=now+ARTIFACT_COMBAT.survivalCooldown;
