@@ -1,3 +1,4 @@
+import {advancementCastKey} from './ancient-advanced-professions';
 import {advancementRoute,awardAdvancementMastery,chooseAdvancement} from './ancient-advancement-progress';
 import {ADVANCEMENT_COMBAT_ROUTES,consumeBloodRebirth,queueVoltCounter,winterProjectileBlocked,recordPactHit,recordPactDamage,hexTetherTargets,queueLineCounter,noteLineOpening,absorbStoneArmor,stoneWallsBlock,recordNecromancerKill,riftDuelModifiers,queueRiftRiposte,recordAdvancedAbyssHit,noteAdvancedTimeDamage,reconcileAdvancementRuntime} from './ancient-advancement-combat';
 import {ARTIFACT_COMBAT,ARTIFACT_TRAILS,artifactTrailPoint,artifactClueFound,ARTIFACTS,ARTIFACT_ROUTES,canStartArtifactTrial,completeArtifactTrial,recordArtifactVictory,artifactStage,type ArtifactId} from './ancient-artifacts';
@@ -767,14 +768,21 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
   if(d.type==='questTalk'||d.type==='questAccept'){const p=this.read(a.name),npc=String(d.npc||''),q=currentQuest(p);if(q&&questCanTalk(p,npc,a,(ax,az,bx,bz)=>clear(ax,ground(ax,az)+1.5,az,bx,ground(bx,bz)+1.5,bz))){if(d.type==='questTalk')this.send(ws,{type:'questDialogue',id:q.id,npc,profile:p});else if(d.id===q.id){const feature=questChapterFeature(map,npc);if(feature)this.saveChapterState(map,useChapterFeature(this.chapterState(map),feature,true));const completed=advanceQuest(p,{kind:'talk',npc,map});this.save(a.name,p);this.syncQuestHealth(a,p);this.send(ws,{type:'questUpdate',profile:p,completed});}else this.send(ws,{type:'questSync',profile:p});}else this.send(ws,{type:'questSync',profile:p});this.persistAbilities(a);this.persistHealth(a);ws.serializeAttachment(a);return;}
   if(['skill','slot','auxShot','melee','respawn'].includes(String(d.type)))delete a.leisure;
   if(d.type==='skill'||d.type==='slot'||d.type==='auxShot'){const p=this.read(a.name),oldPosition={x:a.x,y:a.y,z:a.z},world=this.world(map),c=this.skillContext(ws,a,world.monsters,map);let error:string|null|undefined;if(d.type==='skill'){
-   const rewindReady=!!a.skillRuntime?.fusion?.rewind;
-   error=castAncientSkill(a,p,String(d.id||''),d.direction,c,now);
+   const skill=String(d.id||'');
+   const route=advancementRoute(p);
+   const slot=advancementCastKey(skill);
+   const advancedRewind=slot==='Z'&&(route?.id==='time-sovereign'||route?.id==='time-weaver');
+   const rewindReady=advancedRewind?!!a.skillRuntime?.advancedTime?.rewind:!!a.skillRuntime?.fusion?.rewind;
+   error=castAncientSkill(a,p,skill,d.direction,c,now);
    if(!error&&dungeon?.artifact&&dungeon.status==='active'){
     const skills=dungeon.artifact.skills??=[];
-    const skill=String(d.id||'');
-    if(Object.hasOwn(SKILLS,skill)&&!skills.includes(skill)){skills.push(skill);this.dungeons().save(dungeon);}
+    const credited=slot&&route?'advancement:'+route.id+':'+slot:Object.hasOwn(SKILLS,skill)?skill:'';
+    const rewindFinished=rewindReady&&(advancedRewind?!a.skillRuntime?.advancedTime?.rewind:skill==='rewind'&&!a.skillRuntime?.fusion?.rewind);
+    let changed=false;
+    if(credited&&!skills.includes(credited)){skills.push(credited);changed=true;}
+    if(dungeon.artifact.id==='hourglass'&&rewindFinished&&!dungeon.artifact.rewound){dungeon.artifact.rewound=true;changed=true;}
+    if(changed)this.dungeons().save(dungeon);
    }
-   if(!error&&dungeon?.artifact?.id==='hourglass'&&d.id==='rewind'&&rewindReady&&!a.skillRuntime?.fusion?.rewind){dungeon.artifact.rewound=true;this.dungeons().save(dungeon);}
   }else if(d.type==='auxShot')error=ancientAuxShot(a,p,d.direction,c,now);else{const slot=Number(d.slot),r=runtime(a);if(slot===1)r.mode=1;else if(!a.advancement&&!activeSkill(a,'transform',now)&&p.profession==='summoner'&&((slot===2&&(r.summon||(p.skills?.weaken||0)>0))||(slot===3&&r.summon&&(p.skills?.weaken||0)>0)))r.mode=slot;}if(optics&&!optics.opened&&sanctumGateCrosses(oldPosition.x,oldPosition.z,a.x,a.z))Object.assign(a,oldPosition);if(dungeon&&dungeonRubbleBlocked(dungeon,a.x,a.z)){const safe=dungeon.positions[a.name];if(safe){a.x=safe.x;a.z=safe.z}}if(!error&&d.type==='skill'&&(a.x!==oldPosition.x||a.y!==oldPosition.y||a.z!==oldPosition.z))this.send(ws,{type:'skillDash',x:a.x,y:a.y,z:a.z});if(error)this.send(ws,{type:'skillError',error});else if(d.type==='skill'){for(const peer of this.ctx.getWebSockets())if((peer.deserializeAttachment() as Player|null)?.map===map)this.send(peer,{type:'skillGesture',owner:a.name,id:String(d.id),holy:!!a.holy});const latest=this.read(a.name),completed=advanceQuest(latest,{kind:'skill',id:String(d.id||''),map});if(completed.length){this.save(a.name,latest);this.syncQuestHealth(a,latest);this.send(ws,{type:'questUpdate',profile:latest,completed})}}this.persist(world);c.flush();this.persistAbilities(a);this.persistHealth(a);ws.serializeAttachment(a);return;}
   if(['melee','skill','auxShot','skillMode','leisureStart'].includes(String(d.type)))delete a.jadeDisplay;
   if(d.type==='move'&&a.forcedMotion){a.seen=now;ws.serializeAttachment(a);return;}
