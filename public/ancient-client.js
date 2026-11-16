@@ -455,7 +455,9 @@ function handleWorldMessage(d,reconnect){if(d.chapterState){setChapterState(curr
    const route=match&&ADVANCED_PROFESSIONS[profile?.profession]?.find(item=>item.id===match[1]);
    const names=route&&route.skills[ADVANCEMENT_KEYS.indexOf(match[2])];
    const name=names?L(...names):en()?SKILLS[id]?.en:SKILLS[id]?.name;
-   combatNotices.push(L('技能精通升级','Skill mastery increased')+(name?' · '+name:''),3600);
+   const level=match?profile?.advancements?.[profile.profession]?.skills?.[match[2]]?.level:profile?.mastery?.[id]?.level;
+   const label=name&&level?L(name+' · '+level+' 级',name+' · Lv. '+level):name;
+   combatNotices.push(L('技能精通升级','Skill mastery increased')+(label?' · '+label:''),3600);
   }}
   if(d.type==='artifactFx')skillVisuals.effect(d,ground);
   if(d.type==='skillFx'){skillVisuals.effect(d,ground);if(d.owner===me?.name&&(d.id==='mark'||d.id==='weaken')){combatNotices.push(d.id==='mark'?L('已锁定 · 铁甲兽正在追击','TARGET MARKED · Beast pursuing'):L('削弱命中 · 敌人攻击降低','WEAKENED · Enemy damage reduced'),1800)}}
