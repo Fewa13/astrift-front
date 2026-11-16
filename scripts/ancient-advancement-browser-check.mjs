@@ -27,6 +27,25 @@ try{
   return Object.entries(ADVANCED_PROFESSIONS).flatMap(([job,paths])=>paths.map(path=>({job,path})));
  });
  assert.equal(routes.length,26);
+ const dispatcherFailures=await page.evaluate(async()=>{
+  const THREE=await import('/three.module.js');
+  const {advancementEffectIds}=await import('/ancient-advancement-fx.js');
+  const {createAncientSkillVisuals}=await import('/ancient-skill-visuals.js');
+  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera();
+  const visuals=createAncientSkillVisuals(scene,camera,new THREE.Group(),()=>undefined);
+  const failures=[];
+  for(const id of advancementEffectIds){
+   visuals.effect({id,x:2,z:0,radius:5,source:{x:-2,y:1.45,z:0},
+    target:'test',links:[{x:4,z:-3,height:1,target:'linked'}]},()=>0);
+   visuals.updateMagic(performance.now(),.016);
+   if(!scene.children.some(group=>group.children.length))failures.push(id);
+   visuals.clearMagic();
+   if(scene.children.length)failures.push(id+':cleanup');
+  }
+  return failures;
+ });
+ assert.deepEqual(dispatcherFailures,[]);
+
  for(const {job,path} of routes){
   await page.evaluate(({job,path})=>window.openRoute(job,path),{job,path});
   const dialog=page.getByRole('dialog');
