@@ -1,0 +1,12 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+{
+ "name": "astrift-devbuild",
+ "account_id": "d60c4866625dd96ac934269afcd04ff1",
+
+ "main": "devbuild/hosting.js",
+ "compatibility_date": "2026-09-02",
+ "workers_dev": false,
+ "routes": [{"pattern": "dev.astrift.com", "custom_domain": true}],
+ "assets": {"directory": "./.dev-hosting", "binding": "ASSETS", "run_worker_first": ["/api/devbuild/redeem"]},
+ "services": [{"binding": "GAME", "service": "astrift-front"}]
+}

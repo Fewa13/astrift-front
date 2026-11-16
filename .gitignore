@@ -21,3 +21,5 @@ crazygames/releases/
 crazygames/*.jpg
 crazygames/*.png
 mobile-controls-preview.png
+
+/.dev-hosting/
