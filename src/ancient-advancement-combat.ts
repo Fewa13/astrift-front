@@ -66,9 +66,9 @@ function castBerserker(actor:SkillActor,profile:AncientProfile,key:string,id:str
   context.fx('berserker-bolt', target.x, target.z, 2, {target:target.id,source:start});
  }
  if (key === 'Q') {
+  if(!activeSkill(actor,'bloodSacrifice',now))actor.maxHp=Math.max(1,Math.floor(maxHp*.7));
   state.effects.bloodSacrifice = {until:now+12000,level};
-  actor.maxHp = maxHp * .7;
-  actor.hp = Math.min(actor.hp, actor.maxHp);
+  actor.hp = Math.min(actor.hp, actor.maxHp??maxHp);
   context.fx('berserker-sacrifice', actor.x, actor.z, 5);
  }
  if (key === 'Z' && target) {

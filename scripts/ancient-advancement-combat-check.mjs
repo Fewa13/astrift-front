@@ -9,9 +9,9 @@ const module=await build({stdin:{contents:`
  export {castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed} from './src/ancient-skill-combat';
  export {newAncientProfile} from './src/ancient-rules';
  export {fuseAncientProfession,chooseAncientProfession} from './src/ancient-commerce';
- export {PROFESSION_FUSIONS,PROFESSIONS,SKILLS,isFusionJob} from './src/ancient-skills';
+ export {PROFESSION_FUSIONS,PROFESSIONS,SKILLS,isFusionJob,skillHealth} from './src/ancient-skills';
  `,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTarget,recordNecromancerKill,tickAdvancedSummon,tickPaladin,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob}=await import(
+const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTarget,recordNecromancerKill,tickAdvancedSummon,tickPaladin,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob,skillHealth}=await import(
  'data:text/javascript;base64,'+Buffer.from(module.outputFiles[0].text).toString('base64')
 );
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
@@ -209,6 +209,17 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert.deepEqual(damageEvents.slice(before).map(hit=>hit.target),['expired']);
  }
  if(route.id==='berserker'){
+  actor.hp=90000;
+  skillHealth(actor,100000,149999);
+  assert.equal(castAncientSkill(actor,profile,'advanced:Q',aim,context,150000),null);
+  assert.equal(actor.maxHp,70000);
+  assert.equal(actor.hp,70000);
+  actor.skillRuntime.cooldowns['advanced:Q']=0;
+  assert.equal(castAncientSkill(actor,profile,'advanced:Q',aim,context,151000),null);
+  assert.equal(actor.maxHp,70000,'refreshing Sacrifice must not reduce the cap twice');
+  skillHealth(actor,100000,163000);
+  assert.equal(actor.maxHp,100000);
+  assert.equal(actor.hp,70000);
   resetPosition();
   let destination;
   const chargeContext={...context,motion(point){destination=point;}};
