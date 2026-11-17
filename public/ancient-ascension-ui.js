@@ -1,5 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ASCENSION_SKILLS,ascensionAttempts,ascensionEligible,ascensionProgress,ASCENSION_STEPS,HOLY_DESCRIPTIONS} from './ancient-ascension.js?v=20261014-new-professions-1';
+import {ADVANCED_PROFESSIONS} from './ancient-advanced-professions.js';
 import {SKILLS} from './ancient-skills.js';
 export function renderAscensionPanel(parent,{getProfile,en,job,request,join}){
  const p=getProfile(),s=ascensionProgress(p,job),L=(zh,eng)=>en()?eng:zh,el=(tag,text)=>{const n=document.createElement(tag);n.textContent=text;parent.append(n);return n};
@@ -35,4 +36,26 @@ export function createAscensionTracker({getProfile,en}){const box=document.creat
   window.addEventListener('resize',position);
   position();
  }
- let signature='';return {update(active,paused){const p=getProfile(),s=p&&ascensionProgress(p);box.hidden=!active||paused||!s?.permit||s.holy;if(box.hidden)return;const key=[p.profession,s.step,s.count,en()].join(':');if(signature===key)return;signature=key;box.replaceChildren();const title=document.createElement('strong');title.textContent=en()?'ASCENSION SIDE QUEST':'升华支线';box.append(title);const text=document.createElement('div');text.textContent=(ASCENSION_STEPS[s.step]?.[en()?1:0]||'')+(s.step<2?' · '+s.count+'/'+(s.step===0?20:2):'');box.append(text)}}}
+ let signature='';
+ return {update(active,paused){
+  const profile=getProfile(),job=profile?.profession;
+  const progress=profile&&ascensionProgress(profile);
+  const chooseBranch=progress?.holy&&ADVANCED_PROFESSIONS[job]?.length&&!profile.advancements?.[job]?.route;
+  const sideQuest=progress?.permit&&!progress.holy;
+  box.hidden=!active||paused||(!chooseBranch&&!sideQuest);
+  if(box.hidden)return;
+
+  const english=en(),key=[job,chooseBranch?'branch':progress.step,progress.count,english].join(':');
+  if(signature===key)return;
+  signature=key;
+  const title=document.createElement('strong'),text=document.createElement('div');
+  if(chooseBranch){
+   title.textContent=english?'CHOOSE AN ADVANCEMENT PATH':'选择升华分支';
+   text.textContent=english?'Open Character → Professions and choose a path for your Holy profession.':'打开「角色 → 职业」，为当前圣级职业选择一个升华分支。';
+  }else{
+   title.textContent=english?'ASCENSION SIDE QUEST':'升华支线';
+   text.textContent=(ASCENSION_STEPS[progress.step]?.[english?1:0]||'')+(progress.step<2?' · '+progress.count+'/'+(progress.step===0?20:2):'');
+  }
+  box.replaceChildren(title,text);
+ }}
+}
