@@ -10,7 +10,7 @@ import {createAncientMagicFX} from './ancient-spell-fx.js?v=20261014-new-profess
 import {PROFESSIONS,SKILLS,skillDescription,skillRadius} from './ancient-skills.js?v=20261109-cast-range-60';
 import {holySkillDetails} from './ancient-ascension.js?v=20261014-new-professions-1';
 import {ancientProfessionSkins} from './ancient-skins.js';
-const fusionJobs=['elementalist','voidsword','abyssal','chrono'];
+const fusionJobs=['elementalist','voidsword','abyssal','chrono','necromancer'];
 const fusionRadii={judgment:10,voiddomain:10,execution:6,descent:10,avatar:8,stasis:12};
 let closeActive=null;
 export function previewChainActors(){return [{id:'preview-0',x:2,y:1.2,z:0,height:1.2,hp:100},{id:'preview-1',x:4,y:1.2,z:-3,height:1.2,hp:100},{id:'preview-2',x:-1,y:1.2,z:-5,height:1.2,hp:100}]}
@@ -60,7 +60,10 @@ export function openSkillPreview(job,{en,level=3,skin,gallery=false,advancement}
   }
   if(event?.x>=0)target.scale.setScalar(1.08);
   return;
- }const id=skills.value,self=['vitality','power','rage','summon','transform','icearmor','haste','nightfall','voiddomain','descent','avatar','rewind','stasis'].includes(id),x=id==='shadowreturn'?-11:id==='haste'||id==='shadowstep'?2:self?-2:2;magic.effect({id,x,z:0,holy,level,radius:fusionRadii[id]||skillRadius(id,level,holy)||2,owner:'preview',source:{x:-2,y:1.45,z:0},target:self?undefined:'preview-0',links:id==='chain'?previewTargets.map(p=>({...p,target:p.id})):undefined},()=>0);target.scale.setScalar(1.08)}
+ }const id=skills.value;
+ const necromancerFx={raiseSkeleton:'raise',unleashLegion:'release',consumeSoul:'consume',necropolis:'domain'}[id];
+ if(necromancerFx){advancedFX.effect({id:'necromancer-'+necromancerFx,x:-2,z:0,radius:5},()=>0);return;}
+ const self=['vitality','power','rage','summon','transform','icearmor','haste','nightfall','voiddomain','descent','avatar','rewind','stasis'].includes(id),x=id==='shadowreturn'?-11:id==='haste'||id==='shadowstep'?2:self?-2:2;magic.effect({id,x,z:0,holy,level,radius:fusionRadii[id]||skillRadius(id,level,holy)||2,owner:'preview',source:{x:-2,y:1.45,z:0},target:self?undefined:'preview-0',links:id==='chain'?previewTargets.map(p=>({...p,target:p.id})):undefined},()=>0);target.scale.setScalar(1.08)}
  mode.onchange=()=>{holy=mode.value==='holy';model();cast()};skills.onchange=()=>{description();cast()};play.onclick=cast;let dragging=false,start=0;holder.onpointerdown=e=>{dragging=true;start=e.clientX;holder.setPointerCapture(e.pointerId)};holder.onpointermove=e=>{if(dragging){angle+=(e.clientX-start)*.006;start=e.clientX}};holder.onpointerup=holder.onpointercancel=()=>dragging=false;holder.onwheel=e=>{e.preventDefault();distance=Math.max(12,Math.min(35,distance+e.deltaY*.01))};
  function finish(){if(disposed)return;disposed=true;cancelAnimationFrame(raf);magic.clear();advancedFX.clear();if(actor)releaseAncientInstances(actor);observer.disconnect();delete document.documentElement.dataset.ancientSkillPreview;scene.clear();actor=null;renderer.renderLists.dispose();renderer.dispose();renderer.forceContextLoss();for(const g of [geo,targetGeo])g.dispose();for(const m of [mat,targetMat])m.dispose();dialog.remove();document.removeEventListener('keydown',escape,true);closeActive=null}
  const escape=e=>{if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();finish()}};document.addEventListener('keydown',escape,true);close.onclick=finish;closeActive=finish;const observer=new ResizeObserver(()=>{const w=holder.clientWidth,h=holder.clientHeight;renderer.setSize(w,h);camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix()});observer.observe(holder);

@@ -7,7 +7,7 @@ const ADVANCED_PROFESSIONS = {
   ],
   summoner: [
     route("spiritcaller", ["\u5723\u7075\u53EC\u5524\u5E08", "Spiritcaller"], ["\u53EC\u5524", "Call Guardian"], ["\u7075\u57DF", "Spirit Domain"], ["\u53D8\u8EAB", "Spirit Ascendant"], ["\u65B0\u751F", "Rebirth"]),
-    route("necromancer", ["\u6B7B\u7075\u6CD5\u5E08", "Necromancer"], ["\u53EC\u5524", "Raise Skeleton"], ["\u91CA\u653E", "Unleash"], ["\u541E\u566C", "Consume"], ["\u6B7B\u7075\u9886\u57DF", "Necropolis"])
+    route("beastlord", ["\u5951\u517D\u9886\u4E3B", "Beastlord"], ["\u7F14\u7EA6", "Bind Beast"], ["\u534F\u730E", "Coordinated Hunt"], ["\u62A4\u4E3B", "Guard Master"], ["\u88C2\u5730\u6251\u51FB", "Rending Pounce"])
   ],
   lightning: [
     route("stormcaller", ["\u5929\u96F7\u4F7F", "Stormcaller"], ["\u96F7\u5370", "Thunder Seal"], ["\u5F15\u96F7\u67F1", "Lightning Rod"], ["\u96F7\u4E91\u56DA\u7B3C", "Thundercloud Prison"], ["\u4E07\u96F7\u5929\u8BDB", "Heavenly Thunder"]),

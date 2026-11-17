@@ -35,6 +35,10 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   chain:[1],haste:[1,2,3],storm:[1],tempest:[1],hex:[0],drain:[0,4],doom:[1],
  };
  const fusionDescriptions={
+  raiseSkeleton:['召唤一个待命的骷髅战士。','Raise a skeleton and hold it in reserve.'],
+  unleashLegion:['让待命骷髅出战，上限随技能等级提升。','Deploy reserve skeletons. Capacity scales with skill level.'],
+  consumeSoul:['持续期间击杀符合等级条件的敌人，永久强化骷髅。','Qualifying kills during the effect permanently strengthen your skeletons.'],
+  necropolis:['强化领域内骷髅并削弱敌人。','Empower skeletons in the field and weaken enemies.'],
   prism:['单体 420% 攻击，概率触发多种元素，连锁余震造成75%伤害。立即回复实伤15%，减伤20%持续4秒。','420% single-target damage with elemental procs and a 75% Arc Echo. Heal 15% of damage and gain 20% reduction for 4s.'],
   judgment:['目标周围12米造成510%攻击，概率触发元素，回复实伤20%，减伤35%持续4秒。','510% damage within 12m of the target, elemental procs, 20% healing and 35% reduction for 4s.'],
   erosion:['7秒内目标受伤+20%、攻击和移速−15%，每秒造成28%攻击。','For 7s: target takes 20% more damage, loses 15% attack and speed, and takes 28% attack per second.'],
@@ -53,6 +57,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   stasis:['冻结12米内普通怪物4秒并延后结算伤害，每秒造成105%攻击。首领大幅减速。','Freeze regular enemies within 12m for 4s and bank damage, dealing 105% attack per second. Bosses are heavily slowed.'],
  };
  const fusionTypes={
+  raiseSkeleton:['召唤','Summon'],unleashLegion:['召唤','Summon'],consumeSoul:['增益','Buff'],necropolis:['群体 / 增益','Area / Buff'],
   prism:['单体 / 恢复 / 增益','Single target / Healing / Buff'],judgment:['群体 / 恢复 / 增益','Area / Healing / Buff'],erosion:['单体','Single target'],siphon:['群体 / 恢复','Area / Healing'],
   voidslash:['单体','Single target'],riftassault:['群体 / 位移','Area / Movement'],voiddomain:['群体 / 增益','Area / Buff'],execution:['群体 / 增益','Area / Buff'],
   abysstouch:['单体 / 恢复','Single target / Healing'],devour:['单体 / 恢复','Single target / Healing'],descent:['群体 / 恢复','Area / Healing'],avatar:['增益 / 恢复','Buff / Healing'],
@@ -103,6 +108,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   const roles={
    elementalist:['多元素联动，能回血和减伤，缺少主动位移。','Combines elemental effects, healing and defense. No active dash.'],
    voidsword:['印记、突进和回撤组成爆发连招，恢复能力较弱。','Marks and dashes set up burst combos. Limited healing.'],
+   necromancer:['积攒并派出骷髅军团，击杀可以永久强化骷髅。','Build a skeleton army and strengthen it permanently through kills.'],
    abyssal:['用生命换取持续输出，再从敌人身上汲取生命。','Trades health for sustained damage and steals it back.'],
    chrono:['靠时间锚点、回溯和静止改变战斗节奏，依赖释放时机。','Uses anchors, rewinds and stasis to control combat timing.'],
   };
@@ -119,7 +125,10 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    const ready=recipe.sources.every(source=>!p.consumedJobs?.[source]&&PROFESSIONS[source].skills.every(skill=>(p.skills?.[skill]||0)>=5));
    for(const skill of PROFESSIONS[id].skills)el('small',L(SKILLS[skill].name,SKILLS[skill].en)+' · '+fusionText(skill),item);
    const fuse=btn(p.fusedJobs?.[id]?L('已解锁','Unlocked'):L('融合并转职','Fuse and equip'),()=>{
-    if(window.confirm(L('融合会永久消耗所列职业。确认融合？','Fusion permanently consumes the listed professions. Continue?')))void action('fuseProfession',{job:id});
+    const sources=recipe.sources.map(source=>L(PROFESSIONS[source].name,PROFESSIONS[source].en)).join(' / ');
+    const blocked=Object.entries(PROFESSION_FUSIONS).filter(([other,entry])=>other!==id&&!p.fusedJobs?.[other]&&entry.sources.every(source=>!p.consumedJobs?.[source])&&entry.sources.some(source=>recipe.sources.includes(source))).map(([,entry])=>L(entry.name,entry.en));
+    const consequence=blocked.length?'\n'+L('将无法再融合 ','This will lock out ')+blocked.join(' / '):'';
+    if(window.confirm(L('将永久消耗 ','Permanently consume ')+sources+consequence+'\n'+L('确认融合？','Continue?')))void action('fuseProfession',{job:id});
    },item);
    fuse.disabled=p.level<15||!ready||!!p.fusedJobs?.[id];
   }

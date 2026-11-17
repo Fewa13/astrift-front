@@ -5,7 +5,7 @@ const looks={
  berserker:[0x4a1823,0xf4605b,'horns','tusks'],
  paladin:[0x406070,0xffdfa3,'sun','shield'],
  spiritcaller:[0x1b5965,0xa0ffe7,'ribbons','wings'],
- necromancer:[0x24233a,0xa8ec8b,'bone','spines'],
+ beastlord:[0x554738,0xe9c573,'bone','spines'],
  stormcaller:[0x2d3c69,0xa9daff,'thunder','towers'],
  voltstalker:[0x2a205f,0xa584ff,'visor','fins'],
  crystalist:[0x33587a,0xb1f4ff,'crystals','prisms'],

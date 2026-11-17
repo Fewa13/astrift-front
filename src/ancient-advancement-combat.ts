@@ -2,7 +2,7 @@
 import {isAncientBoss} from './ancient-boss';
 import {advancementCastKey} from './ancient-advanced-professions';
 import {holyPower} from './ancient-ascension';
-import {FUSION_DAMAGE_MULTIPLIER} from './ancient-mastery';
+import {FUSION_DAMAGE_MULTIPLIER,masteryLevel} from './ancient-mastery';
 import {advancementRoute} from './ancient-advancement-progress';
 import {ancientSkillDamage, ancientGearStats} from './ancient-gear';
 import {ancientMapHeight, blocked, lineClear, type AncientProfile} from './ancient-rules';
@@ -22,7 +22,7 @@ const castRoutes: Readonly<Record<string,CastRoute>> = {
  'elemental-god':(a,p,k,i,d,c,n,l)=>castElementalAdvancement(a,p,'elemental-god',k,i,d,c,n,l),
  'elemental-ward':(a,p,k,i,d,c,n,l)=>castElementalAdvancement(a,p,'elemental-ward',k,i,d,c,n,l),
  spiritcaller:(a,p,k,i,d,c,n,l)=>castSummonAdvancement(a,p,'spiritcaller',k,i,d,c,n,l),
- necromancer:(a,p,k,i,d,c,n,l)=>castSummonAdvancement(a,p,'necromancer',k,i,d,c,n,l),
+ beastlord:(a,p,k,i,d,c,n,l)=>castSummonAdvancement(a,p,'beastlord',k,i,d,c,n,l),
  mountainguard:(a,p,k,i,d,c,n,l)=>castStoneAdvancement(a,p,'mountainguard',k,i,d,c,n,l),
  veinforger:(a,p,k,i,d,c,n,l)=>castStoneAdvancement(a,p,'veinforger',k,i,d,c,n,l),
  shadowhunter:(a,p,k,i,d,c,n,l)=>castShadowAdvancement(a,p,'shadowhunter',k,i,d,c,n,l),
@@ -1385,7 +1385,31 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
  const state=summonState(a,c.map),gear=ancientGearStats(p);
  const point={x:a.x,y:a.y-1.7,z:a.z};
  const field=()=>({...point,until:now+11500,radius:Math.min(16,8+level*.18)});
- if(route==='spiritcaller'){
+ if(route==='beastlord'){
+  const pet=r.summon,tag='advancement:beastlord:'+key;
+  if(key==='X'){
+   if(pet&&pet.hp>0&&pet.until>now)return '契兽已经在场';
+   const hp=Math.floor((a.maxHp||100)*(1.1+level*.04)*(1+gear.petHealth));
+   r.summon={x:a.x,z:a.z,hp,maxHp:hp,damage:0,until:now+75000,attackAt:now,target:'',level};
+   c.fx('beastlord-bind',a.x,a.z,4);
+  }else{
+   if(!pet||pet.hp<=0||pet.until<=now)return '需要一个在场的契兽';
+   const target=selectSkillTarget(a,_direction,60,c);
+   if(key==='Z'){
+    state.transformUntil=now+7000;
+    pet.hp=Math.min(pet.maxHp,pet.hp+pet.maxHp*.25);
+    r.effects.beastGuard={until:state.transformUntil,level:1};
+    c.fx('beastlord-guard',a.x,a.z,5);
+   }else{
+    if(!target)return '请瞄准可见的敌人';
+    pet.target=target.id;a.skillRuntime!.advancedPriority=target.id;
+    const power=ancientSkillDamage(p)*holyPower(p)*(1+Math.min(99,level-1)*.055);
+    if(key==='Q')c.damage(target,power*4,undefined,tag);
+    else for(const enemy of skillAreaTargets(target,7,c))c.damage(enemy,power*8,undefined,tag);
+    c.fx(key==='Q'?'beastlord-hunt':'beastlord-pounce',target.x,target.z,key==='Q'?3:7,{source:{x:pet.x,y:ancientMapHeight(c.map,pet.x,pet.z)+1,z:pet.z},target:target.id});
+   }
+  }
+ }else if(route==='spiritcaller'){
   if(key==='X'){
    if(r.summon?.hp&&r.summon.until>now)return '圣灵护卫已经在场';
    const position=[[2,0],[-2,0],[0,2],[0,-2]].find(([x,z])=>!blocked(a.x+x,a.z+z,.65,c.map));
@@ -1429,9 +1453,13 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    c.fx('necromancer-domain',a.x,a.z,state.field.radius);
   }
  }
- const cooldown=route==='spiritcaller'?{X:36,Q:22,Z:42,C:55}:{X:3,Q:10,Z:18,C:32};
+ const cooldown=route==='beastlord'?{X:32,Q:10,Z:22,C:32}:route==='spiritcaller'?{X:36,Q:22,Z:42,C:55}:{X:3,Q:10,Z:18,C:32};
  r.cooldowns[id]=now+cooldown[key as keyof typeof cooldown]*1000*(1-gear.cooldown);
  return null;
+}
+
+export function castNecromancer(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now:number){
+ return castSummonAdvancement(a,p,'necromancer',SKILLS[id].key,id,direction,c,now,masteryLevel(p,id));
 }
 
 export function summonTarget(a:SkillActor,c:SkillContext,x:number,z:number){
@@ -1463,14 +1491,15 @@ function legionMove(c:SkillContext,pet:LegionMinion,x:number,z:number,speed:numb
 }
 
 export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,dt:number,now:number){
- const r=a.skillRuntime,state=r?.advancedSummon,route=advancementRoute(p)?.id;
+ const r=a.skillRuntime,state=r?.advancedSummon,route=p.profession==='necromancer'?'necromancer':advancementRoute(p)?.id;
  if(!state||state.map!==c.map||a.hp<=0||!r)return;
  const field=state.field&&state.field.until>now?state.field:undefined;
  if(field)for(const m of stormTargets(c,field,field.radius)){
   if((m.weakUntil||0)<=now||(m.weak||0)<.2){m.weak=.2;m.weakUntil=now+350;}
   if(route==='spiritcaller'&&((m.slowUntil||0)<=now||(m.slow||0)<.2)){m.slow=.2;m.slowUntil=now+350;}
-  if(m.contributionsForMastery?.[a.name])(m.masteryMarks??={})[a.name+':summon-domain']={owner:a.name,id:'advancement:'+route+':'+(route==='spiritcaller'?'Q':'C'),until:now+350};
+  if(m.contributionsForMastery?.[a.name])(m.masteryMarks??={})[a.name+':summon-domain']={owner:a.name,id:route==='necromancer'?'necropolis':'advancement:'+route+':'+(route==='spiritcaller'?'Q':'C'),until:now+350};
  }
+ if(route==='beastlord'){if(r.summon)r.summon.target=summonTarget(a,c,r.summon.x,r.summon.z)?.id||'';return;}
  if(route==='spiritcaller'){
   const pet=r.summon;
   if(!pet)return;
@@ -1491,14 +1520,14 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
   const enhanced=!!field&&Math.hypot(pet.x-field.x,pet.z-field.z)<=field.radius;
   if(target&&Math.hypot(target.x-pet.x,target.z-pet.z)<2.7&&pet.next<=now){
    pet.next=now+1100;
-   c.damage(target,ancientSkillDamage(p)*.1*pet.scale*bonus*(enhanced?1.2:1),undefined,'advancement:necromancer:Q');
+   c.damage(target,ancientSkillDamage(p)*.1*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*pet.scale*bonus*(enhanced?1.2:1),undefined,'unleashLegion');
    c.fx('necromancer-strike',target.x,target.z,2,{source:{x:pet.x,y:ancientMapHeight(c.map,pet.x,pet.z)+1,z:pet.z},target:target.id});
   }else legionMove(c,pet,target?.x??a.x,target?.z??a.z,enhanced?6:5,dt);
  }
 }
 
 export function recordNecromancerKill(a:SkillActor,p:AncientProfile,m:{level:number;kind:string},now:number){
- if(advancementRoute(p)?.id!=='necromancer'||(a.skillRuntime?.advancedSummon?.consumeUntil||0)<=now)return false;
+ if(p.profession!=='necromancer'||(a.skillRuntime?.advancedSummon?.consumeUntil||0)<=now)return false;
  if(m.level<p.level-Math.max(8,Math.ceil(p.level*.15)))return false;
  const gain=(isAncientBoss(m.kind)?12:1)*Math.max(1,m.level/20);
  p.necromancerStrength=Math.min(1_000_000,(p.necromancerStrength||0)+gain);
@@ -2131,14 +2160,14 @@ const advancementTransientKeys=[
 ] as const;
 const advancementEffects=[
  'bloodSacrifice','bloodRebirth','radiantRecovery','voltGuard','winterShield','snowVeil','lineGuard','shadowStride',
- 'spiritAscendant','elementCycle','elementFire','elementIce','elementStorm','elementEarth','riftDomain','riftGuard','abyssKingForm',
+ 'spiritAscendant','beastGuard','elementCycle','elementFire','elementIce','elementStorm','elementEarth','riftDomain','riftGuard','abyssKingForm',
 ];
 
 export function reconcileAdvancementRuntime(a:SkillActor,p:AncientProfile,map:string,reset=false){
- const route=advancementRoute(p)?.id,r=route?runtime(a):a.skillRuntime;
+ const route=advancementRoute(p)?.id,identityRoute=route||(p.profession==='necromancer'?'necromancer':undefined),r=identityRoute?runtime(a):a.skillRuntime;
  a.advancement=route;
  if(!r)return;
- const identity=route?map+'|'+route:undefined;
+ const identity=identityRoute?map+'|'+identityRoute:undefined;
  if(!reset&&identity===r.advancementIdentity)return;
  if(r.advancedSummon&&r.summon)delete r.summon;
  for(const key of advancementTransientKeys)delete r[key];

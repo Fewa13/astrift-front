@@ -15,11 +15,13 @@ const PROFESSIONS = {
 const PROFESSION_FUSIONS = {
   elementalist: { name: "\u5143\u7D20\u6218\u58EB", en: "Elemental Warrior", sources: ["lightning", "fire", "ice", "curse", "warrior", "stonewright"] },
   voidsword: { name: "\u865A\u7A7A\u5251\u5723", en: "Void Swordmaster", sources: ["swordsman", "shadowblade"] },
-  abyssal: { name: "\u6DF1\u6E0A\u9886\u4E3B", en: "Abyssal Overlord", sources: ["summoner", "curse"] },
+  abyssal: { name: "\u6DF1\u6E0A\u9886\u4E3B", en: "Abyssal Overlord", sources: ["warrior", "curse"] },
+  necromancer: { name: "\u6B7B\u7075\u6CD5\u5E08", en: "Necromancer", sources: ["summoner", "curse"] },
   chrono: { name: "\u65F6\u7A7A\u884C\u8005", en: "Chrono Walker", sources: ["lightning", "ice"] }
 };
 const FUSION_SKILL_REQUIREMENT = 5;
 const FUSION_SKILLS = {
+  necromancer: [["raiseSkeleton", "\u53EC\u5524", "Raise Skeleton", "X", 3], ["unleashLegion", "\u91CA\u653E", "Unleash", "Q", 10], ["consumeSoul", "\u541E\u566C", "Consume", "Z", 18], ["necropolis", "\u6B7B\u7075\u9886\u57DF", "Necropolis", "C", 32]],
   elementalist: [["judgment", "\u795E\u7F5A", "Divine Judgment", "Q", 18], ["erosion", "\u5143\u7D20\u4FB5\u8680", "Elemental Erosion", "Z", 22], ["siphon", "\u5143\u7D20\u7A83\u53D6", "Elemental Siphon", "C", 26], ["prism", "\u5143\u7D20\u5F39", "Prismatic Bolt", "X", 5]],
   voidsword: [["riftassault", "\u88C2\u7A7A\u7A81\u88AD", "Rift Assault", "Q", 12], ["voiddomain", "\u865A\u7A7A\u9886\u57DF", "Void Domain", "Z", 25], ["execution", "\u6B21\u5143\u7EC8\u7ED3", "Dimensional Execution", "C", 38], ["voidslash", "\u865A\u7A7A\u65A9", "Void Slash", "X", 5]],
   abyssal: [["devour", "\u7075\u9B42\u541E\u566C", "Soul Devour", "Q", 10], ["descent", "\u6DF1\u6E0A\u964D\u4E34", "Abyssal Descent", "Z", 24], ["avatar", "\u6DF1\u6E0A\u5316\u8EAB", "Avatar of the Abyss", "C", 34], ["abysstouch", "\u6DF1\u6E0A\u4E4B\u89E6", "Abyssal Touch", "X", 5]],
@@ -260,7 +262,7 @@ function activeSkill(a, id, now = Date.now()) {
 }
 function skillDamageMultiplier(a, now = Date.now()) {
   const blood = a.advancement === "berserker" ? 1 + 0.35 * Math.max(0, 1 - a.hp / (a.maxHp || 100)) : 1;
-  const legion = a.advancement === "necromancer" ? a.skillRuntime?.advancedSummon?.legion.filter((pet) => pet.until > now).length || 0 : 0;
+  const legion = a.profession === "necromancer" ? a.skillRuntime?.advancedSummon?.legion.filter((pet) => pet.until > now).length || 0 : 0;
   return (activeSkill(a, "abyssKingForm", now) ? 1.3 : 1) * (activeSkill(a, "riftDomain", now) ? 1.2 : 1) * (activeSkill(a, "elementCycle", now) ? 1.15 : 1) * (activeSkill(a, "elementFire", now) ? 1.18 : 1) * (1 + legion * 0.025) * (activeSkill(a, "spiritAscendant", now) ? 1.5 : 1) * (activeSkill(a, "radiantRecovery", now) ? 1.3 : 1) * blood * (1 + Math.min(1.5, activeSkill(a, "bloodSacrifice", now) * 0.04)) * (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.25 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
 }
 function skillSpeedMultiplier(a, now = Date.now()) {
@@ -273,7 +275,7 @@ function skillFireMultiplier(a, now = Date.now()) {
 }
 function skillIncoming(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), i = activeSkill(a, "icearmor", now);
-  return (activeSkill(a, "riftGuard", now) ? 0.4 : 1) * (activeSkill(a, "elementEarth", now) ? 0.8 : 1) * (activeSkill(a, "elementIce", now) ? 0.9 : 1) * (activeSkill(a, "lineGuard", now) ? 0.35 : 1) * (activeSkill(a, "winterShield", now) ? 0.75 : 1) * (activeSkill(a, "voltGuard", now) ? 0.7 : 1) * (a.advancement === "paladin" ? 0.85 : 1) * (activeSkill(a, "radiantRecovery", now) ? 0.8 : 1) * (activeSkill(a, "execution", now) ? 0 : 1 - activeSkill(a, "prism", now) / 100) * ((a.boosts?.defense || 0) > now ? 0.5 : 1) * (1 - (a.gearReduction || 0)) * (activeSkill(a, "rage", now) ? 2 : 1) * (t ? 1 - Math.min(0.35, 0.1 + 0.01 * t) : 1) * (i ? 1 - Math.min(0.5, 0.15 + 0.02 * i) : 1) * (1 - (bossFormStats(a, now)?.reduction || 0));
+  return (activeSkill(a, "beastGuard", now) ? 0.72 : 1) * (activeSkill(a, "riftGuard", now) ? 0.4 : 1) * (activeSkill(a, "elementEarth", now) ? 0.8 : 1) * (activeSkill(a, "elementIce", now) ? 0.9 : 1) * (activeSkill(a, "lineGuard", now) ? 0.35 : 1) * (activeSkill(a, "winterShield", now) ? 0.75 : 1) * (activeSkill(a, "voltGuard", now) ? 0.7 : 1) * (a.advancement === "paladin" ? 0.85 : 1) * (activeSkill(a, "radiantRecovery", now) ? 0.8 : 1) * (activeSkill(a, "execution", now) ? 0 : 1 - activeSkill(a, "prism", now) / 100) * ((a.boosts?.defense || 0) > now ? 0.5 : 1) * (1 - (a.gearReduction || 0)) * (activeSkill(a, "rage", now) ? 2 : 1) * (t ? 1 - Math.min(0.35, 0.1 + 0.01 * t) : 1) * (i ? 1 - Math.min(0.5, 0.15 + 0.02 * i) : 1) * (1 - (bossFormStats(a, now)?.reduction || 0));
 }
 function skillHealth(a, base, now) {
   const t = activeSkill(a, "transform", now);

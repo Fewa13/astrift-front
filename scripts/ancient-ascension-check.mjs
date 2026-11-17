@@ -41,9 +41,9 @@ test.profession='voidsword';test.fusedJobs={voidsword:true};test.consumedJobs={s
 test.mastery={voidslash:{level:19,points:12}};test.skills={triplecut:9};
 server.save('admintest',test);
 const restored=(await cmd('admintest','profile')).profile;
-assert.equal(Object.values(restored.fusedJobs).filter(Boolean).length,4);
+assert.equal(Object.values(restored.fusedJobs).filter(Boolean).length,5);
 assert.equal(Object.keys(restored.consumedJobs).length,0);
-assert.equal(Object.values(restored.ascension.jobs).filter(job=>job.holy).length,13);
+assert.equal(Object.values(restored.ascension.jobs).filter(job=>job.holy).length,14);
 assert.equal(restored.skills.triplecut,9);
 assert.equal(restored.skills.shadowstep,6);
 assert.equal(restored.mastery.voidslash.level,19);

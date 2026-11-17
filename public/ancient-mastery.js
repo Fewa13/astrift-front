@@ -1,6 +1,10 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 const FUSION_DAMAGE_MULTIPLIER = 2.8;
 const growth = {
+  raiseSkeleton: 0.055,
+  unleashLegion: 0.045,
+  consumeSoul: 0.04,
+  necropolis: 0.04,
   prism: 0.045,
   judgment: 0.035,
   erosion: 0.06,

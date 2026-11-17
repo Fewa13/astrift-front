@@ -7,6 +7,8 @@
 
 - GitHub remote: `https://github.com/Fewa13/astrift-front.git`, branch `main`. Preserve existing history; do not force-push. The legacy `astrift-pages-upload-20261003/` and its Pages workflow are retained; uploading source does not mean that legacy GitHub Pages site has been updated.
 
+- For each published player-facing update, update both Desktop announcements, `Astrift Update(zh-CN).txt` and `Astrift Update(EN).txt`. Append changes for the same Irvine calendar day. On a new day, replace the previous day's announcement and update its date.
+
 ## 未完成更新：Ancient 职业升华
 
 用户已批准完整实现。任务未全部完成时继续实现和验证，不能把预览、配置、部分职业可用或仅通过类型检查当成交付。

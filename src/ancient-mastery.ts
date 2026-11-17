@@ -4,6 +4,7 @@ import type {AncientProfile} from './ancient-rules';
 export const FUSION_DAMAGE_MULTIPLIER=2.8;
 
 const growth: Record<string,number> = {
+ raiseSkeleton:.055,unleashLegion:.045,consumeSoul:.04,necropolis:.04,
  prism:.045,judgment:.035,erosion:.06,siphon:.05,
  voidslash:.05,riftassault:.045,voiddomain:.03,execution:.032,
  abysstouch:.045,devour:.05,descent:.037,avatar:.03,

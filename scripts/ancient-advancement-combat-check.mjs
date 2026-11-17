@@ -104,7 +104,7 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert(hits.some(event=>event.target==='dash-ground'));
   assert(!hits.some(event=>event.target==='dash-upper'),'dash must not hit an enemy on the floor above');
  }
- if(route.id==='spiritcaller'||route.id==='necromancer'){
+ if(route.id==='spiritcaller'||route.id==='beastlord'){
   const dormant={...monsters[0],id:'dormant',z:12,dormant:true,target:actor.name};
   const attacker={...monsters[0],id:'attacker',z:22,target:actor.name};
   const preferred={...monsters[0],id:'preferred',z:26};
@@ -113,57 +113,6 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   assert.equal(summonTarget(actor,selection,0,10)?.id,attacker.id);
   actor.skillRuntime.advancedPriority=preferred.id;
   assert.equal(summonTarget(actor,selection,0,10)?.id,preferred.id);
- }
- if(route.id==='necromancer'){
-  const now=103800;
-  assert.equal(recordNecromancerKill(actor,profile,{level:20,kind:'grox'},now),false);
-  assert.equal(recordNecromancerKill(actor,profile,{level:150,kind:'grox'},now),true);
-  assert.equal(profile.necromancerStrength,7.5);
-  assert.equal(recordNecromancerKill(actor,profile,{level:150,kind:'grox'},now+12000),false);
-  assert.equal(profile.necromancerStrength,7.5);
- }
- if(route.id==='necromancer'){
-  const state=actor.skillRuntime.advancedSummon,now=200000;
-  state.legion=Array.from({length:18},(_,slot)=>({slot,x:0,z:10,until:now,next:now,scale:1}));
-  state.reserve=[1];
-  assert.equal(castAncientSkill(actor,profile,'advanced:Q',aim,context,now),null);
-  assert.equal(state.legion.length,1);
-  assert.equal(state.legion[0].slot,0);
-  assert.equal(state.reserve.length,0);
-  const pet=state.legion[0];
-  const target={...monsters[0],x:pet.x,z:pet.z+2};
-  const duel={...context,monsters:[target]};
-  const hit=field=>{
-   state.field=field;
-   pet.next=now;
-   tickAdvancedSummon(actor,profile,duel,.2,now);
-   assert.equal(damageEvents.at(-1).id,'advancement:necromancer:Q');
-   return damageEvents.at(-1).amount;
-  };
-  const normal=hit(undefined);
-  const field={x:pet.x,y:0,z:pet.z,until:now+1000,radius:4};
-  assert.equal(hit(field),normal*1.2);
-  assert.equal(target.weak,.2);
-  const advance=field=>{
-   state.field=field;
-   pet.z=fieldOrigin;
-   tickAdvancedSummon(actor,profile,{...context,monsters:[{...target,z:fieldOrigin+8}]},.2,now);
-   return pet.z-fieldOrigin;
-  };
-  const fieldOrigin=pet.z;
-  assert(Math.abs(advance(field)-advance(undefined)*1.2)<1e-9);
-  pet.z=fieldOrigin;
-  const start={x:pet.x,z:pet.z};
-  const diagonal={...target,x:start.x+5,z:start.z+5};
-  const path={...context,monsters:[diagonal]};
-  tickAdvancedSummon(actor,profile,{...path,canMove:(_x,z,_nx,nz)=>nz===z},.2,now);
-  assert(pet.x>start.x,'skeleton should slide along the open axis');
-  assert.equal(pet.z,start.z);
-  const besideWall={x:pet.x,z:pet.z};
-  tickAdvancedSummon(actor,profile,{...path,canMove:()=>false},.2,now);
-  assert.deepEqual({x:pet.x,z:pet.z},besideWall,'closed path must keep the skeleton in place');
-
-
  }
  if(route.id==='spiritcaller'){
   const state=actor.skillRuntime.advancedSummon,pet=actor.skillRuntime.summon;
@@ -336,6 +285,7 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  assert.equal(profile.profession,job);
  const saved=JSON.parse(JSON.stringify(profile));
  for(const source of sources)assert.equal(chooseAncientProfession(saved,source),'职业不可用');
+ if(!ADVANCED_PROFESSIONS[job])continue;
  assert(chooseAdvancement(saved,ADVANCED_PROFESSIONS[job][1].id),job);
  for(const key of ADVANCEMENT_KEYS)assert.deepEqual(saved.advancements[job].skills[key],{level:1,points:0});
 }
@@ -353,6 +303,28 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  expect(6000,.7,.7);
  expect(11000,1,.85);
  expect(16000,1,1);
+}
+
+{
+ const profile=newAncientProfile(),name='necromancer-check';
+ profile.level=150;profile.profession='summoner';
+ profile.skills=Object.fromEntries(['summoner','curse'].flatMap(job=>PROFESSIONS[job].skills.map(id=>[id,5])));
+ assert.equal(fuseAncientProfession(profile,'necromancer'),null);
+ assert(profile.consumedJobs.summoner&&profile.consumedJobs.curse);
+ assert(fuseAncientProfession(profile,'abyssal'));
+ const actor={name,profession:'necromancer',x:0,y:1.7,z:10,hp:500,maxHp:1000,weapon:profile.weapons[0]};
+ const monster={id:'target',kind:'grox',x:0,z:12,hp:1e9};
+ const hits=[],fx=[];
+ const context={map:'tribe',monsters:[monster],damage(target,amount,source,id){hits.push(id);return amount;},fx(id){fx.push(id);}};
+ const aim=[0,-.09,Math.sqrt(1-.09**2)],now=100000;
+ for(const id of ['raiseSkeleton','unleashLegion','consumeSoul','necropolis'])assert.equal(castAncientSkill(actor,profile,id,aim,context,now),null);
+ assert.equal(actor.skillRuntime.advancedSummon.legion.length,1);
+ assert(recordNecromancerKill(actor,profile,{level:150,kind:'grox'},now));
+ assert(!recordNecromancerKill(actor,profile,{level:1,kind:'grox'},now));
+ tickAdvancedSummon(actor,profile,context,.2,now+1000);
+ assert(hits.includes('unleashLegion'));
+ assert.equal(monster.weak,.2);
+ assert(fx.includes('necromancer-release'));
 }
 
 export {advancementCost};

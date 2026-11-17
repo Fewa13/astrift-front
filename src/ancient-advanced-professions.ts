@@ -12,7 +12,7 @@ export const ADVANCED_PROFESSIONS: Readonly<Record<string, readonly [Route, Rout
  ],
  summoner: [
   route('spiritcaller',['圣灵召唤师','Spiritcaller'],['召唤','Call Guardian'],['灵域','Spirit Domain'],['变身','Spirit Ascendant'],['新生','Rebirth']),
-  route('necromancer',['死灵法师','Necromancer'],['召唤','Raise Skeleton'],['释放','Unleash'],['吞噬','Consume'],['死灵领域','Necropolis']),
+  route('beastlord',['契兽领主','Beastlord'],['缔约','Bind Beast'],['协猎','Coordinated Hunt'],['护主','Guard Master'],['裂地扑击','Rending Pounce']),
  ],
  lightning: [
   route('stormcaller',['天雷使','Stormcaller'],['雷印','Thunder Seal'],['引雷柱','Lightning Rod'],['雷云囚笼','Thundercloud Prison'],['万雷天诛','Heavenly Thunder']),
