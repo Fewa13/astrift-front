@@ -7,7 +7,7 @@ const QUALITY_COLORS=['#f0f2f5','#91cae0','#bc9df6','#f1ca68','#68e6e4','#ffdfa3
 export function createCombatNotices(root=document.body){
  const feed=document.createElement('div');feed.className='ancientCombatFeed';feed.setAttribute('role','log');feed.setAttribute('aria-live','polite');root.append(feed);
  const pending=[],visible=[];
- function push(text,duration=4000,options={}){const item={text,duration:Math.max(4200,duration),...options};if(item.boss)pending.splice(pending.findLastIndex(entry=>entry.boss&&!entry.resumed)+1,0,item);else pending.push(item);}
+ function push(text,duration=4000,options={}){const item={text,duration:Math.max(4200,duration),...options};if(item.boss||item.mastery)pending.splice(pending.findLastIndex(entry=>entry.boss&&!entry.resumed)+1,0,item);else pending.push(item);}
  function kill(d,{boss,name,en,material,gearName,gearDefinition,kind,map}){push(`${boss?(en?'BOSS VANQUISHED':'首领已击败'):(en?'Defeated':'击败')} · ${name}\n+${d.xp.toLocaleString()} XP · +${formatAncientNumber((d.coins||0),2)} ${en?'Ancient Gold':'远古金币'}`,boss?8500:4600,{boss,theme:noticeTheme(kind,map,boss),drops:Object.entries(d.drops||{}).map(([key,n])=>({text:`${material(key)} ×${n}`})).concat((d.gearDrops||[]).map(i=>({text:gearName(i.key,en),color:QUALITY_COLORS[(gearDefinition(i.key)?.quality||1)-1]})))});}
  function mastery(ids,profile,en){
   const profession=profile?.profession;
@@ -18,7 +18,7 @@ export function createCombatNotices(root=document.body){
    const name=names?.[en?1:0]??SKILLS[id]?.[en?'en':'name'];
    const level=match?profile?.advancements?.[profession]?.skills?.[match[2]]?.level:profile?.mastery?.[id]?.level;
    const label=name&&level?(en?name+' · Lv. '+level:name+' · '+level+' 级'):name;
-   push((en?'Skill mastery increased':'技能精通升级')+(label?' · '+label:''),3600);
+   push((en?'Skill mastery increased':'技能精通升级')+(label?' · '+label:''),4200,{mastery:true});
   }
  }
  function update(now){for(let i=visible.length-1;i>=0;i--)if(now>=visible[i].until){visible[i].node.remove();visible.splice(i,1);}const limit=innerHeight<500?2:4;while(pending.length&&(visible.length<limit||pending[0].boss&&!pending[0].resumed)){
