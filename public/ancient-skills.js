@@ -83,6 +83,9 @@ const ELEMENTAL_IMPACTS = {
 function runtime(a) {
   return a.skillRuntime ??= { cooldowns: {}, effects: {}, mode: 1, lastAux: 0 };
 }
+function hasSkillBook(id) {
+  return Object.hasOwn(SKILLS, id) && !isFusionSkill(id);
+}
 function skillBook(id) {
   return "skillbook:" + id;
 }
@@ -282,7 +285,7 @@ function skillHealth(a, base, now) {
 function skillDrops(kind, random = Math.random) {
   const boss = kind === "buried_marshal" || kind === "hourglass_regent" || kind === "sky_sovereign" || kind === "thunder_warden" || kind === "frost_crowned" || kind === "furnace_regent" || kind === "starbound_heart" || kind === "immaculate_judge" || kind === "blight_lord" || kind === "oathknight" || kind === "emptyking" || kind === "chief" || kind === "lord" || kind === "rootwarden" || ["metal", "wood", "water", "fire", "earth"].some((e) => kind === "crystal_" + e);
   if (!boss) return {};
-  const ids = Object.keys(SKILLS).filter((id2) => !isFusionSkill(id2)), id = ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
+  const ids = Object.keys(SKILLS).filter(hasSkillBook), id = ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
   return { [skillBook(id)]: 1 };
 }
 export {
@@ -295,6 +298,7 @@ export {
   activeSkill,
   curseHitMultiplier,
   ensureBasicSkills,
+  hasSkillBook,
   isFusionJob,
   isFusionSkill,
   runtime,

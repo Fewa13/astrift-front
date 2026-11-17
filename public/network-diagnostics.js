@@ -59,10 +59,9 @@ async function recoverRegistration(target,init,body,fetchImpl){
 export async function diagnosticFetch(input,init={},fetchImpl=(...args)=>fetch(...args)){
  const url=new URL(String(input),globalThis.location?.href||BACKENDS[0]);
  let body;try{body=JSON.parse(init.body||'{}')}catch{}
- // Auth connection recovery is bounded to our known backends. Other mutations
- // (purchases, mail, resets and the one-use admin challenge) are never replayed.
+ // Only reads, fresh tickets and server-idempotent trial starts can use backend fallback.
  const registration=url.pathname==='/api/account/register';
- const safe=['/api/account/register','/api/account/login','/api/account/check','/api/account/profile'].includes(url.pathname)||url.pathname==='/api/ancient/profile'&&body?.action==='profile'||url.pathname==='/api/admin'&&['auth1','state'].includes(body?.action);
+ const safe=['/api/account/register','/api/account/login','/api/account/check','/api/account/profile'].includes(url.pathname)||url.pathname==='/api/ancient/profile'&&['profile','ticket','ascensionStart','ascensionFinalStart'].includes(body?.action)||url.pathname==='/api/admin'&&['auth1','state'].includes(body?.action);
  const retry=safe&&trustedPage()&&BACKENDS.includes(url.origin);
  const targets=retry?[url.href,...BACKENDS.filter(o=>o!==url.origin).map(o=>o+url.pathname+url.search)]:[input];
  let lastError;

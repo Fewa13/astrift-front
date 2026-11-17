@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import { PROFESSION_FUSIONS, isFusionJob } from "./ancient-skills.js";
-import { PROFESSIONS, SKILLS, skillBook, ensureBasicSkills } from "./ancient-skills.js";
+import { PROFESSIONS, SKILLS, hasSkillBook, skillBook, ensureBasicSkills } from "./ancient-skills.js";
 const ANCIENT_SUPPLIES = {
   purity: { name: "\u51C0\u5316\u5370\u8BB0", en: "Purification Sigil", price: 0, kind: "cleanse" },
   transfer: { name: "\u8F6C\u804C\u4E66", en: "Profession Change Book", price: 1e3, kind: "transfer" },
@@ -8,7 +8,7 @@ const ANCIENT_SUPPLIES = {
   defense: { name: "\u53CC\u500D\u9632\u5FA1\u836F\u6C34", en: "Double Defense Potion", price: 200, kind: "boost", duration: 6e5 },
   experience: { name: "\u7ECF\u9A8C\u836F\u6C34", en: "XP Potion", price: 300, kind: "boost", duration: 6e5 }
 };
-for (const [id, j] of Object.entries(PROFESSIONS)) ANCIENT_SUPPLIES["book:" + id] = { name: j.name + "\u6280\u80FD\u4E66", en: j.en + " Skill Book", price: 300, kind: "book", job: id };
+for (const [id, j] of Object.entries(PROFESSIONS)) if (!isFusionJob(id)) ANCIENT_SUPPLIES["book:" + id] = { name: j.name + "\u6280\u80FD\u4E66", en: j.en + " Skill Book", price: 300, kind: "book", job: id };
 function supplyKey(id) {
   return "supply:" + id;
 }
@@ -67,7 +67,7 @@ function useAncientSupply(p, id, now = Date.now(), random = Math.random) {
     p.boosts ??= {};
     p.boosts[id] = now + d.duration;
   } else {
-    const ids = PROFESSIONS[d.job].skills.filter((id2) => SKILLS[id2]?.job === d.job);
+    const ids = PROFESSIONS[d.job].skills.filter((id2) => hasSkillBook(id2) && SKILLS[id2]?.job === d.job);
     if (!ids.length) return "\u8BE5\u804C\u4E1A\u6CA1\u6709\u53EF\u7528\u6280\u80FD\u4E66";
     const book = skillBook(ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))]);
     p.materials[book] = (p.materials[book] || 0) + 1;

@@ -8,7 +8,7 @@ import { BESTIARY_HUNTS, bestiaryQuestSteps } from "./ancient-bestiary-quests.js
 import { BLIGHT_NPCS, BLIGHT_QUESTS } from "./ancient-blight-quests.js";
 import { ANCIENT_SECRETS, SECRET_ORIGINS, secretLocation } from "./ancient-secrets.js";
 import { blocked, ancientMapHeight, tribeCompactZ, gainXP, xpNeeded, xpRewardBase } from "./ancient-rules.js";
-import { PROFESSIONS, SKILLS, skillBook } from "./ancient-skills.js";
+import { PROFESSIONS, SKILLS, hasSkillBook, skillBook } from "./ancient-skills.js";
 const QUEST_NPCS = {
   gruk: { name: "\u683C\u9C81\u514B", en: "Gruk", map: "tribe", x: -10, z: 14, role: ["\u90E8\u843D\u5B88\u671B\u8005", "Tribal Watchkeeper"] },
   tok: { name: "\u6258\u514B", en: "Tok", map: "tribe", x: -8, z: 212, role: ["\u730E\u9053\u5F15\u8DEF\u4EBA", "Hunting Trail Guide"] },
@@ -357,6 +357,13 @@ function questRewardInfo(p, q) {
   }
   return Object.keys(result).length ? result : void 0;
 }
+function questSkillBook(p, q) {
+  const job = p.profession;
+  if (!job || p.advancements?.[job]) return;
+  const index = q.reward?.qBook ? 0 : q.id === "tok-second" ? 1 : q.id === "tok-third" ? 2 : -1;
+  const id = PROFESSIONS[job]?.skills[index];
+  if (id && hasSkillBook(id)) return skillBook(id);
+}
 function questReward(p, q) {
   const r = questRewardInfo(p, q);
   if (!r) return;
@@ -365,14 +372,8 @@ function questReward(p, q) {
   for (const [key, n] of Object.entries(r.potions || {})) p.potions[key] = (p.potions[key] || 0) + n;
   if (r.coins) p.coins = Math.round((p.coins + r.coins) * 100) / 100;
   for (const [key, n] of Object.entries(r.materials || {})) p.materials[key] = (p.materials[key] || 0) + n;
-  const job = p.profession && PROFESSIONS[p.profession];
-  if (job) {
-    const index = r.qBook ? 0 : q.id === "tok-second" ? 1 : q.id === "tok-third" ? 2 : -1;
-    if (index >= 0) {
-      const key = skillBook(job.skills[index]);
-      p.materials[key] = (p.materials[key] || 0) + 1;
-    }
-  }
+  const book = questSkillBook(p, q);
+  if (book) p.materials[book] = (p.materials[book] || 0) + 1;
 }
 function fulfilled(p, q, e) {
   const job = p.profession && PROFESSIONS[p.profession];
@@ -444,6 +445,7 @@ export {
   questCanTalk,
   questReward,
   questRewardInfo,
+  questSkillBook,
   questState,
   questText
 };

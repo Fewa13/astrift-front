@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {createPuzzleMap} from './ancient-puzzle-map.js?v=20261111-puzzle-timed-1';
-import {PROFESSIONS,SKILLS} from './ancient-skills.js';
+import {PROFESSIONS,SKILLS,isFusionJob} from './ancient-skills.js';
 export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}){
  let room=null,state=null,map=null,poll=0,working=false,polling=false,generation=0,signature='',feedback='',queuedPlates=[];
  const L=(a,b)=>en()?b:a;
@@ -79,7 +79,8 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
    const label=make(view,'label',L('技能书 ','Skill book ')+(index+1));label.className='ancientPuzzleBookChoice';
    const select=make(label,'select');
    const placeholder=make(select,'option',L('请选择','Choose a book'));placeholder.value='';
-   for(const profession of Object.values(PROFESSIONS)){
+   for(const [job,profession] of Object.entries(PROFESSIONS)){
+    if(isFusionJob(job))continue;
     const group=make(select,'optgroup');group.label=en()?profession.en:profession.name;
     for(const skill of profession.skills){const option=make(group,'option',en()?SKILLS[skill].en:SKILLS[skill].name);option.value=skill;}
    }
