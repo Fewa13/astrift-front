@@ -38,7 +38,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   prism:['单体 420% 攻击，概率触发多种元素，连锁余震造成75%伤害。立即回复实伤15%，减伤20%持续4秒。','420% single-target damage with elemental procs and a 75% Arc Echo. Heal 15% of damage and gain 20% reduction for 4s.'],
   judgment:['目标周围12米造成510%攻击，概率触发元素，回复实伤20%，减伤35%持续4秒。','510% damage within 12m of the target, elemental procs, 20% healing and 35% reduction for 4s.'],
   erosion:['7秒内目标受伤+20%、攻击和移速−15%，每秒造成28%攻击。','For 7s: target takes 20% more damage, loses 15% attack and speed, and takes 28% attack per second.'],
-  siphon:['6秒内每秒造成55%攻击，返还实际伤害的75%为生命。','For 6s, deal 55% attack per second and recover 75% of damage dealt.'],
+  siphon:['持续6秒，主目标每秒受到55%攻击伤害，距离自己最近的另外两只怪物各承受主目标25%的窃取伤害。实际伤害的75%回复生命。','For 6s, deal 55% attack per second to the selected target and 25% of that damage to each of the two nearest other monsters. Heal for 75% of damage dealt.'],
   voidslash:['440%攻击，标记目标。再斩引爆，造成720%攻击。','440% damage and a mark. The next slash detonates for 720%.'],
   riftassault:['突袭至目标身后，沿途420%攻击。6秒内再按返回。','Dash behind the target for 420% path damage. Recast within 6s to return.'],
   voiddomain:['持续8秒，减速敌人，强化攻击与移动，允许突袭越过部分障碍。','Slows enemies, boosts attack and movement, and lets Rift Assault cross some barriers for 8s.'],
@@ -53,7 +53,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   stasis:['冻结12米内普通怪物4秒并延后结算伤害，每秒造成105%攻击。首领大幅减速。','Freeze regular enemies within 12m for 4s and bank damage, dealing 105% attack per second. Bosses are heavily slowed.'],
  };
  const fusionTypes={
-  prism:['单体 / 恢复 / 增益','Single target / Healing / Buff'],judgment:['群体 / 恢复 / 增益','Area / Healing / Buff'],erosion:['单体','Single target'],siphon:['单体 / 恢复','Single target / Healing'],
+  prism:['单体 / 恢复 / 增益','Single target / Healing / Buff'],judgment:['群体 / 恢复 / 增益','Area / Healing / Buff'],erosion:['单体','Single target'],siphon:['群体 / 恢复','Area / Healing'],
   voidslash:['单体','Single target'],riftassault:['群体 / 位移','Area / Movement'],voiddomain:['群体 / 增益','Area / Buff'],execution:['群体 / 增益','Area / Buff'],
   abysstouch:['单体 / 恢复','Single target / Healing'],devour:['单体 / 恢复','Single target / Healing'],descent:['群体 / 恢复','Area / Healing'],avatar:['增益 / 恢复','Buff / Healing'],
   temporalrift:['单体','Single target'],chronoshift:['群体 / 位移','Area / Movement'],rewind:['恢复 / 位移','Healing / Movement'],stasis:['群体','Area'],

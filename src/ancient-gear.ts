@@ -185,7 +185,11 @@ export function puzzleTitleBonus(p:{puzzleTitle?:{rank:number;expires:number;wor
  const title=p.puzzleTitle;
  return title?.worn&&title.expires>now?[0,.15,.10,.05][title.rank]||0:0;
 }
-export function ancientProfileHealth(p:AncientProfile){return Math.floor((ancientBaseHealth(p.level)+ancientGearStats(p).health)*(1+puzzleTitleBonus(p)))}
+export function ancientProfileHealth(p:AncientProfile){
+ const lateLevel=Math.max(0,Math.min(150,p.level-150));
+ const durability=1+(lateLevel/150)**1.5;
+ return Math.floor((ancientBaseHealth(p.level)+ancientGearStats(p).health)*durability*(1+puzzleTitleBonus(p)));
+}
 export function ancientLevelDamage(level:number){return 1.25**Math.min(300,Math.max(0,level-1))}
 export function ancientBaseAttack(level:number){
  const l=Math.max(1,Number.isFinite(level)?level:1),anchors=[[1,25],[5,125],[10,400],[20,800],[30,2500],[40,6000],[50,10000],[60,20000],[70,40000],[80,60000],[90,90000],[100,130000]];

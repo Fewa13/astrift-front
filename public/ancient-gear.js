@@ -386,7 +386,9 @@ function puzzleTitleBonus(p, now = Date.now()) {
   return title?.worn && title.expires > now ? [0, 0.15, 0.1, 0.05][title.rank] || 0 : 0;
 }
 function ancientProfileHealth(p) {
-  return Math.floor((ancientBaseHealth(p.level) + ancientGearStats(p).health) * (1 + puzzleTitleBonus(p)));
+  const lateLevel = Math.max(0, Math.min(150, p.level - 150));
+  const durability = 1 + (lateLevel / 150) ** 1.5;
+  return Math.floor((ancientBaseHealth(p.level) + ancientGearStats(p).health) * durability * (1 + puzzleTitleBonus(p)));
 }
 function ancientLevelDamage(level) {
   return 1.25 ** Math.min(300, Math.max(0, level - 1));

@@ -120,8 +120,16 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
  }
  if(id==='erosion'){(target.masteryMarks??={})[a.name]={owner:a.name,id,until:now+7000};Object.assign(target,{vulnerable:.2,vulnerableUntil:now+7000,weak:.15,weakUntil:now+7000,slow:.15,slowUntil:now+7000});dot(target,a,id,body*.28,now,7);fx(target,3);}
  if(id==='siphon'){
-  dot(target,a,id,body*.55,now,6);
-  if(divine){for(const m of area(target,7).filter(m=>m!==target).slice(0,3))dot(m,a,id,body*.1,now,6);c.fx('artifact-divinity',target.x,target.z,7);}
+  const primaryDamage=body*.55;
+  dot(target,a,id,primaryDamage,now,6);
+  const nearby=area(origin,60).filter(m=>m!==target&&m.kind!=='player')
+   .sort((left,right)=>Math.hypot(left.x-a.x,left.z-a.z)-Math.hypot(right.x-a.x,right.z-a.z))
+   .slice(0,2);
+  for(const m of nearby){dot(m,a,id,primaryDamage*.25,now,6);fx(m,2);}
+  if(divine){
+   for(const m of area(target,7).filter(m=>m!==target&&!nearby.includes(m)).slice(0,3))dot(m,a,id,body*.1,now,6);
+   c.fx('artifact-divinity',target.x,target.z,7);
+  }
   fx(target,4);
  }
  if(id==='voidslash'||id==='temporalrift'){
