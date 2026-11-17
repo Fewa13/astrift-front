@@ -16,12 +16,12 @@ export const FUSION_PASSIVES:Record<string,[string,string,string,string][]> = {
   ['不死之身','Deathless','骷髅可复活一次。玩家致命伤时复活，触发期间骷髅复活暂停。','Skeletons revive once. A lethal hit revives you, and skeleton revivals pause during your cooldown.'],
  ],
  elementalist:[
-  ['元素共振','Elemental Resonance','提高技能伤害，对燃烧或减速中的目标效果更强。','Increases skill damage, especially against burning or slowed enemies.'],
-  ['元素对冲','Elemental Counterweight','降低受到的伤害。','Reduces incoming damage.'],
+  ['元素共振','Elemental Resonance','停止施法后蓄积元素之力。下一次神罚消耗储能，为所有命中目标必定附加减益，储能越多越强。','Build elemental power between casts. The next Divine Judgment spends it to apply guaranteed debuffs to all enemies hit.'],
+  ['元素对冲','Elemental Clash','火与冰在同一目标相遇时引发范围爆炸。','Fire and ice together trigger a powerful area explosion.'],
   ['万象共鸣','Prismatic Convergence','大幅强化攻击，对削弱目标额外增伤。','Greatly amplifies attacks, with an extra bonus against weakened enemies.'],
  ],
  voidsword:[
-  ['虚空锋刃','Void Edge','提高技能伤害，近身斩击增幅更大。','Increases skill damage, with a bigger bonus at close range.'],
+  ['虚空锋刃','Void Edge','虚空斩有概率直接引爆，升级提高概率。','Void Slash can detonate immediately. Levels raise the chance.'],
   ['裂隙护体','Rift Guard','降低受到的伤害，虚空领域生效时减伤更高。','Reduces incoming damage, especially during your void domain.'],
   ['界外绝斩','Beyond the Rift','大幅强化攻击，终结技获得更高增幅。','Greatly amplifies attacks, with a larger bonus on finishers.'],
  ],
@@ -31,7 +31,7 @@ export const FUSION_PASSIVES:Record<string,[string,string,string,string][]> = {
   ['深渊饥渴','Abyssal Hunger','大幅强化全部攻击，低血时效果更强。','Greatly amplifies all attacks, especially at low health.'],
  ],
  chrono:[
-  ['时序加速','Temporal Acceleration','提高技能伤害。','Amplifies time skills.'],
+  ['时序加速','Temporal Acceleration','成功回溯后，其他时空行者技能立即结束冷却。','A successful Time Rewind ends the cooldowns of your other Chrono Walker skills.'],
   ['时间缓冲','Time Buffer','降低受到的伤害，跃迁或回溯后短暂加强。','Reduces damage taken, with stronger protection briefly after shifting or rewinding.'],
   ['时间叠层','Temporal Overlap','大幅强化攻击，对减速目标额外增伤。','Greatly amplifies attacks, with an extra bonus against slowed foes.'],
  ],

@@ -858,7 +858,7 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
    const summon=p.skillRuntime?.summon,legion=p.skillRuntime?.advancedSummon;
    const active:{position:{x:number;z:number};floor:number;radius:number}[]=summon&&summon.hp>0&&summon.until>now?[{position:summon,floor:ground(summon.x,summon.z),radius:.68}]:[];
    if(legion?.map===map)for(const skeleton of legion.legion)if(skeleton.until>now&&skeleton.hp!==0){
-    active.push({position:skeleton,floor:ground(skeleton.x,skeleton.z),radius:.35});
+    active.push({position:skeleton,floor:ground(skeleton.x,skeleton.z),radius:.35*(skeleton.merged?Math.min(7,1+Math.log2(skeleton.merged)*.48):1)});
    }
    return active;
   });
@@ -900,7 +900,7 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
 for(const {ws,p:a}of pairs)if(a.defenseUntil){if(a.hp<=0||Math.hypot(a.x,a.z-275)>12){delete a.defenseUntil;}else if(now>=a.defenseUntil){delete a.defenseUntil;const p=this.read(a.name),completed=advanceQuest(p,{kind:'defend',map});this.save(a.name,p);this.syncQuestHealth(a,p);this.send(ws,{type:'questUpdate',profile:p,completed})}}if(dungeon)this.dungeonTick(dungeon,world,pairs,now);const objectRow=this.ctx.storage.sql.exec<{data:string}>('SELECT data FROM ancient_abilities WHERE name=?','mapObjects:'+map).toArray()[0];const objectReady=objectRow?JSON.parse(objectRow.data):{};const leisureRow=this.ctx.storage.sql.exec<{data:string}>('SELECT data FROM ancient_abilities WHERE name=?','leisure:'+map).toArray()[0],leisureReady=leisureRow?(JSON.parse(leisureRow.data) as LeisureMapState).ready:{};const crystalRow=map==='blight'?this.ctx.storage.sql.exec<{data:string}>('SELECT data FROM ancient_abilities WHERE name=?','blightCrystals').toArray()[0]:undefined;const crystalReady=crystalRow?JSON.parse(crystalRow.data):{};world.tick=now;this.persist(world);for(const {ws,p}of pairs){const healed=finishPotionDrink(p,now);if(healed!==null)this.send(ws,{type:'healed',hp:p.hp,maxHp:p.maxHp,amount:healed});if(p.jadeDisplay&&(p.hp<=0||p.jadeDisplay.until<=now))delete p.jadeDisplay;if(p.hp<=0&&!p.deadAt)p.deadAt=now;if(p.hp>0)p.deadAt=0;this.persistAbilities(p);this.persistHealth(p);this.persistPosition(p);ws.serializeAttachment(p);if(p.amenityPose){const def=this.community().load(communityId(map)),anchor=def&&findAmenity(def,p.amenityPose.id);if(p.hp<=0||p.drinking||p.forcedMotion||activeBossForm(p)||activeSkill(p,'transform')||!anchor||Math.hypot(anchor.x-p.amenityPose.anchor.x,anchor.y-p.amenityPose.anchor.y,anchor.z-p.amenityPose.anchor.z)>.05)this.standAmenity(ws,p);}if(p.amenityWork&&p.amenityWork.until<now)delete p.amenityWork;ws.serializeAttachment(p);this.syncAmenities(ws,p);this.syncScriptUI(ws,p);this.send(ws,{type:'state',time:now,chapterState:CHAPTER_ROUTES[map]?this.chapterState(map):undefined,leisureReady,crystalReady,sanctumOptics:optics,dungeon:dungeon?this.dungeons().state(p.name).run:undefined,objectReady,you:{...p,jadeDisplay:p.jadeDisplay&&p.jadeDisplay.until>now?{id:p.jadeDisplay.id,until:p.jadeDisplay.until}:undefined,leisure:leisureView(p.leisure)},players:pairs.filter(v=>v.p.name!==p.name).map(v=>({name:v.p.name,level:v.p.level||1,x:v.p.x,z:v.p.z,y:v.p.y,yaw:v.p.yaw,hp:v.p.hp,maxHp:v.p.maxHp,gun:'',gear:v.p.gear,lastShot:v.p.lastShot,corrupted:v.p.corrupted,profession:v.p.profession,advancement:v.p.advancement,skin:v.p.skin,puzzleTitle:v.p.puzzleTitle,amenityPose:v.p.amenityPose,amenityWork:v.p.amenityWork,drinking:v.p.drinking,jadeWear:v.p.jadeWear,trialBadge:v.p.trialBadge,holy:v.p.holy,jadeDisplay:v.p.jadeDisplay&&v.p.jadeDisplay.until>now?{id:v.p.jadeDisplay.id,until:v.p.jadeDisplay.until}:undefined,leisure:leisureView(v.p.leisure),skillRuntime:v.p.skillRuntime})),monsters:world.monsters.filter(m=>!m.dormant&&Math.hypot(m.x-p.x,m.z-p.z)<150).map(({path,pathAt,pathX,pathZ,wander,wanderAt,contributions,contributionsForMastery,masteryMarks,strikes,...m})=>m),summons:pairs.flatMap(({p})=>{
  const runtime=p.skillRuntime;
  const guardian=runtime?.summon?[{owner:p.name,holy:p.holy,model:p.advancement==='spiritcaller'?'spirit':'beast',...runtime.summon}]:[];
- const skeletons=p.profession==='necromancer'&&runtime?.advancedSummon?.map===map?runtime.advancedSummon.legion.filter(pet=>pet.until>now).map(pet=>({owner:p.name,id:p.name+':'+pet.slot,model:'skeleton',x:pet.x,z:pet.z,hp:pet.hp??(pet.unitHp??1)*(pet.count??1),maxHp:(pet.unitHp??1)*(pet.count??1),attackAt:pet.next-100})):[];return [...guardian,...skeletons];
+ const skeletons=p.profession==='necromancer'&&runtime?.advancedSummon?.map===map?runtime.advancedSummon.legion.filter(pet=>pet.until>now).map(pet=>({owner:p.name,id:p.name+':'+pet.slot,model:'skeleton',x:pet.x,z:pet.z,scale:pet.merged?Math.min(7,1+Math.log2(pet.merged)*.48):1,hp:pet.hp??(pet.unitHp??1)*(pet.count??1),maxHp:(pet.unitHp??1)*(pet.count??1),attackAt:pet.next-100})):[];return [...guardian,...skeletons];
 }),count:world.monsters.filter(m=>m.hp>0).length})}
  }
 private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corruptionMapEntry(p,a.map)){delete a.pvpEffects;this.save(a.name,p);}const leveledUp=a.level!==undefined&&p.level>a.level&&a.hp>0;a.level=p.level;reconcileAdvancementRuntime(a,p,a.map||'tribe',a.hp<=0);a.puzzleTitle=p.puzzleTitle;a.skin=equippedAncientSkin(p);a.jadeWear=jadeWearRefs(p);a.trialBadge=p.trialBadge;const stats=ancientGearStats(p);a.corrupted=!!p.corrupted;a.boosts={...p.boosts};a.gear=gearKeys(p);a.gearReduction=stats.reduction;a.gearSpeed=stats.speed;const mapId=communityId(a.map);a.mapModifiers=mapId?this.mapRuntime().modifiers({id:mapId},a):undefined;const base=a.mapModifiers?.health||ancientProfileHealth(p),previous=a.skillBaseHp||a.skillRuntime?.baseHp||a.maxHp||100;if(a.hp>0)a.hp+=Math.max(0,base-previous);skillHealth(a,base,Date.now());if(leveledUp)a.hp=a.maxHp!;}
@@ -990,7 +990,7 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
     this.artifactFx(a,'crown');
     return 0;
    }
-  }else if(level){
+  }else if(level&&a.profession!=='elementalist'){
    const low=1-a.hp/(a.maxHp||100);
    const recent=runtime(a).effects;
    const reduction=a.profession==='chrono'?(recent.temporalBuffer?.until>now?.38:.22):
@@ -1038,12 +1038,7 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
  if(profile.profession!=='necromancer'){
   const second=passiveLevel(profile,0),fourth=passiveLevel(profile,2);
   const low=1-a.hp/(a.maxHp||100);
-  if(second&&source!=='weapon'){
-   const bonus=profile.profession==='elementalist'?((m.dots?.length||m.slowUntil&&m.slowUntil>Date.now())?.48:.23):
-    profile.profession==='voidsword'?(Math.hypot(m.x-a.x,m.z-a.z)<=8?.46:.24):
-    profile.profession==='abyssal'?.24+low*.42:.28;
-   amount*=1+bonus+second*.012;
-  }
+  if(second&&source!=='weapon'&&profile.profession==='abyssal')amount*=1+.24+low*.42+second*.012;
   if(fourth){
    const bonus=profile.profession==='elementalist'?((m.weakUntil||0)>Date.now()?.92:.65):
     profile.profession==='voidsword'?((attack==='execution'||attack?.endsWith(':C'))?1.1:.65):

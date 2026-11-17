@@ -21,7 +21,7 @@ const PROFESSION_FUSIONS = {
 };
 const FUSION_SKILL_REQUIREMENT = 5;
 const FUSION_SKILLS = {
-  necromancer: [["raiseSkeleton", "\u53EC\u5524", "Raise Skeleton", "X", 0.6], ["unleashLegion", "\u91CA\u653E", "Unleash", "Q", 10], ["consumeSoul", "\u541E\u566C", "Consume", "Z", 18], ["necropolis", "\u6B7B\u7075\u9886\u57DF", "Necropolis", "C", 32]],
+  necromancer: [["raiseSkeleton", "\u53EC\u5524", "Raise Skeleton", "X", 0.6], ["unleashLegion", "\u91CA\u653E", "Unleash", "Q", 10], ["consumeSoul", "\u541E\u566C", "Consume", "Z", 18], ["necropolis", "\u5408\u6210", "Skeleton Fusion", "C", 32]],
   elementalist: [["judgment", "\u795E\u7F5A", "Divine Judgment", "Q", 18], ["erosion", "\u5143\u7D20\u4FB5\u8680", "Elemental Erosion", "Z", 22], ["siphon", "\u5143\u7D20\u7A83\u53D6", "Elemental Siphon", "C", 26], ["prism", "\u5143\u7D20\u5F39", "Prismatic Bolt", "X", 5]],
   voidsword: [["riftassault", "\u88C2\u7A7A\u7A81\u88AD", "Rift Assault", "Q", 12], ["voiddomain", "\u865A\u7A7A\u9886\u57DF", "Void Domain", "Z", 25], ["execution", "\u6B21\u5143\u7EC8\u7ED3", "Dimensional Execution", "C", 38], ["voidslash", "\u865A\u7A7A\u65A9", "Void Slash", "X", 5]],
   abyssal: [["devour", "\u7075\u9B42\u541E\u566C", "Soul Devour", "Q", 10], ["descent", "\u6DF1\u6E0A\u964D\u4E34", "Abyssal Descent", "Z", 24], ["avatar", "\u6DF1\u6E0A\u5316\u8EAB", "Avatar of the Abyss", "C", 34], ["abysstouch", "\u6DF1\u6E0A\u4E4B\u89E6", "Abyssal Touch", "X", 5]],

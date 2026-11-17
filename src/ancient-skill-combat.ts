@@ -146,7 +146,7 @@ export function ancientAuxShot(a:SkillActor,p:AncientProfile,direction:unknown,c
 }
 export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,dt:number,now=Date.now()){
  reconcileAdvancementRuntime(a,p,c.map,a.hp<=0);
- tickFusion(a,c,now,dt);
+ tickFusion(a,p,c,now,dt);
  tickBerserker(a,p,c,now);
  tickPaladin(a,p,c,now);
  tickStormcaller(a,p,c,now);

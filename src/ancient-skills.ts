@@ -24,7 +24,7 @@ export const PROFESSION_FUSIONS = {
 export const FUSION_SKILL_REQUIREMENT = 5;
 
 export const FUSION_SKILLS = {
- necromancer: [['raiseSkeleton','召唤','Raise Skeleton','X',.6],['unleashLegion','释放','Unleash','Q',10],['consumeSoul','吞噬','Consume','Z',18],['necropolis','死灵领域','Necropolis','C',32]],
+ necromancer: [['raiseSkeleton','召唤','Raise Skeleton','X',.6],['unleashLegion','释放','Unleash','Q',10],['consumeSoul','吞噬','Consume','Z',18],['necropolis','合成','Skeleton Fusion','C',32]],
  elementalist: [['judgment','神罚','Divine Judgment','Q',18],['erosion','元素侵蚀','Elemental Erosion','Z',22],['siphon','元素窃取','Elemental Siphon','C',26],['prism','元素弹','Prismatic Bolt','X',5]],
  voidsword: [['riftassault','裂空突袭','Rift Assault','Q',12],['voiddomain','虚空领域','Void Domain','Z',25],['execution','次元终结','Dimensional Execution','C',38],['voidslash','虚空斩','Void Slash','X',5]],
  abyssal: [['devour','灵魂吞噬','Soul Devour','Q',10],['descent','深渊降临','Abyssal Descent','Z',24],['avatar','深渊化身','Avatar of the Abyss','C',34],['abysstouch','深渊之触','Abyssal Touch','X',5]],

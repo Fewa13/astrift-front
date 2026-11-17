@@ -1,3 +1,4 @@
+import {passiveLevel} from './ancient-fusion-passives';
 import {isAncientBoss} from './ancient-boss';
 import {ARTIFACT_COMBAT,artifactStage} from './ancient-artifacts';
 import {masteryLevel} from './ancient-mastery';
@@ -14,6 +15,8 @@ export type FusionRuntime={
  anchor?:Anchor; rewind?:Anchor & {hp:number;cooldowns:Record<string,number>};
  zone?:{id:string;point:Point;until:number;next:number;body:number;radius:number};
  avatar?:number;
+ resonance?:number; resonanceAt?:number;
+ elementalSigns?:Record<string,{fire?:number;ice?:number;reacted?:number}>;
 };
 type Actor=Parameters<typeof runtime>[0];
 function state(a:Actor,map:string){
@@ -31,6 +34,14 @@ function move(a:Actor,c:SkillContext,x:number,z:number,through=false){
  if(c.canMove&&!c.canMove(a.x,a.z,x,z)||blocked(x,z,.65,c.map,floor)||!through&&!lineClear(a.x,a.y,a.z,x,floor+1.7,z,c.map))return false;
  Object.assign(a,{x,y:floor+1.7,z});
  return true;
+}
+function gatherResonance(f:FusionRuntime,level:number,now:number){
+ if(!level)return 0;
+ const since=f.resonanceAt??now;
+ const stored=Math.min(4+level*.8,(f.resonance||0)+Math.max(0,now-since)/2000);
+ f.resonanceAt=now;
+ f.resonance=stored;
+ return stored;
 }
 export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now:number,body:number){
  const level=masteryLevel(p,id),evolved=level>=20;
@@ -56,7 +67,10 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
  }
  if(id==='rewind'&&f.rewind&&f.rewind.until>now){
   const saved=f.rewind;if(!move(a,c,saved.x,saved.z,true))return '回溯位置被阻挡';
-  const cooldown=r.cooldowns[id];r.cooldowns={...saved.cooldowns,[id]:cooldown};
+  const cooldown=r.cooldowns[id];
+  if(passiveLevel(p,0)){
+   for(const skill of Object.keys(r.cooldowns))if(skill!==id&&SKILLS[skill]?.job===p.profession)delete r.cooldowns[skill];
+  }else r.cooldowns={...saved.cooldowns,[id]:cooldown};
   const restored=saved.hp>a.hp;
   a.hp=Math.min(a.maxHp||100,saved.hp);
   if(restored)for(const m of area(a,12)){
@@ -107,14 +121,46 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
  if(id==='prism'||id==='judgment'){
   const victims=id==='judgment'?area(target,12):[target];let total=0;
   const direct=new Set(victims.map(m=>m.id)),echoed=new Set<string>();
+  const resonanceLevel=passiveLevel(p,0),clashLevel=passiveLevel(p,1);
+  const resonance=id==='judgment'&&resonanceLevel?gatherResonance(f,resonanceLevel,now):0;
+  const charged=id==='judgment'&&resonanceLevel>0;
+  if(charged){
+   f.resonance=0;
+   f.resonanceAt=now;
+  }
+  const debuff=(m:SkillMonster,amount:number)=>{
+   if(m.hp<=0)return;
+   const force=Math.min(1,resonance/12),duration=3000+Math.round(force*4000);
+   const fire=charged?resonance>=3:Math.random()<.35;
+   const ice=charged||Math.random()<.35;
+   const weak=charged?resonance>=1.5:Math.random()<.25;
+   if(fire)dot(m,a,id,amount*(.12+force*.12),now,4);
+   if(ice){m.slow=.3+force*.35;m.slowUntil=now+duration;}
+   if(weak){m.weak=.15+force*.2;m.weakUntil=now+duration;}
+   if(charged&&resonance>=5){m.vulnerable=.16+force*.24;m.vulnerableUntil=now+duration;}
+   if(!charged&&Math.random()<.18){m.slow=.95;m.slowUntil=now+700;}
+   if(!clashLevel)return;
+   const signs=(f.elementalSigns??={})[m.id]??={};
+   if(fire)signs.fire=now+4000;
+   if(ice)signs.ice=now+duration;
+   const burning=(signs.fire||0)>now||m.dots?.some(d=>d.until>now&&['firebolt','firewave','firestorm','inferno'].includes(d.skillId||''));
+   if(burning&&((signs.ice||0)>now||(m.frozenUntil||0)>now)&&(signs.reacted||0)<=now){
+    signs.reacted=now+2500;
+    delete signs.fire;delete signs.ice;
+    for(const enemy of area(m,5))total+=c.damage(enemy,body*(14+clashLevel*.36),undefined,id);
+    c.fx('thermal-clash',m.x,m.z,5,{target:''});
+   }
+  };
   for(const m of victims){
    const amount=body*(id==='judgment'?5.1:4.2);
    total+=c.damage(m,amount);
-   if(Math.random()<.35&&m.hp>0)dot(m,a,id,amount*.12,now,4);
-   if(Math.random()<.35){m.slow=.3;m.slowUntil=now+3000;}
-   if(Math.random()<.25){m.weak=.15;m.weakUntil=now+4000;}
-   if(Math.random()<.18){m.slow=.95;m.slowUntil=now+700;}
-   {const next=area(m,evolved?12:10).filter(v=>!direct.has(v.id)&&!echoed.has(v.id)).slice(0,evolved?2:1);for(const linked of next){echoed.add(linked.id);total+=c.damage(linked,amount*.75);c.fx(id,linked.x,linked.z,2,{target:linked.id,source:{x:m.x,y:(m.y||0)+1,z:m.z}});}}
+   debuff(m,amount);
+   const next=area(m,evolved?12:10).filter(v=>!direct.has(v.id)&&!echoed.has(v.id)).slice(0,evolved?2:1);
+   for(const linked of next){
+    echoed.add(linked.id);total+=c.damage(linked,amount*.75);
+    if(charged)debuff(linked,amount*.75);
+    c.fx(id,linked.x,linked.z,2,{target:linked.id,source:{x:m.x,y:(m.y||0)+1,z:m.z}});
+   }
   }
   healing(total*(id==='judgment'?.20:.15),victims);r.effects.prism={until:now+4000,level:id==='judgment'?35:20};fx(target,id==='judgment'?12:2);
  }
@@ -133,9 +179,11 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
   fx(target,4);
  }
  if(id==='voidslash'||id==='temporalrift'){
-  c.damage(target,body*(stacks?7.2:4.4));if(stacks)delete f.marks[target.id];else f.marks[target.id]={stacks:1,until:now+7000};
+  const edge=id==='voidslash'?passiveLevel(p,0):0;
+  const detonated=!!stacks||edge>0&&Math.random()<Math.min(.75,.2+edge*.008);
+  c.damage(target,body*(detonated?7.2:4.4));if(detonated)delete f.marks[target.id];else f.marks[target.id]={stacks:1,until:now+7000};
   if(id==='temporalrift')Object.assign(target,{slow:.45,slowUntil:now+4000,weak:.2,weakUntil:now+4000});
-  if(id==='voidslash'&&stacks&&p.artifactEquipped==='void'&&artifact>=3){
+  if(id==='voidslash'&&detonated&&p.artifactEquipped==='void'&&artifact>=3){
    const rules=ARTIFACT_COMBAT;
    for(const m of area(target,rules.voidRiftRadius)){
     m.strikes??=[];
@@ -143,8 +191,8 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
    }
    c.fx('artifact-void',target.x,target.z,rules.voidRiftRadius);
   }
-  if(id==='voidslash'&&stacks&&evolved)for(const m of area(target,4))if(m!==target)c.damage(m,body*.85);
-  if(id==='voidslash'&&stacks&&target.hp<=0)delete r.cooldowns.riftassault;
+  if(id==='voidslash'&&detonated&&evolved)for(const m of area(target,4))if(m!==target)c.damage(m,body*.85);
+  if(id==='voidslash'&&detonated&&target.hp<=0)delete r.cooldowns.riftassault;
   fx(target,3);
  }
  if(id==='execution'){
@@ -166,10 +214,18 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
   if(target.hp<=0&&stacks)for(const m of area(target,7)){f.marks[m.id]={stacks:1,until:now+6000};dot(m,a,'abysstouch',body*.26,now,5);}
   fx(target,5);
  }
+ if(p.profession==='elementalist'){gatherResonance(f,passiveLevel(p,0),now);f.resonanceAt=now+1500;}
  return null;
 }
-export function tickFusion(a:Actor,c:SkillContext,now:number,dt:number){
- const r=runtime(a),f=r.fusion;if(!f||f.map!==c.map||a.hp<=0){delete r.fusion;return;}
+export function tickFusion(a:Actor,p:AncientProfile,c:SkillContext,now:number,dt:number){
+ const r=runtime(a);
+ if(p.profession==='elementalist'&&a.hp>0&&passiveLevel(p,0)){
+  const charge=state(a,c.map);
+  if((charge.resonanceAt||0)<=now)gatherResonance(charge,passiveLevel(p,0),now);
+ }
+ const f=r.fusion;if(!f||f.map!==c.map||a.hp<=0){delete r.fusion;return;}
+ if(f.elementalSigns)for(const [id,sign] of Object.entries(f.elementalSigns))
+  if(Math.max(sign.fire||0,sign.ice||0,sign.reacted||0)<=now)delete f.elementalSigns[id];
  for(const [id,mark] of Object.entries(f.marks))if(mark.until<=now)delete f.marks[id];
  if((f.avatar||0)>now)a.hp=Math.max(1,a.hp-(a.maxHp||100)*.012*dt);
  const zone=f.zone;if(!zone)return;

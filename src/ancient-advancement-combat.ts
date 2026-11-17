@@ -1361,7 +1361,7 @@ export function tickAdvancedStone(a:SkillActor,p:AncientProfile,c:SkillContext,n
  c.fx('mountainguard-shatter',a.x,a.z,7);
 }
 
-type LegionMinion={x:number;z:number;until:number;next:number;scale:number;slot:number;count?:number;hp?:number;unitHp?:number;revived?:number;revivalHp?:number;revivalUnitHp?:number};
+type LegionMinion={x:number;z:number;until:number;next:number;scale:number;slot:number;count?:number;hp?:number;unitHp?:number;revived?:number;revivalHp?:number;revivalUnitHp?:number;merged?:number};
 export type SummonAdvancementRuntime={
  map:string;
  reserve:number[];
@@ -1467,8 +1467,17 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    state.consumeUntil=now+12000;
    c.fx('necromancer-consume',a.x,a.z,5);
   }else{
-   state.field=field();
-   c.fx('necromancer-domain',a.x,a.z,state.field.radius);
+   const living=state.legion.filter(pet=>pet.until>now&&pet.hp!==0);
+   const count=living.reduce((total,pet)=>total+(pet.count??1),0);
+   if(count<3)return '至少需要3只在场骷髅 / At least 3 active skeletons required';
+   const defaultHp=Math.max(1,Math.floor((a.maxHp||100)*.1));
+   const health=living.reduce((total,pet)=>total+(pet.unitHp??defaultHp)*(pet.count??1),0)*1.25;
+   const power=living.reduce((total,pet)=>total+pet.scale,0)*.9;
+   const merged=living.reduce((total,pet)=>total+(pet.merged??pet.count??1),0);
+   const slot=1+living.reduce((highest,pet)=>Math.max(highest,pet.slot),0);
+   state.legion=[{x:a.x,z:a.z,count:1,unitHp:health,hp:health,scale:power,merged,until:now+38000,next:now+750,slot}];
+   delete state.field;
+   c.fx('necromancer-fusion',a.x,a.z,Math.min(10,2+Math.log2(merged)));
   }
  }
  const cooldown=route==='beastlord'?{X:32,Q:10,Z:22,C:32}:route==='spiritcaller'?{X:36,Q:22,Z:42,C:55}:{X:.6,Q:10,Z:18,C:32};
@@ -1538,7 +1547,7 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
   const enhanced=!!field&&Math.hypot(pet.x-field.x,pet.z-field.z)<=field.radius;
   if(target&&Math.hypot(target.x-pet.x,target.z-pet.z)<2.7&&pet.next<=now){
    pet.next=now+1100;
-   c.damage(target,ancientSkillDamage(p)*.1*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*pet.scale*bonus*(enhanced?1.2:1),undefined,'unleashLegion');
+   c.damage(target,ancientSkillDamage(p)*.1*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*pet.scale*bonus*(enhanced?1.2:1),undefined,pet.merged?'necropolis':'unleashLegion');
    c.fx('necromancer-strike',target.x,target.z,2,{source:{x:pet.x,y:ancientMapHeight(c.map,pet.x,pet.z)+1,z:pet.z},target:target.id});
   }else legionMove(c,pet,target?.x??a.x,target?.z??a.z,enhanced?6:5,dt);
  }

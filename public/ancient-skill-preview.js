@@ -61,7 +61,7 @@ export function openSkillPreview(job,{en,level=3,skin,gallery=false,advancement}
   if(event?.x>=0)target.scale.setScalar(1.08);
   return;
  }const id=skills.value;
- const necromancerFx={raiseSkeleton:'raise',unleashLegion:'release',consumeSoul:'consume',necropolis:'domain'}[id];
+ const necromancerFx={raiseSkeleton:'raise',unleashLegion:'release',consumeSoul:'consume',necropolis:'fusion'}[id];
  if(necromancerFx){advancedFX.effect({id:'necromancer-'+necromancerFx,x:-2,z:0,radius:5},()=>0);return;}
  const self=['vitality','power','rage','summon','transform','icearmor','haste','nightfall','voiddomain','descent','avatar','rewind','stasis'].includes(id),x=id==='shadowreturn'?-11:id==='haste'||id==='shadowstep'?2:self?-2:2;magic.effect({id,x,z:0,holy,level,radius:fusionRadii[id]||skillRadius(id,level,holy)||2,owner:'preview',source:{x:-2,y:1.45,z:0},target:self?undefined:'preview-0',links:id==='chain'?previewTargets.map(p=>({...p,target:p.id})):undefined},()=>0);target.scale.setScalar(1.08)}
  mode.onchange=()=>{holy=mode.value==='holy';model();cast()};skills.onchange=()=>{description();cast()};play.onclick=cast;let dragging=false,start=0;holder.onpointerdown=e=>{dragging=true;start=e.clientX;holder.setPointerCapture(e.pointerId)};holder.onpointermove=e=>{if(dragging){angle+=(e.clientX-start)*.006;start=e.clientX}};holder.onpointerup=holder.onpointercancel=()=>dragging=false;holder.onwheel=e=>{e.preventDefault();distance=Math.max(12,Math.min(35,distance+e.deltaY*.01))};

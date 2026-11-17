@@ -317,13 +317,13 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  const hits=[],fx=[];
  const context={map:'tribe',monsters:[monster],damage(target,amount,source,id){hits.push(id);return amount;},fx(id){fx.push(id);}};
  const aim=[0,-.09,Math.sqrt(1-.09**2)],now=100000;
- for(const id of ['raiseSkeleton','unleashLegion','consumeSoul','necropolis'])assert.equal(castAncientSkill(actor,profile,id,aim,context,now),null);
+ for(const id of ['raiseSkeleton','unleashLegion','consumeSoul'])assert.equal(castAncientSkill(actor,profile,id,aim,context,now),null);
  assert.equal(actor.skillRuntime.advancedSummon.legion.length,1);
  assert(recordNecromancerKill(actor,profile,{level:150,kind:'grox'},now));
  assert(!recordNecromancerKill(actor,profile,{level:1,kind:'grox'},now));
  tickAdvancedSummon(actor,profile,context,.2,now+1000);
  assert(hits.includes('unleashLegion'));
- assert.equal(monster.weak,.2);
+ assert.match(castAncientSkill(actor,profile,'necropolis',aim,context,now),/至少需要3只/);
  assert(fx.includes('necromancer-release'));
  const state=actor.skillRuntime.advancedSummon;
  assert.equal(castAncientSkill(actor,profile,'raiseSkeleton',aim,context,now+1000),null);
@@ -334,7 +334,52 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  assert.equal(state.reserveCount,19998);
  assert.equal(state.legion.reduce((n,pet)=>n+pet.count,0),3);
  assert.equal(state.legion.reduce((n,pet)=>n+pet.scale,0),5);
+ assert.equal(castAncientSkill(actor,profile,'necropolis',aim,context,now+10002),null);
+ assert.equal(state.legion.length,1);
+ assert.equal(state.legion[0].merged,3);
+ assert.equal(state.legion[0].hp,375);
+ assert.equal(state.legion[0].scale,4.5);
+ assert.equal(state.reserveCount,19998);
+ assert(fx.includes('necromancer-fusion'));
 
+}
+
+{
+ const now=100000,aim=[0,-.09,Math.sqrt(1-.09**2)];
+ const fixture=(profession,passives)=>{
+  const profile=newAncientProfile();
+  Object.assign(profile,{profession,level:150,fusedJobs:{[profession]:true},fusionPassives:{[profession]:passives}});
+  const actor={name:'fusion-qa',profession,x:0,y:1.7,z:10,hp:500,maxHp:1000,weapon:profile.weapons[0]};
+  const monsters=[{id:'primary',kind:'grox',x:0,z:16,hp:1e12},{id:'secondary',kind:'grox',x:3,z:17,hp:1e12}];
+  const damages=[],effects=[];
+  const context={map:'tribe',monsters,damage(target,amount){damages.push(amount);target.hp-=amount;return amount;},fx(id){effects.push(id);}};
+  return {profile,actor,monsters,damages,effects,cast:(id,at)=>castAncientSkill(actor,profile,id,aim,context,at)};
+ };
+ const passive={level:8,points:0};
+ const element=fixture('elementalist',{0:passive,1:passive});
+ element.actor.skillRuntime={fusion:{map:'tribe',marks:{},energy:0,resonance:8,resonanceAt:now},cooldowns:{},effects:{}};
+ assert.equal(element.cast('judgment',now),null);
+ assert(element.monsters.every(monster=>monster.slow>0&&monster.weak>0&&monster.dots?.length));
+ assert(element.effects.includes('thermal-clash'));
+ assert.equal(element.actor.skillRuntime.fusion.resonance,0);
+
+ const voidsword=fixture('voidsword',{0:passive});
+ const unlit=fixture('voidsword',{});
+ const random=Math.random;
+ try{Math.random=()=>0;assert.equal(voidsword.cast('voidslash',now),null);assert.equal(unlit.cast('voidslash',now),null);}
+ finally{Math.random=random;}
+ assert(voidsword.damages[0]>unlit.damages[0]);
+ assert(!voidsword.actor.skillRuntime.fusion.marks.primary);
+
+ const chrono=fixture('chrono',{0:passive});
+ assert.equal(chrono.cast('rewind',now),null);
+ const cooldowns=chrono.actor.skillRuntime.cooldowns,ends=cooldowns.rewind;
+ Object.assign(cooldowns,{stasis:now+40000,temporalrift:now+5000,'artifact:origin':now+15000});
+ assert.equal(chrono.cast('rewind',now+1000),null);
+ assert.equal(cooldowns.stasis,undefined);
+ assert.equal(cooldowns.temporalrift,undefined);
+ assert.equal(cooldowns.rewind,ends);
+ assert.equal(cooldowns['artifact:origin'],now+15000);
 }
 
 export {advancementCost};

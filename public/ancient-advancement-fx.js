@@ -3,11 +3,12 @@ import * as THREE from './three.module.js';
 import {flyingSwordGeometry,flyingSwordMaterial} from './ancient-flying-sword.js';
 
 const effects={
+ thermal:[0xff7b4d,0xa0eaff,{clash:'shatter'}],
  berserker:[0xf74552,0xffc171,{bolt:'bolt',charge:'trail',impact:'shatter',rebirth:'wings',revival:'halo',sacrifice:'bind'}],
  paladin:[0xffdc82,0xffffff,{judgment:'pillar',purify:'halo',recovery:'wings',sanctuary:'ward'}],
  spiritcaller:[0x80ffe0,0xd3fff3,{ascendant:'wings',domain:'ward',guardian:'portal',rebirth:'halo'}],
  beastlord:[0xc7a46c,0xf6f0b0,{bind:'portal',hunt:'slash',guard:'ward',pounce:'heavy'}],
- necromancer:[0x97fd8b,0xcdb2ff,{consume:'bind',domain:'ward',raise:'spires',release:'portal',strike:'slash'}],
+ necromancer:[0x97fd8b,0xcdb2ff,{fusion:'heavy',consume:'bind',domain:'ward',raise:'spires',release:'portal',strike:'slash'}],
  stormcaller:[0xa1d9ff,0xf1f8ff,{arc:'arc',heavenfall:'storm',prison:'ward',rod:'spires',seal:'pillar'}],
  voltstalker:[0x7658ff,0xb0e8ff,{break:'cross',counter:'arc',dash:'trail',guard:'halo',spike:'bolt'}],
  crystalist:[0x75f1ff,0xd1a6ff,{bolt:'bolt',collapse:'shatter',field:'spires',fracture:'shatter',refraction:'ray'}],
