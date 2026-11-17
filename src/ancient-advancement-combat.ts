@@ -2,7 +2,7 @@
 import {isAncientBoss} from './ancient-boss';
 import {advancementCastKey} from './ancient-advanced-professions';
 import {holyPower} from './ancient-ascension';
-import {FUSION_DAMAGE_MULTIPLIER,masteryLevel} from './ancient-mastery';
+import {FUSION_DAMAGE_MULTIPLIER,masteryLevel,releasableSkeletons} from './ancient-mastery';
 import {advancementRoute} from './ancient-advancement-progress';
 import {ancientSkillDamage, ancientGearStats} from './ancient-gear';
 import {ancientMapHeight, blocked, lineClear, type AncientProfile} from './ancient-rules';
@@ -1447,8 +1447,7 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    const stored=state.reserveCount||0;
    if(!stored)return '没有可释放的骷髅';
    state.legion=state.legion.filter(pet=>pet.until>now&&pet.hp!==0);
-   const deployed=state.legion.reduce((total,pet)=>total+(pet.count??1),0);
-   const count=Math.min(stored,masteryLevel(p,'raiseSkeleton')**2+2-deployed);
+   const count=releasableSkeletons(p,state,now);
    if(count<=0)return '场上骷髅数量已满 / Active skeleton limit reached';
    const storedPower=state.reservePower||stored,power=storedPower*count/stored;
    let slot=1+state.legion.reduce((highest,pet)=>Math.max(highest,pet.slot),-1);

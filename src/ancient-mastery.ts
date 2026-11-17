@@ -11,6 +11,12 @@ const growth: Record<string,number> = {
  temporalrift:.045,chronoshift:.04,rewind:.025,stasis:.022,
 };
 export const masteryLevel=(p:AncientProfile,id:string)=>p.mastery?.[id]?.level||1;
+export function releasableSkeletons(p:AncientProfile,state:{reserve:number[];reserveCount?:number;legion:{until:number;hp?:number;count?:number}[]}|undefined,now=Date.now()){
+ if(!state)return 0;
+ const active=state.legion.reduce((total,pet)=>total+(pet.until>now&&pet.hp!==0?(pet.count??1):0),0);
+ const reserve=(state.reserveCount||0)+state.reserve.length;
+ return Math.max(0,Math.min(reserve,masteryLevel(p,'raiseSkeleton')**2+2-active));
+}
 export const masteryCost=(id:string,level:number)=>Math.ceil((25+level*level*12)*(1+(growth[id]||0)*4));
 export const masteryPower=(p:AncientProfile,id:string)=>1+(growth[id]||0)*Math.min(99,masteryLevel(p,id)-1);
 export function masteryReward(player:number,monster:number,boss:boolean,elite:boolean){
