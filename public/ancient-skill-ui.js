@@ -79,8 +79,9 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   const panel=el('section','',card);
   panel.hidden=!ignitionOpen;
   panel.className='ancientAscensionEntry';
-  const art=el('img','',panel);art.src='world-entry-ancient.webp';art.alt='';
-  art.style.cssText='width:100%;height:96px;object-fit:cover;object-position:center;border-radius:6px';
+  const art=el('div','',panel);art.className='ancientIgnitionArt';art.setAttribute('aria-hidden','true');
+  const progressByStage=p.fusionPassives?.[p.profession]||{};
+  const nextStage=entries.findIndex((_,index)=>!progressByStage[index]?.level);
   const grid=el('div','',panel);grid.className='ancientProfessionList';
   entries.forEach(([zh,eng,detail,detailEn],index)=>{
    const item=el('article','',grid);item.className='weaponCard';
@@ -97,20 +98,29 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    }
    const level=FUSION_PASSIVE_REQUIREMENTS[index];
    el('small',L('所有有等级的技能及此前点亮被动达到 '+level+' 级','All leveled skills and earlier passives must reach level '+level),item);
-   const choice=el('select','',item);
-   choice.setAttribute('aria-label',L('技能卷轴','Skill scroll'));
+   if(index!==nextStage){
+    el('p',L('未解锁 · 请先完成第 '+(index+1)+' 次点亮','Locked · Complete Ignition '+(index+1)+' first'),item);
+    return;
+   }
+   const previous=FUSION_PASSIVE_REQUIREMENTS.slice(0,index).map((_,i)=>({
+    name:entries[i][en()?1:0],rank:progressByStage[i]?.level||0,
+   }));
+   const skills=PROFESSIONS[p.profession].skills.filter(id=>id!=='unleashLegion').map(id=>({
+    name:L(SKILLS[id].name,SKILLS[id].en),
+    rank:p.advancements?.[p.profession]?.skills?.[SKILLS[id].key]?.level??masteryLevel(p,id),
+   }));
+   for(const {name,rank} of [...skills,...previous])if(rank<level)el('small',name+' · '+rank+' / '+level,item);
+   const options=el('div','',item);options.className='ancientIgnitionScrolls';
+   const eligible=ignitionEligible(p,index);
    for(const [id,scroll] of Object.entries(FUSION_SCROLLS)){
     const count=p.materials['supply:'+id]||0;
-    const option=el('option',L(scroll.name,scroll.en)+' · '+Math.round(scroll.odds[index]*100)+'% · ×'+count,choice);
-    option.value=id;option.disabled=!count;
+    const button=btn(L(scroll.name,scroll.en)+' · '+Math.round(scroll.odds[index]*100)+'% · ×'+count,async()=>{
+     if(!window.confirm(L('消耗一张'+scroll.name+'尝试点亮？','Use one '+scroll.en+' to attempt ignition?')))return;
+     for(const option of options.children)option.disabled=true;
+     await action('igniteFusionPassive',{index,scroll:id});
+    },options);
+    button.disabled=!eligible||!count;
    }
-   const ignite=btn(L('使用卷轴点亮','Ignite with scroll'),async()=>{
-    const scroll=choice.value;
-    if(!scroll||!window.confirm(L('本次尝试会消耗一张卷轴。继续？','This attempt consumes one scroll. Continue?')))return;
-    ignite.disabled=true;
-    await action('igniteFusionPassive',{index,scroll});
-   },item);
-   ignite.disabled=!ignitionEligible(p,index)||!Object.keys(FUSION_SCROLLS).some(id=>(p.materials['supply:'+id]||0)>0);
   });
  }
  function renderProfessions(card){

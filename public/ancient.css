@@ -311,3 +311,7 @@ body:has(#menu:not(.active)) #openWorld{display:none}
 .ancientRegion[data-region="puzzle"] {--x:89%;--y:14%;--terrain:#386960;--outline:polygon(83% 12%,85% 5%,94% 4%,98% 11%,97% 20%,91% 24%,88% 23%);}
 .ancientRegion[data-region="tower"] strong,.ancientRegion[data-region="puzzle"] strong {width:13%;font-size:clamp(8px,1.3vw,12px);}
 .ancientRegion[data-region="tower"] small,.ancientRegion[data-region="puzzle"] small {display:none;}
+
+.ancientIgnitionArt{height:clamp(96px,16vw,180px);margin-bottom:14px;border-radius:6px;background:#152635 url("./world-entry-ancient.webp") center 48%/cover no-repeat}
+.ancientIgnitionScrolls{display:grid;gap:7px;margin-top:10px}
+.ancientIgnitionScrolls button{width:100%;text-align:left}
