@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const FUSION_DAMAGE_MULTIPLIER = 1.8;
+const FUSION_DAMAGE_MULTIPLIER = 2.8;
 const growth = {
   prism: 0.045,
   judgment: 0.035,
