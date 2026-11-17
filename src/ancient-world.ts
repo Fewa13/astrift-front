@@ -431,7 +431,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
   }
   if(['trialState','trialStart','trialInput','trialLeave','trialEquip'].includes(action)){
    return this.ctx.storage.transactionSync(()=>{const store=this.trials();let effects:unknown[]=[];let error:string|null|undefined;
-    if(action==='trialStart'){const dungeon=this.dungeons().get(name);if(dungeon&&['preparing','active'].includes(dungeon.status))return fail('Finish or leave your dungeon first.');error=store.start(name,p,String(data.tier||''));}
+    if(action==='trialStart'){error=store.start(name,p,String(data.tier||''),Date.now(),true);if(!error)this.dungeons().reset(name);}
     if(action==='trialInput'){const result=store.input(name,data);error=result.error;effects=result.effects||[];}
     if(action==='trialLeave')store.leave(name);
     if(action==='trialEquip'){const badge=String(data.badge||''),[job,tier]=badge.split(':');if(badge&&!store.mastery(name).some(m=>m.job===job&&m.tier===tier&&badge===job+':'+tier))return fail('Complete this trial to unlock its badge.');p.trialBadge=badge;}
@@ -473,11 +473,12 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
    if(action!=='friendState'&&action!=='friendMessages'&&action!=='friendRead')for(const ws of this.connections())if(affected.has((ws.deserializeAttachment() as Player).name))this.send(ws,{type:'friendChanged'});
    return {ok:true,...result,friendState:this.friends().state(name)};
   }
+  if(action==='resetDungeon')return this.ctx.storage.transactionSync(()=>{this.dungeons().reset(name);this.trials().leave(name);return {ok:true,profile:p};});
   if(action==='leaveWorld'){if(typeof data.connectionId!=='string'||!data.connectionId)return fail('连接标识无效');await this.disconnect(name,data.connectionId);return {ok:true,profile:p}}
   if(action==='onlinePlayers'){const peers=this.ctx.getWebSockets().map(ws=>ws.deserializeAttachment() as Player|null).filter((a):a is Player=>!!a&&Date.now()-a.seen<=15000),self=peers.find(a=>a.name===name);return {ok:true,profile:p,players:self?peers.filter(a=>(a.map||'tribe')===(self.map||'tribe')).map(a=>({name:a.name,level:this.read(a.name).level})).sort((a,b)=>b.level-a.level||a.name.localeCompare(b.name)):[]};}
   if(action==='ascensionStart'||action==='ascensionFinalStart'){
    const final=action==='ascensionFinalStart';let error:string|null=null;
-   this.ctx.storage.transactionSync(()=>{const fresh=this.read(name),existing=this.dungeons().get(name);if(existing?.status==='active'&&existing.ascensionJob===fresh.profession&&existing.tier===(final?'ascensionFinal':'ascensionTrial'))return;error=ascensionStartError(fresh,final);if(error)return;error=this.dungeons().createAscension(name,fresh.profession!,final);if(error)return;if(!final)consumeAscensionAttempt(fresh);this.save(name,fresh)});
+   this.ctx.storage.transactionSync(()=>{const fresh=this.read(name),existing=this.dungeons().get(name);if(existing?.status==='active'&&existing.ascensionJob===fresh.profession&&existing.tier===(final?'ascensionFinal':'ascensionTrial'))return;error=ascensionStartError(fresh,final);if(error)return;error=this.dungeons().createAscension(name,fresh.profession!,final);if(error)return;this.trials().leave(name);if(!final)consumeAscensionAttempt(fresh);this.save(name,fresh)});
    if(error)return fail(error);return {ok:true,profile:this.read(name),dungeonState:this.dungeons().state(name)};
   }
   if(action==='huntCreate'){
@@ -495,7 +496,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
    for(const ws of this.ctx.getWebSockets())if((ws.deserializeAttachment() as Player|null)?.name===name){const a=ws.deserializeAttachment() as Player;if(a.skillRuntime)delete a.skillRuntime.relic;ws.serializeAttachment(a);this.persistAbilities(a);this.send(ws,{type:'profile',profile:this.read(name)});}
    return {ok:true,profile:this.read(name)};
   }
-  if(action==='towerStart'){const error=this.ctx.storage.transactionSync(()=>this.dungeons().createTower(name));if(error)return fail(error);return {ok:true,profile:this.read(name),dungeonState:this.dungeons().state(name)}}
+  if(action==='towerStart'){const error=this.ctx.storage.transactionSync(()=>{const error=this.dungeons().createTower(name);if(!error)this.trials().leave(name);return error;});if(error)return fail(error);return {ok:true,profile:this.read(name),dungeonState:this.dungeons().state(name)}}
   if(action==='towerBook')return this.ctx.storage.transactionSync(()=>{const fresh=this.read(name),id=String(data.id||'');if(!fresh.tower||fresh.tower.books<1||!hasSkillBook(id))return fail('No selectable skill book available');fresh.tower.books--;const key='skillbook:'+id;fresh.materials[key]=(fresh.materials[key]||0)+1;this.save(name,fresh);return {ok:true,profile:fresh}});
   if(action.startsWith('dungeon')){this.parties().touch(name);const error=this.ctx.storage.transactionSync(()=>this.dungeons().command(name,action,data));if(error)return fail(error);if(action!=='dungeonState')for(const ws of this.ctx.getWebSockets())this.send(ws,{type:'dungeonChanged'});return {ok:true,profile:p,dungeonState:this.dungeons().state(name)}}
   if(action.startsWith('trade')){this.parties().touch(name);const trade=this.trades();const error=this.ctx.storage.transactionSync(()=>trade.command(name,action,data));if(error)return fail(error);if(action==='tradeConfirm')for(const peer of this.connections()){const a=peer.deserializeAttachment() as Player;if(a.jadeDisplay&&!this.read(a.name).collections?.some(i=>i.id===a.jadeDisplay!.id))this.cancelJadeDisplay(a.name);}if(action!=='tradeState')for(const peer of this.ctx.getWebSockets()){const player=peer.deserializeAttachment() as Player|null;if(player)this.send(peer,{type:'tradeChanged'})}return {ok:true,profile:this.read(name),tradeState:trade.state(name)}}
@@ -531,7 +532,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
      const actor=this.ctx.getWebSockets().map(ws=>ws.deserializeAttachment() as Player|null).find(player=>player?.name===name&&player.map==='starfall'&&player.hp>0);
      if(!clue||!actor||Math.hypot(actor.x-clue.x,actor.z-clue.z)>6)return fail('Return to the hidden relic in the Sunken Star Ruins to open the rift.');
     }
-    const error=this.ctx.storage.transactionSync(()=>this.dungeons().createArtifactTrial(name,id,p.artifacts?.[id]?.stage||0,ARTIFACTS[id].level,ARTIFACT_ROUTES[id].minutes));
+    const error=this.ctx.storage.transactionSync(()=>{const error=this.dungeons().createArtifactTrial(name,id,p.artifacts?.[id]?.stage||0,ARTIFACTS[id].level,ARTIFACT_ROUTES[id].minutes);if(!error)this.trials().leave(name);return error;});
     if(error)return fail(error);
     return {ok:true,profile:p,dungeonState:this.dungeons().state(name)};
    }

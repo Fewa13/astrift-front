@@ -13,10 +13,10 @@ export class AncientProfessionTrials{
  read(name:string):Trial|undefined{const row=this.sql.exec<{data:string}>('SELECT data FROM ancient_profession_trials WHERE name=?',name).toArray()[0];return row?JSON.parse(row.data):undefined;}
  save(name:string,r:Trial){this.sql.exec('INSERT INTO ancient_profession_trials VALUES(?,?) ON CONFLICT(name) DO UPDATE SET data=excluded.data',name,JSON.stringify(r));}
  mastery(name:string){return this.sql.exec<{job:string;tier:string;best:number}>('SELECT job,tier,best FROM ancient_trial_mastery WHERE name=?',name).toArray();}
- start(name:string,p:AncientProfile,tierId:string,now=Date.now()){
+ start(name:string,p:AncientProfile,tierId:string,now=Date.now(),replace=false){
   const tier=TRIAL_TIERS.find(t=>t.id===tierId),job=p.profession||'';if(!tier||!Object.hasOwn(TRIAL_LESSONS,job))return 'Choose a profession first.';
   if(p.level<tier.level)return 'Player level too low.';if(tierId==='holy'&&!isHoly(p))return 'Ascend this profession first.';
-  const previous=this.read(name);if(previous?.status==='active'&&previous.ends>now)return 'Finish or leave the current trial first.';
+  const previous=this.read(name);if(!replace&&previous?.status==='active'&&previous.ends>now)return 'Finish or leave the current trial first.';
   const profile=newAncientProfile();profile.level=30;profile.profession=job;profile.gear=[];profile.gearEquipped={};profile.materials={};profile.skills=Object.fromEntries(PROFESSIONS[job].skills.map(id=>[id,3]));if(tierId==='holy')profile.ascension={day:'',attempts:0,jobs:{[job]:{permit:true,step:3,count:0,holy:true}}};
   const hp=ancientProfileHealth(profile),actor:SkillActor={name,x:0,y:1.7,z:9,hp,maxHp:hp,weapon:profile.weapons[0],profession:job,holy:tierId==='holy',skills:profile.skills};
   const multiplier=tierId==='holy'?2.5:tierId==='advanced'?1.35:1,count=job==='summoner'?(tierId==='normal'?2:3):tierId==='normal'?3:4;

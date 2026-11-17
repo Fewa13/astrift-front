@@ -12,11 +12,24 @@ export class AncientDungeonStore{
  read(id:number){const row=this.sql.exec<{data:string}>('SELECT data FROM ancient_dungeon_runs WHERE id=?',id).toArray()[0];if(!row)return;const r=JSON.parse(row.data) as DungeonRun;if((r.status==='active'||r.status==='preparing')&&r.expires<Date.now()){r.status='failed';r.reason='expired';if(r.hunt)r.traps=[];r.finished=Date.now();this.save(r)}return r}
  get(name:string){const row=this.sql.exec<{run:number}>('SELECT run FROM ancient_dungeon_members WHERE name=?',name).toArray()[0];return row?this.read(row.run):undefined}
  save(r:DungeonRun){r.revision=(r.revision||0)+1;this.sql.exec('UPDATE ancient_dungeon_runs SET data=? WHERE id=?',JSON.stringify(r),r.id)}
+ reset(name:string){
+  const run=this.get(name);
+  if(!run)return;
+  if(run.status==='active')this.command(name,'dungeonAbandon',{});
+  if(run.status==='preparing'){
+   run.members=run.members.filter(member=>member!==name);
+   run.ready=run.ready.filter(member=>member!==name);
+   if(!run.members.length){run.status='failed';run.reason='cancelled';run.finished=Date.now();}
+   else if(run.leader===name)run.leader=run.members[0];
+   this.save(run);
+  }
+  this.sql.exec('DELETE FROM ancient_dungeon_members WHERE name=? AND run=?',name,run.id);
+ }
  createTower(name:string){
   if((this.profile(name).tower?.best||0)>=100)return "试炼之塔已登顶 / Trial Tower already completed";
   const old=this.get(name);if(old?.tower&&old.status==='active'&&!old.fallen.includes(name)&&!old.abandoned?.includes(name))return null;
-  if(old&&['active','preparing'].includes(old.status))return 'Finish or abandon the current challenge first.';
   if(!this.alive(name))return 'Revive in camp before starting.';
+  this.reset(name);
   const now=Date.now(),id=this.sql.exec<{id:number}>("INSERT INTO ancient_dungeon_runs(data) VALUES('{}') RETURNING id").one().id;
   const r:DungeonRun={id,map:'dungeon:'+id,leader:name,members:[name],ready:[name],tier:'tower',level:5,stage:0,tower:{floor:1},gateZ:55,status:'active',created:now,expires:Number.MAX_SAFE_INTEGER,started:now,joined:[],fallen:[],positions:{},seed:0,traps:[],trapAt:0,collapsed:[]};this.save(r);this.sql.exec('INSERT INTO ancient_dungeon_members VALUES(?,?) ON CONFLICT(name) DO UPDATE SET run=excluded.run',name,id);return null;
  }
@@ -33,8 +46,8 @@ export class AncientDungeonStore{
   this.save(r);for(const n of members)this.sql.exec('INSERT INTO ancient_dungeon_members VALUES(?,?) ON CONFLICT(name) DO UPDATE SET run=excluded.run',n,id);return null;
  }
  createAscension(name:string,job:string,final=false){
-  const previous=this.get(name);if(previous&&(previous.status==='active'||previous.status==='preparing'))return 'You already have an active trial or dungeon.';
   if(!this.alive(name))return 'Revive in camp before starting.';
+  this.reset(name);
   const now=Date.now(),id=this.sql.exec<{id:number}>("INSERT INTO ancient_dungeon_runs(data) VALUES('{}') RETURNING id").one().id;
   const r:DungeonRun={id,map:'dungeon:'+id,leader:name,members:[name],ready:[name],tier:final?'ascensionFinal':'ascensionTrial',ascensionJob:job,level:80,stage:0,gateZ:62,status:'active',created:now,expires:now+35*60000,started:now,joined:[],fallen:[],positions:{},seed:Math.floor(Math.random()*0xffffffff),traps:[],trapAt:0,collapsed:[]};this.save(r);this.sql.exec('INSERT INTO ancient_dungeon_members VALUES(?,?) ON CONFLICT(name) DO UPDATE SET run=excluded.run',name,id);return null;
  }
