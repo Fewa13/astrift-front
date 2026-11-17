@@ -183,5 +183,34 @@ const replay=authoritative.messages.slice(replayStart[0]);
 assert.deepEqual(rejoined.messages.slice(replayStart[1]),replay);
 assert.deepEqual(replay.map(({id,x,z,radius})=>({id,x,z,radius})),
  castVisuals.map(({id,x,z,radius})=>({id,x,z,radius})));
+// Authority owns the roll, consumes the exact scroll, and guards later tiers.
+const ignition=server.read('friend');
+for(const id of ['raiseSkeleton','consumeSoul','necropolis'])ignition.mastery[id]={level:12,points:0};
+ignition.materials['supply:ignitionAdvanced']=2;
+server.save('friend',ignition);
+assert.equal((await server.command('friend','igniteFusionPassive',{index:1,scroll:'ignitionAdvanced'})).ok,false);
+assert.equal((await server.command('friend','igniteFusionPassive',{index:0,scroll:'ignitionAdvanced'})).ignited,true);
+assert.equal(server.read('friend').materials['supply:ignitionAdvanced'],1);
+assert.equal((await server.command('friend','igniteFusionPassive',{index:0,scroll:'ignitionAdvanced'})).ok,false);
+assert.equal(server.read('friend').materials['supply:ignitionAdvanced'],1);
+const passiveProfile=server.read('friend');
+passiveProfile.fusionPassives.necromancer={0:{level:12,points:0},1:{level:2,points:0},2:{level:1,points:0}};
+server.save('friend',passiveProfile);
+const actor=rejoined.deserializeAttachment(),now=Date.now();
+actor.hp=actor.maxHp=1000;
+const squad={count:1,unitHp:100,hp:100,scale:1,x:0,z:50,until:now+10000,next:0,slot:0};
+actor.skillRuntime.advancedSummon.legion=[squad];
+server.applyMapDamage(actor,1000,{type:'environment'},now);
+assert.equal(actor.hp,600,'damage is halved, and the skeleton absorbs up to its remaining HP');
+assert.equal(squad.hp,35,'a skeleton revives once with 35% HP');
+server.hurtSkeletonSquad(actor,squad,35,now+1);
+assert.equal(squad.hp,0,'an already-revived skeleton cannot revive again');
+server.applyMapDamage(actor,5000,{type:'environment'},now+2);
+assert.equal(actor.hp,350);
+assert.equal(actor.skillRuntime.cooldowns.necromancerDeathless,now+60002);
+const during={count:1,unitHp:100,hp:100,scale:1,x:0,z:50,until:now+10000,next:0,slot:1};
+server.hurtSkeletonSquad(actor,during,100,now+3);
+assert.equal(during.hp,0,'player revival cooldown disables skeleton revival');
+
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');

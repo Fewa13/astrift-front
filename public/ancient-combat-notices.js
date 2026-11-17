@@ -1,3 +1,4 @@
+import {FUSION_PASSIVES} from './ancient-fusion-passives.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {formatAncientNumber} from './ancient-number-format.js';
 import {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS} from './ancient-advanced-professions.js';
@@ -12,6 +13,11 @@ export function createCombatNotices(root=document.body){
  function mastery(ids,profile,en){
   const profession=profile?.profession;
   for(const id of ids){
+   if(id.startsWith('fusion-passive:')){
+    const index=Number(id.slice(15)),name=FUSION_PASSIVES[profession]?.[index]?.[en?1:0],level=profile?.fusionPassives?.[profession]?.[index]?.level;
+    if(name&&level)push((en?'Passive mastery increased':'被动精通升级')+' · '+name+' · '+level,4200,{mastery:true});
+    continue;
+   }
    const match=/^advancement:([a-z-]+):([XQZC])$/.exec(id);
    const route=match&&ADVANCED_PROFESSIONS[profession]?.find(item=>item.id===match[1]);
    const names=route&&route.skills[ADVANCEMENT_KEYS.indexOf(match[2])];

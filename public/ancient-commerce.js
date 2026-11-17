@@ -1,5 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import { PROFESSION_FUSIONS, isFusionJob } from "./ancient-skills.js";
+import { FUSION_SCROLLS } from "./ancient-fusion-passives.js";
 import { PROFESSIONS, SKILLS, hasSkillBook, skillBook, ensureBasicSkills } from "./ancient-skills.js";
 const ANCIENT_SUPPLIES = {
   purity: { name: "\u51C0\u5316\u5370\u8BB0", en: "Purification Sigil", price: 0, kind: "cleanse" },
@@ -8,6 +9,7 @@ const ANCIENT_SUPPLIES = {
   defense: { name: "\u53CC\u500D\u9632\u5FA1\u836F\u6C34", en: "Double Defense Potion", price: 200, kind: "boost", duration: 6e5 },
   experience: { name: "\u7ECF\u9A8C\u836F\u6C34", en: "XP Potion", price: 300, kind: "boost", duration: 6e5 }
 };
+for (const [id, scroll] of Object.entries(FUSION_SCROLLS)) ANCIENT_SUPPLIES[id] = { ...scroll, kind: "scroll" };
 for (const [id, j] of Object.entries(PROFESSIONS)) if (!isFusionJob(id)) ANCIENT_SUPPLIES["book:" + id] = { name: j.name + "\u6280\u80FD\u4E66", en: j.en + " Skill Book", price: 300, kind: "book", job: id };
 function supplyKey(id) {
   return "supply:" + id;
@@ -17,6 +19,7 @@ function supplyDescription(id, en = false) {
   if (!d) return "";
   if (d.kind === "cleanse") return en ? "Consumed to remove corruption. Does not heal or prevent future corruption. Craft after the Sanctum story: 1 Verdict Crystal + 30 Phase Cores." : "\u6D88\u8017\u4E00\u679A\u89E3\u9664\u9B54\u5316\uFF1B\u4E0D\u56DE\u8840\uFF0C\u4E0D\u9632\u6B62\u518D\u6B21\u9B54\u5316\u3002\u5B8C\u6210\u5723\u57DF\u4E3B\u7EBF\u540E\uFF0C\u75281\u4E2A\u88C1\u51B3\u6676\u6838\u548C30\u4E2A\u76F8\u4F4D\u6838\u5FC3\u5236\u4F5C\u3002";
   if (d.kind === "transfer") return en ? "Consumed when choosing or changing profession. Trained skill levels are retained." : "\u9009\u62E9\u6216\u5207\u6362\u804C\u4E1A\u65F6\u6D88\u8017\u4E00\u672C\uFF0C\u5DF2\u4FEE\u70BC\u6280\u80FD\u7B49\u7EA7\u4FDD\u7559\u3002";
+  if (d.kind === "scroll") return en ? "Used to ignite a fusion passive." : "\u7528\u4E8E\u70B9\u4EAE\u878D\u5408\u804C\u4E1A\u88AB\u52A8\u6280\u80FD\u3002";
   if (d.kind === "book") return en ? "Use to receive one random skill book for this profession." : "\u4F7F\u7528\u540E\u968F\u673A\u83B7\u5F97\u4E00\u672C\u8BE5\u804C\u4E1A\u7684\u5177\u4F53\u6280\u80FD\u4E66\u3002";
   return (en ? { damage: "All damage \xD72", defense: "Incoming damage \xD70.5", experience: "XP +50%" } : { damage: "\u6240\u6709\u4F24\u5BB3 \xD72", defense: "\u53D7\u5230\u4F24\u5BB3 \xD70.5", experience: "\u7ECF\u9A8C +50%" })[id] + " \xB7 " + (en ? "10 minutes; expires while offline; does not stack." : "10\u5206\u949F\uFF1B\u79BB\u7EBF\u4ECD\u8BA1\u65F6\uFF1B\u540C\u7C7B\u4E0D\u53E0\u52A0\u3002");
 }
@@ -57,6 +60,7 @@ function ancientSkillBooksRemaining(p, id, now = Date.now()) {
 function useAncientSupply(p, id, now = Date.now(), random = Math.random) {
   const d = Object.hasOwn(ANCIENT_SUPPLIES, id) ? ANCIENT_SUPPLIES[id] : void 0, key = supplyKey(id);
   if (!d || (p.materials[key] || 0) < 1) return "\u7269\u54C1\u4E0D\u8DB3";
+  if (d.kind === "scroll") return "\u8BF7\u5728\u804C\u4E1A\u9875\u9762\u70B9\u4EAE\u88AB\u52A8\u6280\u80FD";
   if (d.kind === "transfer") return "\u8BF7\u5728\u804C\u4E1A\u9875\u9762\u9009\u62E9\u804C\u4E1A";
   if (d.kind === "cleanse") {
     if (!p.purificationUnlocked) return "\u5C1A\u672A\u5B66\u4F1A\u51C0\u5316";

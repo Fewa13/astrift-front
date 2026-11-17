@@ -1,3 +1,5 @@
+import {igniteFusionPassive,passiveLevel,trainFusionPassive} from './ancient-fusion-passives';
+import {masteryLevel} from './ancient-mastery';
 import {advancementCastKey} from './ancient-advanced-professions';
 import {advancementRoute,awardAdvancementMastery,chooseAdvancement} from './ancient-advancement-progress';
 import {ADVANCEMENT_COMBAT_ROUTES,consumeBloodRebirth,queueVoltCounter,winterProjectileBlocked,recordPactHit,recordPactDamage,hexTetherTargets,queueLineCounter,noteLineOpening,absorbStoneArmor,stoneWallsBlock,recordNecromancerKill,riftDuelModifiers,queueRiftRiposte,recordAdvancedAbyssHit,noteAdvancedTimeDamage,reconcileAdvancementRuntime} from './ancient-advancement-combat';
@@ -79,7 +81,7 @@ import {tickAncientBoss,bossAreaHit,isAncientBoss,type BossCast} from './ancient
 import {selectSkillTarget,clearPendingSkillDamage} from './ancient-skill-combat';
 import {advanceQuest,currentQuest,questCanTalk,mapSecret,questState} from './ancient-quests';
 import {mapObjects,canUseMapObject,grantMapObject} from './ancient-interactables';
-import {PROFESSIONS,SKILLS,ensureBasicSkills,trainSkill,hasSkillBook,skillDrops,runtime,activeSkill,skillHealth,skillIncoming,skillDamageMultiplier,skillSpeedMultiplier,skillFireMultiplier,type SkillRuntime} from './ancient-skills';
+import {PROFESSIONS,SKILLS,ensureBasicSkills,trainSkill,isFusionJob,hasSkillBook,skillDrops,runtime,activeSkill,skillHealth,skillIncoming,skillDamageMultiplier,skillSpeedMultiplier,skillFireMultiplier,type SkillRuntime} from './ancient-skills';
 import {castAncientSkill,ancientAuxShot,tickAncientSkills,monsterIncoming,monsterOutgoing,monsterSpeed,skillAreaHits,type SkillMonster} from './ancient-skill-combat';
 import {spawnHunt,tickBeaconRaider} from './ancient-hunt-combat';
 import {nemesisGearQuality,huntDefinition,huntTokens,RELICS,RELIC_COST,HUNT_SLOTS} from './ancient-hunts';
@@ -632,6 +634,14 @@ const key=String(data.key||'meal:grilled'),food=Object.hasOwn(LEISURE_FOODS,key)
   }
   else if(action==='gearGoal'){const key=String(data.key||'');if(key&&!Object.hasOwn(ANCIENT_FORGE,key))return fail('配方不存在');p.gearGoal=key;this.save(name,p)}
   else if(action==='salvageGear'){const id=String(data.id||'');const deal=this.trades().state(name).deal;if(deal?.offers[name]?.items.some(i=>i.type==='gear'&&i.id===id))return fail('请先从交易中移除此装备');const error=salvageAncientGear(p,id);if(error)return fail(error);this.save(name,p)}
+  else if(action==='igniteFusionPassive'){
+   return this.ctx.storage.transactionSync(()=>{
+    const fresh=this.read(name),result=igniteFusionPassive(fresh,Number(data.index),String(data.scroll||''));
+    if(result.error)return fail(result.error);
+    this.save(name,fresh);
+    return {ok:true,profile:fresh,ignited:result.ignited};
+   });
+  }
   else if(action==='chooseAdvancement'){
    const route=String(data.route||'');
    if(!ADVANCEMENT_COMBAT_ROUTES.includes(route))return fail('该升华路线尚不可用 / This advancement is unavailable');
@@ -777,6 +787,10 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
    const rewind=advancedRewind?a.skillRuntime?.advancedTime?.rewind:a.skillRuntime?.fusion?.rewind;
    const rewindReady=rewind!==undefined&&rewind.until>now;
    error=castAncientSkill(a,p,skill,d.direction,c,now);
+   if(!error&&p.profession==='chrono'&&passiveLevel(p,1)&&
+    (skill==='chronoshift'||skill==='rewind'||slot==='Q'||slot==='Z')){
+    runtime(a).effects.temporalBuffer={until:now+4000,level:1};
+   }
    if(!error&&skill==='raiseSkeleton'&&!communityId(map)){
     const upgraded=awardMastery(p,skill,3);
     this.save(a.name,p);
@@ -820,7 +834,24 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
   // Retain accepted hits through slow ticks, but never accumulate abandoned casts.
   const casters=new Set(pairs.map(v=>v.p.name));
   for(const m of world.monsters){if(m.strikes)m.strikes=m.strikes.filter(v=>casters.has(v.owner));if(m.dots)m.dots=m.dots.filter(v=>casters.has(v.owner));}
-  for(const {ws,p:a}of pairs){if(a.puzzleTitle&&a.puzzleTitle.expires<=now){const profile=this.read(a.name);this.syncQuestHealth(a,profile);this.send(ws,{type:'profile',profile});}if(a.leisure){const n=LEISURE_NODES.find(n=>n.id===a.leisure!.node);if(activeSkill(a,'transform',now)||activeBossForm(a,now)||(a.skillRuntime?.mode||1)!==1||!n||a.leisure.expires<=now||!leisureNear(a,n,(...v)=>lineClear(...v,map)))delete a.leisure;}const p=this.read(a.name);if(optics?.opened&&currentQuest(p)?.kind==='mirrors'){const completed=advanceQuest(p,{kind:'mirrors',map});this.save(a.name,p);this.send(ws,{type:'questUpdate',profile:p,completed})}this.syncQuestHealth(a,p);if(!dungeon||dungeon.status==='active'&&!dungeon.fallen.includes(a.name))tickAncientSkills(a,p,this.skillContext(ws,a,world.monsters,map,pairs),dt,now)}
+  for(const {ws,p:a}of pairs){if(a.puzzleTitle&&a.puzzleTitle.expires<=now){const profile=this.read(a.name);this.syncQuestHealth(a,profile);this.send(ws,{type:'profile',profile});}if(a.leisure){const n=LEISURE_NODES.find(n=>n.id===a.leisure!.node);if(activeSkill(a,'transform',now)||activeBossForm(a,now)||(a.skillRuntime?.mode||1)!==1||!n||a.leisure.expires<=now||!leisureNear(a,n,(...v)=>lineClear(...v,map)))delete a.leisure;}const p=this.read(a.name);if(optics?.opened&&currentQuest(p)?.kind==='mirrors'){const completed=advanceQuest(p,{kind:'mirrors',map});this.save(a.name,p);this.send(ws,{type:'questUpdate',profile:p,completed})}this.syncQuestHealth(a,p);if(!dungeon||dungeon.status==='active'&&!dungeon.fallen.includes(a.name)){
+   tickAncientSkills(a,p,this.skillContext(ws,a,world.monsters,map,pairs),dt,now);
+   if(p.profession==='necromancer'&&a.hp>0&&!communityId(map)&&passiveLevel(p,0)){
+    const r=runtime(a),state=r.advancedSummon??={map,reserve:[],legion:[]};
+    const level=masteryLevel(p,'raiseSkeleton'),interval=Math.max(500,5000/(1+(passiveLevel(p,0)-1)*.13));
+    if(state.map===map){
+     state.autoRaiseAt??=now+interval;
+     if(now>=state.autoRaiseAt){
+      state.autoRaiseAt=now+interval;
+      if((state.reserveCount||0)+state.reserve.length<level**2){
+       state.reserveCount=(state.reserveCount||0)+1;
+       state.reservePower=(state.reservePower||0)+1+(level-1)*.055;
+       this.creditFusionPassive(a,p,0,1);
+      }
+     }
+    }
+   }
+  }}
   for(const {p}of pairs)if(p.hp<=0)clearPendingSkillDamage(p.name,[...world.monsters,...pairs.map(v=>v.p.pvpEffects).filter((v):v is Partial<SkillMonster>=>!!v)]);
   const summonBodies=pairs.flatMap(({p})=>{
    if(p.hp<=0)return [];
@@ -851,12 +882,9 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
      if(squad.until<=now||squad.hp===0)continue;
      const count=squad.count??1;
      const unitHp=squad.unitHp??=Math.max(1,Math.floor((owner.maxHp||100)*.1));
-     targets.push(create('@skeleton:'+owner.name+':'+squad.slot,squad.x,squad.z,squad.hp??unitHp*count,unitHp*count,hp=>{
-      squad.hp=hp;
-      const remaining=Math.min(count,Math.ceil(hp/unitHp));
-      squad.count=remaining;
-      squad.scale*=remaining/count;
-      if(!remaining)squad.until=now;
+     const before=squad.hp??unitHp*count;
+     targets.push(create('@skeleton:'+owner.name+':'+squad.slot,squad.x,squad.z,before,unitHp*count,hp=>{
+      if(hp<before)this.hurtSkeletonSquad(owner,squad,before-hp,now);
      }));
     }
    }
@@ -900,8 +928,77 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
  private artifactFx(a:Player,id:ArtifactId,x=a.x,z=a.z){
   for(const peer of this.ctx.getWebSockets())if((peer.deserializeAttachment() as Player|null)?.map===a.map)this.send(peer,{type:'artifactFx',id:'artifact-'+id,x,z,radius:3,owner:a.name});
  }
+ private creditFusionPassive(a:Player,p:AncientProfile,index:number,points:number){
+  if(!passiveLevel(p,index)||communityId(a.map))return;
+  const upgraded=trainFusionPassive(p,index,points);
+  this.save(a.name,p);
+  const peer=this.connections().find(ws=>(ws.deserializeAttachment() as Player|null)?.name===a.name);
+  if(peer){this.send(peer,{type:'profile',profile:p});if(upgraded)this.send(peer,{type:'skillMastery',id:'fusion-passive:'+index});}
+ }
+ private hurtSkeletonSquad(a:Player,squad:NonNullable<SkillRuntime['advancedSummon']>['legion'][number],damage:number,now:number,p?:AncientProfile){
+  if(!(damage>0)||squad.until<=now)return 0;
+  const before=squad.count??1,unit=squad.unitHp??=Math.max(1,Math.floor((a.maxHp||100)*.1));
+  const hp=squad.hp??before*unit,absorbed=Math.min(hp,damage);
+  const retired=squad.revived||0,revivalHp=squad.revivalHp||0,freshHp=Math.max(0,hp-revivalHp);
+  const freshAfter=Math.max(0,freshHp-absorbed);
+  let revivalAfter=Math.max(0,revivalHp-Math.max(0,absorbed-freshHp));
+  const freshCount=Math.min(before-retired,Math.ceil(freshAfter/unit));
+  const reviveUnit=squad.revivalUnitHp??unit;
+  let revivedCount=Math.min(retired,Math.ceil(revivalAfter/reviveUnit));
+  const fallen=before-freshCount-revivedCount;
+  if(!fallen){squad.hp=freshAfter+revivalAfter;squad.revivalHp=revivalAfter;return absorbed;}
+  p??=this.read(a.name);
+  const level=passiveLevel(p,2);
+  if(level&&(a.skillRuntime?.cooldowns.necromancerDeathless||0)<=now){
+   const reviveCount=before-retired-freshCount;
+   const added=reviveCount*unit*Math.min(.85,.35+(level-1)*.005);
+   revivalAfter+=added;
+   revivedCount+=reviveCount;
+   if(revivedCount)squad.revivalUnitHp=((revivedCount-reviveCount)*reviveUnit+added)/revivedCount;
+  }
+  squad.revived=revivedCount;
+  squad.revivalHp=revivalAfter;
+  squad.count=freshCount+revivedCount;
+  squad.hp=freshAfter+revivalAfter;
+  squad.scale*=squad.count/before;
+  if(!squad.count)squad.until=now;
+  this.creditFusionPassive(a,p,2,fallen);
+  return absorbed;
+ }
  private applyMapDamage(target:Parameters<typeof applyAncientDamage>[0],amount:number,cause:Parameters<typeof applyAncientDamage>[2],now=Date.now()){const a=target as Player,before=a.hp;
  if(a.name?.startsWith('@pet:')||a.name?.startsWith('@skeleton:'))return applyAncientDamage(target,amount,cause,now);
+ if(a.profession&&isFusionJob(a.profession)&&before>0&&amount>0&&Number.isFinite(amount)){
+  const p=this.read(a.name),level=passiveLevel(p,1);
+  if(a.profession==='necromancer'){
+   if(level){
+    amount/=level;
+    const squads=(a.skillRuntime?.advancedSummon?.legion||[]).filter(squad=>squad.until>now&&squad.hp!==0)
+     .map(squad=>({squad,capacity:squad.hp??(squad.count??1)*(squad.unitHp??Math.max(1,Math.floor((a.maxHp||100)*.1)))}))
+     .sort((left,right)=>left.capacity-right.capacity);
+    let remaining=amount*.8;
+    for(const [index,{squad}] of squads.entries()){
+     const absorbed=this.hurtSkeletonSquad(a,squad,remaining/(squads.length-index),now,p);
+     remaining-=absorbed;amount-=absorbed;
+    }
+    this.creditFusionPassive(a,p,1,1);
+   }
+   const deathless=passiveLevel(p,2);
+   if(deathless&&amount>=before&&(a.skillRuntime?.cooldowns.necromancerDeathless||0)<=now){
+    runtime(a).cooldowns.necromancerDeathless=now+Math.max(20,60-(deathless-1)*.35)*1000;
+    a.hp=Math.max(1,(a.maxHp||before)*.35);
+    this.creditFusionPassive(a,p,2,10);
+    this.artifactFx(a,'crown');
+    return 0;
+   }
+  }else if(level){
+   const low=1-a.hp/(a.maxHp||100);
+   const recent=runtime(a).effects;
+   const reduction=a.profession==='chrono'?(recent.temporalBuffer?.until>now?.38:.22):
+    a.profession==='voidsword'?(activeSkill(a,'riftDomain',now)||activeSkill(a,'voiddomain',now)?.46:.26):
+    a.profession==='abyssal'?.24+low*.31:.29;
+   amount*=1-Math.min(.65,reduction+(level-1)*.004);
+  }
+ }
  amount=absorbStoneArmor(a,a.map||'tribe',amount*riftDuelModifiers(a,a.map||'tribe',cause.monsterId,now).incoming,now);
  if(a.name&&before>0&&amount>=before&&Number.isFinite(amount)){
   if(consumeBloodRebirth(a,now,cause.monsterId||(cause.type==='player'&&cause.name?'@player:'+cause.name:undefined))){
@@ -937,7 +1034,24 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
   const run=this.dungeonFor(a.map);
   if(run?.artifact?.id==='crown'&&run.status==='active'){run.artifact.challenge=(run.artifact.challenge||0)+1;this.dungeons().save(run);}
  }if(a.hp<before&&a.profession==='abyssal'&&a.skillRuntime?.fusion){const fusion=a.skillRuntime.fusion;fusion.energy=Math.min(100,fusion.energy+3);}if(communityId(a.map)&&before>a.hp){const ws=this.connections().find(peer=>(peer.deserializeAttachment() as Player|null)?.name===a.name);if(ws){if(a.amenityPose)this.standAmenity(ws,a);this.scriptEvent(ws,a,'hurt','',{amount:before-a.hp,source:cause.type});if(a.hp<=0)this.scriptEvent(ws,a,'death','',{amount:before-a.hp,source:cause.type});ws.serializeAttachment(a)}}return result}
- private damageMonster(ws:WebSocket,a:Player,m:Monster,amount:number,zone='body',attacker=a.name,source:'weapon'|'skill'|'summon'='weapon',attack?:string,nearbyMonsters?:Monster[]){if(m.dormant||m.hp<=0||!(amount>0))return 0;if((m.frozenUntil||0)>Date.now()&&!isAncientBoss(m.kind)){const queue=m.frozenDamage??=[];const entry=queue.find(hit=>hit.owner===a.name&&hit.attack===attack);if(entry)entry.amount+=amount;else if(queue.length<64)queue.push({owner:a.name,amount,attack});return 0;}if(a.map==='sanctum'&&!this.optics().opened&&sanctumGateCrosses(a.x,a.z,m.x,m.z))return 0;const profile=this.read(a.name),artifact=profileArtifact(profile);const revenge=a.skillRuntime?.bloodRevenge;if(revenge&&revenge.attacker===m.id&&revenge.until>Date.now())amount*=1.3;amount*=riftDuelModifiers(a,a.map||'tribe',m.id,Date.now()).out;
+ private damageMonster(ws:WebSocket,a:Player,m:Monster,amount:number,zone='body',attacker=a.name,source:'weapon'|'skill'|'summon'='weapon',attack?:string,nearbyMonsters?:Monster[]){if(m.dormant||m.hp<=0||!(amount>0))return 0;if((m.frozenUntil||0)>Date.now()&&!isAncientBoss(m.kind)){const queue=m.frozenDamage??=[];const entry=queue.find(hit=>hit.owner===a.name&&hit.attack===attack);if(entry)entry.amount+=amount;else if(queue.length<64)queue.push({owner:a.name,amount,attack});return 0;}if(a.map==='sanctum'&&!this.optics().opened&&sanctumGateCrosses(a.x,a.z,m.x,m.z))return 0;const profile=this.read(a.name),artifact=profileArtifact(profile);
+ if(profile.profession!=='necromancer'){
+  const second=passiveLevel(profile,0),fourth=passiveLevel(profile,2);
+  const low=1-a.hp/(a.maxHp||100);
+  if(second&&source!=='weapon'){
+   const bonus=profile.profession==='elementalist'?((m.dots?.length||m.slowUntil&&m.slowUntil>Date.now())?.48:.23):
+    profile.profession==='voidsword'?(Math.hypot(m.x-a.x,m.z-a.z)<=8?.46:.24):
+    profile.profession==='abyssal'?.24+low*.42:.28;
+   amount*=1+bonus+second*.012;
+  }
+  if(fourth){
+   const bonus=profile.profession==='elementalist'?((m.weakUntil||0)>Date.now()?.92:.65):
+    profile.profession==='voidsword'?((attack==='execution'||attack?.endsWith(':C'))?1.1:.65):
+    profile.profession==='abyssal'?.65+low*.55:((m.slowUntil||0)>Date.now()?.92:.65);
+   amount*=1+bonus+fourth*.02;
+  }
+ }
+const revenge=a.skillRuntime?.bloodRevenge;if(revenge&&revenge.attacker===m.id&&revenge.until>Date.now())amount*=1.3;amount*=riftDuelModifiers(a,a.map||'tribe',m.id,Date.now()).out;
  const procAt=Date.now(),cooldowns=runtime(a).cooldowns;
  const trigger=(id:ArtifactId,seconds:number)=>{
   if((cooldowns['artifact:'+id]||0)>procAt)return false;
@@ -990,6 +1104,8 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
  if(!m.scripted&&!m.temporary&&!communityId(a.map)){
   const route=advancementRoute(p);
   const points=masteryReward(p.level,m.level,boss,m.kind==='chief');
+  if(p.profession!=='necromancer')for(const index of [0,1,2])if(trainFusionPassive(p,index,points))masteryUps.push('fusion-passive:'+index);
+
   const candidates=new Set<string>(),advancedSlots=new Set<string>();
   const prefix=route?'advancement:'+route.id+':':'';
   if(name===a.name&&attack)candidates.add(attack);

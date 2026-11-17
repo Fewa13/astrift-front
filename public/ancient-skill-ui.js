@@ -1,3 +1,4 @@
+import {FUSION_PASSIVES,FUSION_SCROLLS,FUSION_PASSIVE_REQUIREMENTS,ignitionEligible,passiveCost} from './ancient-fusion-passives.js';
 import {advancementDescription} from './ancient-advancement-descriptions.js';
 import {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,advancementCastKey} from './ancient-advanced-professions.js';
 import {FUSION_DAMAGE_MULTIPLIER,masteryLevel,masteryCost,masteryPower} from './ancient-mastery.js';
@@ -35,8 +36,8 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   chain:[1],haste:[1,2,3],storm:[1],tempest:[1],hex:[0],drain:[0,4],doom:[1],
  };
  const fusionDescriptions={
-  raiseSkeleton:['储备一只骷髅战士并获得3点精通。储备上限为技能等级² × 2。','Raise one reserve skeleton and gain 3 mastery. Reserve capacity is skill level² × 2.'],
-  unleashLegion:['释放所有待命骷髅。','Deploy every reserve skeleton.'],
+  raiseSkeleton:['储备一只骷髅战士并获得3点精通。储备上限为技能等级²。','Raise one reserve skeleton and gain 3 mastery. Reserve capacity is skill level².'],
+  unleashLegion:['出战上限为召唤等级² + 2，超出的骷髅继续待命。','Deploy up to the active limit of Raise Skeleton level² + 2. Extras remain in reserve.'],
   consumeSoul:['持续期间击杀符合等级条件的敌人，永久强化骷髅，并按吞噬强度获得精通。','Qualifying kills permanently strengthen your skeletons and grant mastery based on the strength gained.'],
   necropolis:['强化领域内骷髅并削弱敌人。','Empower skeletons in the field and weaken enemies.'],
   prism:['单体 420% 攻击，概率触发多种元素，连锁余震造成75%伤害。立即回复实伤15%，减伤20%持续4秒。','420% single-target damage with elemental procs and a 75% Arc Echo. Heal 15% of damage and gain 20% reduction for 4s.'],
@@ -66,6 +67,52 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
  const selectedRoute=p=>ADVANCED_PROFESSIONS[p?.profession]?.find(route=>route.id===p.advancements?.[p.profession]?.route);
  const masteryGoal=level=>Math.ceil((25+level*level*12)*1.2);
  const fusionText=id=>L(...fusionDescriptions[id]);
+ let ignitionOpen=false;
+ function renderIgnition(card,p){
+  const entries=FUSION_PASSIVES[p.profession];
+  if(!entries)return;
+  const toggle=btn(L('被动点亮','Passive ignition'),()=>{
+   ignitionOpen=!ignitionOpen;panel.hidden=!ignitionOpen;
+   toggle.setAttribute('aria-expanded',String(ignitionOpen));
+  },card);
+  toggle.setAttribute('aria-expanded',String(ignitionOpen));
+  const panel=el('section','',card);
+  panel.hidden=!ignitionOpen;
+  panel.className='ancientAscensionEntry';
+  const art=el('img','',panel);art.src='world-entry-ancient.webp';art.alt='';
+  art.style.cssText='width:100%;height:96px;object-fit:cover;object-position:center;border-radius:6px';
+  const grid=el('div','',panel);grid.className='ancientProfessionList';
+  entries.forEach(([zh,eng,detail,detailEn],index)=>{
+   const item=el('article','',grid);item.className='weaponCard';
+   el('strong',L('第 '+(index+2)+' 次点亮','Ignition '+(index+2))+' · '+L(zh,eng),item);
+   el('p',L(detail,detailEn),item);
+   const progress=p.fusionPassives?.[p.profession]?.[index];
+   if(progress){
+    el('small',L('等级','Level')+' '+progress.level,item);
+    if(progress.level<100){
+     const bar=el('progress','',item);bar.max=passiveCost(progress.level);bar.value=progress.points;
+     el('small',progress.points+' / '+bar.max,item);
+    }
+    return;
+   }
+   const level=FUSION_PASSIVE_REQUIREMENTS[index];
+   el('small',L('所有有等级的技能及此前点亮被动达到 '+level+' 级','All leveled skills and earlier passives must reach level '+level),item);
+   const choice=el('select','',item);
+   choice.setAttribute('aria-label',L('技能卷轴','Skill scroll'));
+   for(const [id,scroll] of Object.entries(FUSION_SCROLLS)){
+    const count=p.materials['supply:'+id]||0;
+    const option=el('option',L(scroll.name,scroll.en)+' · '+Math.round(scroll.odds[index]*100)+'% · ×'+count,choice);
+    option.value=id;option.disabled=!count;
+   }
+   const ignite=btn(L('使用卷轴点亮','Ignite with scroll'),async()=>{
+    const scroll=choice.value;
+    if(!scroll||!window.confirm(L('本次尝试会消耗一张卷轴。继续？','This attempt consumes one scroll. Continue?')))return;
+    ignite.disabled=true;
+    await action('igniteFusionPassive',{index,scroll});
+   },item);
+   ignite.disabled=!ignitionEligible(p,index)||!Object.keys(FUSION_SCROLLS).some(id=>(p.materials['supply:'+id]||0)>0);
+  });
+ }
  function renderProfessions(card){
   const p=getProfile(), refresh=()=>{if(card.isConnected)open('professions')};
   el('h2',L('职业','Professions'),card);
@@ -93,6 +140,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    }
   }
   if(p.profession){
+   renderIgnition(card,p);
    render(card);
    btn(L('职业试炼','Profession Trials'),()=>open('trials'),card);
    if(!ascensionProgress(p)?.holy){
@@ -200,7 +248,8 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
     const rank=masteryLevel(p,id),points=p.mastery?.[id]?.points||0,cost=masteryCost(id,rank);
     item.querySelector('small').textContent=L('技能等级','Skill level')+' · '+rank;
     el('span',L('技能类型','Skill type')+' · '+L(...fusionTypes[id]),item);
-    if(id==='raiseSkeleton')el('small',L('当前储备上限','Current reserve capacity')+' · '+(rank**2*2),item);
+    if(id==='necropolis')el('small',L('领域半径','Field radius')+' · '+(8+rank*.22).toFixed(1)+' m',item);
+    if(id==='raiseSkeleton')el('small',L('当前储备上限','Current reserve capacity')+' · '+(rank**2),item);
     if(rank<100){
      const bar=el('progress','',item);bar.max=cost;bar.value=points;bar.setAttribute('aria-label',L('技能精通进度','Mastery progress'));
      el('small',L('技能点','Skill points')+' · '+points+' / '+cost,item);
@@ -249,6 +298,6 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    b.classList.toggle('selected',!!ready);
   }
   return;
- }if(key!==lastJob){lastJob=key;bar.replaceChildren();buttons.clear();for(const id of job.skills){const b=btn('',()=>cast(id),bar);b.dataset.layoutKey='skill-'+SKILLS[id].key;buttons.set(id,b)}}for(const [id,b]of buttons){const s=SKILLS[id],n=p.skills?.[id]||0,cd=Math.max(0,Math.ceil(((a.skillRuntime?.cooldowns?.[id]||0)-Date.now())/1000)),duration=Math.max(0,Math.ceil(((id==='summon'?a.skillRuntime?.summon?.until||0:a.skillRuntime?.effects?.[id]?.until||0)-Date.now())/1000));const label=`${ancientKeyLabel('Key'+s.key,en())} · ${holyName(en()?s.en:s.name,en(),!!a.holy)}${duration?' · '+duration+'s':cd?' · '+cd+'s':n?'':' · Lv.0'}`;if(b.textContent!==label)b.textContent=label;b.disabled=n===0||(cd>0&&!((id==='shadowreturn'&&(a.skillRuntime?.shadowAnchor?.until||0)>Date.now()||['riftassault','chronoshift'].includes(id)&&(a.skillRuntime?.fusion?.anchor?.until||0)>Date.now()||id==='rewind'&&(a.skillRuntime?.fusion?.rewind?.until||0)>Date.now())))||!!activeSkill(a,'transform')||id==='summon'&&!!a.skillRuntime?.summon;b.classList.toggle('selected',duration>0||id==='summon'&&!!a.skillRuntime?.summon)}const pet=a.skillRuntime?.summon,form=activeSkill(a,'transform'),weaken=(p.skills?.weaken||0)>0;const toolKey=[p.profession,!!pet,form>0,weaken,en(),ancientBindingVersion()].join(':');if(lastTools!==toolKey){lastTools=toolKey;tools.replaceChildren();if(form)btn(L('1 · 爪子','1 · Claws'),()=>slot(1),tools);else if(p.profession==='summoner'){btn(L('1 · 主手','1 · Melee'),()=>slot(1),tools);if(pet)btn(L('2 · 锁定印记','2 · Command sigil'),()=>slot(2),tools);if(weaken)btn((pet?'3':'2')+' · '+L('削弱印记','Weakening sigil'),()=>slot(pet?3:2),tools)}}for(const [index,b]of [...tools.children].entries()){b.dataset.layoutKey='tool-'+index;b.dataset.toolSlot=String(index+1);const label=ancientKeyLabel('Digit'+(index+1),en())+' · '+b.textContent.split(' · ').slice(1).join(' · ');if(b.textContent!==label)b.textContent=label;}const text=form?L('变身中 · 左键爪击','BEAST FORM · LMB claw attack'):pet?`${L('铁甲兽','Armored Beast')} ${Math.ceil(pet.hp)}/${pet.maxHp} · ${Math.max(0,Math.ceil((pet.until-Date.now())/1000))}s · ${L('2锁定印记命中怪物指挥攻击','2 command sigil: hit a monster to mark it')}`:p.profession==='summoner'&&weaken?L('1主手 · 2削弱印记 · 左键命中生效','1 melee · 2 weakening sigil · LMB hit to apply'):'';const mappedText=text.replace(/LMB|左键/g,ancientKeyLabel('Mouse0',en())).replace(/([123])(?=锁定|主手|削弱| command| melee| weakening)/g,(_,n)=>ancientKeyLabel('Digit'+n,en()));if(hint.textContent!==mappedText)hint.textContent=mappedText;for(const b of tools.children){const chosen=Number(b.dataset.toolSlot)===(a.skillRuntime?.mode||1);b.classList.toggle('selected',chosen)}}
+ }if(key!==lastJob){lastJob=key;bar.replaceChildren();buttons.clear();for(const id of job.skills){const b=btn('',()=>cast(id),bar);b.dataset.layoutKey='skill-'+SKILLS[id].key;buttons.set(id,b)}}for(const [id,b]of buttons){const s=SKILLS[id],n=p.skills?.[id]||0,cd=Math.max(0,Math.ceil(((a.skillRuntime?.cooldowns?.[id]||0)-Date.now())/1000)),duration=Math.max(0,Math.ceil(((id==='summon'?a.skillRuntime?.summon?.until||0:id==='consumeSoul'?a.skillRuntime?.advancedSummon?.consumeUntil||0:a.skillRuntime?.effects?.[id]?.until||0)-Date.now())/1000));const label=`${ancientKeyLabel('Key'+s.key,en())} · ${holyName(en()?s.en:s.name,en(),!!a.holy)}${duration?' · '+duration+'s':cd?' · '+cd+'s':n?'':' · Lv.0'}`;if(b.textContent!==label)b.textContent=label;b.disabled=n===0||(cd>0&&!((id==='shadowreturn'&&(a.skillRuntime?.shadowAnchor?.until||0)>Date.now()||['riftassault','chronoshift'].includes(id)&&(a.skillRuntime?.fusion?.anchor?.until||0)>Date.now()||id==='rewind'&&(a.skillRuntime?.fusion?.rewind?.until||0)>Date.now())))||!!activeSkill(a,'transform')||id==='summon'&&!!a.skillRuntime?.summon;b.classList.toggle('selected',duration>0||id==='summon'&&!!a.skillRuntime?.summon)}const pet=a.skillRuntime?.summon,form=activeSkill(a,'transform'),weaken=(p.skills?.weaken||0)>0;const toolKey=[p.profession,!!pet,form>0,weaken,en(),ancientBindingVersion()].join(':');if(lastTools!==toolKey){lastTools=toolKey;tools.replaceChildren();if(form)btn(L('1 · 爪子','1 · Claws'),()=>slot(1),tools);else if(p.profession==='summoner'){btn(L('1 · 主手','1 · Melee'),()=>slot(1),tools);if(pet)btn(L('2 · 锁定印记','2 · Command sigil'),()=>slot(2),tools);if(weaken)btn((pet?'3':'2')+' · '+L('削弱印记','Weakening sigil'),()=>slot(pet?3:2),tools)}}for(const [index,b]of [...tools.children].entries()){b.dataset.layoutKey='tool-'+index;b.dataset.toolSlot=String(index+1);const label=ancientKeyLabel('Digit'+(index+1),en())+' · '+b.textContent.split(' · ').slice(1).join(' · ');if(b.textContent!==label)b.textContent=label;}const text=form?L('变身中 · 左键爪击','BEAST FORM · LMB claw attack'):pet?`${L('铁甲兽','Armored Beast')} ${Math.ceil(pet.hp)}/${pet.maxHp} · ${Math.max(0,Math.ceil((pet.until-Date.now())/1000))}s · ${L('2锁定印记命中怪物指挥攻击','2 command sigil: hit a monster to mark it')}`:p.profession==='summoner'&&weaken?L('1主手 · 2削弱印记 · 左键命中生效','1 melee · 2 weakening sigil · LMB hit to apply'):'';const mappedText=text.replace(/LMB|左键/g,ancientKeyLabel('Mouse0',en())).replace(/([123])(?=锁定|主手|削弱| command| melee| weakening)/g,(_,n)=>ancientKeyLabel('Digit'+n,en()));if(hint.textContent!==mappedText)hint.textContent=mappedText;for(const b of tools.children){const chosen=Number(b.dataset.toolSlot)===(a.skillRuntime?.mode||1);b.classList.toggle('selected',chosen)}}
  return {render,renderProfessions,update};
 }
