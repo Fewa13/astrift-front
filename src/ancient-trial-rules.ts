@@ -1,6 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 export const TRIAL_TIERS=[{id:'normal',name:'普通',en:'Normal',level:1,time:120,reward:100},{id:'advanced',name:'进阶',en:'Advanced',level:20,time:110,reward:250},{id:'holy',name:'圣级',en:'Holy',level:80,time:100,reward:500}];
 export const TRIAL_LESSONS:Record<string,{name:[string,string];goal:[string,string];required:string[];multi?:string;pet?:boolean}>={
+ fire:{name:['烈焰试炼','Flame Trial'],goal:['使用余烬弹、燎原火浪和焚天陨星，然后击败所有敌人。','Use Ember Bolt, Fire Wave and Inferno, then defeat every enemy.'],required:['firebolt','firewave','inferno']},
  warrior:{name:['裂地攻势','Earthbreaker Assault'],goal:['使用体质强化、伤害强化与狂暴；伤害强化同时命中至少2个敌人，再击败所有敌人。','Use Vitality, Power and Berserk. Hit at least two enemies with Power, then defeat every enemy.'],required:['vitality','power','rage'],multi:'power'},
  summoner:{name:['驭兽协战','Beast Commander'],goal:['召唤铁甲兽，使用灵魂弹指挥攻击，再变身；召唤兽必须实际造成伤害，最后击败所有敌人。','Summon your beast, direct it with Soul Bolt, then transform. Your beast must deal damage. Defeat every enemy.'],required:['summon','soulbolt','transform'],pet:true},
  ice:{name:['冰域掌控','Glacial Control'],goal:['使用冰晶护体与暴风雪，暴风雪覆盖至少2个敌人，再击败所有敌人。','Use Ice Ward and Blizzard. Cover at least two enemies with Blizzard, then defeat every enemy.'],required:['icearmor','blizzard'],multi:'blizzard'},
