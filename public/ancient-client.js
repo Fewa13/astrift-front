@@ -406,10 +406,11 @@ async function resetDungeonAnd(next){
  resettingDungeon=true;
  try{
   if(accountSession())await activityRequest('resetDungeon');
-  dungeonUI.accept({dungeonState:{run:null}});
-  next();
- }catch(error){status(error.message);}
- finally{resettingDungeon=false;}
+ }catch(error){
+  console.warn('Dungeon reset failed:',error.message);
+ }finally{resettingDungeon=false;}
+ dungeonUI.accept({dungeonState:{run:null}});
+ next();
 }
 async function selectMap(map,invited=false,run=null){if(!invited&&active&&currentMap===map){paused=false;renderPanel();lock();return}if(communityId(map)){try{const r=await activityRequest('communityGet',{id:communityId(map)});setCommunityMap(r.map);mapScenes[map]?.dispose?.();delete mapScenes[map]}catch(e){status(e.message);return}}if(!invited&&active&&currentMap===map){paused=false;renderPanel();lock();return}if(active)leave();else worldConnection.stop();for(const [key,value]of Object.entries(mapScenes))if(communityId(key)&&key!==map){value.dispose?.();delete mapScenes[key]}currentMap=map;if(run?.map===map)dungeonRun=run;showMap(map);await enter()}
 const connectionUI=createAncientConnectionUI({en,retry:()=>worldConnection.retryNow(true),login:()=>{leave();loginPanel()},exit:()=>{leave();view='maps';renderPanel()}});
