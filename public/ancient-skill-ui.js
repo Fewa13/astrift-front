@@ -1,6 +1,6 @@
 import {advancementDescription} from './ancient-advancement-descriptions.js';
 import {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,advancementCastKey} from './ancient-advanced-professions.js';
-import {masteryLevel,masteryCost,masteryPower} from './ancient-mastery.js';
+import {FUSION_DAMAGE_MULTIPLIER,masteryLevel,masteryCost,masteryPower} from './ancient-mastery.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ancientKeyLabel,ancientBindingVersion} from './ancient-input-settings.js';
 import {renderBranchPanel} from './ancient-branch-ui.js?v=20261017-guide-position-1';
@@ -191,6 +191,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
      const evolutions={prism:['余震额外连锁一个目标','Arc Echo jumps to an additional target'],judgment:['余震额外连锁一个目标','Arc Echo jumps to an additional target'],voidslash:['印记爆炸波及附近敌人','Mark detonation hits nearby enemies'],abysstouch:['侵蚀可叠至7层','Corruption stacks up to seven'],stasis:['静止领域半径增加2米','Stasis radius increases by 2m']};
      if(evolutions[id])el('strong',L('机制进化','Skill evolution')+' · '+L(...evolutions[id]),item);
     }
+    el('small',L('融合伤害倍率','Fusion damage multiplier')+' ×'+FUSION_DAMAGE_MULTIPLIER,item);
     el('small',L('精通强度倍率','Mastery power multiplier')+' ×'+masteryPower(p,id).toFixed(2),item);
     el('p',fusionText(id),item);
     el('small',L('冷却','Cooldown')+' · '+skill.cooldown+'s',item);

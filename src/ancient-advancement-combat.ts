@@ -1,6 +1,8 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {isAncientBoss} from './ancient-boss';
 import {advancementCastKey} from './ancient-advanced-professions';
+import {holyPower} from './ancient-ascension';
+import {FUSION_DAMAGE_MULTIPLIER} from './ancient-mastery';
 import {advancementRoute} from './ancient-advancement-progress';
 import {ancientSkillDamage, ancientGearStats} from './ancient-gear';
 import {ancientMapHeight, blocked, lineClear, type AncientProfile} from './ancient-rules';
@@ -1559,7 +1561,7 @@ function castElementalAdvancement(a:SkillActor,p:AncientProfile,route:string,key
  const target=selectSkillTarget(a,direction,60,c);
  if(!target&&(route==='elemental-god'||key==='Q'))return '请瞄准可见的敌人';
  const origin={x:a.x,y:a.y-1.7,z:a.z},point=target?firePoint(c,target):origin;
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*FUSION_DAMAGE_MULTIPLIER;
  const tag='advancement:'+route+':'+key;
  const hit=(m:SkillMonster,n:number)=>c.damage(m,power*n,undefined,tag);
  if(route==='elemental-god'&&target){
@@ -1680,7 +1682,7 @@ function castRiftAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const r=runtime(a),state=riftState(a,c.map);
  const tag='advancement:'+route+':'+key;
  const origin={x:a.x,y:a.y-1.7,z:a.z};
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*FUSION_DAMAGE_MULTIPLIER;
  const hit=(m:SkillMonster,n:number)=>c.damage(m,power*n,undefined,tag);
  const anchor=state.anchor;
  if(route==='riftlord'&&key==='Q'&&anchor&&anchor.until>now){
@@ -1834,7 +1836,7 @@ function castAbyssAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
  const target=selectSkillTarget(a,direction,60,c);
  if(!target&&(key==='X'||key==='Q'||route==='abyss-herald'&&key==='C'))return '请瞄准可见的敌人';
  const origin={x:a.x,y:a.y-1.7,z:a.z},point=target?firePoint(c,target):origin;
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*FUSION_DAMAGE_MULTIPLIER;
  const tag='advancement:'+route+':'+key;
  const hit=(m:SkillMonster,n:number)=>c.damage(m,power*n,undefined,tag);
  if(key==='X'&&target){
@@ -1991,7 +1993,7 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const r=runtime(a),state=timeState(a,c.map),tag='advancement:'+route+':'+key;
  const origin={x:a.x,y:a.y-1.7,z:a.z};
  const target=selectSkillTarget(a,direction,60,c);
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*FUSION_DAMAGE_MULTIPLIER;
  const hit=(m:SkillMonster,multiplier:number)=>c.damage(m,power*multiplier,undefined,tag);
  expireTimeRewind(a,p,state,route,now);
  const anchor=state.anchor,snapshot=state.rewind;

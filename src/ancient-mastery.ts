@@ -1,6 +1,8 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import type {AncientProfile} from './ancient-rules';
 
+export const FUSION_DAMAGE_MULTIPLIER=1.8;
+
 const growth: Record<string,number> = {
  prism:.045,judgment:.035,erosion:.06,siphon:.05,
  voidslash:.05,riftassault:.045,voiddomain:.03,execution:.032,

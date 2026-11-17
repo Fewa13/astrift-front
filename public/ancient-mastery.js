@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+const FUSION_DAMAGE_MULTIPLIER = 1.8;
 const growth = {
   prism: 0.045,
   judgment: 0.035,
@@ -38,6 +39,7 @@ function awardMastery(p, id, points) {
   return record.level > before;
 }
 export {
+  FUSION_DAMAGE_MULTIPLIER,
   awardMastery,
   masteryCost,
   masteryLevel,
