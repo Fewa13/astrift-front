@@ -189,7 +189,7 @@ function refreshPotionControls(){quickbar.update();for(const b of document.query
 function resources(parent){const row=node('div','',parent);row.className='ancientResources';node('span',`${L('远古金币','Ancient Gold')} ${formatAncientNumber((profile.coins||0),2)}`,row).className='ancientGold';for(const [k,n]of Object.entries(profile.materials))node('span',`${material(k)} ${n.toLocaleString()}`,row)}
 let onlineRoster=[],rosterLoading=false;
 async function loadOnlineRoster(){if(!active||rosterLoading)return;rosterLoading=true;try{const r=await accountApi('ancient/profile',{...accountSession(),action:'onlinePlayers'});onlineRoster=r.players||[];}catch(e){status(e.message)}finally{rosterLoading=false;if(active&&view==='online')renderPanel();}}
-function openMenu(target){if(target==='guide'){keys.clear();fire=aim=false;questUI.dismiss();unlock();openGameGuide();return}questUI.dismiss();paused=active;unlock();view=target;if(target==='weapons')tab='owned';renderPanel();if(target==='online')void loadOnlineRoster();if(target==='leaderboard')void leaderboardUI.open();if(target==='dungeon'||target==='hunts')dungeonUI.open();if(target==='market')marketUI.open()}
+function openMenu(target){if(target==='skills')target='professions';if(target==='guide'){keys.clear();fire=aim=false;questUI.dismiss();unlock();openGameGuide();return}questUI.dismiss();paused=active;unlock();view=target;if(target==='weapons')tab='owned';renderPanel();if(target==='online')void loadOnlineRoster();if(target==='leaderboard')void leaderboardUI.open();if(target==='dungeon'||target==='hunts')dungeonUI.open();if(target==='market')marketUI.open()}
 let trialReturnMap='';
 const activityRequest=async(action,data={})=>{const before=profile;const r=await accountApi('ancient/profile',{...accountSession(),action,...data});return {...r,profile:profile===before?r.profile:undefined}};
 const activityProfile=p=>{if(p){profile=p;identity();quickbar.update()}};
@@ -391,7 +391,7 @@ function drawPanel(){closeArtifactPreview?.();closeArtifactPreview=undefined;if(
  else if(view==='collections'||view==='stones'){card.classList.add('ancientWorkspaceCard');node('h2',view==='collections'?L('藏品','Collections'):L('原石工坊','Stone Workshop'),card);const body=node('section','',card);body.className='ancientWorkspaceBody';if(view==='collections')collectionUI.render(body);else stoneworkUI.render(body)}
  else if(view==='controls'){node('h2',L('设置','Settings'),card);button(L('账号','Account'),()=>accountEmailUI.openSettings(),card);controls.render(card)}
 
- const q=currentQuest(profile);if(q?.kind?.startsWith('train')&&view==='skills'){const index={trainQ:0,trainZ:1,trainC:2}[q.kind];card.querySelectorAll('.ancientSkillCard')[index]?.classList.add('ancientGuided')}if(q&&['skills','weapons','shop'].includes(view))questUI.renderSummary(card);
+ const q=currentQuest(profile);if(q?.kind?.startsWith('train')&&['skills','professions'].includes(view)){const index={trainQ:0,trainZ:1,trainC:2}[q.kind];card.querySelectorAll('.ancientSkillCard')[index]?.classList.add('ancientGuided')}if(q&&['skills','weapons','shop'].includes(view))questUI.renderSummary(card);
  if(active){const back=button(L('返回战斗','Back to combat'),()=>{paused=false;renderPanel();lock()},card);if(['bag','collections','stones'].includes(view))back.classList.add('ancientInventoryReturn')}
 }
 const hurtOverlay=node('div','',document.body);hurtOverlay.id='ancientHurt';hurtOverlay.setAttribute('aria-hidden','true');let hurtAnimation=null;

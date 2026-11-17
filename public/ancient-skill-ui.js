@@ -93,7 +93,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    }
   }
   if(p.profession){
-   btn(L('查看技能','View skills'),()=>open('skills'),card);
+   render(card);
    btn(L('职业试炼','Profession Trials'),()=>open('trials'),card);
    if(!ascensionProgress(p)?.holy){
     const trial=el('details','',card);trial.className='ancientAscensionEntry';trial.open=ascensionEligible(p)||!!ascensionProgress(p)?.permit;
@@ -102,7 +102,36 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    }
    renderBranchPanel(card,{p,job:p.profession,en,action,refresh});
   }
-  const fusion=el('details','',card);
+  const toggle=currentJob?btn(L('其他职业','Other professions'),()=>{
+   change.hidden=!change.hidden;
+   toggle.setAttribute('aria-expanded',String(!change.hidden));
+  },card):null;
+  const change=el('section','',card);
+  change.className='ancientAscensionEntry';
+  change.hidden=!!currentJob;
+  if(toggle){
+   toggle.setAttribute('aria-expanded','false');
+   el('h3',L('转职','Change profession'),change);
+   el('p',L('15级开放转职，每次消耗一本转职书。','Changing profession unlocks at level 15 and costs one change book.'),change);
+  }
+  const list=el('div','',change);list.className='ancientProfessionList';
+  for(const [id,job] of Object.entries(PROFESSIONS)){
+   if(id===p.profession||p.consumedJobs?.[id]||isFusionJob(id)&&!p.fusedJobs?.[id])continue;
+   const item=el('article','',list);item.className='weaponCard';
+   el('strong',job.icon+' '+L(job.name,job.en),item);
+   const [good,bad,goodEn,badEn]=descriptions[id]||['自带圣级技能','融合会永久消耗配方职业','Holy skills unlocked','Fusion permanently consumes its source professions'];
+   el('span',L('优点','Strength')+' · '+L(good,goodEn),item);
+   el('small',L('缺点','Trade-off')+' · '+L(bad,badEn),item);
+   const controls=el('div','',item);controls.className='ancientWorkspaceLinks';
+   btn(L('3D 技能预览','3D skill preview'),()=>openSkillPreview(id,{en,level:3,skin:id===p.profession?equippedAncientSkin(p):undefined}),controls);
+   const choose=btn(p.profession?L('转职','Change profession'):L('选择职业','Choose profession'),async()=>{
+    choose.disabled=true;
+    await action('chooseProfession',{job:id});
+    if(choose.isConnected)choose.disabled=false;
+   },controls);
+   choose.disabled=!!p.profession&&(p.level<15||(p.materials['supply:transfer']||0)<1);
+  }
+  const fusion=el('details','',change);
   fusion.className='ancientAscensionEntry';
   el('summary',L('职业融合','Profession fusion'),fusion);
   const roles={
@@ -131,34 +160,6 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
     if(window.confirm(L('将永久消耗 ','Permanently consume ')+sources+consequence+'\n'+L('确认融合？','Continue?')))void action('fuseProfession',{job:id});
    },item);
    fuse.disabled=p.level<15||!ready||!!p.fusedJobs?.[id];
-  }
-  const toggle=currentJob?btn(L('转职','Change profession'),()=>{
-   change.hidden=!change.hidden;
-   toggle.setAttribute('aria-expanded',String(!change.hidden));
-  },card):null;
-  const change=el('section','',card);
-  change.className='ancientAscensionEntry';
-  change.hidden=!!currentJob;
-  if(toggle){
-   toggle.setAttribute('aria-expanded','false');
-   el('p',L('15级开放转职，每次消耗一本转职书。','Changing profession unlocks at level 15 and costs one change book.'),change);
-  }
-  const list=el('div','',change);list.className='ancientProfessionList';
-  for(const [id,job] of Object.entries(PROFESSIONS)){
-   if(id===p.profession||p.consumedJobs?.[id]||isFusionJob(id)&&!p.fusedJobs?.[id])continue;
-   const item=el('article','',list);item.className='weaponCard';
-   el('strong',job.icon+' '+L(job.name,job.en),item);
-   const [good,bad,goodEn,badEn]=descriptions[id]||[L('自带圣级技能','Holy skills unlocked'),'固定技能等级','Holy skills unlocked','Fixed skill level'];
-   el('span',L('优点','Strength')+' · '+L(good,goodEn),item);
-   el('small',L('缺点','Trade-off')+' · '+L(bad,badEn),item);
-   const controls=el('div','',item);controls.className='ancientWorkspaceLinks';
-   btn(L('3D 技能预览','3D skill preview'),()=>openSkillPreview(id,{en,level:3,skin:id===p.profession?equippedAncientSkin(p):undefined}),controls);
-   const choose=btn(p.profession?L('转职','Change profession'):L('选择职业','Choose profession'),async()=>{
-    choose.disabled=true;
-    await action('chooseProfession',{job:id});
-    if(choose.isConnected)choose.disabled=false;
-   },controls);
-   choose.disabled=!!p.profession&&(p.level<15||(p.materials['supply:transfer']||0)<1);
   }
  }
  function render(card){
