@@ -71,7 +71,7 @@ for(const key of Object.keys(friendActor.skillRuntime.cooldowns))if(key==='raise
 friend.serializeAttachment(friendActor);
 await server.webSocketMessage(friend,JSON.stringify({type:'skill',id:'raiseSkeleton'}));
 const beforeReconnect=friend.deserializeAttachment().skillRuntime.advancedSummon;
-assert.equal(beforeReconnect.reserve.length,1);
+assert.equal(beforeReconnect.reserveCount,1);
 const necroTicket=await server.command('friend','ticket',{map:'tribe'});
 const necroResponse=await server.fetch(new Request('https://play.astrift.com/api/ancient/connect?map=tribe&ticket='+necroTicket.ticket,{headers:{Upgrade:'websocket'}}));
 assert.equal(necroResponse.status,101);
@@ -91,23 +91,24 @@ masteryTarget.masteryMarks={
 };
 server.damageMonster(rejoined,rejoined.deserializeAttachment(),masteryTarget,1,'body','friend','skill','unleashLegion',killWorld.monsters);
 const credited=server.read('friend').mastery;
-assert(credited.unleashLegion.points>0);
-assert.deepEqual(credited.necropolis,credited.unleashLegion,'duplicate marks award the same points as one active skill');
+assert.equal(credited.unleashLegion.points,0);
+assert.equal(credited.raiseSkeleton.points,6);
+assert.equal(credited.necropolis.points,4,'duplicate marks award one credit');
 assert.equal(credited.consumeSoul.points,0,'expired mark cannot earn mastery');
 const beforeLevelUp=server.read('friend');
-const skill=beforeLevelUp.mastery.unleashLegion;
-skill.points=masteryCost('unleashLegion',skill.level)-1;
+const skill=beforeLevelUp.mastery.necropolis;
+skill.points=masteryCost('necropolis',skill.level)-1;
 server.save('friend',beforeLevelUp);
 const levelUpTarget={...masteryTarget,id:'mastery-level-up',hp:1,contributions:[],masteryMarks:{}};
 const beforeMessages=rejoined.messages.length;
 assert.equal(server.damageMonster(rejoined,rejoined.deserializeAttachment(),levelUpTarget,1,'body','friend','skill',
- 'unleashLegion',killWorld.monsters),1);
+ 'necropolis',killWorld.monsters),1);
 const levelUp=rejoined.messages.slice(beforeMessages).find(message=>message.type==='kill'&&message.id===levelUpTarget.id);
-assert.deepEqual(levelUp?.masteryUps,['unleashLegion']);
-const savedLevel=server.read('friend').mastery.unleashLegion;
+assert.deepEqual(levelUp?.masteryUps,['necropolis']);
+const savedLevel=server.read('friend').mastery.necropolis;
 assert.equal(savedLevel.level,skill.level+1);
-assert.equal(savedLevel.points,credited.unleashLegion.points-1);
-assert.equal(levelUp.profile.mastery.unleashLegion.level,savedLevel.level);
+assert.equal(savedLevel.points,credited.necropolis.points-1);
+assert.equal(levelUp.profile.mastery.necropolis.level,savedLevel.level);
 
 const judgmentWorld=server.world('tribe');
 const judged=judgmentWorld.monsters.find(monster=>monster.hp>0)||judgmentWorld.monsters[0];

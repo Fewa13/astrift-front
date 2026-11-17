@@ -1361,10 +1361,12 @@ export function tickAdvancedStone(a:SkillActor,p:AncientProfile,c:SkillContext,n
  c.fx('mountainguard-shatter',a.x,a.z,7);
 }
 
-type LegionMinion={x:number;z:number;until:number;next:number;scale:number;slot:number};
+type LegionMinion={x:number;z:number;until:number;next:number;scale:number;slot:number;count?:number};
 export type SummonAdvancementRuntime={
  map:string;
  reserve:number[];
+ reserveCount?:number;
+ reservePower?:number;
  legion:LegionMinion[];
  field?:StormPoint & {until:number;radius:number};
  transformUntil?:number;
@@ -1430,21 +1432,34 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    c.fx('spiritcaller-rebirth',r.summon.x,r.summon.z,4);
   }
  }else{
+  if(state.reserve.length){
+   state.reserveCount=(state.reserveCount||0)+state.reserve.length;
+   state.reservePower=state.reserve.reduce((total,scale)=>total+scale,state.reservePower||0);
+   state.reserve=[];
+  }
   if(key==='X'){
-   if(state.reserve.length>=18)return '待命骷髅已满';
-   state.reserve.push(1+Math.min(99,level-1)*.055);
+   if((state.reserveCount||0)>=level**2*2)return '待命骷髅已满';
+   state.reserveCount=(state.reserveCount||0)+1;
+   state.reservePower=(state.reservePower||0)+1+Math.min(99,level-1)*.055;
    c.fx('necromancer-raise',a.x,a.z,4);
   }else if(key==='Q'){
-   state.legion=state.legion.filter(pet=>pet.until>now);
-   const count=Math.min(18-state.legion.length,state.reserve.length,Math.min(12,2+Math.floor(level/2)));
+   const count=state.reserveCount||0;
+   const power=state.reservePower||count;
    if(!count)return '没有可释放的骷髅';
-   for(let i=0;i<count;i++){
-    const slot=Array.from({length:18},(_,slot)=>slot).find(slot=>!state.legion.some(pet=>pet.slot===slot))!;
-    const angle=slot*Math.PI*2/18,x=a.x+Math.sin(angle)*2.5,z=a.z+Math.cos(angle)*2.5;
+   state.legion=state.legion.filter(pet=>pet.until>now);
+   let slot=1+state.legion.reduce((highest,pet)=>Math.max(highest,pet.slot),-1);
+   const groups=Math.min(18,count);
+   for(let i=0;i<groups;i++,slot++){
+    // Large releases share pathfinding while keeping every skeleton's damage.
+    const start=Math.floor(i*count/groups),end=Math.floor((i+1)*count/groups);
+    const scale=power*(end-start)/count;
+    const angle=slot*2.399963,x=a.x+Math.sin(angle)*2.5,z=a.z+Math.cos(angle)*2.5;
     const spawn=blocked(x,z,.45,c.map)?{x:a.x,z:a.z}:{x,z};
-    state.legion.push({...spawn,until:now+38000,next:now+750,scale:state.reserve.shift()!,slot});
+    state.legion.push({...spawn,until:now+38000,next:now+750,scale,slot,count:end-start});
     c.fx('necromancer-release',spawn.x,spawn.z,2.5,{target:'',phase:String(slot)});
    }
+   state.reserveCount=0;
+   state.reservePower=0;
   }else if(key==='Z'){
    state.consumeUntil=now+12000;
    c.fx('necromancer-consume',a.x,a.z,5);
@@ -1453,7 +1468,7 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    c.fx('necromancer-domain',a.x,a.z,state.field.radius);
   }
  }
- const cooldown=route==='beastlord'?{X:32,Q:10,Z:22,C:32}:route==='spiritcaller'?{X:36,Q:22,Z:42,C:55}:{X:3,Q:10,Z:18,C:32};
+ const cooldown=route==='beastlord'?{X:32,Q:10,Z:22,C:32}:route==='spiritcaller'?{X:36,Q:22,Z:42,C:55}:{X:.6,Q:10,Z:18,C:32};
  r.cooldowns[id]=now+cooldown[key as keyof typeof cooldown]*1000*(1-gear.cooldown);
  return null;
 }

@@ -35,9 +35,9 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   chain:[1],haste:[1,2,3],storm:[1],tempest:[1],hex:[0],drain:[0,4],doom:[1],
  };
  const fusionDescriptions={
-  raiseSkeleton:['召唤一个待命的骷髅战士。','Raise a skeleton and hold it in reserve.'],
-  unleashLegion:['让待命骷髅出战，上限随技能等级提升。','Deploy reserve skeletons. Capacity scales with skill level.'],
-  consumeSoul:['持续期间击杀符合等级条件的敌人，永久强化骷髅。','Qualifying kills during the effect permanently strengthen your skeletons.'],
+  raiseSkeleton:['储备一只骷髅战士并获得3点精通。储备上限为技能等级² × 2。','Raise one reserve skeleton and gain 3 mastery. Reserve capacity is skill level² × 2.'],
+  unleashLegion:['释放所有待命骷髅。','Deploy every reserve skeleton.'],
+  consumeSoul:['持续期间击杀符合等级条件的敌人，永久强化骷髅，并按吞噬强度获得精通。','Qualifying kills permanently strengthen your skeletons and grant mastery based on the strength gained.'],
   necropolis:['强化领域内骷髅并削弱敌人。','Empower skeletons in the field and weaken enemies.'],
   prism:['单体 420% 攻击，概率触发多种元素，连锁余震造成75%伤害。立即回复实伤15%，减伤20%持续4秒。','420% single-target damage with elemental procs and a 75% Arc Echo. Heal 15% of damage and gain 20% reduction for 4s.'],
   judgment:['目标周围12米造成510%攻击，概率触发元素，回复实伤20%，减伤35%持续4秒。','510% damage within 12m of the target, elemental procs, 20% healing and 35% reduction for 4s.'],
@@ -189,9 +189,17 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    el('strong',ancientKeyLabel('Key'+skill.key,en())+' · '+holyName(L(skill.name,skill.en),en(),isHoly(p)),item);
    el('small',level?L('技能当前等级','Current skill level')+' · '+level:L('技能解锁等级','Required player level')+' · '+skill.unlock,item);
    if(isFusionSkill(id)){
+    if(id==='unleashLegion'){
+     item.querySelector('small').remove();
+     el('span',L('技能类型','Skill type')+' · '+L(...fusionTypes[id]),item);
+     el('p',fusionText(id),item);
+     el('small',L('冷却','Cooldown')+' · '+skill.cooldown+'s',item);
+     continue;
+    }
     const rank=masteryLevel(p,id),points=p.mastery?.[id]?.points||0,cost=masteryCost(id,rank);
     item.querySelector('small').textContent=L('技能等级','Skill level')+' · '+rank;
     el('span',L('技能类型','Skill type')+' · '+L(...fusionTypes[id]),item);
+    if(id==='raiseSkeleton')el('small',L('当前储备上限','Current reserve capacity')+' · '+(rank**2*2),item);
     if(rank<100){
      const bar=el('progress','',item);bar.max=cost;bar.value=points;bar.setAttribute('aria-label',L('技能精通进度','Mastery progress'));
      el('small',L('技能点','Skill points')+' · '+points+' / '+cost,item);

@@ -462,6 +462,7 @@ function handleWorldMessage(d,reconnect){if(d.chapterState){setChapterState(curr
   if(d.type==='skillGesture')return; // Casting hand wind-ups temporarily hidden; skill effects remain.
   if(d.type==='artifactReward'){skillVisuals.effect({id:'artifact-'+d.id,x:camera.position.x,z:camera.position.z,radius:4},ground);profile=d.profile;identity();combatNotices.push(L('神器试炼通过 · ','Artifact trial complete · ')+L(ARTIFACTS[d.id].zh,ARTIFACTS[d.id].en),6500);}
   if(d.type==='artifactDiscovery')combatNotices.push(d.name+L(' 首次发现了起源',' discovered The Origin first'),8500);
+  if(d.type==='skillMastery'&&d.id)combatNotices.mastery([d.id],profile,en());
   if(d.type==='kill'&&d.masteryUps?.length){
    skillVisuals.effect({id:'mastery-rise',x:camera.position.x,z:camera.position.z,radius:3},ground);
    combatNotices.mastery(d.masteryUps,profile,en());

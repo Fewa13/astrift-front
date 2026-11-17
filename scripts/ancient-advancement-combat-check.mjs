@@ -325,6 +325,17 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  assert(hits.includes('unleashLegion'));
  assert.equal(monster.weak,.2);
  assert(fx.includes('necromancer-release'));
+ const state=actor.skillRuntime.advancedSummon;
+ assert.equal(castAncientSkill(actor,profile,'raiseSkeleton',aim,context,now+1000),null);
+ assert.equal(castAncientSkill(actor,profile,'raiseSkeleton',aim,context,now+2000),null);
+ assert.equal(castAncientSkill(actor,profile,'raiseSkeleton',aim,context,now+3000),'待命骷髅已满');
+ state.reserveCount=20000;
+ state.reservePower=40000;
+ assert.equal(castAncientSkill(actor,profile,'unleashLegion',aim,context,now+10001),null);
+ assert.equal(state.reserve.length,0);
+ assert.equal(state.legion.reduce((n,pet)=>n+pet.count,0),20001);
+ assert(Math.abs(state.legion.reduce((n,pet)=>n+pet.scale,0)-40001)<1e-8);
+
 }
 
 export {advancementCost};

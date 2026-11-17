@@ -776,6 +776,12 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
    const rewind=advancedRewind?a.skillRuntime?.advancedTime?.rewind:a.skillRuntime?.fusion?.rewind;
    const rewindReady=rewind!==undefined&&rewind.until>now;
    error=castAncientSkill(a,p,skill,d.direction,c,now);
+   if(!error&&skill==='raiseSkeleton'&&!communityId(map)){
+    const upgraded=awardMastery(p,skill,3);
+    this.save(a.name,p);
+    this.send(ws,{type:'profile',profile:p});
+    if(upgraded)this.send(ws,{type:'skillMastery',id:skill});
+   }
    if(!error&&dungeon?.artifact&&dungeon.status==='active'){
     const skills=dungeon.artifact.skills??=[];
     const credited=slot&&route?'advancement:'+route.id+':'+slot:Object.hasOwn(SKILLS,skill)?skill:'';
@@ -944,8 +950,11 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
   const candidates=new Set<string>(),advancedSlots=new Set<string>();
   const prefix=route?'advancement:'+route.id+':':'';
   if(name===a.name&&attack)candidates.add(attack);
-  if(name===a.name&&recordNecromancerKill(a,p,m,now))candidates.add('consumeSoul');
-  if(name===a.name&&attack==='unleashLegion')candidates.add('raiseSkeleton');
+  const strengthBefore=p.necromancerStrength||0;
+  if(name===a.name&&recordNecromancerKill(a,p,m,now)){
+   const consumed=Math.max(1,Math.ceil((p.necromancerStrength||0)-strengthBefore));
+   if(awardMastery(p,'consumeSoul',consumed))masteryUps.push('consumeSoul');
+  }
   for(const mark of Object.values(m.masteryMarks||{}))if(mark.owner===name&&mark.until>now)candidates.add(mark.id);
   if(route){
    for(const id of candidates)if(id.startsWith(prefix))advancedSlots.add(id.endsWith(':link')?'Q':id.slice(prefix.length));
