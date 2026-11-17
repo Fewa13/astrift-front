@@ -1,5 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as THREE from './three.module.js';
+import {flyingSwordGeometry,flyingSwordMaterial} from './ancient-flying-sword.js';
 
 const effects={
  berserker:[0xf74552,0xffc171,{bolt:'bolt',charge:'trail',impact:'shatter',rebirth:'wings',revival:'halo',sacrifice:'bind'}],
@@ -38,7 +39,7 @@ export const advancementEffectIds=Object.freeze(routes.flatMap(route=>Object.key
 const up=new THREE.Vector3(0,1,0);
 
 export function createAdvancementFX(scene,camera,milliseconds=()=>performance.now()){
- const live=[];
+ const live=[],swordTangent=new THREE.Vector3();
  const bar=new THREE.BoxGeometry(1,1,1);
  const crystal=new THREE.OctahedronGeometry(1,0);
  const stone=new THREE.IcosahedronGeometry(1,1);
@@ -104,7 +105,24 @@ export function createAdvancementFX(scene,camera,milliseconds=()=>performance.no
    }
   };
 
-  if(style==='bolt'){
+  const swordFlight=route==='blademaster'&&id!=='blademaster-resonance'||
+   id==='boundarycutter-throw'||id==='riftlord-finale'||id==='riftduelist-sever'||
+   route==='linebreaker'&&['linebreaker-break','linebreaker-triple','linebreaker-sunder'].includes(id);
+  if(swordFlight){
+   const count=id==='blademaster-union'?1:id==='riftlord-finale'||id==='linebreaker-triple'?3:1;
+   const direction=high.clone().sub(source).normalize(),across=direction.clone().cross(up).normalize();
+   for(let i=0;i<count;i++){
+    const offset=(i-(count-1)/2)*1.1;
+    const from=source.clone().addScaledVector(across,offset);
+    const through=high.clone().addScaledVector(direction,1.4).addScaledVector(across,-offset);
+    const mesh=new THREE.Mesh(flyingSwordGeometry,flyingSwordMaterial);
+    mesh.position.copy(from);
+    mesh.scale.setScalar(id==='blademaster-union'?Math.min(5,1.8+radius*.12):1.15);
+    group.add(mesh);
+    movers.push({mesh,from,to:through,arc:id==='blademaster-union'?2.6:.45,blade:true,delay:i*.1});
+   }
+   burst(low?4:9,1.8,Math.min(radius,4));
+  }else if(style==='bolt'){
    beam(source,high,.055);
    const head=put(crystal,1,source,.24,.74,.25);
    head.quaternion.setFromUnitVectors(up,high.clone().sub(source).normalize());
@@ -200,7 +218,13 @@ export function createAdvancementFX(scene,camera,milliseconds=()=>performance.no
    const alpha=Math.min(1,.48+t*6)*Math.min(1,(1-t)*2.8);
    entry.materials[0].opacity=alpha*.69;entry.materials[1].opacity=alpha*.88;entry.materials[2].opacity=alpha;
    for(const part of entry.movers){
-    const progress=Math.min(1,t*(entry.style==='meteor'?2.5:1.5));
+    const progress=part.blade?Math.max(0,Math.min(1,(t-part.delay)*1.65)):Math.min(1,t*(entry.style==='meteor'?2.5:1.5));
+    if(part.blade){
+     part.mesh.visible=t>=part.delay&&progress<1;
+     const tangent=swordTangent.subVectors(part.to,part.from);
+     tangent.y+=Math.cos(progress*Math.PI)*part.arc*Math.PI;
+     if(tangent.lengthSq()>.0001)part.mesh.quaternion.setFromUnitVectors(up,tangent.normalize());
+    }
     part.mesh.position.lerpVectors(part.from,part.to,progress);
     part.mesh.position.y+=Math.sin(progress*Math.PI)*part.arc;
     if(part.spin)part.mesh.rotation.z=progress*part.spin;

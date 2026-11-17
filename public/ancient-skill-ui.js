@@ -64,41 +64,29 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
  function renderProfessions(card){
   const p=getProfile(), refresh=()=>{if(card.isConnected)open('professions')};
   el('h2',L('职业','Professions'),card);
-  const preview=el('details','',card);
-  preview.className='ancientAscensionEntry';
-  el('summary',L('升华技能预览','Advanced skill preview'),preview);
-  const label=el('label',L('职业','Profession'),preview);
-  const select=el('select','',label);
-  for(const id of Object.keys(ADVANCED_PROFESSIONS)){
-   const job=PROFESSIONS[id];
-   el('option',L(job.name,job.en),select).value=id;
-  }
-  const routes=el('div','',preview);
-  routes.className='ancientProfessionList';
-  function showRoutes(){
-   routes.replaceChildren();
-   for(const route of ADVANCED_PROFESSIONS[select.value]||[]){
-    const item=el('article','',routes);
-    item.className='weaponCard';
-    el('strong',L(...route.name),item);
-    route.skills.forEach((name,index)=>{
-     el('strong',ADVANCEMENT_KEYS[index]+' · '+L(...name),item);
-     el('span',advancementDescription(route.id,index,en()),item);
-    });
-    el('small',L('被动与机制','Passive and mechanics')+' · '+advancementDescription(route.id,4,en()),item);
-    btn(L('3D 技能与外观','3D skills and appearance'),()=>openSkillPreview(select.value,{en,advancement:route}),item);
-    const current=select.value===p.profession;
-    const selected=p.advancements?.[select.value]?.route;
-    if(selected===route.id)el('small',L('当前路线','Current path'),item);
-    else if(current&&isHoly(p)&&!selected)btn(L('选择此路线','Choose this path'),async()=>{
-     if(!window.confirm(L('升华路线只能选择一次。确定选择 '+L(...route.name)+'？','This choice is permanent. Choose '+L(...route.name)+'?')))return;
-     await action('chooseAdvancement',{route:route.id});
-    },item);
+  const currentJob=PROFESSIONS[p.profession],currentRoute=selectedRoute(p);
+  if(currentJob){
+   el('h3',currentJob.icon+' '+L(currentJob.name,currentJob.en)+(currentRoute?' · '+L(...currentRoute.name):''),card);
+   if(!currentRoute&&ADVANCED_PROFESSIONS[p.profession]?.length){
+    el('h3',L('升华分支','Advancement paths'),card);
+    const routes=el('div','',card);
+    routes.className='ancientProfessionList';
+    for(const route of ADVANCED_PROFESSIONS[p.profession]){
+     const item=el('article','',routes);
+     item.className='weaponCard';
+     el('strong',L(...route.name),item);
+     route.skills.forEach((name,index)=>{
+      el('strong',ADVANCEMENT_KEYS[index]+' · '+L(...name),item);
+      el('span',advancementDescription(route.id,index,en()),item);
+     });
+     el('small',advancementDescription(route.id,4,en()),item);
+     btn(L('3D 技能与外观','3D skills and appearance'),()=>openSkillPreview(p.profession,{en,advancement:route}),item);
+     if(isHoly(p))btn(L('选择此路线','Choose this path'),async()=>{
+      if(window.confirm(L('升华路线只能选择一次。确定选择 '+L(...route.name)+'？','This choice is permanent. Choose '+L(...route.name)+'?')))await action('chooseAdvancement',{route:route.id});
+     },item);
+    }
    }
   }
-  select.value=ADVANCED_PROFESSIONS[p.profession]?p.profession:Object.keys(ADVANCED_PROFESSIONS)[0];
-  select.addEventListener('change',showRoutes);
-  showRoutes();
   if(p.profession){
    btn(L('查看技能','View skills'),()=>open('skills'),card);
    btn(L('职业试炼','Profession Trials'),()=>open('trials'),card);
@@ -108,7 +96,6 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
     renderAscensionPanel(trial,{getProfile,en,job:p.profession,request,join,refresh});
    }
    renderBranchPanel(card,{p,job:p.profession,en,action,refresh});
-   el('p',L('15级开放转职，每次消耗一本转职书。','Changing profession unlocks at level 15 and costs one change book.'),card);
   }
   const fusion=el('details','',card);
   fusion.className='ancientAscensionEntry';
@@ -136,9 +123,20 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    },item);
    fuse.disabled=p.level<15||!ready||!!p.fusedJobs?.[id];
   }
-  const list=el('div','',card);list.className='ancientProfessionList';
+  const toggle=currentJob?btn(L('转职','Change profession'),()=>{
+   change.hidden=!change.hidden;
+   toggle.setAttribute('aria-expanded',String(!change.hidden));
+  },card):null;
+  const change=el('section','',card);
+  change.className='ancientAscensionEntry';
+  change.hidden=!!currentJob;
+  if(toggle){
+   toggle.setAttribute('aria-expanded','false');
+   el('p',L('15级开放转职，每次消耗一本转职书。','Changing profession unlocks at level 15 and costs one change book.'),change);
+  }
+  const list=el('div','',change);list.className='ancientProfessionList';
   for(const [id,job] of Object.entries(PROFESSIONS)){
-   if(p.consumedJobs?.[id]||isFusionJob(id)&&!p.fusedJobs?.[id])continue;
+   if(id===p.profession||p.consumedJobs?.[id]||isFusionJob(id)&&!p.fusedJobs?.[id])continue;
    const item=el('article','',list);item.className='weaponCard';
    el('strong',job.icon+' '+L(job.name,job.en),item);
    const [good,bad,goodEn,badEn]=descriptions[id]||[L('自带圣级技能','Holy skills unlocked'),'固定技能等级','Holy skills unlocked','Fixed skill level'];
@@ -146,12 +144,12 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    el('small',L('缺点','Trade-off')+' · '+L(bad,badEn),item);
    const controls=el('div','',item);controls.className='ancientWorkspaceLinks';
    btn(L('3D 技能预览','3D skill preview'),()=>openSkillPreview(id,{en,level:3,skin:id===p.profession?equippedAncientSkin(p):undefined}),controls);
-   const choose=btn(id===p.profession?L('当前职业','Current profession'):p.profession?L('转职','Change profession'):L('选择职业','Choose profession'),async()=>{
+   const choose=btn(p.profession?L('转职','Change profession'):L('选择职业','Choose profession'),async()=>{
     choose.disabled=true;
     await action('chooseProfession',{job:id});
     if(choose.isConnected)choose.disabled=false;
    },controls);
-   choose.disabled=id===p.profession||!!p.profession&&(p.level<15||(p.materials['supply:transfer']||0)<1);
+   choose.disabled=!!p.profession&&(p.level<15||(p.materials['supply:transfer']||0)<1);
   }
  }
  function render(card){

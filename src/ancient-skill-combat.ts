@@ -122,11 +122,11 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
  }
  if(id==='frostburst'){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(const m of skillAreaTargets(target!,radius,c))c.damage(m,body*skillDirectMultiplier(id,n));c.fx(id,target!.x,target!.z,radius,{target:target!.id});return null;}
  if(['swordwave','triplecut','swordrain','phantomblade'].includes(id)){
-  if(id==='swordrain'&&activeRelic(p)==='swordsman'){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(let i=0;i<6;i++)queueRelic(a,p,{at:now+250+i*500,x:target.x,z:target.z,target:target.id,radius,damage:body*skillDirectMultiplier(id,n),fx:''});c.fx(id,target.x,target.z,radius,{target:target.id});return null;}
+  if(id==='swordrain'&&activeRelic(p)==='swordsman'){const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);for(let i=0;i<6;i++)queueRelic(a,p,{at:now+250+i*500,x:target.x,z:target.z,target:target.id,radius,damage:body*skillDirectMultiplier(id,n),fx:''});c.fx(id,target.x,target.z,radius,{target:target.id,source:{x:a.x,y:a.y,z:a.z}});return null;}
   const strikes=id==='triplecut'?[0,300,600].map((delay,i)=>({skillId:id,owner:a.name,at:now+delay,damage:body*skillDirectMultiplier(id,n)*.5**i})):id==='swordrain'?Array.from({length:6},(_,i)=>({skillId:id,owner:a.name,at:now+250+i*500,damage:body*skillDirectMultiplier(id,n)})):[{skillId:id,owner:a.name,at:now+(id==='phantomblade'?500:0),damage:body*skillDirectMultiplier(id,n)}];
   target.strikes=(target.strikes||[]);if(target.strikes.length+strikes.length>64){delete r.cooldowns[id];return '目标正在承受过多技能'}
   const radius=skillRadius(id,n,isHoly(p))*branchRadius(p,id);const victims=radius?skillAreaTargets(target,radius,c):[target];
-  for(const m of victims){m.strikes=(m.strikes||[]);if(m.strikes.length+strikes.length>64)continue;for(const hit of strikes){if(hit.at>now)m.strikes.push({...hit});else if(m.hp>0)c.damage(m,hit.damage)}}c.fx(id,target.x,target.z,radius||2,{target:target.id});return null;
+  for(const m of victims){m.strikes=(m.strikes||[]);if(m.strikes.length+strikes.length>64)continue;for(const hit of strikes){if(hit.at>now)m.strikes.push({...hit});else if(m.hp>0)c.damage(m,hit.damage)}}c.fx(id,target.x,target.z,radius||2,{target:target.id,source:{x:a.x,y:a.y,z:a.z}});return null;
  }
  if(id==='slash')for(const m of skillAreaTargets(target,skillRadius(id,n,isHoly(p))*branchRadius(p,id),c))c.damage(m,body*skillDirectMultiplier(id,n));
  if(id==='soulbolt'){c.damage(target,body*skillDirectMultiplier(id,n));if(r.summon)r.summon.target=target.id}
