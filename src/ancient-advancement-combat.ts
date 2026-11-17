@@ -1361,7 +1361,7 @@ export function tickAdvancedStone(a:SkillActor,p:AncientProfile,c:SkillContext,n
  c.fx('mountainguard-shatter',a.x,a.z,7);
 }
 
-type LegionMinion={x:number;z:number;until:number;next:number;scale:number;slot:number;count?:number};
+type LegionMinion={x:number;z:number;until:number;next:number;scale:number;slot:number;count?:number;hp?:number;unitHp?:number};
 export type SummonAdvancementRuntime={
  map:string;
  reserve:number[];

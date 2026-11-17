@@ -115,12 +115,23 @@ export function xpNeeded(level:number){
 }
 export function gainXP(p:AncientProfile,amount:number,applyBoost=true){const now=Date.now(),boost=applyBoost&&(p.boosts?.experience||0)>now?1.5:1,title=puzzleTitleBonus(p,now),awarded=boost===1&&!title?amount:Math.floor(amount*boost*(1+title));p.xp+=awarded;while(p.xp>=xpNeeded(p.level)){p.xp-=xpNeeded(p.level);p.level++}return awarded}
 export function newAncientProfile():AncientProfile{const weapon={id:crypto.randomUUID(),gun:'R6',quality:1,level:1,stars:1};const p:AncientProfile={level:1,xp:0,coins:0,potions:{},materials:{wood:20,stone:15,bone:10,core:0},weapons:[weapon],equipped:weapon.id};ensureAncientGear(p);return p}
-export function ancientTarget<T extends {p:{name:string;hp:number;x:number;y:number;z:number}}>(monster:{hp:number;target:string;region:number;kind:string;x:number;y?:number;z:number;map?:string;contributions?:{name:string;damage:number}[]},players:T[]):T|undefined{
+export function ancientTarget<T extends {summonOwner?:string;p:{name:string;hp:number;x:number;y:number;z:number}}>(monster:{hp:number;target:string;region:number;kind:string;x:number;y?:number;z:number;map?:string;contributions?:{name:string;damage:number}[]},players:T[]):T|undefined{
  if(monster.hp<=0)return;
+ const boss=monster.kind==='chief'||monster.kind==='lord'||!!ANCIENT_KINDS[monster.kind]?.boss;
+ const attackers=new Set((monster.contributions||[]).filter(v=>v.damage>0).map(v=>v.name));
+ const eye=monster.map?ancientMapHeight(monster.map,monster.x,monster.z,monster.y)+1.5:1.5;
+ let preferred:T|undefined,nearest=boss?38:20;
+ for(const candidate of players){
+  const {p,summonOwner}=candidate;
+  if(!summonOwner||p.hp<=0||boss&&!attackers.has(summonOwner))continue;
+  const distance=Math.hypot(p.x-monster.x,p.z-monster.z);
+  if(distance>=nearest||!lineClear(monster.x,eye,monster.z,p.x,p.y,p.z,monster.map))continue;
+  preferred=candidate;nearest=distance;
+ }
+ if(preferred)return preferred;
  // Bosses retaliate only against attackers (and their summons), never passers-by.
  if(monster.kind==='chief'||monster.kind==='lord'||ANCIENT_KINDS[monster.kind]?.boss){
-  const attackers=new Set((monster.contributions||[]).filter(v=>v.damage>0).map(v=>v.name));
-  const eligible=players.filter(({p})=>p.hp>0&&attackers.has(p.name.startsWith('@pet:')?p.name.slice(5):p.name));
+  const eligible=players.filter(({p,summonOwner})=>p.hp>0&&attackers.has(summonOwner??(p.name.startsWith('@pet:')?p.name.slice(5):p.name)));
   return eligible.find(({p})=>p.name===monster.target)||eligible.sort((a,b)=>Math.hypot(a.p.x-monster.x,a.p.z-monster.z)-Math.hypot(b.p.x-monster.x,b.p.z-monster.z))[0];
  }
  // Detection limits apply only to acquisition, never to an existing pursuit.
