@@ -2,7 +2,7 @@
 import {isAncientBoss} from './ancient-boss';
 import {advancementCastKey} from './ancient-advanced-professions';
 import {holyPower} from './ancient-ascension';
-import {FUSION_DAMAGE_MULTIPLIER,fusionDamageMultiplier,masteryLevel,releasableSkeletons,skeletonLimit,skeletonSlots} from './ancient-mastery';
+import {FUSION_DAMAGE_MULTIPLIER,fusionDamageMultiplier,masteryLevel,releasableSkeletons,skeletonLimit,skeletonSlots,skeletonAttackEfficiency} from './ancient-mastery';
 import {advancementRoute} from './ancient-advancement-progress';
 import {ancientSkillDamage, ancientGearStats} from './ancient-gear';
 import {ancientMapHeight, blocked, lineClear, type AncientProfile} from './ancient-rules';
@@ -1567,7 +1567,8 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
   }else pet.count=kept;
  }
  state.legion=state.legion.filter(pet=>pet.hp!==0);
- const bonus=1+Math.min(2,Math.log1p(p.necromancerStrength||0)*.18);
+ const efficiency=skeletonAttackEfficiency(skeletonLimit(summonLevel)-free);
+ const bonus=(1+Math.min(2,Math.log1p(p.necromancerStrength||0)*.18))*efficiency;
  for(const pet of state.legion){
   const target=summonTarget(a,c,pet.x,pet.z);
   const enhanced=!!field&&Math.hypot(pet.x-field.x,pet.z-field.z)<=field.radius;

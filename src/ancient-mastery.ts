@@ -15,7 +15,8 @@ const growth: Record<string,number> = {
  temporalrift:.045,chronoshift:.04,rewind:.025,stasis:.022,
 };
 export const masteryLevel=(p:AncientProfile,id:string)=>p.mastery?.[id]?.level||1;
-export const skeletonLimit=(level:number)=>Math.min(48,2+2*level);
+export const skeletonLimit=(level:number)=>Math.min(96,2+2*level);
+export const skeletonAttackEfficiency=(slots:number)=>slots<=48?1:(48+(slots-48)*.5)/slots;
 export const skeletonSlots=(pet:{count?:number;merged?:number})=>pet.merged??pet.count??1;
 export function releasableSkeletons(p:AncientProfile,state:{reserve:number[];reserveCount?:number;legion:{until:number;hp?:number;count?:number;merged?:number}[]}|undefined,now=Date.now()){
  if(!state)return 0;
