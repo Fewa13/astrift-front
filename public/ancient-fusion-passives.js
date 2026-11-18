@@ -20,7 +20,7 @@ const FUSION_PASSIVES = {
   ],
   voidsword: [
     ["\u865A\u7A7A\u950B\u5203", "Void Edge", "\u865A\u7A7A\u65A9\u6709\u6982\u7387\u76F4\u63A5\u5F15\u7206\uFF0C\u5347\u7EA7\u63D0\u9AD8\u6982\u7387\u3002", "Void Slash can detonate immediately. Levels raise the chance."],
-    ["\u88C2\u9699\u62A4\u4F53", "Rift Guard", "\u964D\u4F4E\u53D7\u5230\u7684\u4F24\u5BB3\uFF0C\u865A\u7A7A\u9886\u57DF\u751F\u6548\u65F6\u51CF\u4F24\u66F4\u9AD8\u3002", "Reduces incoming damage, especially during your void domain."],
+    ["\u88C2\u9699\u62A4\u4F53", "Rift Guard", "\u964D\u4F4E\u53D7\u5230\u7684\u4F24\u5BB3\u3002\u5728\u865A\u7A7A\u9886\u57DF\u5185\u6BCF\u7EA7\u989D\u5916\u51CF\u4F24 1%\uFF0C\u989D\u5916\u51CF\u4F24\u6700\u591A 30%\u3002", "Reduces damage taken. Inside your void domain, gain another 1% reduction per level, up to 30%."],
     ["\u754C\u5916\u7EDD\u65A9", "Beyond the Rift", "\u5927\u5E45\u5F3A\u5316\u653B\u51FB\uFF0C\u7EC8\u7ED3\u6280\u83B7\u5F97\u66F4\u9AD8\u589E\u5E45\u3002", "Greatly amplifies attacks, with a larger bonus on finishers."]
   ],
   abyssal: [
@@ -29,11 +29,21 @@ const FUSION_PASSIVES = {
     ["\u6DF1\u6E0A\u9965\u6E34", "Abyssal Hunger", "\u5927\u5E45\u5F3A\u5316\u5168\u90E8\u653B\u51FB\uFF0C\u4F4E\u8840\u65F6\u6548\u679C\u66F4\u5F3A\u3002", "Greatly amplifies all attacks, especially at low health."]
   ],
   chrono: [
-    ["\u65F6\u5E8F\u52A0\u901F", "Temporal Acceleration", "\u6210\u529F\u56DE\u6EAF\u540E\uFF0C\u5176\u4ED6\u65F6\u7A7A\u884C\u8005\u6280\u80FD\u7ACB\u5373\u7ED3\u675F\u51B7\u5374\u3002", "A successful Time Rewind ends the cooldowns of your other Chrono Walker skills."],
+    ["\u65F6\u5E8F\u52A0\u901F", "Temporal Acceleration", "\u6210\u529F\u56DE\u6EAF\u540E\u5237\u65B0\u5176\u4ED6\u65F6\u7A7A\u6280\u80FD\u3002\u653B\u51FB\u6982\u7387\u9644\u52A0 4 \u79D2\u65F6\u95F4\u6DF7\u4E71\uFF0C\u4F7F\u76EE\u6807\u53D7\u4F24 +15%\u3001\u653B\u51FB \u221215%\u3002\u518D\u6B21\u89E6\u53D1\u4F1A\u989D\u5916\u9020\u6210 250% \u672C\u6B21\u4F24\u5BB3\uFF0C\u5E76\u51CF\u901F 45% \u6301\u7EED 3 \u79D2\u3002", "Rewind refreshes your other Chrono Walker skills. Hits may inflict 4 seconds of Temporal Disorder: 15% more damage taken and 15% less attack. A second proc deals 250% bonus hit damage and slows by 45% for 3 seconds."],
     ["\u65F6\u95F4\u7F13\u51B2", "Time Buffer", "\u964D\u4F4E\u53D7\u5230\u7684\u4F24\u5BB3\uFF0C\u8DC3\u8FC1\u6216\u56DE\u6EAF\u540E\u77ED\u6682\u52A0\u5F3A\u3002", "Reduces damage taken, with stronger protection briefly after shifting or rewinding."],
     ["\u65F6\u95F4\u53E0\u5C42", "Temporal Overlap", "\u5927\u5E45\u5F3A\u5316\u653B\u51FB\uFF0C\u5BF9\u51CF\u901F\u76EE\u6807\u989D\u5916\u589E\u4F24\u3002", "Greatly amplifies attacks, with an extra bonus against slowed foes."]
   ]
 };
+const TEMPORAL_DISORDER = {
+  duration: 4e3,
+  vulnerability: 0.15,
+  weakness: 0.15,
+  explosion: 2.5,
+  slow: 0.45,
+  slowDuration: 3e3,
+  chance: (level) => Math.min(0.5, 0.18 + 5e-3 * (level - 1))
+};
+const voidDomainExtraReduction = (level) => Math.min(0.3, level * 0.01);
 const passiveCost = (level, job, index) => (12 + level * level * 6) * (job === "necromancer" && index === 0 ? 2 : 1);
 const passiveLevel = (p, index) => p.fusionPassives?.[p.profession || ""]?.[index]?.level || 0;
 function ignitionEligible(p, index) {
@@ -67,9 +77,11 @@ export {
   FUSION_PASSIVES,
   FUSION_PASSIVE_REQUIREMENTS,
   FUSION_SCROLLS,
+  TEMPORAL_DISORDER,
   igniteFusionPassive,
   ignitionEligible,
   passiveCost,
   passiveLevel,
-  trainFusionPassive
+  trainFusionPassive,
+  voidDomainExtraReduction
 };

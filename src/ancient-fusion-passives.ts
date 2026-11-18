@@ -22,7 +22,7 @@ export const FUSION_PASSIVES:Record<string,[string,string,string,string][]> = {
  ],
  voidsword:[
   ['虚空锋刃','Void Edge','虚空斩有概率直接引爆，升级提高概率。','Void Slash can detonate immediately. Levels raise the chance.'],
-  ['裂隙护体','Rift Guard','降低受到的伤害，虚空领域生效时减伤更高。','Reduces incoming damage, especially during your void domain.'],
+  ['裂隙护体','Rift Guard','降低受到的伤害。在虚空领域内每级额外减伤 1%，额外减伤最多 30%。','Reduces damage taken. Inside your void domain, gain another 1% reduction per level, up to 30%.'],
   ['界外绝斩','Beyond the Rift','大幅强化攻击，终结技获得更高增幅。','Greatly amplifies attacks, with a larger bonus on finishers.'],
  ],
  abyssal:[
@@ -31,11 +31,17 @@ export const FUSION_PASSIVES:Record<string,[string,string,string,string][]> = {
   ['深渊饥渴','Abyssal Hunger','大幅强化全部攻击，低血时效果更强。','Greatly amplifies all attacks, especially at low health.'],
  ],
  chrono:[
-  ['时序加速','Temporal Acceleration','成功回溯后，其他时空行者技能立即结束冷却。','A successful Time Rewind ends the cooldowns of your other Chrono Walker skills.'],
+  ['时序加速','Temporal Acceleration','成功回溯后刷新其他时空技能。攻击概率附加 4 秒时间混乱，使目标受伤 +15%、攻击 −15%。再次触发会额外造成 250% 本次伤害，并减速 45% 持续 3 秒。','Rewind refreshes your other Chrono Walker skills. Hits may inflict 4 seconds of Temporal Disorder: 15% more damage taken and 15% less attack. A second proc deals 250% bonus hit damage and slows by 45% for 3 seconds.'],
   ['时间缓冲','Time Buffer','降低受到的伤害，跃迁或回溯后短暂加强。','Reduces damage taken, with stronger protection briefly after shifting or rewinding.'],
   ['时间叠层','Temporal Overlap','大幅强化攻击，对减速目标额外增伤。','Greatly amplifies attacks, with an extra bonus against slowed foes.'],
  ],
 };
+export const TEMPORAL_DISORDER={
+ duration:4000, vulnerability:.15, weakness:.15,
+ explosion:2.5, slow:.45, slowDuration:3000,
+ chance:(level:number)=>Math.min(.5,.18+.005*(level-1)),
+};
+export const voidDomainExtraReduction=(level:number)=>Math.min(.30,level*.01);
 export type FusionPassiveProgress={level:number;points:number};
 export const passiveCost=(level:number,job?:string,index?:number)=>(12+level*level*6)*(job==='necromancer'&&index===0?2:1);
 export const passiveLevel=(p:AncientProfile,index:number)=>p.fusionPassives?.[p.profession||'']?.[index]?.level||0;
