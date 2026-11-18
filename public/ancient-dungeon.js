@@ -44,9 +44,12 @@ function solids(map) {
   const { collapsed, gateZ, mechanisms, artifact } = geometry.get(map || "") || { collapsed: [], gateZ: 189 };
   return [...(artifact ? artifactTrialBlocks(artifact) : DUNGEON_BLOCKS).filter((o) => !collapsed.some((i) => DUNGEON_PILLARS[i].x === o.x && DUNGEON_PILLARS[i].z === o.z)), ...dungeonObstacles({ collapsed }), ...dungeonMechanismSolids(mechanisms), ...gateZ < 189 ? [{ x: 0, z: gateZ + 1, w: gateZ === 162 ? 48 : 16, d: 2, h: 14 }] : []];
 }
-function dungeonBlocked(x, z, r = 0.6, map) {
+function dungeonBlocked(x, z, r = 0.6, map, feet = 0) {
   if (geometry.get(map || "")?.tower) return !Number.isFinite(x + z) || Math.abs(x) > 22 - r || z < 3 + r || z > 55 - r;
-  return !Number.isFinite(x + z) || Math.abs(x) > 24 - r || z < 3 + r || z > (geometry.get(map || "")?.gateZ || 189) - r || solids(map).some((o) => Math.abs(x - o.x) < o.w / 2 + r && Math.abs(z - o.z) < o.d / 2 + r);
+  return !Number.isFinite(x + z) || Math.abs(x) > 24 - r || z < 3 + r || z > (geometry.get(map || "")?.gateZ || 189) - r || solids(map).some((o) => feet < o.h - 0.05 && Math.abs(x - o.x) < o.w / 2 + r && Math.abs(z - o.z) < o.d / 2 + r);
+}
+function dungeonSurface(map, x, z, feet) {
+  return solids(map).reduce((height, o) => o.h <= feet + 0.12 && Math.abs(x - o.x) < o.w / 2 + 0.55 && Math.abs(z - o.z) < o.d / 2 + 0.55 ? Math.max(height, o.h) : height, 0);
 }
 function dungeonLineClear(ax, ay, az, bx, by, bz, map, ignore) {
   return !solids(map).some((o) => {
@@ -156,6 +159,7 @@ export {
   dungeonObstacles,
   dungeonPath,
   dungeonRubbleBlocked,
+  dungeonSurface,
   dungeonTraps,
   isDungeonMap,
   setDungeonGeometry,

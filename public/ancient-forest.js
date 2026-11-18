@@ -9,8 +9,12 @@ function forestCompactPoint(x, z) {
 function forestHeight(x, z) {
   return z < 105 ? 0 : z < 145 ? (z - 105) * 0.25 : 10;
 }
-function forestSurface(x, z) {
+function forestSurface(x, z, feet = -Infinity) {
   let height = forestHeight(x, z);
+  for (const t of FOREST_TREES) {
+    const top = forestHeight(t.x, t.z) + t.h;
+    if (top <= feet + 0.12 && Math.hypot(x - t.x, z - t.z) <= t.r + 0.55) height = Math.max(height, top);
+  }
   for (const a of FOREST_ALTARS) for (let i = 0; i < 3; i++) if (Math.hypot(x - a.x, z - a.z) <= 15 - i * 1.8) height = Math.max(height, 9.95 + i * 0.12);
   return height;
 }
@@ -64,8 +68,8 @@ function forestSafePosition(x, z, r = 1.8) {
   }
   return { x: 60, z: 210 };
 }
-function forestBlocked(x, z, r = 0.6) {
-  return !forestInside(x, z, r) || leisureSolid("forest", x, z, r) || FOREST_TREES.some((t) => Math.hypot(x - t.x, z - t.z) < t.r + r);
+function forestBlocked(x, z, r = 0.6, feet = -Infinity) {
+  return !forestInside(x, z, r) || leisureSolid("forest", x, z, r) || FOREST_TREES.some((t) => feet < forestHeight(t.x, t.z) + t.h - 0.05 && Math.hypot(x - t.x, z - t.z) < t.r + r);
 }
 function forestLineClear(ax, ay, az, bx, by, bz) {
   const length = Math.hypot(bx - ax, bz - az), steps = Math.max(1, Math.ceil(length / 0.45));

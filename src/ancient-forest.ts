@@ -6,7 +6,7 @@ export const FOREST_ALTARS=[{element:'metal',x:81,z:310,color:0xffd56b},{element
 export function forestCompactPoint(x:number,z:number){return z>=205?{x:60+(x-60)*.7,z:205+(z-205)*.7}:{x,z}}
 export function forestHeight(x:number,z:number){return z<105?0:z<145?(z-105)*.25:10}
 // Match the three visible altar cylinders (top surfaces: 9.95, 10.07, 10.19).
-export function forestSurface(x:number,z:number){let height=forestHeight(x,z);for(const a of FOREST_ALTARS)for(let i=0;i<3;i++)if(Math.hypot(x-a.x,z-a.z)<=15-i*1.8)height=Math.max(height,9.95+i*.12);return height}
+export function forestSurface(x:number,z:number,feet=-Infinity){let height=forestHeight(x,z);for(const t of FOREST_TREES){const top=forestHeight(t.x,t.z)+t.h;if(top<=feet+.12&&Math.hypot(x-t.x,z-t.z)<=t.r+.55)height=Math.max(height,top);}for(const a of FOREST_ALTARS)for(let i=0;i<3;i++)if(Math.hypot(x-a.x,z-a.z)<=15-i*1.8)height=Math.max(height,9.95+i*.12);return height}
 export function forestInside(x:number,z:number,r=0){return passageInside('forest',x,z,r)||(x>-35+r&&x<35-r&&z>3+r&&z<190-r)||(x>25+r&&x<95-r&&z>158+r&&z<190-r)||(x>44+r&&x<76-r&&z>180+r&&z<220-r)||(x>-12+r&&x<174-r&&z>205+r&&z<394-r)}
 // Place cliff inner faces on the actual union boundary, not a rounded grid.
 export const FOREST_CLIFFS:{x:number;z:number;w:number;d:number}[]=[];
@@ -27,7 +27,7 @@ for(let i=0;i<92;i++){const x=(random()-.5)*60,z=26+random()*78;if(Math.abs(x)<5
 for(const [x,z]of [[-22,151],[19,153],[-18,177],[15,179]])FOREST_TREES.push({x,z,r:2.4,h:42,giant:true});
 for(let i=0;i<80;i++){const x=-1+random()*164,z=207+random()*181;if(x>15&&x<147&&z>222&&z<380||FOREST_ALTARS.some(a=>Math.hypot(a.x-x,a.z-z)<24)||Math.abs(x-60)<9&&z<250)continue;FOREST_TREES.push({x,z,r:1+random()*.55,h:15+random()*13,giant:false})}
 export function forestSafePosition(x:number,z:number,r=1.8){if(!forestBlocked(x,z,r))return {x,z};for(let distance=2;distance<500;distance+=2)for(let i=0;i<24;i++){const angle=i/24*Math.PI*2,nx=x+Math.cos(angle)*distance,nz=z+Math.sin(angle)*distance;if(!forestBlocked(nx,nz,r))return {x:nx,z:nz}}return {x:60,z:210}}
-export function forestBlocked(x:number,z:number,r=.6){return !forestInside(x,z,r)||leisureSolid('forest',x,z,r)||FOREST_TREES.some(t=>Math.hypot(x-t.x,z-t.z)<t.r+r)}
+export function forestBlocked(x:number,z:number,r=.6,feet=-Infinity){return !forestInside(x,z,r)||leisureSolid('forest',x,z,r)||FOREST_TREES.some(t=>feet<forestHeight(t.x,t.z)+t.h-.05&&Math.hypot(x-t.x,z-t.z)<t.r+r)}
 export function forestLineClear(ax:number,ay:number,az:number,bx:number,by:number,bz:number){const length=Math.hypot(bx-ax,bz-az),steps=Math.max(1,Math.ceil(length/.45));for(let i=1;i<steps;i++){const t=i/steps,x=ax+(bx-ax)*t,z=az+(bz-az)*t,y=ay+(by-ay)*t;if(!forestInside(x,z)||y<forestHeight(x,z)-.1||FOREST_TREES.some(o=>Math.hypot(x-o.x,z-o.z)<o.r&&y<forestHeight(o.x,o.z)+o.h))return false}return true}
 export const FOREST_KINDS:Record<string,{name:string;en:string;size:number;hp:number;damage:number;xp:number;range:number;speed:number;boss:boolean}>={
  mossling:{name:'苔甲兽',en:'Mossback',size:1.25,hp:220,damage:35,xp:60,range:2.8,speed:3.5,boss:false},

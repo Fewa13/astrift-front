@@ -12,7 +12,13 @@ export const SANCTUM_KINDS:Record<string,{name:string;en:string;size:number;rang
  immaculate_judge:{name:'无瑕裁决者',en:'The Immaculate Arbiter',size:4,range:14,speed:3.6,boss:true}
 };
 export function sanctumHeight(_x:number,z:number){return z<180?0:z<240?(z-180)*8/60:z<430?8:z<470?8+(z-430)*.1:12}
-export function sanctumSurface(x:number,z:number){const r=Math.hypot(x,z-555);return sanctumHeight(x,z)+(r<13?.45:r<14?.3:r<15?.15:0)}
+export function sanctumSurface(x:number,z:number,feet=-Infinity){
+ const r=Math.hypot(x,z-555),floor=sanctumHeight(x,z)+(r<13?.45:r<14?.3:r<15?.15:0);
+ return sanctumColliders.reduce((height,o)=>{
+  const top=sanctumHeight(o.x,o.z)+o.h;
+  return top<=feet+.12&&Math.abs(x-o.x)<=o.w/2+.55&&Math.abs(z-o.z)<=o.d/2+.55?Math.max(height,top):height;
+ },floor);
+}
 export type SanctumSolid={x:number;z:number;w:number;d:number;h:number;bottom?:number;kind:string};
 export const SANCTUM_SOLIDS:SanctumSolid[]=[];
 for(const z of [35,165,250,390,470,590])for(const s of [-1,1])SANCTUM_SOLIDS.push({x:s*(z<180?24:35),z,w:2.6,d:2.6,h:8,kind:'column'});

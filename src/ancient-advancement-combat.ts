@@ -863,6 +863,8 @@ type StoredBlade=StormPoint & {until:number};
 export type SwordAdvancementRuntime={
  map:string;
  blades:StoredBlade[];
+ flightUntil?:number;
+ descending?:boolean;
  angles:Record<string,{values:number[];until:number}>;
  armor:Record<string,number>;
  openings:Record<string,number>;
@@ -904,8 +906,12 @@ function flyingBladeHit(a:SkillActor,c:SkillContext,state:SwordAdvancementRuntim
 function castSwordAdvancement(a:SkillActor,p:AncientProfile,route:string,key:string,id:string,direction:unknown,c:SkillContext,now:number,level:number){
  if(a.hp<=0)return '请在存活时使用技能';
  const r=runtime(a);
- if((r.cooldowns[id]||0)>now)return '技能冷却中';
  const state=swordState(a,c.map);
+ if(route==='blademaster'&&key==='C'&&(state.flightUntil||0)>now){
+  state.descending=!state.descending;
+  return null;
+ }
+ if((r.cooldowns[id]||0)>now)return '技能冷却中';
  const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
  const tag='advancement:'+route+':'+key;
  const origin={x:a.x,y:a.y-1.7,z:a.z};
@@ -913,13 +919,12 @@ function castSwordAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
  if(route==='blademaster'){
   state.blades=state.blades.filter(blade=>blade.until>now);
   if(key==='X'){
-   if(!target)return '请瞄准可见的敌人';
-   const point=firePoint(c,target);
-   flyingBladeHit(a,c,state,target,origin,power*4.2,key,now);
-   const phase=state.blades.length*2.094;
-   state.blades.push({...point,x:point.x+Math.sin(phase)*2,z:point.z+Math.cos(phase)*2,until:now+15000});
+   if((state.flightUntil||0)>now)return '正在御剑飞行 / Already riding a blade';
+   state.flightUntil=now+Math.min(90000,6500+level*650);
+   state.descending=false;
+   state.blades.push({...origin,until:state.flightUntil+15000});
    if(state.blades.length>3)state.blades.shift();
-   c.fx('blademaster-launch',point.x,point.z,3,{target:target.id,source:origin});
+   c.fx('blademaster-launch',a.x,a.z,3,{source:origin,target:''});
   }else{
    if(!state.blades.length)return '先用御剑留下飞剑';
    if(key!=='Z'&&!target)return '请瞄准可见的敌人';

@@ -14,9 +14,12 @@ const SANCTUM_KINDS = {
 function sanctumHeight(_x, z) {
   return z < 180 ? 0 : z < 240 ? (z - 180) * 8 / 60 : z < 430 ? 8 : z < 470 ? 8 + (z - 430) * 0.1 : 12;
 }
-function sanctumSurface(x, z) {
-  const r = Math.hypot(x, z - 555);
-  return sanctumHeight(x, z) + (r < 13 ? 0.45 : r < 14 ? 0.3 : r < 15 ? 0.15 : 0);
+function sanctumSurface(x, z, feet = -Infinity) {
+  const r = Math.hypot(x, z - 555), floor = sanctumHeight(x, z) + (r < 13 ? 0.45 : r < 14 ? 0.3 : r < 15 ? 0.15 : 0);
+  return sanctumColliders.reduce((height, o) => {
+    const top = sanctumHeight(o.x, o.z) + o.h;
+    return top <= feet + 0.12 && Math.abs(x - o.x) <= o.w / 2 + 0.55 && Math.abs(z - o.z) <= o.d / 2 + 0.55 ? Math.max(height, top) : height;
+  }, floor);
 }
 const SANCTUM_SOLIDS = [];
 for (const z of [35, 165, 250, 390, 470, 590]) for (const s of [-1, 1]) SANCTUM_SOLIDS.push({ x: s * (z < 180 ? 24 : 35), z, w: 2.6, d: 2.6, h: 8, kind: "column" });

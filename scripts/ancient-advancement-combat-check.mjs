@@ -47,9 +47,17 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
  const bossAim=[6,-.55,11].map(v=>v/Math.hypot(6,.55,11));
  const resetPosition=()=>Object.assign(actor,{x:0,y:1.7,z:10});
  for(const [index,key] of ADVANCEMENT_KEYS.entries()){
-  const now=100000+index*1200+(route.id==='paladin'&&key==='C'?8000:0),tag='advanced:'+key;
+  let now=100000+index*1200+(route.id==='paladin'&&key==='C'?8000:0);const tag='advanced:'+key;
   resetPosition();
-  if(route.id==='blademaster'&&key==='C')assert.equal(castAncientSkill(actor,profile,'advanced:X',aim,context,now+6000),null);
+  if(route.id==='blademaster'&&key==='C'){
+   const ride=actor.skillRuntime.advancedSword;
+   assert(ride.flightUntil>now);
+   assert.equal(castAncientSkill(actor,profile,'advanced:C',aim,context,now),null);
+   assert(ride.descending);
+   const recastAt=ride.flightUntil+1;
+   assert.equal(castAncientSkill(actor,profile,'advanced:X',aim,context,recastAt),null);
+   now=ride.flightUntil+1;
+  }
   if(route.id==='abyss-king'&&key==='C')actor.skillRuntime.advancedAbyss.energy=40;
   const before=events.length;
   const result=castAncientSkill(actor,profile,tag,route.id==='paladin'&&key==='C'?bossAim:aim,context,now);

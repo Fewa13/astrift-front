@@ -61,6 +61,14 @@ for(let z=320;z<390;z+=14)for(const x of [-24,24])scenery('dunes','temple-column
 const chapterSolids=Object.fromEntries(Object.entries(CHAPTER_PROPS).map(([map,props])=>[
  map,[...props.flatMap(o=>o.kind==='sunken-arch'?[-1,1].map(side=>({...o,x:o.x+side*8,w:5,d:5,h:16})): [o]),...CHAPTER_SCENERY[map]]
 ]));
+export function chapterSurface(map:string,x:number,z:number,feet:number){
+ let height=chapterHeight(map,x,z);
+ for(const solid of chapterSolids[map]||[]){
+  const top=chapterHeight(map,solid.x,solid.z)+solid.h;
+  if(top<=feet+.12&&Math.abs(x-solid.x)<=solid.w/2+.55&&Math.abs(z-solid.z)<=solid.d/2+.55)height=Math.max(height,top);
+ }
+ return height;
+}
 export function chapterBlocked(map:string,x:number,z:number,r=.6,feet=chapterHeight(map,x,z)){return !Number.isFinite(x+z)||chapterDistance(map,x,z)<r||[...(chapterSolids[map]||[]),...chapterGates(map)].some(o=>feet<chapterHeight(map,o.x,o.z)+o.h-.1&&Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)||false;}
 export function chapterClear(map:string,ax:number,ay:number,az:number,bx:number,by:number,bz:number){const n=Math.max(1,Math.ceil(Math.hypot(bx-ax,bz-az)/.7));for(let i=1;i<n;i++){const t=i/n,x=ax+(bx-ax)*t,z=az+(bz-az)*t,y=ay+(by-ay)*t;if(chapterDistance(map,x,z)<0||y<chapterHeight(map,x,z)-.15||[...(chapterSolids[map]||[]),...chapterGates(map)].some(o=>Math.abs(x-o.x)<o.w/2&&Math.abs(z-o.z)<o.d/2&&y<chapterHeight(map,o.x,o.z)+o.h))return false;}return true;}
 export function chapterPath(map:string,ax:number,az:number,bx:number,bz:number){

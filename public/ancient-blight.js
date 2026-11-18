@@ -45,9 +45,13 @@ function blightHeight(_x, z) {
   return z <= 400 ? 0 : -Math.min(16, (z - 400) * 0.12);
 }
 function blightSurface(x, z, feet = 0) {
-  for (const b of BLIGHT_HOUSES) if (feet >= b.h - 0.5 && Math.abs(x - b.x) < b.w / 2 + 0.5 && Math.abs(z - b.z) < b.d / 2 + 0.5) return b.h;
   const r = Math.hypot(x, z - 600);
-  return blightHeight(x, z) + (r <= 11 ? 0.4 : r <= 12 ? 0.3 : r <= 13 ? 0.2 : 0);
+  let top = blightHeight(x, z) + (r <= 11 ? 0.4 : r <= 12 ? 0.3 : r <= 13 ? 0.2 : 0);
+  for (const o of blightColliders) {
+    const height = blightHeight(o.x, o.z) + o.h;
+    if (feet >= height - 0.5 && Math.abs(x - o.x) < o.w / 2 + 0.5 && Math.abs(z - o.z) < o.d / 2 + 0.5) top = Math.max(top, height);
+  }
+  return top;
 }
 function blightBlocked(x, z, r = 0.6, feet = blightHeight(x, z)) {
   return Math.abs(x) > 55 - r || z < 3 + r || z > 635 - r || blightColliders.some((o) => feet < blightHeight(o.x, o.z) + o.h - 0.05 && feet + 1.8 > blightHeight(o.x, o.z) + (o.bottom || 0) + 0.02 && Math.abs(x - o.x) < o.w / 2 + r && Math.abs(z - o.z) < o.d / 2 + r);

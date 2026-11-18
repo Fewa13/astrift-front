@@ -302,8 +302,12 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    const key=advancementCastKey(id),index=ADVANCEMENT_KEYS.indexOf(key),now=Date.now(),runtime=a.skillRuntime;
    const cd=Math.max(0,Math.ceil(((runtime?.cooldowns[id]||0)-now)/1000));
    const ready=route.id==='time-sovereign'&&(key==='Z'&&(runtime?.advancedTime?.rewind?.until||0)>now||key==='Q'&&(runtime?.advancedTime?.anchor?.until||0)>now)||key==='Q'&&(route.id==='shadowhunter'&&runtime?.advancedShadow?.anchor||route.id==='riftlord'&&(runtime?.advancedRift?.anchor?.until||0)>now||route.id==='voltstalker'&&(runtime?.volt?.followupUntil||0)>now);
-   b.textContent=ancientKeyLabel('Key'+key,en())+' · '+L(...route.skills[index])+(cd&&!ready?' · '+cd+'s':'');
-   b.disabled=cd>0&&!ready;
+   const flight=route.id==='blademaster'?runtime?.advancedSword:undefined;
+   const riding=(flight?.flightUntil||0)>now;
+   const name=riding&&key==='C'?(flight.descending?L('停止下降','Stop descent'):L('下降','Descend')):L(...route.skills[index]);
+   const seconds=riding&&key==='X'?Math.ceil((flight.flightUntil-now)/1000):cd;
+   b.textContent=ancientKeyLabel('Key'+key,en())+' · '+name+(seconds&&!ready&&!(riding&&key==='C')?' · '+seconds+'s':'');
+   b.disabled=riding&&key==='X'||(!(riding&&key==='C')&&cd>0&&!ready);
    b.classList.toggle('selected',!!ready);
   }
   return;

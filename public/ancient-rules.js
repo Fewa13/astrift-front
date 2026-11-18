@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { chapterSurface, CHAPTER_ROUTES } from "./ancient-geography.js";
 import { DUNES_KINDS, dunesSurface, dunesHeight, dunesBlocked, dunesLineClear, dunesMonsterDamage } from "./ancient-dunes.js";
 import { communityId, communityHeight, communityBlocked, communityClear } from "./ancient-community.js";
 import { passageInside, leisureSolid, tribePassageLineClear } from "./ancient-leisure.js";
@@ -8,7 +9,7 @@ import { STARFALL_KINDS, starfallHeight, starfallSurface, starfallBlocked, starf
 import { BESTIARY, bestiaryDamage } from "./ancient-bestiary.js";
 import { SANCTUM_KINDS, sanctumHeight, sanctumSurface, sanctumBlocked, sanctumLineClear, sanctumMonsterDamage } from "./ancient-sanctum.js";
 import { BLIGHT_KINDS, blightHeight, blightSurface, blightBlocked, blightLineClear, blightMonsterDamage } from "./ancient-blight.js";
-import { isDungeonMap, dungeonBlocked, dungeonLineClear } from "./ancient-dungeon.js";
+import { isDungeonMap, dungeonBlocked, dungeonLineClear, dungeonSurface } from "./ancient-dungeon.js";
 import { ancientMobDamage } from "./ancient-mob-stats.js";
 import { ancientBossDamage } from "./ancient-boss-stats.js";
 import { CITY_KINDS, cityBlocked, cityLineClear, cityMonsterDamage, cityHeight, citySurface } from "./ancient-city.js";
@@ -23,7 +24,8 @@ function tribeCompactZ(z) {
   return z <= 30 ? z : z <= 200 ? 30 + (z - 30) * 120 / 170 : z <= 500 ? 150 + (z - 200) * 2 / 3 : 350 + (z - 500) * 0.5;
 }
 function ancientMapHeight(map, x, z, feet) {
-  return map === "dunes" ? dunesSurface(x, z) : communityId(map) ? communityHeight(map, x, z, feet) : map === "skyreach" ? skyreachSurface(x, z) : map === "frostcourt" ? frostcourtSurface(x, z) : map === "starfall" ? starfallSurface(x, z) : map === "sanctum" ? sanctumSurface(x, z) : map === "blight" ? blightSurface(x, z, feet) : isDungeonMap(map) ? 0 : map === "city" ? feet === void 0 ? cityHeight(x, z) : citySurface(x, z, feet) : map === "forest" ? forestSurface(x, z) : feet === void 0 ? tribeAltarHeight(x, z) : Math.max(tribeAltarHeight(x, z), tribeSurface(x, z, feet));
+  if (feet !== void 0 && CHAPTER_ROUTES[map]) return chapterSurface(map, x, z, feet);
+  return map === "dunes" ? dunesSurface(x, z) : communityId(map) ? communityHeight(map, x, z, feet) : map === "skyreach" ? skyreachSurface(x, z) : map === "frostcourt" ? frostcourtSurface(x, z) : map === "starfall" ? starfallSurface(x, z) : map === "sanctum" ? sanctumSurface(x, z, feet) : map === "blight" ? blightSurface(x, z, feet) : isDungeonMap(map) ? dungeonSurface(map, x, z, feet ?? -Infinity) : map === "city" ? feet === void 0 ? cityHeight(x, z) : citySurface(x, z, feet) : map === "forest" ? forestSurface(x, z, feet) : feet === void 0 ? tribeAltarHeight(x, z) : Math.max(tribeAltarHeight(x, z), tribeSurface(x, z, feet));
 }
 function tribeAltarHeight(x, z) {
   let height = 0;
@@ -279,10 +281,9 @@ function tribeSafePosition(x, z, r = 0.6) {
   }
   return { x: 0, z: 10 };
 }
-const TRIBE_WALKABLE = /* @__PURE__ */ new Set(["firepit", "shrine", "basket", "rack", "rackPost", "post", "pillar", "altar"]);
 function tribeSurface(x, z, feet) {
   let height = 0;
-  for (const o of TRIBE_SOLIDS) if (TRIBE_WALKABLE.has(o.kind) && o.h <= feet + 0.12 && Math.abs(x - o.x) <= o.w / 2 + 0.6 && Math.abs(z - o.z) <= o.d / 2 + 0.6) height = Math.max(height, o.h);
+  for (const o of TRIBE_COLLIDERS) if (o.h <= feet + 0.12 && Math.abs(x - o.x) <= o.w / 2 + 0.6 && Math.abs(z - o.z) <= o.d / 2 + 0.6) height = Math.max(height, o.h);
   return height;
 }
 function blocked(x, z, r = 0.6, map = "tribe", feet = NaN) {
@@ -294,9 +295,9 @@ function blocked(x, z, r = 0.6, map = "tribe", feet = NaN) {
   if (map === "sanctum") return sanctumBlocked(x, z, r, Number.isFinite(feet) ? feet : sanctumHeight(x, z));
   if (map === "blight") return blightBlocked(x, z, r, Number.isFinite(feet) ? feet : blightHeight(x, z));
   feet = Number.isFinite(feet) ? feet : 0;
-  if (isDungeonMap(map)) return dungeonBlocked(x, z, r, map);
+  if (isDungeonMap(map)) return dungeonBlocked(x, z, r, map, feet);
   if (map === "city") return cityBlocked(x, z, r, feet);
-  if (map === "forest") return forestBlocked(x, z, r);
+  if (map === "forest") return forestBlocked(x, z, r, feet);
   return (Math.abs(x) > 39 - r || z < 3 || z > TRIBE_LENGTH - 3) && !passageInside("tribe", x, z, r) || leisureSolid("tribe", x, z, r) || TRIBE_COLLIDERS.some((o) => feet < o.h - 0.05 && feet + 1.7 > (o.bottom || 0) + 0.02 && Math.abs(x - o.x) < o.w / 2 + r && Math.abs(z - o.z) < o.d / 2 + r);
 }
 function lineClear(ax, ay, az, bx, by, bz, map = "tribe") {

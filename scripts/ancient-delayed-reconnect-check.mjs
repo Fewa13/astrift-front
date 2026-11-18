@@ -212,5 +212,30 @@ const during={count:1,unitHp:100,hp:100,scale:1,x:0,z:50,until:now+10000,next:0,
 server.hurtSkeletonSquad(actor,during,100,now+3);
 assert.equal(during.hp,0,'player revival cooldown disables skeleton revival');
 
+const swordsman=server.read('caster');
+swordsman.profession='swordsman';
+swordsman.ascension={jobs:{swordsman:{holy:true}},attempts:0,day:''};
+swordsman.advancements={swordsman:{route:'blademaster',skills:Object.fromEntries([...('XQZC')].map(key=>[key,{level:16,points:0}]))}};
+server.save('caster',swordsman);
+const sky=authoritative.deserializeAttachment();
+Object.assign(sky,{x:0,y:75,z:50,hp:1e6,lastMove:Date.now()-450,moveSeq:0,advancement:'blademaster'});
+authoritative.serializeAttachment(sky);
+await server.webSocketMessage(authoritative,JSON.stringify({type:'skill',id:'advanced:X'}));
+await server.webSocketMessage(authoritative,JSON.stringify({type:'move',seq:1,x:0,z:50,y:77,yaw:0}));
+assert.equal(authoritative.deserializeAttachment().y,77,'flight accepts ascent above the ordinary jump ceiling');
+const flight=authoritative.deserializeAttachment();
+flight.lastMove=Date.now()-500;
+flight.moveCredit=20;
+flight.x=38;flight.z=50;
+authoritative.serializeAttachment(flight);
+await server.webSocketMessage(authoritative,JSON.stringify({type:'move',seq:2,x:40,z:50,y:77,yaw:0}));
+assert.equal(authoritative.deserializeAttachment().x,38,'flying players remain inside map boundaries');
+const expired=authoritative.deserializeAttachment();
+expired.skillRuntime.advancedSword.flightUntil=Date.now()-1;
+expired.lastMove=Date.now()-500;
+authoritative.serializeAttachment(expired);
+await server.webSocketMessage(authoritative,JSON.stringify({type:'move',seq:3,x:38,z:50,y:75,yaw:0}));
+assert.equal(authoritative.deserializeAttachment().y,75,'expired flight permits falling');
+
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');

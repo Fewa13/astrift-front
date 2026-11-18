@@ -24,3 +24,21 @@ flyingSwordGeometry.setAttribute('position',new THREE.Float32BufferAttribute(pos
 flyingSwordGeometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
 flyingSwordGeometry.computeVertexNormals();
 export const flyingSwordMaterial=new THREE.MeshStandardMaterial({vertexColors:true,metalness:.38,roughness:.32,emissive:0x507d69,emissiveIntensity:.45});
+
+function swordVariant({width,length,curve,guard,edge}){
+ const geometry=flyingSwordGeometry.clone();
+ const points=geometry.attributes.position,color=geometry.attributes.color,tint=new THREE.Color(edge);
+ for(let i=0;i<points.count;i++){
+  const y=points.getY(i),blade=y>.01;
+  const bow=blade?Math.max(0,y)**2*curve:0;
+  points.setXYZ(i,points.getX(i)*(blade?width:guard)+bow,y*(blade?length:1),points.getZ(i)*(blade?width:1));
+  if(blade)color.setXYZ(i,tint.r,tint.g,tint.b);
+ }
+ geometry.computeVertexNormals();
+ return geometry;
+}
+
+export const swordWaveGeometry=swordVariant({width:.73,length:1.13,curve:.18,guard:.72,edge:0xe6ffee});
+export const swordRainGeometry=swordVariant({width:.53,length:1.45,curve:0,guard:.6,edge:0x99d2b6});
+export const tripleCutGeometry=swordVariant({width:1.38,length:1.17,curve:.025,guard:1.32,edge:0xe6edf0});
+export const phantomBladeGeometry=swordVariant({width:1.95,length:1.56,curve:-.035,guard:1.65,edge:0xcaff9f});

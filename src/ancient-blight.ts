@@ -32,7 +32,15 @@ export const BLIGHT_FIXTURES:BlightSolid[]=[
 ];
 const blightColliders=[...BLIGHT_SOLIDS,...BLIGHT_FIXTURES];
 export function blightHeight(_x:number,z:number){return z<=400?0:-Math.min(16,(z-400)*.12)}
-export function blightSurface(x:number,z:number,feet=0){for(const b of BLIGHT_HOUSES)if(feet>=b.h-.5&&Math.abs(x-b.x)<b.w/2+.5&&Math.abs(z-b.z)<b.d/2+.5)return b.h;const r=Math.hypot(x,z-600);return blightHeight(x,z)+(r<=11?.4:r<=12?.3:r<=13?.2:0)}
+export function blightSurface(x:number,z:number,feet=0){
+ const r=Math.hypot(x,z-600);
+ let top=blightHeight(x,z)+(r<=11?.4:r<=12?.3:r<=13?.2:0);
+ for(const o of blightColliders){
+  const height=blightHeight(o.x,o.z)+o.h;
+  if(feet>=height-.5&&Math.abs(x-o.x)<o.w/2+.5&&Math.abs(z-o.z)<o.d/2+.5)top=Math.max(top,height);
+ }
+ return top;
+}
 export function blightBlocked(x:number,z:number,r=.6,feet=blightHeight(x,z)){return Math.abs(x)>55-r||z<3+r||z>635-r||blightColliders.some(o=>feet<blightHeight(o.x,o.z)+o.h-.05&&feet+1.8>blightHeight(o.x,o.z)+(o.bottom||0)+.02&&Math.abs(x-o.x)<o.w/2+r&&Math.abs(z-o.z)<o.d/2+r)}
 export function blightLineClear(ax:number,ay:number,az:number,bx:number,by:number,bz:number){
  for(const o of blightColliders){let lo=0,hi=1;const base=blightHeight(o.x,o.z);for(const [a,b,min,max]of [[ax,bx,o.x-o.w/2,o.x+o.w/2],[ay,by,base+(o.bottom||0),base+o.h],[az,bz,o.z-o.d/2,o.z+o.d/2]]){const d=b-a;if(Math.abs(d)<1e-8){if(a<min||a>max){lo=2;break}}else{const t1=(min-a)/d,t2=(max-a)/d;lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));if(lo>hi)break}}if(lo<=hi&&hi>0&&lo<1)return false}

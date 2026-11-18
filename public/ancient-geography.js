@@ -100,6 +100,14 @@ const chapterSolids = Object.fromEntries(Object.entries(CHAPTER_PROPS).map(([map
   map,
   [...props.flatMap((o) => o.kind === "sunken-arch" ? [-1, 1].map((side) => ({ ...o, x: o.x + side * 8, w: 5, d: 5, h: 16 })) : [o]), ...CHAPTER_SCENERY[map]]
 ]));
+function chapterSurface(map, x, z, feet) {
+  let height = chapterHeight(map, x, z);
+  for (const solid of chapterSolids[map] || []) {
+    const top = chapterHeight(map, solid.x, solid.z) + solid.h;
+    if (top <= feet + 0.12 && Math.abs(x - solid.x) <= solid.w / 2 + 0.55 && Math.abs(z - solid.z) <= solid.d / 2 + 0.55) height = Math.max(height, top);
+  }
+  return height;
+}
 function chapterBlocked(map, x, z, r = 0.6, feet = chapterHeight(map, x, z)) {
   return !Number.isFinite(x + z) || chapterDistance(map, x, z) < r || [...chapterSolids[map] || [], ...chapterGates(map)].some((o) => feet < chapterHeight(map, o.x, o.z) + o.h - 0.1 && Math.abs(x - o.x) < o.w / 2 + r && Math.abs(z - o.z) < o.d / 2 + r) || false;
 }
@@ -195,6 +203,7 @@ export {
   chapterPoint,
   chapterProjection,
   chapterSafe,
+  chapterSurface,
   dunesOasisRadius,
   getChapterState,
   mapChapterNPCs,
