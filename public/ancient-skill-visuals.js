@@ -1,3 +1,4 @@
+import {skeletonFormation} from './ancient-mastery.js';
 import {flyingSwordGeometry,flyingSwordMaterial} from './ancient-flying-sword.js';
 import {createAdvancementSummon,animateAdvancementSummon} from './ancient-advancement-summons.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
@@ -23,10 +24,76 @@ export function createAncientSkillVisuals(scene,camera,gunGroup,resolveOwner){
   group.add(background,fill);
   return {group,fill};
  }
- function updatePet(list,ground,time,dt){const seen=new Set();for(const p of list||[]){const id=p.id||p.owner;seen.add(id);let a=pets.get(id);if(a&&a.model!==p.model){releaseAncientInstances(a.mesh);a=undefined;}if(!a){const mesh=p.model==='spirit'||p.model==='skeleton'?createAdvancementSummon(p.model):createAncientBeast();if(p.holy&&p.model!=='spirit')attachHolyRegalia(mesh,'summoner');scene.add(mesh);a={model:p.model,mesh,target:new THREE.Vector3(p.x,ground(p.x,p.z),p.z)};mesh.position.copy(a.target);if(p.model==='skeleton'){a.health=skeletonHealthBar();mesh.add(a.health.group);}pets.set(id,a)}a.mesh.visible=p.hp>0;if(p.model==='skeleton')a.mesh.scale.setScalar(p.scale||1);a.target.set(p.x,ground(p.x,p.z),p.z);const moving=a.mesh.position.distanceToSquared(a.target)>.02;if(moving)a.mesh.rotation.y=Math.atan2(a.mesh.position.x-p.x,a.mesh.position.z-p.z);a.mesh.position.lerp(a.target,1-Math.exp(-dt*12));if(a.health){const ratio=Math.max(0,Math.min(1,p.hp/Math.max(1,p.maxHp||p.hp)));a.health.fill.scale.x=ratio;a.health.fill.position.x=(ratio-1)*.36;a.health.group.rotation.set(0,-a.mesh.rotation.y+camera.rotation.y,0);}if(!animateAdvancementSummon(a.mesh,moving,Date.now()-p.attackAt+1000<400,time))animateCreature(a.mesh,{action:moving?'walk':Date.now()-p.attackAt+1000<400?'attack':'idle',hp:p.hp,actionAt:p.attackAt-1000},time,dt)}for(const [id,a]of pets)if(!seen.has(id)){releaseAncientInstances(a.mesh);pets.delete(id)}}
+ const cohortMaterial=new THREE.MeshLambertMaterial({color:0xc5bea1});
+ function cohortGeometry(detail){
+  const parts=[
+   new THREE.IcosahedronGeometry(.18,0).translate(0,.67,0),
+   new THREE.BoxGeometry(.27,.38,.17).translate(0,.26,0),
+   ...[-1,1].flatMap(side=>[
+    new THREE.BoxGeometry(.085,.55,.09).translate(side*.23,.12,0),
+    new THREE.BoxGeometry(.105,.65,.11).translate(side*.105,-.37,0),
+   ]),
+  ];
+  if(detail){
+   for(const y of [.15,.28,.41])parts.push(new THREE.BoxGeometry(.36,.048,.23).translate(0,y,0));
+   parts.push(new THREE.BoxGeometry(.055,.42,.08).rotateZ(-.3).translate(.29,-.24,0));
+  }
+  const positions=[],normals=[];
+  for(const part of parts){
+   const mesh=part.index?part.toNonIndexed():part;
+   positions.push(...mesh.attributes.position.array);
+   normals.push(...mesh.attributes.normal.array);
+   if(mesh!==part)mesh.dispose();
+   part.dispose();
+  }
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
+  return geometry;
+ }
+ const cohortGeometries=[cohortGeometry(true),cohortGeometry(false)];
+ const cohorts=cohortGeometries.map(()=>null);
+ const cohortPose=new THREE.Object3D();
+ let cohortFrame=-Infinity;
+ function updateCohorts(list,ground,time){
+  if(time-cohortFrame<33)return;
+  cohortFrame=time;
+  const groups=[[],[]];
+  for(const p of list||[]){
+   if(p.model!=='skeleton'||p.hp<=0||p.count<=1)continue;
+   const actor=pets.get(p.id||p.owner);
+   if(!actor)continue;
+   const position=actor.mesh.position;
+   groups[camera.position.distanceToSquared(position)<900?0:1].push({p,position});
+  }
+  groups.forEach((group,lod)=>{
+   const count=group.reduce((sum,{p})=>sum+p.count-1,0);
+   let batch=cohorts[lod];
+   if(!count){if(batch)batch.count=0;return;}
+   if(!batch||batch.instanceMatrix.count<count){
+    if(batch){scene.remove(batch);batch.dispose();}
+    batch=new THREE.InstancedMesh(cohortGeometries[lod],cohortMaterial,2**Math.ceil(Math.log2(count)));
+    batch.frustumCulled=false;
+    scene.add(batch);
+    cohorts[lod]=batch;
+   }
+   let slot=0;
+   for(const {p,position} of group)for(let i=1;i<p.count;i++){
+    const offset=skeletonFormation(i);
+    const sway=lod?0:Math.sin(time*.008+i)*.065;
+    cohortPose.position.set(position.x+offset.x,ground(position.x+offset.x,position.z+offset.z)+.83+sway,position.z+offset.z);
+    cohortPose.rotation.set(0,i, sway);
+    cohortPose.updateMatrix();
+    batch.setMatrixAt(slot++,cohortPose.matrix);
+   }
+   batch.count=slot;
+   batch.instanceMatrix.needsUpdate=true;
+  });
+ }
+ function updatePet(list,ground,time,dt){const seen=new Set();for(const p of list||[]){const id=p.id||p.owner;seen.add(id);let a=pets.get(id);if(a&&a.model!==p.model){releaseAncientInstances(a.mesh);a=undefined;}if(!a){const mesh=p.model==='spirit'||p.model==='skeleton'?createAdvancementSummon(p.model):createAncientBeast();if(p.holy&&p.model!=='spirit')attachHolyRegalia(mesh,'summoner');scene.add(mesh);a={model:p.model,mesh,target:new THREE.Vector3(p.x,ground(p.x,p.z),p.z)};mesh.position.copy(a.target);if(p.model==='skeleton'){a.health=skeletonHealthBar();mesh.add(a.health.group);}pets.set(id,a)}a.mesh.visible=p.hp>0;if(p.model==='skeleton')a.mesh.scale.setScalar(p.scale||1);a.target.set(p.x,ground(p.x,p.z),p.z);const moving=a.mesh.position.distanceToSquared(a.target)>.02;if(moving)a.mesh.rotation.y=Math.atan2(a.mesh.position.x-p.x,a.mesh.position.z-p.z);a.mesh.position.lerp(a.target,1-Math.exp(-dt*12));if(a.health){const ratio=Math.max(0,Math.min(1,p.hp/Math.max(1,p.maxHp||p.hp)));a.health.fill.scale.x=ratio;a.health.fill.position.x=(ratio-1)*.36;a.health.group.rotation.set(0,-a.mesh.rotation.y+camera.rotation.y,0);}if(!animateAdvancementSummon(a.mesh,moving,Date.now()-p.attackAt+1000<400,time))animateCreature(a.mesh,{action:moving?'walk':Date.now()-p.attackAt+1000<400?'attack':'idle',hp:p.hp,actionAt:p.attackAt-1000},time,dt)}for(const [id,a]of pets)if(!seen.has(id)){releaseAncientInstances(a.mesh);pets.delete(id)}updateCohorts(list,ground,time)}
  const rideSword=new THREE.Mesh(flyingSwordGeometry,flyingSwordMaterial);
  rideSword.visible=false;scene.add(rideSword);
  function update(a,time,dt,suppressHands=false){rideSword.visible=!!a&&a.hp>0&&a.advancement==='blademaster'&&(a.skillRuntime?.advancedSword?.flightUntil||0)>Date.now();if(rideSword.visible){rideSword.position.copy(camera.position);rideSword.position.y-=1.76;rideSword.rotation.set(Math.PI/2,0,0);rideSword.rotateZ(camera.rotation.y);rideSword.scale.set(.95,1.15,1);}const boss=bossFormStats(a||{}),form=activeSkill(a||{},'transform'),mode=a?.skillRuntime?.mode||1;special.visible=!suppressHands&&!!a&&a.hp>0&&(form>0||!!boss||mode!==1);claws.visible=form>0||!!boss&&mode===1;tool.visible=!form&&mode!==1;skin.color.set(boss?boss.color:0x38483f);metal.emissive.set(boss?boss.color:0x000000);metal.emissiveIntensity=boss?.35:0;gunGroup.visible=!!a&&a.hp>0&&!special.visible;swing=Math.max(0,swing-dt);const phase=swing/.4;claws.rotation.y=Math.sin(phase*Math.PI)*.65;claws.position.z=-Math.sin(phase*Math.PI)*.3;tool.position.z=Math.sin(phase*Math.PI)*.05;sigil.rotation.z=time*.003;rune.color.set(mode===2&&a?.skillRuntime?.summon?0x62ead8:0xc97de9)}
  function updateMagic(time,dt){magic.update(time,dt);advancement.update(time)}
- return {update,updatePet,effect,updateMagic,clearMagic(){magic.clear();advancement.clear()},attack(){swing=.4},clear(){for(const a of pets.values())releaseAncientInstances(a.mesh);pets.clear();magic.clear();advancement.clear();special.visible=false;rideSword.visible=false;}};
+ return {update,updatePet,effect,updateMagic,clearMagic(){magic.clear();advancement.clear()},attack(){swing=.4},clear(){for(const a of pets.values())releaseAncientInstances(a.mesh);pets.clear();for(const batch of cohorts)if(batch)batch.count=0;cohortFrame=-Infinity;magic.clear();advancement.clear();special.visible=false;rideSword.visible=false;}};
 }

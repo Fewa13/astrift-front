@@ -28,6 +28,11 @@ const growth = {
 const masteryLevel = (p, id) => p.mastery?.[id]?.level || 1;
 const skeletonLimit = (level) => level ** 2 + 2;
 const skeletonAttackEfficiency = (slots) => slots <= 48 ? 1 : (slots <= 96 ? 48 + (slots - 48) * 0.5 : 72 + 48 * Math.log(slots / 96)) / slots;
+function skeletonFormation(index) {
+  const angle = index * 2.399963229728653;
+  const radius = 0.62 * Math.sqrt(index);
+  return { x: Math.cos(angle) * radius, z: Math.sin(angle) * radius };
+}
 const skeletonSlots = (pet) => pet.merged ?? pet.count ?? 1;
 function releasableSkeletons(p, state, now = Date.now()) {
   if (!state) return 0;
@@ -64,6 +69,7 @@ export {
   masteryReward,
   releasableSkeletons,
   skeletonAttackEfficiency,
+  skeletonFormation,
   skeletonLimit,
   skeletonSlots
 };

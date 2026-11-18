@@ -2,7 +2,7 @@
 import {isAncientBoss} from './ancient-boss';
 import {advancementCastKey} from './ancient-advanced-professions';
 import {holyPower} from './ancient-ascension';
-import {FUSION_DAMAGE_MULTIPLIER,fusionDamageMultiplier,masteryLevel,releasableSkeletons,skeletonLimit,skeletonSlots,skeletonAttackEfficiency} from './ancient-mastery';
+import {FUSION_DAMAGE_MULTIPLIER,fusionDamageMultiplier,masteryLevel,releasableSkeletons,skeletonLimit,skeletonSlots,skeletonAttackEfficiency,skeletonFormation} from './ancient-mastery';
 import {advancementRoute} from './ancient-advancement-progress';
 import {ancientSkillDamage, ancientGearStats} from './ancient-gear';
 import {ancientMapHeight, blocked, lineClear, type AncientProfile} from './ancient-rules';
@@ -1574,7 +1574,14 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
   const enhanced=!!field&&Math.hypot(pet.x-field.x,pet.z-field.z)<=field.radius;
   if(target&&Math.hypot(target.x-pet.x,target.z-pet.z)<2.1&&pet.next<=now){
    pet.next=now+1100;
-   c.damage(target,ancientSkillDamage(p)*.1*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*pet.scale*bonus*(enhanced?1.2:1),undefined,pet.merged?'necropolis':'unleashLegion');
+   const count=pet.merged?1:pet.count??1;
+   let attackers=1;
+   for(let i=1;i<count;i++){
+    const offset=skeletonFormation(i);
+    const x=pet.x+offset.x,z=pet.z+offset.z;
+    if(Math.hypot(target.x-x,target.z-z)<2.1&&!blocked(x,z,.2,c.map)&&(!c.canMove||c.canMove(x,z,target.x,target.z)))attackers++;
+   }
+   c.damage(target,ancientSkillDamage(p)*.1*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*pet.scale*(attackers/count)*bonus*(enhanced?1.2:1),undefined,pet.merged?'necropolis':'unleashLegion');
    c.fx('necromancer-strike',target.x,target.z,2,{source:{x:pet.x,y:ancientMapHeight(c.map,pet.x,pet.z)+1,z:pet.z},target:target.id});
   }else legionMove(c,pet,target?.x??a.x,target?.z??a.z,enhanced?6:5,dt);
  }
