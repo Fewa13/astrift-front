@@ -838,9 +838,9 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
    tickAncientSkills(a,p,this.skillContext(ws,a,world.monsters,map,pairs),dt,now);
    if(p.profession==='necromancer'&&a.hp>0&&!communityId(map)&&passiveLevel(p,0)){
     const r=runtime(a),state=r.advancedSummon??={map,reserve:[],legion:[]};
-    const level=masteryLevel(p,'raiseSkeleton'),interval=Math.max(500,5000/(1+(passiveLevel(p,0)-1)*.13));
+    const level=masteryLevel(p,'raiseSkeleton'),interval=Math.max(500,2200/(1+(passiveLevel(p,0)-1)*.17));
     if(state.map===map){
-     state.autoRaiseAt??=now+interval;
+     state.autoRaiseAt=Math.min(state.autoRaiseAt??now+interval,now+interval);
      if(now>=state.autoRaiseAt){
       state.autoRaiseAt=now+interval;
       if((state.reserveCount||0)+state.reserve.length<level**2){

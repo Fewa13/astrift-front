@@ -37,7 +37,7 @@ export const FUSION_PASSIVES:Record<string,[string,string,string,string][]> = {
  ],
 };
 export type FusionPassiveProgress={level:number;points:number};
-export const passiveCost=(level:number)=>12+level*level*6;
+export const passiveCost=(level:number,job?:string,index?:number)=>(12+level*level*6)*(job==='necromancer'&&index===0?2:1);
 export const passiveLevel=(p:AncientProfile,index:number)=>p.fusionPassives?.[p.profession||'']?.[index]?.level||0;
 export function ignitionEligible(p:AncientProfile,index:number){
  const job=p.profession||'',required=FUSION_PASSIVE_REQUIREMENTS[index];
@@ -63,7 +63,7 @@ export function trainFusionPassive(p:AncientProfile,index:number,points:number){
  if(!progress||points<=0||progress.level>=100)return false;
  const before=progress.level;
  progress.points+=points;
- while(progress.level<100&&progress.points>=passiveCost(progress.level))progress.points-=passiveCost(progress.level++);
+ while(progress.level<100&&progress.points>=passiveCost(progress.level,p.profession,index))progress.points-=passiveCost(progress.level++);
  if(progress.level===100)progress.points=0;
  return progress.level>before;
 }

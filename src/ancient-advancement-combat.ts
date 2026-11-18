@@ -2,7 +2,7 @@
 import {isAncientBoss} from './ancient-boss';
 import {advancementCastKey} from './ancient-advanced-professions';
 import {holyPower} from './ancient-ascension';
-import {FUSION_DAMAGE_MULTIPLIER,masteryLevel,releasableSkeletons} from './ancient-mastery';
+import {FUSION_DAMAGE_MULTIPLIER,fusionDamageMultiplier,masteryLevel,releasableSkeletons} from './ancient-mastery';
 import {advancementRoute} from './ancient-advancement-progress';
 import {ancientSkillDamage, ancientGearStats} from './ancient-gear';
 import {ancientMapHeight, blocked, lineClear, type AncientProfile} from './ancient-rules';
@@ -1463,7 +1463,7 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
     const scale=power*(end-start)/count;
     const angle=slot*2.399963,x=a.x+Math.sin(angle)*2.5,z=a.z+Math.cos(angle)*2.5;
     const spawn=blocked(x,z,.45,c.map)?{x:a.x,z:a.z}:{x,z};
-    state.legion.push({...spawn,until:now+38000,next:now+750,scale,slot,count:end-start});
+    state.legion.push({...spawn,until:Number.MAX_SAFE_INTEGER,next:now+750,scale,slot,count:end-start});
     c.fx('necromancer-release',spawn.x,spawn.z,2.5,{target:'',phase:String(slot)});
    }
    state.reserveCount=stored-count;
@@ -1480,7 +1480,7 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    const power=living.reduce((total,pet)=>total+pet.scale,0)*.9;
    const merged=living.reduce((total,pet)=>total+(pet.merged??pet.count??1),0);
    const slot=1+living.reduce((highest,pet)=>Math.max(highest,pet.slot),0);
-   state.legion=[{x:a.x,z:a.z,count:1,unitHp:health,hp:health,scale:power,merged,until:now+38000,next:now+750,slot}];
+   state.legion=[{x:a.x,z:a.z,count:1,unitHp:health,hp:health,scale:power,merged,until:Number.MAX_SAFE_INTEGER,next:now+750,slot}];
    delete state.field;
    c.fx('necromancer-fusion',a.x,a.z,Math.min(10,2+Math.log2(merged)));
   }
@@ -1545,7 +1545,9 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
   return;
  }
  if(route!=='necromancer')return;
- state.legion=state.legion.filter(pet=>pet.until>now);
+ if(route==='necromancer'){
+  for(const pet of state.legion)pet.until=Number.MAX_SAFE_INTEGER;
+ }else state.legion=state.legion.filter(pet=>pet.until>now);
  const bonus=1+Math.min(2,Math.log1p(p.necromancerStrength||0)*.18);
  for(const pet of state.legion){
   const target=summonTarget(a,c,pet.x,pet.z);
@@ -1622,7 +1624,7 @@ function castElementalAdvancement(a:SkillActor,p:AncientProfile,route:string,key
  const target=selectSkillTarget(a,direction,60,c);
  if(!target&&(route==='elemental-god'||key==='Q'))return '请瞄准可见的敌人';
  const origin={x:a.x,y:a.y-1.7,z:a.z},point=target?firePoint(c,target):origin;
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*FUSION_DAMAGE_MULTIPLIER;
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*fusionDamageMultiplier(p.profession);
  const tag='advancement:'+route+':'+key;
  const hit=(m:SkillMonster,n:number)=>c.damage(m,power*n,undefined,tag);
  if(route==='elemental-god'&&target){
@@ -1743,7 +1745,7 @@ function castRiftAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const r=runtime(a),state=riftState(a,c.map);
  const tag='advancement:'+route+':'+key;
  const origin={x:a.x,y:a.y-1.7,z:a.z};
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*FUSION_DAMAGE_MULTIPLIER;
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*fusionDamageMultiplier(p.profession);
  const hit=(m:SkillMonster,n:number)=>c.damage(m,power*n,undefined,tag);
  const anchor=state.anchor;
  if(route==='riftlord'&&key==='Q'&&anchor&&anchor.until>now){
@@ -1897,7 +1899,7 @@ function castAbyssAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
  const target=selectSkillTarget(a,direction,60,c);
  if(!target&&(key==='X'||key==='Q'||route==='abyss-herald'&&key==='C'))return '请瞄准可见的敌人';
  const origin={x:a.x,y:a.y-1.7,z:a.z},point=target?firePoint(c,target):origin;
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*FUSION_DAMAGE_MULTIPLIER;
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*fusionDamageMultiplier(p.profession);
  const tag='advancement:'+route+':'+key;
  const hit=(m:SkillMonster,n:number)=>c.damage(m,power*n,undefined,tag);
  if(key==='X'&&target){
@@ -2054,7 +2056,7 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const r=runtime(a),state=timeState(a,c.map),tag='advancement:'+route+':'+key;
  const origin={x:a.x,y:a.y-1.7,z:a.z};
  const target=selectSkillTarget(a,direction,60,c);
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*FUSION_DAMAGE_MULTIPLIER;
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*fusionDamageMultiplier(p.profession);
  const hit=(m:SkillMonster,multiplier:number)=>c.damage(m,power*multiplier,undefined,tag);
  expireTimeRewind(a,p,state,route,now);
  const anchor=state.anchor,snapshot=state.rewind;

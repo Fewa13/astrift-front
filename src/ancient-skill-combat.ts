@@ -1,6 +1,6 @@
 import {castAdvancement,castNecromancer,tickBerserker,tickPaladin,tickStormcaller,tickVoltstalker,tickCrystalist,tickWinterwarden,tickAdvancedFire,tickAdvancedCurse,tickAdvancedSword,tickAdvancedShadow,tickAdvancedStone,tickAdvancedSummon,tickAdvancedElements,tickAdvancedRift,tickAdvancedAbyss,tickAdvancedTime,reconcileAdvancementRuntime} from './ancient-advancement-combat';
 import {artifactStage} from './ancient-artifacts';
-import {FUSION_DAMAGE_MULTIPLIER,masteryPower} from './ancient-mastery';
+import {fusionDamageMultiplier,masteryPower} from './ancient-mastery';
 import {castFusion,tickFusion} from './ancient-fusion-combat';
 import {isFusionSkill} from './ancient-skills';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
@@ -59,7 +59,7 @@ export function skillTargetError(a:SkillActor,dir:unknown,range:number,c:SkillCo
 export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now=Date.now()){
  const advanced=castAdvancement(a,p,id,direction,c,now);
  if(advanced!==undefined)return advanced;
- if(isFusionSkill(id)){if(a.hp<=0||SKILLS[id].job!==p.profession||!p.fusedJobs?.[p.profession])return '技能尚未修炼';if(p.profession==='necromancer')return castNecromancer(a,p,id,direction,skillSourceContext(c,id),now);return castFusion(a,p,id,direction,skillSourceContext(c,id),now,ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*masteryPower(p,id)*(p.artifactEquipped==='divinity'&&SKILLS[id].key==='C'?1+.12*artifactStage(p):1));}
+ if(isFusionSkill(id)){if(a.hp<=0||SKILLS[id].job!==p.profession||!p.fusedJobs?.[p.profession])return '技能尚未修炼';if(p.profession==='necromancer')return castNecromancer(a,p,id,direction,skillSourceContext(c,id),now);return castFusion(a,p,id,direction,skillSourceContext(c,id),now,ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p)*fusionDamageMultiplier(p.profession)*masteryPower(p,id)*(p.artifactEquipped==='divinity'&&SKILLS[id].key==='C'?1+.12*artifactStage(p):1));}
  const recalling=id==='shadowreturn'&&shadowRecallReady(a,now);
  const d=equippedGear(p,'weapon'),combo=d?.combo&&d.combo===p.profession?GROWTH_COMBOS[d.combo]:undefined,r=runtime(a),ready=!!combo&&!!r.gearChain&&r.gearChain.key===d!.combo&&r.gearChain.until>now&&id===combo.to;
  const start={x:a.x,z:a.z},relic=activeRelic(p),range=skillCastRange(id,p.skills?.[id]||1),target=['icebolt','stoneprison','storm'].includes(id)?selectSkillTarget(a,direction,range,c):undefined;

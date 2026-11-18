@@ -91,7 +91,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    if(progress){
     el('small',L('等级','Level')+' '+progress.level,item);
     if(progress.level<100){
-     const bar=el('progress','',item);bar.max=passiveCost(progress.level);bar.value=progress.points;
+     const bar=el('progress','',item);bar.max=passiveCost(progress.level,p.profession,index);bar.value=progress.points;
      el('small',progress.points+' / '+bar.max,item);
     }
     return;

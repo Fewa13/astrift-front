@@ -349,6 +349,8 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  assert.equal(state.legion[0].scale,4.5);
  assert.equal(state.reserveCount,19998);
  assert(fx.includes('necromancer-fusion'));
+ tickAdvancedSummon(actor,profile,context,.2,now+60000);
+ assert.equal(state.legion.length,1,'Merged skeleton survives beyond the old timeout');
 
 }
 

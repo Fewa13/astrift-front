@@ -196,7 +196,10 @@ function xpRewardBase(level) {
 function xpNeeded(level) {
   const l = Math.max(1, Number.isFinite(level) ? Math.floor(level) : 1);
   if (l <= 100) return Math.floor(xpRewardBase(l));
-  if (l >= 180) return Math.ceil(xpRewardBase(l) * 2 * (1 + (l - 150) / 40) ** 2 * 1.6);
+  if (l >= 180) {
+    const lateGrowth = 1 + (l - 150) / 40;
+    return Math.ceil(xpRewardBase(l) * 2 * lateGrowth ** 2 * 1.6 * Math.max(0.55, 1.75 / lateGrowth) ** 0.8);
+  }
   const reward = (n) => ancientKillExperience(ancientMonsterXP("grox", n)), at100 = xpRewardBase(100) / reward(100), at180 = xpRewardBase(180) * 2 * (1 + 30 / 40) ** 2 * 1.6 / reward(180), kills = at100 + (at180 - at100) * (l - 100) / 80;
   return Math.ceil(reward(l) * kills);
 }

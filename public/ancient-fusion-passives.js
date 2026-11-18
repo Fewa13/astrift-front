@@ -34,7 +34,7 @@ const FUSION_PASSIVES = {
     ["\u65F6\u95F4\u53E0\u5C42", "Temporal Overlap", "\u5927\u5E45\u5F3A\u5316\u653B\u51FB\uFF0C\u5BF9\u51CF\u901F\u76EE\u6807\u989D\u5916\u589E\u4F24\u3002", "Greatly amplifies attacks, with an extra bonus against slowed foes."]
   ]
 };
-const passiveCost = (level) => 12 + level * level * 6;
+const passiveCost = (level, job, index) => (12 + level * level * 6) * (job === "necromancer" && index === 0 ? 2 : 1);
 const passiveLevel = (p, index) => p.fusionPassives?.[p.profession || ""]?.[index]?.level || 0;
 function ignitionEligible(p, index) {
   const job = p.profession || "", required = FUSION_PASSIVE_REQUIREMENTS[index];
@@ -59,7 +59,7 @@ function trainFusionPassive(p, index, points) {
   if (!progress || points <= 0 || progress.level >= 100) return false;
   const before = progress.level;
   progress.points += points;
-  while (progress.level < 100 && progress.points >= passiveCost(progress.level)) progress.points -= passiveCost(progress.level++);
+  while (progress.level < 100 && progress.points >= passiveCost(progress.level, p.profession, index)) progress.points -= passiveCost(progress.level++);
   if (progress.level === 100) progress.points = 0;
   return progress.level > before;
 }

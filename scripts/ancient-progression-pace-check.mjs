@@ -11,8 +11,7 @@ for(let l=101;l<180;l++){const start=oldNeeded(100)/killXP(100),end=oldNeeded(18
 let previous=0;
 for(let l=30;l<=10000;l++){
  const kills=xpNeeded(l)/killXP(l);assert(Number.isFinite(kills)&&kills>previous,'Same-level effort must increase at '+l);previous=kills;
- assert(xpNeeded(l)>=oldNeeded(l));
- if(l>=180)assert(Math.abs(xpNeeded(l)/oldNeeded(l)-1.6)<1e-5,'Requested latest-map multiplier at '+l);
+ if(l>=180)assert(xpNeeded(l)<=Math.ceil(oldNeeded(l)*1.6+2),'Late curve must remain below the previous target');
 }
 // Reward curves, coin inputs and same-level combat are untouched, including
 // all currently spawned level bands and both passive/telegraphed bosses.
@@ -36,4 +35,4 @@ for(const l of [90,100,134,149,150,179,180,220]){const p={level:l,xp:xpNeeded(l)
 assert.equal(xpRewardBase(180),6480000,'Quest reward reference stays unchanged');
 console.table([90,100,120,134,140,150,160,180,200,220].map(level=>({level,neededXP:xpNeeded(level),killXP:killXP(level),oldKills:+(oldNeeded(level)/killXP(level)).toFixed(2),newKills:+(xpNeeded(level)/killXP(level)).toFixed(2)})));
 console.table([['frost_oathguard',180],['ember_mason',190],['chain_executor',200],['furnace_regent',200],['frost_crowned',220]].map(([kind,level])=>({kind,level,hp:frostcourtMonsterHP(kind,level),damage:frostcourtMonsterDamage(kind,level),xp:ancientKillExperience(ancientMonsterXP(kind,level))})));
-console.log('PASS progression: old saves/rewards/combat intact, Lv1–100 unchanged, linear Lv100–180 effort, monotonic same-level effort through Lv10000, preserved 1.6x Lv180+ target, every new spawn finite and level-scaled.');
+console.log('PASS progression: old saves/rewards/combat intact, Lv1–100 unchanged, linear Lv100–180 effort, monotonic same-level effort through Lv10000, reduced Lv180+ target, every new spawn finite and level-scaled.');

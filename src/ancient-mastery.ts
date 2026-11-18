@@ -2,6 +2,10 @@
 import type {AncientProfile} from './ancient-rules';
 
 export const FUSION_DAMAGE_MULTIPLIER=2.8;
+const fusionDamageByJob: Record<string,number>={elementalist:3.2,voidsword:3.5,abyssal:3.35,chrono:3.15};
+export function fusionDamageMultiplier(job?:string){
+ return fusionDamageByJob[job||'']??FUSION_DAMAGE_MULTIPLIER;
+}
 
 const growth: Record<string,number> = {
  raiseSkeleton:.055,consumeSoul:.04,necropolis:.04,

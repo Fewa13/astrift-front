@@ -1,5 +1,9 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 const FUSION_DAMAGE_MULTIPLIER = 2.8;
+const fusionDamageByJob = { elementalist: 3.2, voidsword: 3.5, abyssal: 3.35, chrono: 3.15 };
+function fusionDamageMultiplier(job) {
+  return fusionDamageByJob[job || ""] ?? FUSION_DAMAGE_MULTIPLIER;
+}
 const growth = {
   raiseSkeleton: 0.055,
   consumeSoul: 0.04,
@@ -50,6 +54,7 @@ function awardMastery(p, id, points) {
 export {
   FUSION_DAMAGE_MULTIPLIER,
   awardMastery,
+  fusionDamageMultiplier,
   masteryCost,
   masteryLevel,
   masteryPower,
