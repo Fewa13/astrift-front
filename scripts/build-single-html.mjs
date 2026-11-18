@@ -3,12 +3,14 @@ import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} fro
 import {gzipSync} from 'node:zlib';
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url))),source=path.join(root,'public'),out=path.resolve(root,'../astrift-html'),backend='https://play.astrift.com';
 const dev = process.argv.includes('--dev');
+const canvaExport=process.argv.includes('--canva');
 const exportTitle=html=>html.replace(/<title>[^<]*<\/title>/i,'<title>Study Portal</title>');
 const read=name=>fs.readFileSync(path.join(source,name),'utf8'),escape=s=>s.replace(/<\/script/gi,'<\\/script'),mime=name=>name.endsWith('.webp')?'image/webp':name.endsWith('.png')?'image/png':name.endsWith('.svg')?'image/svg+xml':name.endsWith('.ico')?'image/x-icon':'application/octet-stream';
 const asset=name=>{name=name.replace(/^[./]+/,'').split('?')[0];if(!fs.existsSync(path.join(source,name)))throw Error('Missing inline asset: '+name);return 'data:'+mime(name)+';base64,'+fs.readFileSync(path.join(source,name)).toString('base64')};
 function css(name){return read(name).replace(/url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/g,(all,q,url)=>/^(data:|https?:|#)/.test(url)?all:'url("'+asset(url)+'")');}
 const runtime=`window.addEventListener('error',e=>{try{window.parent.__ASTRIFT_SHELL__.report('启动失败 / Startup failed: '+e.message)}catch{}});window.__ASTRIFT_API_ORIGIN__=${JSON.stringify(backend)};const nativeFetch=window.fetch.bind(window);window.fetch=(input,init)=>nativeFetch(typeof input==='string'&&input.startsWith('/api/')?window.__ASTRIFT_API_ORIGIN__+input:input,{...init,credentials:'omit'});const NativeSocket=window.WebSocket;window.WebSocket=class extends NativeSocket{constructor(url,protocols){const text=String(url),at=text.indexOf('/api/');super(at>=0?'wss://play.astrift.com'+text.slice(at):url,protocols)}};`;
-const plugin={name:'single-html',setup(b){if(dev){b.onResolve({filter:/^node:(fs|crypto)$/},args=>({path:args.path,external:true}));b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'dev-worker',namespace:'dev'}));b.onLoad({filter:/.*/,namespace:'dev'},()=>({contents:'export class DurableObject { constructor(ctx, env){this.ctx=ctx;this.env=env} }'}));}b.onResolve({filter:/\.js\?v=/},args=>({path:path.resolve(args.resolveDir,args.path.split('?')[0])}));b.onLoad({filter:/\.js$/},args=>{let s=fs.readFileSync(args.path,'utf8');if(dev&&path.basename(args.path)==='account.js')s=`
+const plugin={name:'single-html',setup(b){if(dev){b.onResolve({filter:/^node:(fs|crypto)$/},args=>({path:args.path,external:true}));b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'dev-worker',namespace:'dev'}));b.onLoad({filter:/.*/,namespace:'dev'},()=>({contents:'export class DurableObject { constructor(ctx, env){this.ctx=ctx;this.env=env} }'}));}b.onResolve({filter:/\.js\?v=/},args=>({path:path.resolve(args.resolveDir,args.path.split('?')[0])}));b.onLoad({filter:/\.js$/},args=>{let s=fs.readFileSync(args.path,'utf8');if(canvaExport&&path.basename(args.path)==='world-navigation.js')s=`export function navigateWorld(world){if(world==='main')window.location.reload();}`;
+if(dev&&path.basename(args.path)==='account.js')s=`
 export const accountSession=()=>window.__ASTRIFT_DEV__.session;
 export async function accountApi(path,body){
  if(path!=='ancient/profile')throw Error('Unavailable in Dev');
@@ -34,6 +36,23 @@ if(dev){
  fs.mkdirSync(out,{recursive:true});
  fs.writeFileSync(target,gate.replace('/*DEV_DOCUMENT*/',()=>JSON.stringify(ancient).replaceAll('<','\\u003c')));
  console.log(target);
+ process.exit(0);
+}
+if(canvaExport){
+ const ancient=await world('ancient.html');
+ const file=path.join(out,'Astrift-Canva.html');
+ const setup=`window.__ASTRIFT_CANVA__=true;
+ for(const key of ['localStorage','sessionStorage']){
+  try{window[key].getItem('astrift.language.v1')}catch{
+   const values=new Map();
+   Object.defineProperty(window,key,{value:{get length(){return values.size},key:i=>[...values.keys()][i]??null,getItem:k=>values.get(String(k))??null,setItem:(k,v)=>values.set(String(k),String(v)),removeItem:k=>values.delete(String(k)),clear:()=>values.clear()}});
+  }
+ }`;
+ const canva=ancient.replace('<head>',()=>'<head><script>'+setup+'</script>')
+  .replace(/<title>[^<]*<\/title>/i,'<title>Astrift Ancient Age</title>');
+ fs.mkdirSync(out,{recursive:true});
+ fs.writeFileSync(file,canva);
+ console.log(file);
  process.exit(0);
 }
 const worlds={main:await world('index.html'),ancient:await world('ancient.html')},digest=createHash('sha256').update(JSON.stringify(worlds)).digest('hex');
