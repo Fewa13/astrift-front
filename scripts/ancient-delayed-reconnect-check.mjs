@@ -8,7 +8,7 @@ import {castVisuals} from './ancient-advancement-combat-check.mjs';
 import {advancementEffectIds} from '../public/ancient-advancement-fx.js';
 const db=new DatabaseSync(':memory:'),sql={exec(q,...args){const rows=db.prepare(q).all(...args);return {toArray:()=>rows}}};
 const output=await build({entryPoints:['src/ancient-world.ts'],bundle:true,write:false,format:'cjs',platform:'node',external:['cloudflare:workers']}),module={exports:{}},sockets=[];
-function socket(actor){let state=actor;return {readyState:1,messages:[],deserializeAttachment:()=>structuredClone(state),serializeAttachment:a=>state=structuredClone(a),send(s){this.messages.push(JSON.parse(s))},close(){this.readyState=2}}}
+function socket(actor){let state=actor;return {readyState:1,messages:[],deserializeAttachment:()=>structuredClone(state),serializeAttachment:a=>{if(Buffer.byteLength(JSON.stringify(a))>16384)throw Error("WebSocket attachment cannot be larger than 16384 bytes");state=structuredClone(a)},send(s){this.messages.push(JSON.parse(s))},close(){this.readyState=2}}}
 const ctx={storage:{sql,setAlarm:async()=>{},transactionSync:f=>f()},getWebSockets:()=>sockets,acceptWebSocket:ws=>sockets.push(ws)};
 vm.runInNewContext(output.outputFiles[0].text,{module,exports:module.exports,Date,crypto,Math,URL,structuredClone,AbortController,WebSocketPair:class{constructor(){return {0:socket(null),1:socket(null)}}},Response:class{constructor(body,options){Object.assign(this,options)}},require:()=>({DurableObject:class{constructor(ctx,env){this.ctx=ctx;this.env=env}}})});
 const server=new module.exports.AncientWorld(ctx,{ACCOUNT_SESSIONS:{getByName:()=>({banState:async()=>null})}});
@@ -245,6 +245,11 @@ assert(duneTicket.ok,JSON.stringify(duneTicket));
 await server.fetch(new Request('https://play.astrift.com/api/ancient/connect?map=dunes&ticket='+duneTicket.ticket,{headers:{Upgrade:'websocket'}}));
 const duneSocket=sockets.at(-1);
 assert(duneSocket.messages.find(m=>m.type==='welcome')?.you.maxHp>100);
+const largeDuneActor=server.readSocket(duneSocket);
+largeDuneActor.skillRuntime={...largeDuneActor.skillRuntime,regressionPayload:'x'.repeat(17000)};
+server.writeSocket(duneSocket,largeDuneActor);
+assert(duneSocket.deserializeAttachment().overflow);
+assert.equal(server.readSocket(duneSocket).skillRuntime.regressionPayload.length,17000);
 await server.tickMap('dunes');
 assert(duneSocket.messages.find(m=>m.type==='state')?.monsters.length>0);
 assert(duneSocket.messages.find(m=>m.type==='state')?.you.maxHp>100);
