@@ -37,7 +37,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
  };
  const fusionDescriptions={
   raiseSkeleton:['储备一只骷髅战士并获得3点精通。储备上限为技能等级²。','Raise one reserve skeleton and gain 3 mastery. Reserve capacity is skill level².'],
-  unleashLegion:['在场上限为 2 + 2 × 召唤等级，最多 96 个名额。超过 48 个名额后，每个额外名额只增加一半的军团总攻击收益。','Deploy up to 2 + 2 × Raise Skeleton level, capped at 96 slots. Each slot beyond 48 adds half as much to total army damage.'],
+  unleashLegion:['在场上限为召唤等级² + 2。骷髅必须贴近目标才能攻击，军团越大，额外攻击收益越低。','Active capacity is Raise Skeleton level squared plus 2. Skeletons attack at close range. Larger armies gain progressively less extra damage per slot.'],
   consumeSoul:['持续期间击杀符合等级条件的敌人，永久强化骷髅，并按吞噬强度获得精通。','Qualifying kills permanently strengthen your skeletons and grant mastery based on the strength gained.'],
   necropolis:['至少3只骷髅在场时，可将全部在场骷髅合成一只巨型骷髅。继承总生命上限的125%和总攻击的90%，继续占用原有名额。','Fuse all active skeletons into one giant at a minimum of three. It inherits 125% of their total max HP and 90% of their combined attack.'],
   prism:['单体 420% 攻击，概率触发多种元素，连锁余震造成75%伤害。立即回复实伤15%，减伤20%持续4秒。','420% single-target damage with elemental procs and a 75% Arc Echo. Heal 15% of damage and gain 20% reduction for 4s.'],

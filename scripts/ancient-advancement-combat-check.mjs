@@ -339,15 +339,15 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  state.reserveCount=20000;
  state.reservePower=40000;
  assert.equal(castAncientSkill(actor,profile,'unleashLegion',aim,context,now+10001),null);
- assert.equal(state.reserveCount,19997);
- assert.equal(state.legion.reduce((n,pet)=>n+pet.count,0),4);
- assert.equal(state.legion.reduce((n,pet)=>n+pet.scale,0),7);
+ assert.equal(state.reserveCount,19998);
+ assert.equal(state.legion.reduce((n,pet)=>n+pet.count,0),3);
+ assert.equal(state.legion.reduce((n,pet)=>n+pet.scale,0),5);
  assert.equal(castAncientSkill(actor,profile,'necropolis',aim,context,now+10002),null);
  assert.equal(state.legion.length,1);
- assert.equal(state.legion[0].merged,4);
- assert.equal(state.legion[0].hp,500);
- assert.equal(state.legion[0].scale,6.3);
- assert.equal(state.reserveCount,19997);
+ assert.equal(state.legion[0].merged,3);
+ assert.equal(state.legion[0].hp,375);
+ assert.equal(state.legion[0].scale,4.5);
+ assert.equal(state.reserveCount,19998);
  assert(fx.includes('necromancer-fusion'));
  tickAdvancedSummon(actor,profile,context,.2,now+60000);
  assert.equal(state.legion.length,1,'Merged skeleton survives beyond the old timeout');
@@ -355,12 +355,12 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  assert.match(castAncientSkill(actor,profile,'unleashLegion',aim,context,now+60001),/场上骷髅数量已满/);
  state.legion[0].hp=0;
  assert.equal(castAncientSkill(actor,profile,'unleashLegion',aim,context,now+60002),null);
- assert.equal(state.legion.reduce((n,pet)=>n+pet.count,0),4);
+ assert.equal(state.legion.reduce((n,pet)=>n+pet.count,0),3);
  state.legion=[{x:0,z:10,count:1,merged:20,scale:18,unitHp:2500,hp:1250,until:Number.MAX_SAFE_INTEGER,next:now+70000,slot:1}];
  state.reserveCount=0;state.reservePower=0;
  tickAdvancedSummon(actor,profile,context,.2,now+60003);
- assert.equal(state.legion[0].merged,4,'legacy giant is reduced to the new capacity');
- assert.equal(state.legion[0].hp,250,'legacy migration preserves the health fraction');
+ assert.equal(state.legion[0].merged,3,'legacy giant is reduced to the new capacity');
+ assert.equal(state.legion[0].hp,187.5,'legacy migration preserves the health fraction');
  assert.equal(state.reserveCount,1,'returned skeletons respect the reserve capacity');
 }
 

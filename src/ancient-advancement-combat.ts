@@ -1572,7 +1572,7 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
  for(const pet of state.legion){
   const target=summonTarget(a,c,pet.x,pet.z);
   const enhanced=!!field&&Math.hypot(pet.x-field.x,pet.z-field.z)<=field.radius;
-  if(target&&Math.hypot(target.x-pet.x,target.z-pet.z)<2.7&&pet.next<=now){
+  if(target&&Math.hypot(target.x-pet.x,target.z-pet.z)<2.1&&pet.next<=now){
    pet.next=now+1100;
    c.damage(target,ancientSkillDamage(p)*.1*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*pet.scale*bonus*(enhanced?1.2:1),undefined,pet.merged?'necropolis':'unleashLegion');
    c.fx('necromancer-strike',target.x,target.z,2,{source:{x:pet.x,y:ancientMapHeight(c.map,pet.x,pet.z)+1,z:pet.z},target:target.id});

@@ -26,8 +26,8 @@ const growth = {
   stasis: 0.022
 };
 const masteryLevel = (p, id) => p.mastery?.[id]?.level || 1;
-const skeletonLimit = (level) => Math.min(96, 2 + 2 * level);
-const skeletonAttackEfficiency = (slots) => slots <= 48 ? 1 : (48 + (slots - 48) * 0.5) / slots;
+const skeletonLimit = (level) => level ** 2 + 2;
+const skeletonAttackEfficiency = (slots) => slots <= 48 ? 1 : (slots <= 96 ? 48 + (slots - 48) * 0.5 : 72 + 48 * Math.log(slots / 96)) / slots;
 const skeletonSlots = (pet) => pet.merged ?? pet.count ?? 1;
 function releasableSkeletons(p, state, now = Date.now()) {
   if (!state) return 0;
