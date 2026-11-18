@@ -260,5 +260,18 @@ ctx.storage.setAlarm=async when=>{scheduled=when;};
 await server.webSocketMessage(duneSocket,JSON.stringify({type:'heartbeat'}));
 assert(scheduled<Date.now()+2000,'heartbeat must replace the idle alarm when a player is connected');
 
+const tribe=server.world('tribe');
+const roamingTribeMob=server.makeMonster('grox',12,0,330,1);
+tribe.monsters.push(roamingTribeMob);
+server.persist(tribe);
+await server.tickMap('tribe');
+assert(server.world('tribe').monsters.find(m=>m.id===roamingTribeMob.id).dormant);
+const approach=server.readSocket(authoritative);
+Object.assign(approach,{x:0,z:280,y:1.7,seen:Date.now()});
+server.writeSocket(authoritative,approach);
+await server.tickMap('tribe');
+assert(!server.world('tribe').monsters.find(m=>m.id===roamingTribeMob.id).dormant);
+assert(authoritative.messages.findLast(m=>m.type==='state').monsters.some(m=>m.id===roamingTribeMob.id));
+
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
