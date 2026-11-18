@@ -1,7 +1,7 @@
 # Astrift development workflow
 
 - User preference (2026-11-01): after completing and validating each change, commit and push the relevant project updates to the configured GitHub repository as part of finishing the work.
-- Keep the existing main site, Workers, Surge, Firebase, and single-HTML update workflow in sync as applicable. GitHub is an additional delivery target.
+- Keep the existing main site, Workers, Surge, Firebase, and single-HTML update workflow in sync as applicable. GitHub is an additional delivery target. Every official HTML build also regenerates `../astrift-html/Astrift-Canva.html`.
 - Never commit API keys, passwords, tokens, `.dev.vars`, local credential files, `.wrangler/`, `.firebase/`, or private account data. Review staged changes before committing.
 - If no GitHub remote has been configured, request the user's intended repository URL instead of guessing a repository or publishing to a new one.
 
