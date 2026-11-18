@@ -26,11 +26,13 @@ const growth = {
   stasis: 0.022
 };
 const masteryLevel = (p, id) => p.mastery?.[id]?.level || 1;
+const skeletonLimit = (level) => Math.min(48, 2 + 2 * level);
+const skeletonSlots = (pet) => pet.merged ?? pet.count ?? 1;
 function releasableSkeletons(p, state, now = Date.now()) {
   if (!state) return 0;
-  const active = state.legion.reduce((total, pet) => total + (pet.until > now && pet.hp !== 0 ? pet.count ?? 1 : 0), 0);
+  const active = state.legion.reduce((total, pet) => total + (pet.until > now && pet.hp !== 0 ? skeletonSlots(pet) : 0), 0);
   const reserve = (state.reserveCount || 0) + state.reserve.length;
-  return Math.max(0, Math.min(reserve, masteryLevel(p, "raiseSkeleton") ** 2 + 2 - active));
+  return Math.max(0, Math.min(reserve, skeletonLimit(masteryLevel(p, "raiseSkeleton")) - active));
 }
 const masteryCost = (id, level) => Math.ceil((25 + level * level * 12) * (1 + (growth[id] || 0) * 4));
 const masteryPower = (p, id) => 1 + (growth[id] || 0) * Math.min(99, masteryLevel(p, id) - 1);
@@ -59,5 +61,7 @@ export {
   masteryLevel,
   masteryPower,
   masteryReward,
-  releasableSkeletons
+  releasableSkeletons,
+  skeletonLimit,
+  skeletonSlots
 };

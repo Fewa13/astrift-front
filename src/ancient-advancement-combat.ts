@@ -2,7 +2,7 @@
 import {isAncientBoss} from './ancient-boss';
 import {advancementCastKey} from './ancient-advanced-professions';
 import {holyPower} from './ancient-ascension';
-import {FUSION_DAMAGE_MULTIPLIER,fusionDamageMultiplier,masteryLevel,releasableSkeletons} from './ancient-mastery';
+import {FUSION_DAMAGE_MULTIPLIER,fusionDamageMultiplier,masteryLevel,releasableSkeletons,skeletonLimit,skeletonSlots} from './ancient-mastery';
 import {advancementRoute} from './ancient-advancement-progress';
 import {ancientSkillDamage, ancientGearStats} from './ancient-gear';
 import {ancientMapHeight, blocked, lineClear, type AncientProfile} from './ancient-rules';
@@ -1545,9 +1545,28 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
   return;
  }
  if(route!=='necromancer')return;
- if(route==='necromancer'){
-  for(const pet of state.legion)pet.until=Number.MAX_SAFE_INTEGER;
- }else state.legion=state.legion.filter(pet=>pet.until>now);
+ const summonLevel=masteryLevel(p,'raiseSkeleton');
+ let free=skeletonLimit(summonLevel);
+ for(const pet of state.legion){
+  if(pet.hp===0)continue;
+  pet.until=Number.MAX_SAFE_INTEGER;
+  const slots=skeletonSlots(pet), kept=Math.min(free,slots);
+  free-=kept;
+  if(kept===slots)continue;
+  const returned=Math.min(slots-kept,Math.max(0,summonLevel**2-(state.reserveCount||0)-state.reserve.length));
+  if(returned>0){
+   state.reserveCount=(state.reserveCount||0)+returned;
+   state.reservePower=(state.reservePower||0)+returned*pet.scale/slots;
+  }
+  if(!kept){pet.hp=0;continue;}
+  pet.scale*=kept/slots;
+  if(pet.hp!==undefined)pet.hp=pet.hp*kept/slots;
+  if(pet.merged){
+   pet.merged=kept;
+   if(pet.unitHp!==undefined)pet.unitHp*=kept/slots;
+  }else pet.count=kept;
+ }
+ state.legion=state.legion.filter(pet=>pet.hp!==0);
  const bonus=1+Math.min(2,Math.log1p(p.necromancerStrength||0)*.18);
  for(const pet of state.legion){
   const target=summonTarget(a,c,pet.x,pet.z);

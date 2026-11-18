@@ -37,9 +37,9 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
  };
  const fusionDescriptions={
   raiseSkeleton:['储备一只骷髅战士并获得3点精通。储备上限为技能等级²。','Raise one reserve skeleton and gain 3 mastery. Reserve capacity is skill level².'],
-  unleashLegion:['出战上限为召唤等级² + 2，超出的骷髅继续待命。','Deploy up to the active limit of Raise Skeleton level² + 2. Extras remain in reserve.'],
+  unleashLegion:['在场上限为 2 + 2 × 召唤等级，最多 48 个名额。超出的骷髅继续待命。','Deploy up to 2 + 2 × Raise Skeleton level, capped at 48 slots. Extras remain in reserve.'],
   consumeSoul:['持续期间击杀符合等级条件的敌人，永久强化骷髅，并按吞噬强度获得精通。','Qualifying kills permanently strengthen your skeletons and grant mastery based on the strength gained.'],
-  necropolis:['至少3只骷髅在场时，可将全部在场骷髅合成一只巨型骷髅。继承总生命上限的125%和总攻击的90%。','Fuse all active skeletons into one giant at a minimum of three. It inherits 125% of their total max HP and 90% of their combined attack.'],
+  necropolis:['至少3只骷髅在场时，可将全部在场骷髅合成一只巨型骷髅。继承总生命上限的125%和总攻击的90%，继续占用原有名额。','Fuse all active skeletons into one giant at a minimum of three. It inherits 125% of their total max HP and 90% of their combined attack.'],
   prism:['单体 420% 攻击，概率触发多种元素，连锁余震造成75%伤害。立即回复实伤15%，减伤20%持续4秒。','420% single-target damage with elemental procs and a 75% Arc Echo. Heal 15% of damage and gain 20% reduction for 4s.'],
   judgment:['目标周围12米造成510%攻击，概率触发元素，回复实伤20%，减伤35%持续4秒。','510% damage within 12m of the target, elemental procs, 20% healing and 35% reduction for 4s.'],
   erosion:['7秒内目标受伤+20%、攻击和移速−15%，每秒造成28%攻击。','For 7s: target takes 20% more damage, loses 15% attack and speed, and takes 28% attack per second.'],
