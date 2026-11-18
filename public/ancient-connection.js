@@ -11,7 +11,7 @@ export function createAncientConnection({session,map,origin,onSocket,onMessage,o
  function guard(ws,ms){clearTimer(watchdog);watchdog=setTimer(()=>dropped(ws),ms)}
  function checkHealth(ws){if(!enabled||socket!==ws||!welcomed)return false;if(ws.readyState>1){dropped(ws);return false}const age=now()-lastStateAt,oldest=outstanding.values().next().value,ackAge=oldest===undefined?0:now()-oldest;
   if(age>=disconnectAfter||ackAge>=ackTimeout){dropped(ws);return false}
-  if(age>=staleAfter||ackAge>=staleAfter){if(ready){setReady(false);onStatus(attempts<2?'recovering':'syncing',undefined,{reason:ackAge>=staleAfter?'movement':'world'})}return false}
+  if(age>=staleAfter||ackAge>=staleAfter){if(ready||age>=staleAfter){setReady(false);onStatus(attempts<2?'recovering':'syncing',undefined,{reason:ackAge>=staleAfter?'movement':'world'})}return false}
   return true;
  }
  function monitor(ws){clearTimer(healthTimer);healthTimer=setTimer(()=>{healthTimer=0;checkHealth(ws);if(enabled&&socket===ws)monitor(ws)},1000)}
@@ -38,7 +38,7 @@ export function createAncientConnection({session,map,origin,onSocket,onMessage,o
     try{onMessage(data,reconnect)}catch(error){console.error('Ancient world message could not be applied:',data.type,error instanceof Error?error.message:String(error));if(authoritative)dropped(ws);return}
     if(socket!==ws||!enabled)return;
     if(data.type==='welcome'){welcomed=true;attempts=0;outstanding.clear()}
-    if(welcomed&&authoritative){lastStateAt=now();if(Number.isFinite(data.time))lastServerTime=data.time;const ack=data.you?.moveSeq;if(Number.isSafeInteger(ack))for(const seq of outstanding.keys())if(seq<=ack)outstanding.delete(seq);if(!checkHealth(ws))return;if(socket!==ws||!enabled)return;guard(ws,disconnectAfter);if(!ready){setReady(true);onStatus('ready')}monitor(ws)}
+    if(welcomed&&authoritative){lastStateAt=now();if(Number.isFinite(data.time))lastServerTime=data.time;const ack=data.you?.moveSeq;if(Number.isSafeInteger(ack))for(const seq of outstanding.keys())if(seq<=ack)outstanding.delete(seq);if(!checkHealth(ws))return;if(socket!==ws||!enabled)return;guard(ws,disconnectAfter);if(!ready&&data.type==='state'){setReady(true);onStatus('ready')}monitor(ws)}
    };
    ws.onclose=()=>dropped(ws);ws.onerror=()=>dropped(ws);
   }catch{if(enabled&&epoch===generation)schedule()}

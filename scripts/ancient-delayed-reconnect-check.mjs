@@ -237,5 +237,23 @@ authoritative.serializeAttachment(expired);
 await server.webSocketMessage(authoritative,JSON.stringify({type:'move',seq:3,x:38,z:50,y:75,yaw:0}));
 assert.equal(authoritative.deserializeAttachment().y,75,'expired flight permits falling');
 
+const duneProfile=server.read('dune-necro');
+Object.assign(duneProfile,{level:267,profession:'necromancer',fusedJobs:{necromancer:true},ascension:{jobs:{necromancer:{holy:true}},attempts:0,day:''},fusionPassives:{necromancer:{0:{level:1,points:0}}}});
+server.save('dune-necro',duneProfile);
+const duneTicket=await server.command('dune-necro','ticket',{map:'dunes'});
+assert(duneTicket.ok,JSON.stringify(duneTicket));
+await server.fetch(new Request('https://play.astrift.com/api/ancient/connect?map=dunes&ticket='+duneTicket.ticket,{headers:{Upgrade:'websocket'}}));
+const duneSocket=sockets.at(-1);
+assert(duneSocket.messages.find(m=>m.type==='welcome')?.you.maxHp>100);
+await server.tickMap('dunes');
+assert(duneSocket.messages.find(m=>m.type==='state')?.monsters.length>0);
+assert(duneSocket.messages.find(m=>m.type==='state')?.you.maxHp>100);
+
+let scheduled;
+ctx.storage.getAlarm=async()=>Date.now()+3600000;
+ctx.storage.setAlarm=async when=>{scheduled=when;};
+await server.webSocketMessage(duneSocket,JSON.stringify({type:'heartbeat'}));
+assert(scheduled<Date.now()+2000,'heartbeat must replace the idle alarm when a player is connected');
+
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
