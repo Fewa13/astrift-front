@@ -67,7 +67,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
  const selectedRoute=p=>ADVANCED_PROFESSIONS[p?.profession]?.find(route=>route.id===p.advancements?.[p.profession]?.route);
  const masteryGoal=level=>Math.ceil((25+level*level*12)*1.2);
  const fusionText=id=>L(...fusionDescriptions[id]);
- let ignitionOpen=false;
+ let ignitionOpen=false,otherProfessionsOpen=false;
  function renderIgnition(card,p){
   const entries=FUSION_PASSIVES[p.profession];
   if(!entries)return;
@@ -161,14 +161,15 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    renderBranchPanel(card,{p,job:p.profession,en,action,refresh});
   }
   const toggle=currentJob?btn(L('其他职业','Other professions'),()=>{
-   change.hidden=!change.hidden;
+   otherProfessionsOpen=!otherProfessionsOpen;
+   change.hidden=!otherProfessionsOpen;
    toggle.setAttribute('aria-expanded',String(!change.hidden));
   },card):null;
   const change=el('section','',card);
   change.className='ancientAscensionEntry';
-  change.hidden=!!currentJob;
+  change.hidden=!!currentJob&&!otherProfessionsOpen;
   if(toggle){
-   toggle.setAttribute('aria-expanded','false');
+   toggle.setAttribute('aria-expanded',String(!change.hidden));
    el('h3',L('转职','Change profession'),change);
    el('p',L('15级开放转职，每次消耗一本转职书。','Changing profession unlocks at level 15 and costs one change book.'),change);
   }
