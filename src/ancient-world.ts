@@ -358,6 +358,14 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
  async command(name:string,action:string,data:Record<string,unknown>){
   if(action==='resetDungeon')return this.ctx.storage.transactionSync(()=>{this.dungeons().reset(name);this.trials().leave(name);return {ok:true,profile:this.read(name)};});
   const p=this.read(name);const fail=(error:string)=>({ok:false,error});if(this.previewId(name)&&!['profile','ticket','leaveWorld','usePotion','useBossCard','communityBag','communityNPC','communityInteract','communityAmenity','communityMeal','communityPreviewEnd'].includes(action))return fail('试玩中请先返回编辑器 / Return to the editor first');if(action==='communityPreviewEnd'){const peer=this.connections().find(ws=>(this.readSocket(ws) as Player|null)?.name===name),actor=this.readSocket(peer) as Player|null;if(actor&&communityId(actor.map)>=50000000)await this.disconnect(name,actor.connectionId);return {ok:true,profile:this.read(name)}}
+  if(action==='saveQuickbar'){
+   const slots=data.slots;
+   if(!Array.isArray(slots)||slots.length!==6||slots.some(key=>typeof key!=='string'||key.length>100||key!==''&&!/^(potion|supply|bossCard|meal):[a-zA-Z0-9_:-]+$/.test(key)))return fail('快捷栏无效 / Invalid quickbar');
+   p.quickbar=[...slots];
+   p.quickbarVersion=(p.quickbarVersion||0)+1;
+   this.save(name,p);
+   return {ok:true,slots:p.quickbar,version:p.quickbarVersion};
+  }
   if(['usePotion','useBossCard'].includes(action)){const peer=this.connections().find(ws=>(this.readSocket(ws) as Player|null)?.name===name),actor=this.readSocket(peer) as Player|undefined;if(peer&&actor?.amenityPose){this.standAmenity(peer,actor);this.writeSocket(peer,actor)}}
   if(!['profile','leaveWorld'].includes(action)&&this.connections().some(ws=>{const a=this.readSocket(ws) as Player|null;return a?.name===name&&!!a.drinking}))return fail('正在喝药');
   if(action==='puzzleLeaderboard'||action==='puzzleEnter'||action==='puzzleTitle'){

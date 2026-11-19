@@ -291,5 +291,12 @@ const closed=await restoredServer.httpExchange('dune-necro',{connection:httpResu
 assert(closed.ok);
 assert.equal((await restoredServer.httpExchange('dune-necro',{connection:httpResult.connection,messages:[]})).ok,false);
 
+const quickbar=['potion:minor','supply:book:warrior','','bossCard:lord','meal:grilled',''];
+const quickSave=await server.command('caster','saveQuickbar',{slots:quickbar});
+assert(quickSave.ok);
+const quickServer=new module.exports.AncientWorld(ctx,{ACCOUNT_SESSIONS:{getByName:()=>({banState:async()=>null})}});
+assert.deepEqual(Array.from(quickServer.read('caster').quickbar),quickbar,'quickbar survives server reconstruction');
+assert.equal(quickServer.read('friend').quickbar,undefined,'accounts keep separate quickbars');
+assert.equal((await server.command('caster','saveQuickbar',{slots:['bad']})).ok,false);
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');

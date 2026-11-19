@@ -554,7 +554,15 @@ import {createAncientMarketUI} from './ancient-market-ui.js?v=20261021-skyreach-
 import {createAncientSupplyUI} from './ancient-supply-ui.js?v=20261015-shop-training-1';
 const supplyUI=createAncientSupplyUI({getProfile:()=>profile,getPlayer:()=>active?me:null,en,action,openSkills:()=>openMenu('skills')});
 import {createAncientQuickbar} from './ancient-quickbar.js?v=20261018-cast-hands-1';
-const quickbar=createAncientQuickbar({getProfile:()=>profile,en,account:()=>accountSession()?.name||'',canUse:()=>active&&!paused&&!busy&&me?.hp>0&&!me?.drinking&&!questUI.isOpen(),action,visible:()=>active&&!paused&&me?.hp>0});
+const quickbar=createAncientQuickbar({saveSlots:async(slots,name)=>{
+ const session=accountSession();
+ if(session?.name.toLowerCase()!==name)throw Error('Account changed');
+ const result=await accountApi('ancient/profile',{...session,action:'saveQuickbar',slots});
+ if(accountSession()?.name.toLowerCase()===name&&profile&&(profile.quickbarVersion||0)<=result.version){
+  profile.quickbar=result.slots;profile.quickbarVersion=result.version;
+ }
+ return result;
+},getProfile:()=>profile,en,account:()=>accountSession()?.name||'',canUse:()=>active&&!paused&&!busy&&me?.hp>0&&!me?.drinking&&!questUI.isOpen(),action,visible:()=>active&&!paused&&me?.hp>0});
 const communityPlay=createCommunityPlay({scene,onReposition:pose=>{resetMoves();vy=0;forcedMotion=null;if(pose){yaw=pose.yaw;pitch=pose.kind==='bed'?.55:0}},wantsMove:()=>Math.abs(stick.x)+Math.abs(stick.y)>.15,send:d=>socket?.send(JSON.stringify(d)),en,getMap:()=>currentMap,getDefinition:()=>getCommunityMap(currentMap),getPlayer:()=>me,camera,active:()=>active,paused:()=>paused,request:activityRequest,unlock,lock,clear:(...args)=>mapLineClear(...args,currentMap),clearInput:()=>{keys.clear();fire=false;aim=false},notice:text=>combatNotices.push(text,3500)});
 const inventoryUI=createAncientInventoryUI({getProfile:()=>profile,getPlayer:()=>active?me:null,getCommunity:()=>communityPlay.bag(),eatMap:async id=>{try{const r=await activityRequest('communityMeal',{id});if(r.bag)communityPlay.handle({type:'communityBag',bag:r.bag});renderPanel()}catch(e){status(e.message)}},inCommunity:()=>active&&!!communityId(currentMap),en,gearUI,supplyUI,quickbar,action,refresh:renderPanel,busy:()=>busy,material,weaponLootName,stonework:stoneworkUI,collections:collectionUI});
 const mailUI=createAncientMailUI({en,onBack:()=>{if(active){paused=false;view='pause';renderPanel();lock()}else{view='lobby';renderPanel()}},request:async(action,data={})=>{const before=profile,r=await accountApi('ancient/profile',{...accountSession(),action,...data});return {...r,profile:profile===before?r.profile:undefined}},onProfile:p=>{if(p){profile=p;identity();quickbar.update()}},refresh:renderPanel,isOpen:()=>view==='mail'&&(!active||paused)});
