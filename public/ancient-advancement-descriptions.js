@@ -22,12 +22,12 @@ const zh={
  veinforger:['在敌人脚下留下岩钉，最多保留四根。','让震波沿岩钉路线传递。','隆起选中岩钉周围地面，击退小怪并减速。','引爆岩钉。三根以上围成的区域会额外地裂。','引爆留下裂纹，震波经过时范围更大。'],
  'elemental-god':['给目标补上它缺少的一种元素，触发元素反应。','落雷并把主目标身上的元素传给周围敌人。','记录目标已有的元素并延时逐个结算。','持续偷取生命并反复激活已有元素反应。','集齐四种元素时短暂提高输出。'],
  'elemental-ward':['轮换火、冰、雷、土，获得该元素的战斗增益。','按当前元素改变范围、伤害、减速或防御。','放置结界，削弱敌人并持续留下当前元素。','结算结界区域内的元素印记并恢复生命。','通过换极选择输出、减伤或机动性。'],
- riftlord:['引爆印记时从目标背后补一次斩击。','突袭留下两端裂隙，重按返回并引爆两端。','敌人穿越领域边界时受到切割。','多方向连斩，把剩余裂隙引到目标处合斩。','领域内提高攻击。'],
+ riftlord:['引爆印记时从目标背后补一次斩击。','一次突袭留下两端裂隙，后续终结技可利用裂隙追加伤害。','敌人穿越领域边界时受到切割。','多方向连斩，把剩余裂隙引到目标处合斩。','领域内提高攻击。'],
  riftduelist:['斩击并留下标记，重复命中造成额外伤害。','短程突进并标记沿途敌人。','短暂防御，受到攻击时向攻击者反斩。','选定决斗目标，提高对其输出并减少其他敌人造成的伤害。','标记可增强反斩。'],
  'abyss-king':['叠加侵蚀，满层时将部分吸血储存起来。','吞噬侵蚀并将储存的生命返还给自己。','消耗生命启动深渊领域，血越少伤害越高。','消耗深渊能量进入真身，储存的生命先抵持续耗血，首杀延长真身。','攻击和击杀侵蚀目标可积攒深渊能量。'],
  'abyss-herald':['寄生侵蚀并持续伤害目标。','将主目标的侵蚀复制给附近敌人。','铺下蚀潮，对范围内敌人持续叠加侵蚀。','把周围的侵蚀收束到主目标。','带侵蚀的敌人死亡时可以继续传播。'],
  'time-sovereign':['第一次命中储存时间裂隙，再次命中可提前结算。','一次跃迁，起点与落点同时造成范围伤害。','记录位置、生命和冷却，再次释放直接回溯。','冻结小怪并储存伤害，首领大幅减速。','回溯不会刷新自身冷却。'],
- 'time-weaver':['贴上延时印记，记录一部分伤害并延迟结算。','连上两名敌人，将伤害分给另一端。','借位突进，可在窗口内返回并在原地引爆。','立刻结算范围内的延时印记并削弱敌人。','因果分伤只传递一次。'],
+ 'time-weaver':['贴上延时印记，记录一部分伤害并延迟结算。','连上两名敌人分摊伤害；只有单个目标时直接重击。','一次借位跃迁，起点与落点同时造成范围伤害。','立刻结算范围内的延时印记并削弱敌人。','因果分伤只传递一次。'],
 };
 const en={
  berserker:['Fire a projectile that grows stronger as you lose health.','Sacrifice 30% maximum health temporarily to raise damage.','Charge the selected enemy and strike nearby foes on impact.','Negate one lethal hit within 10 seconds, recover 40% health, and briefly deal 30% more damage to the attacker.','Deal more damage at low health.'],
@@ -51,12 +51,12 @@ const en={
  veinforger:['Raise a stone spike below an enemy. Keep up to four.','Send a shockwave along the spike route.','Raise ground around a spike to shove regular enemies and slow other foes.','Detonate spikes. Areas enclosed by at least three spikes rupture again.','Spent spikes leave cracks that widen passing shockwaves.'],
  'elemental-god':['Apply a missing element to a target and trigger elemental reactions.','Call lightning and transfer the target’s elements to nearby enemies.','Read the target’s elements and resolve their damage in sequence.','Steal life repeatedly and activate existing reactions.','Gather all four elements for a temporary damage bonus.'],
  'elemental-ward':['Cycle fire, ice, storm and earth, each with its own combat buff.','Change damage, radius, slows or defense according to attunement.','Place a ward that weakens enemies and applies the selected element.','Consume marks in the ward’s area and heal.','Change attunement to adapt your damage, defenses or mobility.'],
- riftlord:['Detonate a mark and follow up with a cut from behind.','Dash, leaving two rifts. Recast to return and slash from both.','Cut enemies when they cross the domain boundary.','Slash from several directions and bring active rifts together for a final strike.','Gain attack inside the domain.'],
+ riftlord:['Detonate a mark and follow up with a cut from behind.','Dash once and leave two rifts that empower your finisher.','Cut enemies when they cross the domain boundary.','Slash from several directions and bring active rifts together for a final strike.','Gain attack inside the domain.'],
  riftduelist:['Slash and mark a target. Follow-up hits are stronger.','Dash through enemies and mark those you hit.','Briefly guard and counter the next attacker.','Focus on a duel target and take less damage from other enemies.','Marks empower your riposte.'],
  'abyss-king':['Stack corruption. At full stacks, bank some of its healing.','Consume corruption and recover stored life.','Sacrifice health to open a field that grows stronger at low health.','Spend Abyssal Energy to transform. Stored life pays upkeep and the first kill extends it.','Attacks and corrupted kills generate Abyssal Energy.'],
  'abyss-herald':['Infect an enemy with a damaging parasite.','Copy the target’s infection to nearby enemies.','Open a tide that continually adds infection.','Collect nearby infections into the primary target.','Infected enemies can pass corruption on when they die.'],
  'time-sovereign':['Bank a time fracture on the first hit and settle it early on the next.','Shift once and damage enemies at both departure and arrival.','Record location, health and cooldowns. Recast to rewind directly.','Freeze ordinary enemies and bank damage. Bosses are heavily slowed.','Rewind preserves its own cooldown.'],
- 'time-weaver':['Mark an enemy to bank part of the damage and settle it later.','Link two enemies so a hit on either shares damage with the other.','Borrow a future position. Return within the window and detonate the anchor.','Resolve delayed marks immediately and weaken enemies.','Linked damage transfers only once.'],
+ 'time-weaver':['Mark an enemy to bank part of the damage and settle it later.','Link two enemies to share hits. Against a lone target, deliver a heavy direct hit.','Shift once and damage enemies at both departure and arrival.','Resolve delayed marks immediately and weaken enemies.','Linked damage transfers only once.'],
 };
 export function advancementDescription(route,index,english=false){
  return (english?en:zh)[route]?.[index]||'';

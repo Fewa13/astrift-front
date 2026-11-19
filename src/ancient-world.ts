@@ -1018,7 +1018,7 @@ private syncQuestHealth(a:Player,p:AncientProfile){if(a.map&&p.corrupted&&corrup
     const linked=monsters.find(v=>v.id===id&&v.hp>0);
     if(linked&&Math.hypot(linked.x-m.x,linked.z-m.z)<=18)this.damageMonster(ws,a,linked,actual*.25,'body',a.name,'skill','advancement:hexweaver:Q',monsters);
    }
-   if(attack==='siphon'&&actual>0)a.hp=Math.min(a.maxHp||100,a.hp+actual*.75);
+   if(attack==='siphon'&&actual>0)a.hp=Math.min(a.maxHp||100,a.hp+actual*.1875);
    return actual;
   },fx:(id:string,x:number,z:number,radius:number,details?:import('./ancient-skill-combat').SkillFXDetails)=>{for(const peer of this.connections())if(((this.readSocket(peer) as Player).map||'tribe')===map)this.send(peer,{type:'skillFx',id,x,z,radius,owner:a.name,holy:a.holy,source:{x:a.x,y:a.y-.25,z:a.z},...details})}};
  }

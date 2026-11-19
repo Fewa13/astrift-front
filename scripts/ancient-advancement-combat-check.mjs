@@ -5,13 +5,14 @@ import {build} from 'esbuild';
 const module=await build({stdin:{contents:`
  export {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS} from './src/ancient-advanced-professions';
  export {reconcileAdvancementRuntime,summonTarget,recordNecromancerKill,tickAdvancedSummon,tickPaladin} from './src/ancient-advancement-combat';
+ export {tickFusion} from './src/ancient-fusion-combat';
  export {chooseAdvancement,advancementCost,awardAdvancementMastery} from './src/ancient-advancement-progress';
  export {castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed} from './src/ancient-skill-combat';
  export {newAncientProfile} from './src/ancient-rules';
  export {fuseAncientProfession,chooseAncientProfession} from './src/ancient-commerce';
  export {PROFESSION_FUSIONS,PROFESSIONS,SKILLS,isFusionJob,skillHealth} from './src/ancient-skills';
  `,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
-const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTarget,recordNecromancerKill,tickAdvancedSummon,tickPaladin,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob,skillHealth}=await import(
+const {fuseAncientProfession,chooseAncientProfession,PROFESSION_FUSIONS,summonTarget,recordNecromancerKill,tickAdvancedSummon,tickPaladin,tickFusion,reconcileAdvancementRuntime,ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,chooseAdvancement,advancementCost,awardAdvancementMastery,castAncientSkill,tickAncientSkills,monsterOutgoing,monsterSpeed,newAncientProfile,PROFESSIONS,SKILLS,isFusionJob,skillHealth}=await import(
  'data:text/javascript;base64,'+Buffer.from(module.outputFiles[0].text).toString('base64')
 );
 const {advancementEffectIds}=await import('../public/ancient-advancement-fx.js');
@@ -380,7 +381,7 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
   const monsters=[{id:'primary',kind:'grox',x:0,z:16,hp:1e12},{id:'secondary',kind:'grox',x:3,z:17,hp:1e12}];
   const damages=[],effects=[];
   const context={map:'tribe',monsters,damage(target,amount){damages.push(amount);target.hp-=amount;return amount;},fx(id){effects.push(id);}};
-  return {profile,actor,monsters,damages,effects,cast:(id,at)=>castAncientSkill(actor,profile,id,aim,context,at)};
+  return {profile,actor,monsters,damages,effects,context,cast:(id,at)=>castAncientSkill(actor,profile,id,aim,context,at)};
  };
  const passive={level:8,points:0};
  const element=fixture('elementalist',{0:passive,1:passive});
@@ -397,6 +398,45 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  finally{Math.random=random;}
  assert(voidsword.damages[0]>unlit.damages[0]);
  assert(!voidsword.actor.skillRuntime.fusion.marks.primary);
+
+ const healing=fixture('elementalist',{});
+ healing.actor.hp=1;healing.actor.maxHp=1e15;
+ assert.equal(healing.cast('prism',now),null);
+ assert(Math.abs((healing.actor.hp-1)-healing.damages.reduce((sum,value)=>sum+value,0)*.075)<.01,'elemental bolt heals 7.5%');
+ const erosion=fixture('elementalist',{});
+ assert.equal(erosion.cast('erosion',now),null);
+ assert(erosion.damages[0]>0,'erosion immediately damages the target');
+ const drain=fixture('elementalist',{});
+ assert.equal(drain.cast('siphon',now),null);
+ assert(drain.monsters[0].dots[0].damage>0);
+ const assist=fixture('voidsword',{});
+ assist.monsters.forEach(m=>{m.x=5;m.z=10;});
+ assert.equal(castAncientSkill(assist.actor,assist.profile,'voidslash',[0,0,1],assist.context,now),null,'nearby enemy is acquired without exact aim');
+ const domain=fixture('voidsword',{});
+ assert.equal(domain.cast('voiddomain',now),null);
+ domain.actor.x=2;
+ tickFusion(domain.actor,domain.profile,domain.context,now+1,.2);
+ assert(domain.damages.length>0,'void domain deals ongoing damage');
+ assert.equal(domain.actor.skillRuntime.fusion.zone.point.x,2,'void domain follows its caster');
+ const safety=fixture('chrono',{});
+ assert.equal(safety.cast('rewind',now),null);
+ const rewindCooldown=safety.actor.skillRuntime.cooldowns.rewind;
+ safety.actor.hp=100;
+ safety.actor.x=3;
+ tickFusion(safety.actor,safety.profile,safety.context,now+1000,.2);
+ assert(safety.actor.hp>=700,'low health automatically restores the recorded health');
+ assert.equal(safety.actor.x,0,'automatic rewind returns to the recorded position');
+ assert.equal(safety.actor.skillRuntime.cooldowns.rewind,rewindCooldown);
+ assert.equal(safety.actor.skillRuntime.fusion.rewind,undefined);
+
+ const weaver=fixture('chrono',{});
+ weaver.profile.advancements={chrono:{route:'time-weaver',skills:Object.fromEntries([...('XQZC')].map(key=>[key,{level:8,points:0}]))}};
+ weaver.actor.advancement='time-weaver';
+ weaver.monsters.pop();
+ assert.equal(weaver.cast('advanced:Q',now),null,'weaver can attack a single boss without a second enemy');
+ assert.equal(weaver.cast('advanced:Z',now+1),null);
+ assert(weaver.actor.skillRuntime.cooldowns['advanced:Z']>now,'weaver movement starts its cooldown on the first cast');
+ assert.equal(weaver.cast('advanced:Z',now+2),'技能冷却中');
 
  const chrono=fixture('chrono',{0:passive});
  assert.equal(chrono.cast('rewind',now),null);

@@ -1717,7 +1717,7 @@ function castElementalAdvancement(a:SkillActor,p:AncientProfile,route:string,key
     damage+=hit(m,4+1.25*marks.length);
     delete state.marks[m.id];
    }
-   a.hp=Math.min(a.maxHp||100,a.hp+damage*.12);
+   a.hp=Math.min(a.maxHp||100,a.hp+damage*.06);
    r.effects.elementEarth={until:now+6500,level:1};
    c.fx('elemental-ward-equilibrium',center.x,center.z,radius);
   }
@@ -1737,8 +1737,8 @@ export function tickAdvancedElements(a:SkillActor,p:AncientProfile,c:SkillContex
   if(!target||siphon.until<=now)delete state.siphon;
   else if(siphon.next<=now){
    siphon.next=now+1000;
-   const damage=c.damage(target,siphon.power*.85,undefined,'advancement:elemental-god:C');
-   a.hp=Math.min(a.maxHp||100,a.hp+damage*.6);
+   const damage=c.damage(target,siphon.power*1.7,undefined,'advancement:elemental-god:C');
+   a.hp=Math.min(a.maxHp||100,a.hp+damage*.15);
    elementalReaction(a,c,state,target,'C',siphon.power*.65,now);
   }
  }
@@ -1775,20 +1775,12 @@ function castRiftAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const r=runtime(a),state=riftState(a,c.map);
  const tag='advancement:'+route+':'+key;
  const origin={x:a.x,y:a.y-1.7,z:a.z};
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*fusionDamageMultiplier(p.profession);
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*fusionDamageMultiplier(p.profession)*1.2;
  const hit=(m:SkillMonster,n:number)=>c.damage(m,power*n,undefined,tag);
  const anchor=state.anchor;
- if(route==='riftlord'&&key==='Q'&&anchor&&anchor.until>now){
-  if(!riftMovement(a,c,anchor.from))return '返回位置被阻挡';
-  delete state.anchor;
-  for(const point of [anchor.from,anchor.to]){
-   for(const m of stormTargets(c,point,5))c.damage(m,anchor.power*3.1,undefined,tag);
-   c.fx('riftlord-return',point.x,point.z,5,{source:origin,target:''});
-  }
-  return null;
- }
  if((r.cooldowns[id]||0)>now)return '技能冷却中';
- const target=selectSkillTarget(a,direction,60,c);
+ const target=selectSkillTarget(a,direction,60,c)||stormTargets(c,origin,12)
+  .find(m=>lineClear(a.x,a.y,a.z,m.x,(m.y||0)+1.4,m.z,c.map));
  if(!target&&(key==='X'||key==='C'||route==='riftlord'&&key==='Q'))return '请瞄准可见的敌人';
  const center=target?firePoint(c,target):origin;
  if(route==='riftlord'){
@@ -2085,8 +2077,9 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  if(a.hp<=0)return '请在存活时使用技能';
  const r=runtime(a),state=timeState(a,c.map),tag='advancement:'+route+':'+key;
  const origin={x:a.x,y:a.y-1.7,z:a.z};
- const target=selectSkillTarget(a,direction,60,c);
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*fusionDamageMultiplier(p.profession);
+ const target=selectSkillTarget(a,direction,60,c)||stormTargets(c,origin,12)
+  .find(m=>lineClear(a.x,a.y,a.z,m.x,(m.y||0)+1.4,m.z,c.map));
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*fusionDamageMultiplier(p.profession)*1.2;
  const hit=(m:SkillMonster,multiplier:number)=>c.damage(m,power*multiplier,undefined,tag);
  expireTimeRewind(a,p,state,route,now);
  const anchor=state.anchor,snapshot=state.rewind;
@@ -2149,27 +2142,25 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
   c.fx('time-weaver-mark',center.x,center.z,3,{source:origin,target:target.id});
  }else if(key==='Q'&&target){
   const partner=stormTargets(c,center,13).find(m=>m!==target);
-  if(!partner)return '因果连线需要第二个敌人';
+  if(!partner){
+   hit(target,4.8);
+   c.fx('time-weaver-link',center.x,center.z,4,{source:origin,target:target.id});
+  }else{
   state.linked={first:target.id,second:partner.id,until:now+9000};
   hit(target,3.4);
   c.fx('time-weaver-link',partner.x,partner.z,4,{source:center,target:partner.id});
+  }
  }else if(key==='Z'){
-  const past=snapshot&&snapshot.until>now?snapshot:undefined;
-  if(past){
-   if(!riftMovement(a,c,past))return '借位位置被阻挡';
-   delete state.rewind;
-   for(const m of stormTargets(c,past,6))hit(m,4);
-   c.fx('time-weaver-return',past.x,past.z,6,{source:origin,target:''});
-  }else{
    const d=Array.isArray(direction)&&direction.length===3&&direction.every(Number.isFinite)?direction:undefined;
    const length=Math.hypot(d?.[0]||0,d?.[2]||0);
    if(!d||length<.01)return '请先瞄准跃迁方向';
    const end=groundDash(a,c,d[0]/length,d[2]/length,Math.min(21,10+level*.2));
    if(Math.hypot(end.x-origin.x,end.z-origin.z)<.45||!riftMovement(a,c,end))return '跃迁位置被阻挡';
-   state.rewind={...origin,hp:a.hp,cooldowns:{},until:now+8500,updated:false,castId:id};
-   c.fx('time-weaver-borrow',end.x,end.z,5,{source:origin,target:''});
-   return null;
-  }
+   delete state.rewind;
+   for(const point of [origin,end]){
+    for(const m of stormTargets(c,point,6))hit(m,4);
+    c.fx('time-weaver-borrow',point.x,point.z,6,{source:origin,target:''});
+   }
  }else if(target){
   const radius=Math.min(19,12+level*.16);
   for(const m of stormTargets(c,center,radius)){
