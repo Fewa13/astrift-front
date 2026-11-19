@@ -128,6 +128,14 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   el('h2',L('职业','Professions'),card);
   const currentJob=PROFESSIONS[p.profession],currentRoute=selectedRoute(p);
   if(currentJob){
+   if(currentRoute){
+    const count=p.materials['supply:rollback']||0;
+    const reset=btn(L('回退当前分支','Revert current branch')+' · '+count,()=>{
+     if(window.confirm(L('消耗1张职业回退卷轴，回退当前升华分支？','Use one scroll to revert your current advancement branch?')))void action('useSupply',{id:'rollback'});
+    },card);
+    reset.disabled=count<1;
+    el('small',L('职业回退卷轴 · 商店10万远古金币','Profession Reversion Scroll · 100,000 Ancient Gold in the shop'),card);
+   }
    el('h3',currentJob.icon+' '+L(currentJob.name,currentJob.en)+(currentRoute?' · '+L(...currentRoute.name):''),card);
    if(!currentRoute&&ADVANCED_PROFESSIONS[p.profession]?.length){
     el('h3',L('升华分支','Advancement paths'),card);
@@ -144,7 +152,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
      el('small',advancementDescription(route.id,4,en()),item);
      btn(L('3D 技能与外观','3D skills and appearance'),()=>openSkillPreview(p.profession,{en,advancement:route}),item);
      if(isHoly(p))btn(L('选择此路线','Choose this path'),async()=>{
-      if(window.confirm(L('升华路线只能选择一次。确定选择 '+L(...route.name)+'？','This choice is permanent. Choose '+L(...route.name)+'?')))await action('chooseAdvancement',{route:route.id});
+      if(window.confirm(L('确定选择升华路线 '+L(...route.name)+'？','Choose advancement path '+L(...route.name)+'?')))await action('chooseAdvancement',{route:route.id});
      },item);
     }
    }

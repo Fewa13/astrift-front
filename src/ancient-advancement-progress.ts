@@ -1,9 +1,9 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {ADVANCED_PROFESSIONS} from './ancient-advanced-professions';
-import {isHoly} from './ancient-ascension';
-import {masteryLevel} from './ancient-mastery';
+import {ADVANCED_PROFESSIONS} from './ancient-advanced-professions.js';
+import {isHoly} from './ancient-ascension.js';
+import {masteryLevel,masteryCost} from './ancient-mastery.js';
 import type {AncientProfile} from './ancient-rules';
-import {isFusionJob, PROFESSIONS, SKILLS} from './ancient-skills';
+import {isFusionJob, PROFESSIONS, SKILLS} from './ancient-skills.js';
 
 export type AdvancementProgress = {
  route: string;
@@ -22,7 +22,7 @@ export function chooseAdvancement(profile: AncientProfile, routeId: string) {
  const fused = isFusionJob(profession);
  if (fused && !profile.fusedJobs?.[profession]) return false;
  const records = profile.advancements ??= {};
- if (records[profession]) return records[profession].route === routeId;
+ if (records[profession]?.route) return records[profession].route === routeId;
 
  const skills: AdvancementProgress['skills'] = {};
  const oldSkills = PROFESSIONS[profession].skills;
@@ -30,10 +30,32 @@ export function chooseAdvancement(profile: AncientProfile, routeId: string) {
   const old = oldSkills.find(id => SKILLS[id].key === key);
   const inherited = old && fused ? profile.mastery?.[old] : undefined;
   const level = old ? (fused ? masteryLevel(profile, old) : profile.skills?.[old] || 1) : 1;
-  skills[key] = {level, points: inherited?.points || 0};
+  const retained=records[profession]?.skills[key];
+  const rank=Math.max(level,retained?.level||1);
+  const points=retained?Math.max(retained.level===rank?retained.points:0,
+   fused&&level===rank?Math.floor((inherited?.points||0)*advancementCost(rank)/masteryCost(old!,rank)):0):inherited?.points||0;
+  skills[key] = {level:rank, points};
  }
  records[profession] = {route: routeId, skills};
  return true;
+}
+
+export function rollbackAdvancement(profile:AncientProfile){
+ const job=profile.profession||'',progress=profile.advancements?.[job];
+ if(!progress?.route||!advancementRoute(profile))return '当前职业未选择升华分支 / No advancement branch selected';
+ for(const id of PROFESSIONS[job].skills){
+  const trained=progress.skills[SKILLS[id].key];
+  if(!trained)continue;
+  if(isFusionJob(job)){
+   const saved=(profile.mastery??={})[id];
+   if(!saved||saved.level<=trained.level){
+    const points=Math.floor(trained.points*masteryCost(id,trained.level)/advancementCost(trained.level));
+    profile.mastery![id]={level:trained.level,points:Math.max(saved?.level===trained.level?saved.points:0,points)};
+   }
+  }else{profile.skills??={};profile.skills[id]=Math.max(profile.skills[id]||0,trained.level);}
+ }
+ progress.route='';
+ return null;
 }
 
 export function advancementCost(level: number) {
