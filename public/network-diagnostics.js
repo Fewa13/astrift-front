@@ -5,7 +5,7 @@ function preferredBackend(){try{const value=sessionStorage.getItem('astrift.apiB
 function rememberBackend(origin){try{sessionStorage.setItem('astrift.apiBackend.v1',origin)}catch{}if(globalThis.window)window.__ASTRIFT_API_ORIGIN__=origin}
 function trustedPage(){
  const origin=globalThis.location?.origin||'';
- return ['https://astrift.com','https://www.astrift.com',...BACKENDS,'https://astrift-front.surge.sh','https://astrift-front.web.app','https://astrift-front.firebaseapp.com','https://astrift.codeberg.page','https://astrift-2b44b8.gitlab.io','https://cadencepark-iusd.my.canva.site','https://www.canva.com'].includes(origin)||/^https:\/\/[0-9]{1,20}-atari-embeds\.googleusercontent\.com$/.test(origin)||/^https:\/\/[a-z0-9-]+\.canvacode\.com$/.test(origin)||origin==='null';
+ return ['https://astrift.com','https://www.astrift.com',...BACKENDS,'https://astrift-front.surge.sh','https://polite-gold-qcohaxy8.edgeone.dev','https://astrift-front.web.app','https://astrift-front.firebaseapp.com','https://astrift.codeberg.page','https://astrift-2b44b8.gitlab.io','https://cadencepark-iusd.my.canva.site','https://www.canva.com'].includes(origin)||/^https:\/\/[0-9]{1,20}-atari-embeds\.googleusercontent\.com$/.test(origin)||/^https:\/\/[a-z0-9-]+\.canvacode\.com$/.test(origin)||origin==='null';
 }
 export function apiURL(path){
  const page=globalThis.location;

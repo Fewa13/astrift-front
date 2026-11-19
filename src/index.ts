@@ -787,7 +787,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
 const PUBLIC_ORIGINS=new Set(['https://astrift-front.fewa3729.workers.dev','https://astrift.com','https://www.astrift.com','https://astrift-hub.fewa3729.workers.dev','https://play.astrift.com','https://astrift-front.pages.dev','https://fewa13.github.io','https://astrift-front-netlify.netlify.app','https://astrift-front-vercel.vercel.app',
   'https://astrift.codeberg.page',
-  'https://astrift-front.surge.sh',
+  'https://astrift-front.surge.sh','https://polite-gold-qcohaxy8.edgeone.dev',
   'https://astrift-2b44b8.gitlab.io',
   'https://astrift-front.web.app',
   'https://astrift-front.firebaseapp.com',
