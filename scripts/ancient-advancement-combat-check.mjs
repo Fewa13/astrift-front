@@ -332,6 +332,13 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  tickAdvancedSummon(actor,profile,context,.2,now+1000);
  assert(hits.includes('unleashLegion'));
  assert.match(castAncientSkill(actor,profile,'necropolis',aim,context,now),/至少需要3只/);
+ const beforeBossHits=hits.length;
+ Object.assign(monster,{kind:'lord',x:0,z:13});
+ const squad=actor.skillRuntime.advancedSummon.legion[0];
+ Object.assign(squad,{x:0,z:10,next:0});
+ tickAdvancedSummon(actor,profile,context,.2,now+1101);
+ assert(hits.length>beforeBossHits,'small skeletons can hit a large boss at its surface');
+ Object.assign(monster,{kind:'grox',x:0,z:12});
  assert(fx.includes('necromancer-release'));
  const state=actor.skillRuntime.advancedSummon;
  assert.equal(castAncientSkill(actor,profile,'raiseSkeleton',aim,context,now+1000),null);

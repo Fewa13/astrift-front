@@ -26,7 +26,7 @@ const zh={
  riftduelist:['斩击并留下标记，重复命中造成额外伤害。','短程突进并标记沿途敌人。','短暂防御，受到攻击时向攻击者反斩。','选定决斗目标，提高对其输出并减少其他敌人造成的伤害。','标记可增强反斩。'],
  'abyss-king':['叠加侵蚀，满层时将部分吸血储存起来。','吞噬侵蚀并将储存的生命返还给自己。','消耗生命启动深渊领域，血越少伤害越高。','消耗深渊能量进入真身，储存的生命先抵持续耗血，首杀延长真身。','攻击和击杀侵蚀目标可积攒深渊能量。'],
  'abyss-herald':['寄生侵蚀并持续伤害目标。','将主目标的侵蚀复制给附近敌人。','铺下蚀潮，对范围内敌人持续叠加侵蚀。','把周围的侵蚀收束到主目标。','带侵蚀的敌人死亡时可以继续传播。'],
- 'time-sovereign':['第一次命中储存时间裂隙，再次命中可提前结算。','跃迁并留下残影。再次释放可返回或瞄准敌人引爆残影。','记录位置、生命和冷却，可更新一次，再回溯一次。','冻结小怪并储存伤害，首领大幅减速。','回溯不会刷新自身冷却。'],
+ 'time-sovereign':['第一次命中储存时间裂隙，再次命中可提前结算。','一次跃迁，起点与落点同时造成范围伤害。','记录位置、生命和冷却，再次释放直接回溯。','冻结小怪并储存伤害，首领大幅减速。','回溯不会刷新自身冷却。'],
  'time-weaver':['贴上延时印记，记录一部分伤害并延迟结算。','连上两名敌人，将伤害分给另一端。','借位突进，可在窗口内返回并在原地引爆。','立刻结算范围内的延时印记并削弱敌人。','因果分伤只传递一次。'],
 };
 const en={
@@ -55,7 +55,7 @@ const en={
  riftduelist:['Slash and mark a target. Follow-up hits are stronger.','Dash through enemies and mark those you hit.','Briefly guard and counter the next attacker.','Focus on a duel target and take less damage from other enemies.','Marks empower your riposte.'],
  'abyss-king':['Stack corruption. At full stacks, bank some of its healing.','Consume corruption and recover stored life.','Sacrifice health to open a field that grows stronger at low health.','Spend Abyssal Energy to transform. Stored life pays upkeep and the first kill extends it.','Attacks and corrupted kills generate Abyssal Energy.'],
  'abyss-herald':['Infect an enemy with a damaging parasite.','Copy the target’s infection to nearby enemies.','Open a tide that continually adds infection.','Collect nearby infections into the primary target.','Infected enemies can pass corruption on when they die.'],
- 'time-sovereign':['Bank a time fracture on the first hit and settle it early on the next.','Shift and leave an echo. Recast to return or aim at a foe to detonate it.','Record location, health and cooldowns. Update once or rewind.','Freeze ordinary enemies and bank damage. Bosses are heavily slowed.','Rewind preserves its own cooldown.'],
+ 'time-sovereign':['Bank a time fracture on the first hit and settle it early on the next.','Shift once and damage enemies at both departure and arrival.','Record location, health and cooldowns. Recast to rewind directly.','Freeze ordinary enemies and bank damage. Bosses are heavily slowed.','Rewind preserves its own cooldown.'],
  'time-weaver':['Mark an enemy to bank part of the damage and settle it later.','Link two enemies so a hit on either shares damage with the other.','Borrow a future position. Return within the window and detonate the anchor.','Resolve delayed marks immediately and weaken enemies.','Linked damage transfers only once.'],
 };
 export function advancementDescription(route,index,english=false){

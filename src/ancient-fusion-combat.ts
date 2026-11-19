@@ -60,9 +60,8 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
  const area=(point:Point|SkillMonster,radius:number)=>skillAreaTargets(point as SkillMonster,radius,c);
  const fx=(point:Point|SkillMonster,radius:number)=>c.fx(id,point.x,point.z,radius,{target:'',source:origin});
  const anchor=f.anchor;
- if((id==='riftassault'||id==='chronoshift')&&anchor&&anchor.until>now){
-  if(id==='chronoshift'&&selectSkillTarget(a,direction,60,c)){for(const m of area(anchor,7))c.damage(m,body*3.4*(hourglass?ARTIFACT_COMBAT.chronoEchoMultiplier:1));fx(anchor,7);}
-  else if(!move(a,c,anchor.x,anchor.z,true))return '返回位置被阻挡';
+ if(id==='riftassault'&&anchor&&anchor.until>now){
+  if(!move(a,c,anchor.x,anchor.z,true))return '返回位置被阻挡';
   delete f.anchor;return null;
  }
  if(id==='rewind'&&f.rewind&&f.rewind.until>now){
@@ -86,7 +85,9 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
  if(id==='chronoshift'){
   const dir=Array.isArray(direction)?direction:[];
   if(dir.length!==3||!dir.every(Number.isFinite)||!move(a,c,a.x+dir[0]*12,a.z+dir[2]*12))return '跃迁位置被阻挡';
-  f.anchor={...origin,until:now+6000+(hourglass?ARTIFACT_COMBAT.chronoAnchorExtension:0)};
+  delete f.anchor;
+  for(const m of area(origin,7))c.damage(m,body*3.4*(hourglass?ARTIFACT_COMBAT.chronoEchoMultiplier:1));
+  fx(origin,7);
   for(const m of area(a,8))c.damage(m,body*2.6);
   fx(a,4);
  }

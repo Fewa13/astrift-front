@@ -1,3 +1,4 @@
+import {ancientHitbox} from './ancient-hitboxes';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {isAncientBoss} from './ancient-boss';
 import {advancementCastKey} from './ancient-advanced-professions';
@@ -1572,14 +1573,16 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
  for(const pet of state.legion){
   const target=summonTarget(a,c,pet.x,pet.z);
   const enhanced=!!field&&Math.hypot(pet.x-field.x,pet.z-field.z)<=field.radius;
-  if(target&&Math.hypot(target.x-pet.x,target.z-pet.z)<2.1&&pet.next<=now){
+  const targetRadius=target?ancientHitbox(target.kind).radius:0;
+  const reach=targetRadius+(pet.merged?Math.min(7,1+Math.log2(pet.merged)*.48)*1.4:2.1);
+  if(target&&Math.hypot(target.x-pet.x,target.z-pet.z)<reach&&pet.next<=now){
    pet.next=now+1100;
    const count=pet.merged?1:pet.count??1;
    let attackers=1;
    for(let i=1;i<count;i++){
     const offset=skeletonFormation(i);
     const x=pet.x+offset.x,z=pet.z+offset.z;
-    if(Math.hypot(target.x-x,target.z-z)<2.1&&!blocked(x,z,.2,c.map)&&(!c.canMove||c.canMove(x,z,target.x,target.z)))attackers++;
+    if(Math.hypot(target.x-x,target.z-z)<reach&&!blocked(x,z,.2,c.map)&&(!c.canMove||c.canMove(x,z,target.x,target.z)))attackers++;
    }
    c.damage(target,ancientSkillDamage(p)*.1*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*pet.scale*(attackers/count)*bonus*(enhanced?1.2:1),undefined,pet.merged?'necropolis':'unleashLegion');
    c.fx('necromancer-strike',target.x,target.z,2,{source:{x:pet.x,y:ancientMapHeight(c.map,pet.x,pet.z)+1,z:pet.z},target:target.id});
@@ -2087,19 +2090,7 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const hit=(m:SkillMonster,multiplier:number)=>c.damage(m,power*multiplier,undefined,tag);
  expireTimeRewind(a,p,state,route,now);
  const anchor=state.anchor,snapshot=state.rewind;
- if(route==='time-sovereign'&&key==='Q'&&anchor&&anchor.until>now){
-  if(target){for(const m of stormTargets(c,anchor,8))c.damage(m,anchor.power*4,undefined,tag);}
-  else if(!riftMovement(a,c,anchor))return '返回位置被阻挡';
-  delete state.anchor;
-  c.fx('time-sovereign-echo',anchor.x,anchor.z,8,{source:origin,target:''});
-  return null;
- }
  if(route==='time-sovereign'&&key==='Z'&&snapshot&&snapshot.until>now){
-  if(!snapshot.updated&&target){
-   state.rewind={...origin,hp:a.hp,cooldowns:{...r.cooldowns},until:snapshot.until,updated:true,castId:id};
-   c.fx('time-sovereign-anchor',origin.x,origin.z,5);
-   return null;
-  }
   if(!riftMovement(a,c,snapshot))return '回溯位置被阻挡';
   for(const [skill,until] of Object.entries(snapshot.cooldowns))if(skill!==id)r.cooldowns[skill]=Math.min(r.cooldowns[skill]||0,until);
   for(const skill of ['advanced:X','advanced:Q','advanced:C'])if(!Object.hasOwn(snapshot.cooldowns,skill))delete r.cooldowns[skill];
@@ -2134,7 +2125,9 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
    if(!d||length<.01)return '请先瞄准跃迁方向';
    const end=groundDash(a,c,d[0]/length,d[2]/length,Math.min(25,12+level*.22));
    if(Math.hypot(end.x-origin.x,end.z-origin.z)<.45||!riftMovement(a,c,end))return '跃迁位置被阻挡';
-   state.anchor={...origin,until:now+7000,power};
+   delete state.anchor;
+   for(const m of stormTargets(c,origin,8))hit(m,4);
+   c.fx('time-sovereign-echo',origin.x,origin.z,8,{source:origin,target:''});
    for(const m of stormTargets(c,end,6))hit(m,3.2);
    c.fx('time-sovereign-double',end.x,end.z,5,{source:origin,target:''});
   }else if(key==='Z'){
