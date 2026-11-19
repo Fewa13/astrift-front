@@ -26,7 +26,7 @@ const ADVANCED_PROFESSIONS = {
     route("pactbinder", ["\u547D\u5951\u672F\u58EB", "Pactbinder"], ["\u523B\u547D", "Life Brand"], ["\u7D22\u503A", "Reckoning"], ["\u9006\u5951", "Inverted Pact"], ["\u672B\u65E5\u5951\u7EA6", "Doom Pact"])
   ],
   swordsman: [
-    route("blademaster", ["\u4E07\u5251\u5B97\u5E08", "Myriad Blademaster"], ["\u5FA1\u5251", "Flying Blade"], ["\u5251\u9635", "Blade Formation"], ["\u56DE\u5251", "Blade Recall"], ["\u4E07\u5251\u5F52\u4E00", "Myriad Blades"]),
+    route("blademaster", ["\u4E07\u5251\u5B97\u5E08", "Myriad Blademaster"], ["\u5FA1\u5251", "Flying Blade"], ["\u5251\u7F51", "Blade Net"], ["\u5316\u5251", "Sword Form"], ["\u5F3A\u5316", "Empower"]),
     route("linebreaker", ["\u7834\u9635\u5251\u58EB", "Linebreaker"], ["\u88C2\u7532\u65A9", "Sunder Armor"], ["\u8FDB\u6B65\u8FDE\u65A9", "Advancing Slashes"], ["\u67B6\u5251\u53CD\u65A9", "Guard Counter"], ["\u5F00\u9635\u5DE8\u5251", "Formation Breaker"])
   ],
   shadowblade: [

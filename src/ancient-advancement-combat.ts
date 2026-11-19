@@ -10,7 +10,16 @@ import {ancientMapHeight, blocked, lineClear, type AncientProfile} from './ancie
 import {activeSkill, runtime, skillDamageMultiplier, SKILLS, type SkillActor} from './ancient-skills';
 import {selectSkillTarget, skillAreaTargets, skillAreaHits, type SkillContext, type SkillMonster} from './ancient-skill-combat';
 
-const berserkerCooldowns: Record<string, number> = {X:5, Q:24, Z:10, C:55};
+const ADVANCEMENT_COOLDOWNS:Record<string,readonly number[]>={
+ berserker:[5,24,10,55],paladin:[16,14,28,35],stormcaller:[5,15,19,36],voltstalker:[5,9,18,34],
+ crystalist:[5,11,18,32],winterwarden:[5,18,22,35],wildfire:[5,11,17,36],hellfire:[5,11,17,36],
+ hexweaver:[5,11,17,34],pactbinder:[5,11,17,34],blademaster:[5,10,16,30],linebreaker:[5,10,16,30],
+ shadowhunter:[5,11,16,34],boundarycutter:[5,11,16,34],mountainguard:[5,11,18,34],veinforger:[5,11,18,34],
+ 'elemental-god':[5,12,20,33],'elemental-ward':[5,12,20,33],riftlord:[5,12,20,35],riftduelist:[5,12,20,35],
+ 'abyss-king':[5,12,22,39],'abyss-herald':[5,12,22,39],'time-sovereign':[5,13,23,38],'time-weaver':[5,13,23,38],
+};
+export function advancementCooldown(route:string,key:string){return ADVANCEMENT_COOLDOWNS[route]?.['XQZC'.indexOf(key)]||12;}
+
 
 type CastRoute = (actor:SkillActor, profile:AncientProfile, key:string, id:string, direction:unknown, context:SkillContext, now:number, level:number)=>string|null;
 const castRoutes: Readonly<Record<string,CastRoute>> = {
@@ -95,7 +104,7 @@ function castBerserker(actor:SkillActor,profile:AncientProfile,key:string,id:str
   state.effects.bloodRebirth = {until:now+10000,level};
   context.fx('berserker-rebirth',actor.x,actor.z,5);
  }
- state.cooldowns[id] = now + berserkerCooldowns[key] * 1000 * (1-ancientGearStats(profile).cooldown);
+ state.cooldowns[id] = now + advancementCooldown('berserker',key) * 1000 * (1-ancientGearStats(profile).cooldown);
  return null;
 }
 
@@ -171,7 +180,7 @@ function castPaladin(a:SkillActor,p:AncientProfile,key:string,id:string,directio
   (target.masteryMarks??={})[a.name+':judgment']={owner:a.name,id:'advancement:paladin:C',until:now+10000};
   c.fx('paladin-judgment',target.x,target.z,4);
  }
- const cooldown=key==='X'?16:key==='Q'?14:key==='Z'?28:35;
+ const cooldown=advancementCooldown('paladin',key);
  r.cooldowns[id]=now+cooldown*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
@@ -257,7 +266,7 @@ function castStormcaller(a:SkillActor,p:AncientProfile,key:string,id:string,dire
   state.heavenfall={...point,radius,power,round:0,next:now+300,struck:[]};
   c.fx('stormcaller-heavenfall',point.x,point.z,radius);
  }
- r.cooldowns[id]=now+({X:5,Q:15,Z:19,C:36}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown('stormcaller',key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -409,7 +418,7 @@ function castVoltstalker(a:SkillActor,p:AncientProfile,key:string,id:string,dire
   r.effects.voltGuard={until:now+Math.min(7000,3000+level*100),level:1};
   c.fx('voltstalker-guard',a.x,a.z,4);
  }
- if(!followup)r.cooldowns[id]=now+({X:5,Q:9,Z:18,C:34}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ if(!followup)r.cooldowns[id]=now+advancementCooldown('voltstalker',key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -506,7 +515,7 @@ function castCrystalist(a:SkillActor,p:AncientProfile,key:string,id:string,direc
   }
   c.fx('crystalist-collapse',target.x,target.z,radius);
  }
- r.cooldowns[id]=now+({X:5,Q:11,Z:18,C:32}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown('crystalist',key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -566,7 +575,7 @@ function castWinterwarden(a:SkillActor,p:AncientProfile,key:string,id:string,dir
   }
   c.fx(key==='C'?'winterwarden-lock':'winterwarden-spear',a.x+dx*range,a.z+dz*range,width,{source:{x:a.x,y:a.y,z:a.z},target:''});
  }
- r.cooldowns[id]=now+({X:5,Q:18,Z:22,C:35}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown('winterwarden',key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -690,7 +699,7 @@ function castFireAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
    c.fx('hellfire-undying',point.x,point.z,5);
   }
  }
- r.cooldowns[id]=now+({X:5,Q:11,Z:17,C:36}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -811,7 +820,7 @@ function castCurseAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
    fx('doom',target,7);
   }
  }
- r.cooldowns[id]=now+({X:5,Q:11,Z:17,C:34}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -860,17 +869,38 @@ export function hexTetherTargets(a:SkillActor,map:string,id:string,attack:string
  return tether&&tether.until>now&&tether.main===id&&attack&&['advancement:hexweaver:Q','advancement:hexweaver:Z'].includes(attack)?tether.linked:[];
 }
 
+type SwordProjectile={visualId:string;kind:'net'|'slash';x:number;y:number;z:number;direction:number[];remaining:number;last:number;power:number;skill:string;small?:boolean;target?:string;next?:number;until?:number};
+function launchSword(a:SkillActor,c:SkillContext,state:SwordAdvancementRuntime,direction:unknown,power:number,skill:string,now:number,kind:'net'|'slash',small=false,range=60){
+ if(!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite)||Math.abs(Math.hypot(...direction)-1)>.05)return false;
+ const shots=state.projectiles??=[];if(shots.length>=24)return false;
+ const visualId=a.name+':'+now+':'+shots.length;
+ shots.push({visualId,kind,x:a.x,y:a.y-.2,z:a.z,direction:direction.slice(),remaining:range,last:now,power,skill,small});
+ c.fx(kind==='net'?'blademaster-formation':'blademaster-recall',a.x+direction[0]*range,a.z+direction[2]*range,small?1.25:kind==='net'?3:2,{target:'',phase:kind==='net'?'blade-net':'blade-wave',projectile:visualId,direction:direction.slice(),source:{x:a.x,y:a.y-.2,z:a.z},level:range});
+ return true;
+}
+export function swordFormAttack(a:SkillActor,p:AncientProfile,direction:unknown,c:SkillContext,now:number){
+ const state=a.skillRuntime?.advancedSword;if(a.hp<=0||a.advancement!=='blademaster'||state?.map!==c.map||(state.formUntil||0)<=now)return false;
+ const r=runtime(a);if(now-r.lastAux<700)return true;
+ const level=p.advancements?.[p.profession||'']?.skills.Z?.level||1;
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
+ if(launchSword(a,c,state,direction,power*2.8,'advancement:blademaster:Z',now,'slash')){
+  r.lastAux=now;if(Math.random()<Math.min(.5,.2+level*.005))launchSword(a,c,state,direction,power*.55,'advancement:blademaster:Z',now,'net',true);
+ }
+ return true;
+}
 type StoredBlade=StormPoint & {until:number};
 export type SwordAdvancementRuntime={
  map:string;
  blades:StoredBlade[];
+ formUntil?:number;
+ projectiles?:SwordProjectile[];
  flightUntil?:number;
  descending?:boolean;
  angles:Record<string,{values:number[];until:number}>;
  armor:Record<string,number>;
  openings:Record<string,number>;
  readyUntil?:number;
- guard?:{until:number;power:number;counter?:string};
+ guard?:{until:number;power:number;counter?:string;countered?:boolean;direction:number[];range:number};
 };
 
 function swordState(a:SkillActor,map:string){
@@ -908,50 +938,28 @@ function castSwordAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
  if(a.hp<=0)return '请在存活时使用技能';
  const r=runtime(a);
  const state=swordState(a,c.map);
- if(route==='blademaster'&&key==='C'&&(state.flightUntil||0)>now){
-  state.descending=!state.descending;
-  return null;
- }
+
  if((r.cooldowns[id]||0)>now)return '技能冷却中';
  const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
  const tag='advancement:'+route+':'+key;
  const origin={x:a.x,y:a.y-1.7,z:a.z};
  const target=selectSkillTarget(a,direction,key==='X'&&route==='linebreaker'?10:60,c);
  if(route==='blademaster'){
-  state.blades=state.blades.filter(blade=>blade.until>now);
   if(key==='X'){
    if((state.flightUntil||0)>now)return '正在御剑飞行 / Already riding a blade';
-   state.flightUntil=now+Math.min(90000,6500+level*650);
-   state.descending=false;
-   state.blades.push({...origin,until:state.flightUntil+15000});
-   if(state.blades.length>3)state.blades.shift();
+   state.flightUntil=now+Math.min(90000,10000+level*1000);state.descending=false;
    c.fx('blademaster-launch',a.x,a.z,3,{source:origin,target:''});
+  }else if(key==='Q'){
+   if(!launchSword(a,c,state,direction,power*1.1,tag,now,'net'))return '飞行技能数量已满';
+  }else if(key==='Z'){
+   state.formUntil=now+Math.min(45000,8000+level*700);
+   r.effects.swordForm={until:state.formUntil,level};
+   c.fx('blademaster-recall',a.x,a.z,3,{target:'',source:origin,phase:'sword-form'});
   }else{
-   if(!state.blades.length)return '先用御剑留下飞剑';
-   if(key!=='Z'&&!target)return '请瞄准可见的敌人';
-   const endpoint=target?firePoint(c,target):origin;
-   if(key==='Q'){
-    const center=endpoint;
-    for(const [index,blade] of state.blades.entries()){
-     const angle=index*2.094;
-     const start={...center,x:center.x+Math.sin(angle)*8,z:center.z+Math.cos(angle)*8};
-     const finish={...center,x:center.x-Math.sin(angle)*8,z:center.z-Math.cos(angle)*8};
-     for(const m of bladeLane(c,start,finish,2))flyingBladeHit(a,c,state,m,start,power*2.3,key,now);
-     Object.assign(blade,finish);
-     c.fx('blademaster-formation',finish.x,finish.z,2,{target:'',source:start});
-    }
-   }else if(key==='Z'){
-    for(const blade of state.blades){
-     for(const m of bladeLane(c,blade,origin,1.8))flyingBladeHit(a,c,state,m,blade,power*2.6,key,now);
-     c.fx('blademaster-recall',a.x,a.z,2,{target:'',source:blade});
-    }
-    state.blades=[];
-   }else{
-    const count=state.blades.length;
-    state.blades=[];
-    for(const m of bladeLane(c,origin,endpoint,2+count*.9))c.damage(m,power*(5.8+count*1.55),undefined,tag);
-    c.fx('blademaster-union',endpoint.x,endpoint.z,3+count*2,{target:target!.id,source:origin,level:count});
-   }
+   const radius=6+Math.min(6,level*.2);
+   for(const m of stormTargets(c,origin,radius))c.damage(m,power*3,undefined,tag);
+   r.effects.swordEmpower={until:now+Math.min(30000,10000+level*500),level};
+   c.fx('blademaster-union',a.x,a.z,radius,{source:origin,target:'',phase:'sword-empower'});
   }
  }else{
   const hit=(m:SkillMonster,n:number)=>c.damage(m,power*n,undefined,tag);
@@ -961,13 +969,13 @@ function castSwordAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
    hit(target,4);
    c.fx('linebreaker-sunder',target.x,target.z,3,{source:origin,target:target.id});
   }else if(key==='Q'){
-   if(!target||Math.hypot(target.x-a.x,target.z-a.z)>12)return '请在近处瞄准敌人';
+   if(!target)return '请瞄准可见的敌人';
    hit(target,4.6);
    const strikes=target.strikes??=[];
    for(const [index,damage] of [2.3,1.15].entries())if(strikes.length<64)strikes.push({owner:a.name,skillId:tag,at:now+220*(index+1),damage:power*damage});
    c.fx('linebreaker-triple',target.x,target.z,5,{source:origin,target:target.id});
   }else if(key==='Z'){
-   state.guard={until:now+2400,power};
+   state.guard={until:now+2400,power,direction:Array.isArray(direction)?direction.slice():[0,0,1],range:c.castRange||50};
    r.effects.lineGuard={until:state.guard.until,level:1};
    c.fx('linebreaker-guard',a.x,a.z,4);
   }else{
@@ -989,7 +997,7 @@ function castSwordAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
    c.fx('linebreaker-break',center.x,center.z,6,{source:origin,target:target.id});
   }
  }
- r.cooldowns[id]=now+({X:5,Q:10,Z:16,C:30}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -1012,13 +1020,33 @@ export function tickAdvancedSword(a:SkillActor,p:AncientProfile,c:SkillContext,n
  for(const [id,angle] of Object.entries(state.angles))if(angle.until<=now)delete state.angles[id];
  for(const [id,until] of Object.entries(state.armor))if(until<=now)delete state.armor[id];
  for(const [id,at] of Object.entries(state.openings))if(at+20000<=now)delete state.openings[id];
+ state.projectiles=(state.projectiles||[]).filter(shot=>{
+  if(shot.target){
+   const m=c.monsters.find(m=>m.id===shot.target&&m.hp>0);if(!m||now>(shot.until||0))return false;
+   let ticks=0;while((shot.next||0)<=now&&ticks++<8){c.damage(m,shot.power,undefined,shot.skill);shot.next=(shot.next||now)+500;}return true;
+  }
+  const step=Math.min(shot.remaining,36*Math.max(0,now-shot.last)/1000),end={x:shot.x+shot.direction[0]*step,y:shot.y+shot.direction[1]*step,z:shot.z+shot.direction[2]*step};
+  const start={x:shot.x,y:shot.y-1,z:shot.z};
+  const hit=bladeLane(c,start,{...end,y:end.y-1},shot.kind==='net'?(shot.small?1.25:3):1.6).filter(m=>Math.abs((firePoint(c,m).y+ancientHitbox(m.kind).height*.5)-(shot.y+end.y)*.5)<=ancientHitbox(m.kind).height*.5+2).sort((m,n)=>Math.hypot(m.x-shot.x,m.z-shot.z)-Math.hypot(n.x-shot.x,n.z-shot.z))[0];
+  if(hit){
+   c.damage(hit,shot.power,undefined,shot.skill);
+   if(shot.kind==='slash'){c.fx('blademaster-recall',hit.x,hit.z,0,{target:hit.id,phase:'flight-impact',projectile:shot.visualId});return false;}
+   shot.target=hit.id;shot.next=now+500;shot.until=now+(shot.small?2000:4000);
+   c.fx('blademaster-formation',hit.x,hit.z,shot.small?1.25:3,{source:{x:hit.x,y:firePoint(c,hit).y+1,z:hit.z},target:hit.id,phase:'blade-cut',projectile:shot.visualId,level:shot.small?2:4});return true;
+  }
+  if(!lineClear(shot.x,shot.y,shot.z,end.x,end.y,end.z,c.map)){c.fx('blademaster-recall',end.x,end.z,0,{target:'',phase:'flight-impact',projectile:shot.visualId});return false;}
+  Object.assign(shot,end,{last:now,remaining:shot.remaining-step});return shot.remaining>0;
+ });
  if(!guard)return;
- if(!guard.counter){if(guard.until<=now)delete state.guard;return;}
- const victim=c.monsters.find(m=>m.id===guard.counter&&m.hp>0);
- delete state.guard;delete runtime(a).effects.lineGuard;
- if(!victim)return;
- c.damage(victim,guard.power*5,undefined,'advancement:linebreaker:Z');
- c.fx('linebreaker-counter',victim.x,victim.z,4,{source:{x:a.x,y:a.y,z:a.z},target:victim.id});
+ if(guard.counter&&!guard.countered){
+  guard.countered=true;const victim=c.monsters.find(m=>m.id===guard.counter&&m.hp>0);
+  if(victim){c.damage(victim,guard.power*5,undefined,'advancement:linebreaker:Z');c.fx('linebreaker-counter',victim.x,victim.z,4,{source:{x:a.x,y:a.y,z:a.z},target:victim.id});}
+ }
+ if(guard.until<=now){
+  delete state.guard;delete runtime(a).effects.lineGuard;
+  launchSword(a,c,state,guard.direction,guard.power*5,'advancement:linebreaker:Z',now,'slash',false,guard.range);
+ }
+
 }
 
 type ShadowLine={start:StormPoint;end:StormPoint};
@@ -1164,7 +1192,7 @@ function castShadowAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    }
   }
  }
- r.cooldowns[id]=now+({X:5,Q:11,Z:16,C:34}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -1350,7 +1378,7 @@ function castStoneAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
    }
   }
  }
- r.cooldowns[id]=now+({X:5,Q:11,Z:18,C:34}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -1722,7 +1750,7 @@ function castElementalAdvancement(a:SkillActor,p:AncientProfile,route:string,key
    c.fx('elemental-ward-equilibrium',center.x,center.z,radius);
   }
  }
- r.cooldowns[id]=now+({X:5,Q:12,Z:20,C:33}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -1851,7 +1879,7 @@ function castRiftAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
    c.fx('riftduelist-arena',center.x,center.z,9,{target:target.id,source:origin});
   }
  }
- r.cooldowns[id]=now+({X:5,Q:12,Z:20,C:35}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 export function riftDuelModifiers(a:SkillActor,map:string,enemy:string|undefined,now:number){
@@ -1965,7 +1993,7 @@ function castAbyssAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
   hit(target,4.8);
   c.fx('abyss-herald-converge',point.x,point.z,13,{target:target.id,source:origin});
  }
- r.cooldowns[id]=now+({X:5,Q:12,Z:22,C:39}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -2170,7 +2198,7 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
   }
   c.fx('time-weaver-invert',center.x,center.z,radius);
  }
- r.cooldowns[id]=now+({X:5,Q:13,Z:23,C:38}[key as 'X'|'Q'|'Z'|'C'])*1000*(1-ancientGearStats(p).cooldown);
+ r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -2204,7 +2232,7 @@ const advancementTransientKeys=[
  'advancedShadow','advancedStone','advancedSummon','advancedElements','advancedRift','advancedAbyss','advancedTime','advancedPriority','bloodCharge','bloodRevenge',
 ] as const;
 const advancementEffects=[
- 'bloodSacrifice','bloodRebirth','radiantRecovery','voltGuard','winterShield','snowVeil','lineGuard','shadowStride',
+ 'swordForm','swordEmpower','bloodSacrifice','bloodRebirth','radiantRecovery','voltGuard','winterShield','snowVeil','lineGuard','shadowStride',
  'spiritAscendant','beastGuard','elementCycle','elementFire','elementIce','elementStorm','elementEarth','riftDomain','riftGuard','abyssKingForm',
 ];
 

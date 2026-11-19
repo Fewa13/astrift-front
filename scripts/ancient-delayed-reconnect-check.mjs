@@ -237,6 +237,15 @@ expired.lastMove=Date.now()-500;
 authoritative.serializeAttachment(expired);
 await server.webSocketMessage(authoritative,JSON.stringify({type:'move',seq:3,x:38,z:50,y:75,yaw:0}));
 assert.equal(authoritative.deserializeAttachment().y,75,'expired flight permits falling');
+await server.webSocketMessage(authoritative,JSON.stringify({type:'skill',id:'advanced:Z'}));
+const swordForm=authoritative.deserializeAttachment();
+assert(swordForm.skillRuntime.advancedSword.formUntil>Date.now(),'sword form starts without requiring blade riding');
+swordForm.lastMove=Date.now()-500;authoritative.serializeAttachment(swordForm);
+await server.webSocketMessage(authoritative,JSON.stringify({type:'move',seq:4,x:38,z:50,y:79,yaw:0}));
+assert.equal(authoritative.deserializeAttachment().y,79,'sword form independently enables authoritative flight');
+await server.webSocketMessage(authoritative,JSON.stringify({type:'auxShot',direction:[0,0,-1]}));
+assert(authoritative.deserializeAttachment().skillRuntime.advancedSword.projectiles.length>0,'sword-form attacks pass through the real socket action');
+
 
 const duneProfile=server.read('dune-necro');
 Object.assign(duneProfile,{level:267,profession:'necromancer',fusedJobs:{necromancer:true},ascension:{jobs:{necromancer:{holy:true}},attempts:0,day:''},fusionPassives:{necromancer:{0:{level:1,points:0}}}});

@@ -108,9 +108,12 @@ const targetedSkillRanges = new Map([
   ["mountainfall", 25],
   ...[...Object.keys(ELEMENTAL_IMPACTS), "frostburst", "swordwave", "swordrain", "phantomblade", "soulbolt", "icebolt", "blizzard", "chain", "storm", "hex", "doom"].map((id) => [id, 30])
 ]);
+function skillTravelRange(level) {
+  return Math.min(100, 50 + Math.max(0, level - 1) * 2);
+}
 function skillCastRange(id, level) {
   const base = targetedSkillRanges.get(id);
-  return base === void 0 ? 0 : Math.min(60, base + Math.max(0, level - 1) * 0.5);
+  return base === void 0 ? 0 : skillTravelRange(level);
 }
 function skillRadius(id, level, holy = false) {
   const base = { firewave: 4, firestorm: 6, inferno: 8, tempest: 8, riftblade: 2, shadowstep: 2, shadowreturn: 3, nightfall: 5, stonefist: 2, faultline: 4, stoneprison: 4, mountainfall: 6, frostburst: 2, slash: 4, power: 7, rage: 7, icearmor: 6, blizzard: 6, haste: 6, storm: 5, doom: 6, swordwave: 2, swordrain: 3, phantomblade: 5 };
@@ -263,11 +266,11 @@ function activeSkill(a, id, now = Date.now()) {
 function skillDamageMultiplier(a, now = Date.now()) {
   const blood = a.advancement === "berserker" ? 1 + 0.35 * Math.max(0, 1 - a.hp / (a.maxHp || 100)) : 1;
   const legion = a.profession === "necromancer" ? a.skillRuntime?.advancedSummon?.legion.reduce((count, pet) => count + (pet.until > now ? pet.count ?? 1 : 0), 0) || 0 : 0;
-  return (activeSkill(a, "abyssKingForm", now) ? 1.3 : 1) * (activeSkill(a, "riftDomain", now) ? 1.2 : 1) * (activeSkill(a, "elementCycle", now) ? 1.15 : 1) * (activeSkill(a, "elementFire", now) ? 1.18 : 1) * (1 + legion * 0.025) * (activeSkill(a, "spiritAscendant", now) ? 1.5 : 1) * (activeSkill(a, "radiantRecovery", now) ? 1.3 : 1) * blood * (1 + Math.min(1.5, activeSkill(a, "bloodSacrifice", now) * 0.04)) * (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.4 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
+  return (activeSkill(a, "swordEmpower", now) ? 1.4 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 0.025 : 1) * (activeSkill(a, "abyssKingForm", now) ? 1.3 : 1) * (activeSkill(a, "riftDomain", now) ? 1.2 : 1) * (activeSkill(a, "elementCycle", now) ? 1.15 : 1) * (activeSkill(a, "elementFire", now) ? 1.18 : 1) * (1 + legion * 0.025) * (activeSkill(a, "spiritAscendant", now) ? 1.5 : 1) * (activeSkill(a, "radiantRecovery", now) ? 1.3 : 1) * blood * (1 + Math.min(1.5, activeSkill(a, "bloodSacrifice", now) * 0.04)) * (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.4 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
 }
 function skillSpeedMultiplier(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), h = activeSkill(a, "haste", now);
-  return (activeSkill(a, "elementStorm", now) ? 1.2 : 1) * (activeSkill(a, "spiritAscendant", now) ? 1.2 : 1) * (activeSkill(a, "shadowStride", now) ? 1.25 : 1) * (activeSkill(a, "voiddomain", now) ? 1.3 : 1) * (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
+  return (activeSkill(a, "swordEmpower", now) ? 1.2 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 5e-3 : 1) * (activeSkill(a, "elementStorm", now) ? 1.2 : 1) * (activeSkill(a, "spiritAscendant", now) ? 1.2 : 1) * (activeSkill(a, "shadowStride", now) ? 1.25 : 1) * (activeSkill(a, "voiddomain", now) ? 1.3 : 1) * (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
 }
 function skillFireMultiplier(a, now = Date.now()) {
   const h = activeSkill(a, "haste", now);
@@ -329,5 +332,6 @@ export {
   skillRadius,
   skillSpeedMultiplier,
   skillTrainingCost,
+  skillTravelRange,
   trainSkill
 };

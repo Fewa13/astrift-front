@@ -31,7 +31,7 @@ export const ADVANCED_PROFESSIONS: Readonly<Record<string, readonly [Route, Rout
   route('pactbinder',['命契术士','Pactbinder'],['刻命','Life Brand'],['索债','Reckoning'],['逆契','Inverted Pact'],['末日契约','Doom Pact']),
  ],
  swordsman: [
-  route('blademaster',['万剑宗师','Myriad Blademaster'],['御剑','Flying Blade'],['剑阵','Blade Formation'],['回剑','Blade Recall'],['万剑归一','Myriad Blades']),
+  route('blademaster',['万剑宗师','Myriad Blademaster'],['御剑','Flying Blade'],['剑网','Blade Net'],['化剑','Sword Form'],['强化','Empower']),
   route('linebreaker',['破阵剑士','Linebreaker'],['裂甲斩','Sunder Armor'],['进步连斩','Advancing Slashes'],['架剑反斩','Guard Counter'],['开阵巨剑','Formation Breaker']),
  ],
  shadowblade: [

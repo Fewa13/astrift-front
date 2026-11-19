@@ -109,7 +109,7 @@ export function createAdvancementFX(scene,camera,milliseconds=()=>performance.no
 
   const swordFlight=route==='blademaster'&&id!=='blademaster-resonance'||
    id==='boundarycutter-throw'||id==='riftlord-finale'||id==='riftduelist-sever'||
-   route==='linebreaker'&&['linebreaker-break','linebreaker-triple','linebreaker-sunder'].includes(id);
+   false;
   if(swordFlight){
    const count=id==='blademaster-union'?1:id==='riftlord-finale'||id==='linebreaker-triple'?3:1;
    const direction=high.clone().sub(source).normalize(),across=direction.clone().cross(up).normalize();

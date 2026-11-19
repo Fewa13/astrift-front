@@ -31,15 +31,15 @@ try{
  const messages=await page.evaluate(async()=>{
   const {createCombatNotices}=await import('/ancient-combat-notices.js');
   const notices=createCombatNotices();
-  const profile={profession:'summoner',advancements:{summoner:{skills:{Q:{level:9,points:2}}}}};
-  for(const en of [true,false])notices.mastery(['advancement:necromancer:Q'],profile,en);
+  const profile={profession:'swordsman',advancements:{swordsman:{route:'blademaster',skills:{Q:{level:9,points:2}}}}};
+  for(const en of [true,false])notices.mastery(['advancement:blademaster:Q'],profile,en);
   notices.update(performance.now());
   const text=document.querySelector('.ancientCombatFeed').textContent;
   notices.clear();
   return text;
  });
- assert(messages.includes('Unleash · Lv. 9'));
- assert(messages.includes('释放 · 9 级'));
+ assert(messages.includes('Blade Net · Lv. 9'));
+ assert(messages.includes('剑网 · 9 级'));
 
  const dispatcherFailures=await page.evaluate(async castEvents=>{
   const THREE=await import('/three.module.js');
@@ -47,14 +47,14 @@ try{
   const {createAncientSkillVisuals}=await import('/ancient-skill-visuals.js');
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera();
   const visuals=createAncientSkillVisuals(scene,camera,new THREE.Group(),()=>undefined);
-  const failures=[];
+  const failures=[],baseline=scene.children.length;
   for(const id of advancementEffectIds){
    visuals.effect({id,x:2,z:0,radius:5,source:{x:-2,y:1.45,z:0},
     target:'test',links:[{x:4,z:-3,height:1,target:'linked'}]},()=>0);
    visuals.updateMagic(performance.now(),.016);
    if(!scene.children.some(group=>group.children.length))failures.push(id);
    visuals.clearMagic();
-   if(scene.children.length)failures.push(id+':cleanup');
+   if(scene.children.length!==baseline)failures.push(id+':cleanup');
   }
   for(const {id,x,z,radius,details} of castEvents){
    if(!advancementEffectIds.includes(id))continue;

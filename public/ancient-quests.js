@@ -359,7 +359,7 @@ function questRewardInfo(p, q) {
 }
 function questSkillBook(p, q) {
   const job = p.profession;
-  if (!job || p.advancements?.[job]) return;
+  if (!job || p.advancements?.[job]?.route) return;
   const index = q.reward?.qBook ? 0 : q.id === "tok-second" ? 1 : q.id === "tok-third" ? 2 : -1;
   const id = PROFESSIONS[job]?.skills[index];
   if (id && hasSkillBook(id)) return skillBook(id);
