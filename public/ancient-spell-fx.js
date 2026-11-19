@@ -2,10 +2,10 @@
 import {remoteSpellPolicy} from './ancient-control-feel.js';
 import {EXPANSION_FX,buildExpansionSpell} from './ancient-expansion-fx.js?v=20261014-new-professions-1';
 import * as THREE from './three.module.js';
-import {swordWaveGeometry,swordRainGeometry,tripleCutGeometry,phantomBladeGeometry,flyingSwordMaterial} from './ancient-flying-sword.js';
+import {flyingSwordGeometry,flyingSwordMaterial} from './ancient-flying-sword.js';
 import {buildHolySpell} from './ancient-holy-spells.js?v=20261014-new-professions-1';
 // Reuse geometry, not spell designs. Every skill has its own composition.
-const G={swordWave:swordWaveGeometry,swordRain:swordRainGeometry,tripleCut:tripleCutGeometry,phantomBlade:phantomBladeGeometry,fusionBlade:new THREE.TorusGeometry(1,.024,5,40,Math.PI*1.35),ring:new THREE.TorusGeometry(1,.035,5,48),arc:new THREE.TorusGeometry(1,.075,5,40,Math.PI*1.35),crystal:new THREE.OctahedronGeometry(1,0),orb:new THREE.IcosahedronGeometry(1,2),bar:new THREE.BoxGeometry(1,1,1),beam:new THREE.CylinderGeometry(1,1,1,5),cone:new THREE.ConeGeometry(1,1,6)};
+const G={flyingSword:flyingSwordGeometry,fusionBlade:new THREE.TorusGeometry(1,.024,5,40,Math.PI*1.35),ring:new THREE.TorusGeometry(1,.035,5,48),arc:new THREE.TorusGeometry(1,.075,5,40,Math.PI*1.35),crystal:new THREE.OctahedronGeometry(1,0),orb:new THREE.IcosahedronGeometry(1,2),bar:new THREE.BoxGeometry(1,1,1),beam:new THREE.CylinderGeometry(1,1,1,5),cone:new THREE.ConeGeometry(1,1,6)};
 const flame=new THREE.SphereGeometry(1,9,8);
 const flameVertices=flame.attributes.position;
 for(let i=0;i<flameVertices.count;i++){
@@ -54,7 +54,7 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
  }
  function mesh(f,geo,pos,scale,rot=[0,0,0],motion='still',soft=false){const m=new THREE.Mesh(G[geo],soft?f.soft:f.core);m.position.fromArray(pos);m.scale.fromArray(scale);m.rotation.fromArray(rot);m.userData={motion,pos,scale,rot};f.group.add(m);return m}
  function ring(f,r,y,motion='spin',soft=false){return mesh(f,'ring',[0,y,0],[r,r,r],[-Math.PI/2,0,0],motion,soft)}
- function batch(f,geo,count,pose,soft=false){const original=count;count=geo==='beam'?count:Math.max(1,Math.ceil(count*(f.particles??1)));const sample=pose;pose=(i,t)=>sample(Math.min(original-1,Math.floor(i*original/count)),t);const m=new THREE.InstancedMesh(G[geo],['swordWave','swordRain','tripleCut','phantomBlade'].includes(geo)?flyingSwordMaterial:geo==='meteor'?meteorMaterial:soft?f.soft:f.core,count);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;f.group.add(m);f.batches.push({m,pose});return m}
+ function batch(f,geo,count,pose,soft=false){const original=count;count=geo==='beam'?count:Math.max(1,Math.ceil(count*(f.particles??1)));const sample=pose;pose=(i,t)=>sample(Math.min(original-1,Math.floor(i*original/count)),t);const m=new THREE.InstancedMesh(G[geo],geo==='flyingSword'?flyingSwordMaterial:geo==='meteor'?meteorMaterial:soft?f.soft:f.core,count);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;f.group.add(m);f.batches.push({m,pose});return m}
  function set(x,y,z,sx,sy,sz,rx=0,ry=0,rz=0){dummy.position.set(x,y,z);dummy.rotation.set(rx,ry,rz);dummy.scale.set(sx,sy,sz)}
  function beam(ax,ay,az,bx,by,bz,width){dummy.position.set((ax+bx)/2,(ay+by)/2,(az+bz)/2);dir.set(bx-ax,by-ay,bz-az);dummy.scale.set(width,dir.length(),width);dummy.quaternion.setFromUnitVectors(up,dir.normalize())}
  function burst(f,n,speed){n=Math.min(96,Math.ceil(n*Math.sqrt(Math.max(1,f.r/5))));speed=Math.max(speed,Math.min(24,f.r*.8));batch(f,'crystal',n,(i,t)=>{const a=i/n*TAU,r=ease(t*3)*speed*(.5+i%4*.15);set(Math.cos(a)*r,.7+Math.sin(i*2)*r*.4,Math.sin(a)*r,.04,.15,.04,t*5,a)})}
@@ -63,34 +63,21 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
  const swordSkills=new Set(['swordwave','triplecut','swordrain','phantomblade']);
  function buildSwordFlight(f){
   const rain=f.id==='swordrain',great=f.id==='phantomblade',triple=f.id==='triplecut';
-  if(triple){
-   const heading=Math.atan2(-f.source.x,-f.source.z),sideX=Math.cos(heading),sideZ=-Math.sin(heading);
-   batch(f,'tripleCut',1,(_,t)=>{
-    const approach=ease(t/.12);
-    const swingTime=Math.max(0,t-.12),strike=Math.min(2,Math.floor(swingTime/.3));
-    const stroke=Math.min(1,(swingTime-strike*.3)/.25);
-    const direction=strike===1?-1:1;
-    const roll=direction*(-1.12+2.24*stroke),lean=strike===2?-.62:.35*direction;
-    const size=(f.holy?1.8:1.38)*Math.max(0,Math.min(1,(1.02-t)*10));
-    set(f.source.x*(1-approach)+sideX*Math.sin(roll)*.6,1.65+(f.source.y-1.65)*(1-approach),f.source.z*(1-approach)+sideZ*Math.sin(roll)*.6,size,size,size,lean,heading,roll);
-   });
-   return;
-  }
-  const count=rain?Math.min(36,Math.ceil(12+f.r*2)):great?1:f.holy?5:3;
+  const count=rain?Math.min(36,Math.ceil(12+f.r*2)):great?1:triple?3:f.holy?5:3;
   const heading=Math.atan2(-f.source.x,-f.source.z),sideX=Math.cos(heading),sideZ=-Math.sin(heading);
-  batch(f,rain?'swordRain':great?'phantomBlade':'swordWave',count,(i,t)=>{
-   const delay=rain?.05+(i%6)*.5:great?0:i*.018;
+  batch(f,'flyingSword',count,(i,t)=>{
+   const delay=rain?.05+(i%6)*.5:triple?i*.3:great?0:i*.018;
    const age=t-delay,flight=great?.52:rain?.29:.19;
    const u=Math.min(1,Math.max(0,age/flight)),p=u*u;
    const angle=i*2.39996,distance=rain?f.r*.86*Math.sqrt((i+.5)/count):0;
-   const side=rain||great?0:(i-(count-1)/2)*.52;
+   const side=rain||great?0:(i-(count-1)/2)*(triple?.65:.52);
    const targetX=Math.cos(angle)*distance+sideX*side,targetZ=Math.sin(angle)*distance+sideZ*side;
    const fromX=rain?targetX+Math.sin(angle)*3:f.source.x+sideX*side;
    const fromZ=rain?targetZ+Math.cos(angle)*3:f.source.z+sideZ*side;
    const fromY=rain?8:great?5:f.source.y;
    const targetY=rain?.9+f.floor(targetX,targetZ):great?2.8:1.35;
    const follow=Math.max(0,age-flight),slash=ease(follow/.14);
-   const sweep=slash;
+   const sweep=(triple&&i%2?-1:1)*slash;
    const size=(great?2.3+Math.log2(Math.max(1,f.r/4))*.8:rain?.9:1.25)*(f.holy?1.35:1);
    const visible=age>=0&&age<flight+.24?Math.min(1,(flight+.24-age)*15):0;
    dummy.position.set(fromX+(targetX-fromX)*p+sideX*sweep,targetY+(fromY-targetY)*(1-p)+Math.sin(u*Math.PI)*(great?2:1),fromZ+(targetZ-fromZ)*p+sideZ*sweep);
