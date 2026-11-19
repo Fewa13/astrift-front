@@ -398,11 +398,16 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       if(request.headers.get('Origin')&&!allowedApiOrigin(request.headers.get('Origin'),url.origin))return json({error:'请求来源无效'},403);
       const world=env.ANCIENT_WORLDS.getByName('tribe-v1');
       if(url.pathname==='/api/ancient/connect'&&request.headers.get('Upgrade')==='websocket')return world.fetch(request);
-      if(url.pathname!=='/api/ancient/profile'||request.method!=='POST')return json({error:'请求无效'},405);
+      if(!['/api/ancient/profile','/api/ancient/http'].includes(url.pathname)||request.method!=='POST')return json({error:'请求无效'},405);
       if(Number(request.headers.get('Content-Length'))>800000)return json({error:'请求过大'},413);
       let body:Record<string,unknown>;try{const text=await request.text();if(text.length>800000)return json({error:'请求过大'},413);body=JSON.parse(text);if(text.length>350000&&body?.action!=='communitySave')return json({error:'请求过大'},413);if(!body||Array.isArray(body)||typeof body!=='object')throw Error()}catch{return json({error:'请求格式无效'},400)}
       if(requiresClientVersion(url.pathname,String(body?.action||''))&&!currentClient(body?.clientVersion))return clientVersionResponse();
       const name=String(body.name||'').toLowerCase();if(!/^[-_\p{L}\p{N}]{2,14}$/u.test(name)||!await env.PLAYER_ACCOUNTS.getByName('account:'+name).validate(String(body.token||''),String(body.device||'')))return json({error:'请先登录账号'},401);
+      if(url.pathname==='/api/ancient/http'){
+       if(body.action==='connect'){const result=await world.httpConnect(name,body);return json(result,result.ok?200:409);}
+       if(body.action!=='exchange')return json({ok:false,error:'Invalid action'},400);
+       const result=await world.httpExchange(name,body);return json(result,result.ok?200:409);
+      }
       const result=await world.command(name,String(body.action||'profile'),body);return json(result,result.ok?200:409);
     }
     if(url.pathname.startsWith('/api/extraction/')){

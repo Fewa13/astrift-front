@@ -1,5 +1,7 @@
+import {AncientHttpTransport} from './ancient-http-transport.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {clientVersion,clientUpdateRequired,requireClientUpdate} from './client-version.js';
+const windowHttp=()=>typeof window!=='undefined'&&window.__ASTRIFT_CANVA__===true;
 export function createAncientConnection({session,map,origin,onSocket,onMessage,onStatus:statusSink,onDisconnect,onReady=()=>{},fetchImpl=fetch,socketFactory=url=>new WebSocket(url),setTimer=setTimeout,clearTimer=clearTimeout,now=Date.now,staleAfter=9000,disconnectAfter=20000,ackTimeout=15000,online=()=>typeof navigator==='undefined'||navigator.onLine!==false}){
  let enabled=false,generation=0,socket=null,request=null,retryTimer=0,watchdog=0,healthTimer=0,attempts=0,ready=false,welcomed=false,lastStateAt=0,lastServerTime=0;const outstanding=new Map();
  function onStatus(state,error,details={}){statusSink(state,error,{attempts,...details})}
@@ -28,7 +30,7 @@ export function createAncientConnection({session,map,origin,onSocket,onMessage,o
    if(!response.ok||!data?.ok||typeof data.ticket!=='string'){if(response.status===409){enabled=false;onStatus('error',data?.error);return}throw Error('Ticket request failed')}
    if(epoch!==generation||!enabled)return;
    const url=new URL('/api/ancient/connect',origin());url.protocol=url.protocol==='https:'?'wss:':'ws:';url.searchParams.set('ticket',data.ticket);url.searchParams.set('map',map());url.searchParams.set('resume',reconnect?'1':'0');url.searchParams.set('clientVersion',clientVersion);
-   const ws=socketFactory(url);socket=ws;welcomed=false;lastServerTime=0;outstanding.clear();onSocket(ws);guard(ws,12000);
+   const ws=windowHttp()?new AncientHttpTransport(url,session,origin()):socketFactory(url);socket=ws;welcomed=false;lastServerTime=0;outstanding.clear();onSocket(ws);guard(ws,12000);
    ws.onmessage=event=>{
     if(socket!==ws||epoch!==generation||!enabled)return;let data;try{data=JSON.parse(event.data)}catch{return}
     if(data.type==='clientUpdateRequired'){stop();requireClientUpdate(data);onStatus('error',data.error);return}

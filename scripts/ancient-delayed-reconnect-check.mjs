@@ -1,5 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import vm from 'node:vm';
 import {build} from 'esbuild';
@@ -10,7 +11,7 @@ const db=new DatabaseSync(':memory:'),sql={exec(q,...args){const rows=db.prepare
 const output=await build({entryPoints:['src/ancient-world.ts'],bundle:true,write:false,format:'cjs',platform:'node',external:['cloudflare:workers']}),module={exports:{}},sockets=[];
 function socket(actor){let state=actor;return {readyState:1,messages:[],deserializeAttachment:()=>structuredClone(state),serializeAttachment:a=>{if(Buffer.byteLength(JSON.stringify(a))>16384)throw Error("WebSocket attachment cannot be larger than 16384 bytes");state=structuredClone(a)},send(s){this.messages.push(JSON.parse(s))},close(){this.readyState=2}}}
 const ctx={storage:{sql,setAlarm:async()=>{},transactionSync:f=>f()},getWebSockets:()=>sockets,acceptWebSocket:ws=>sockets.push(ws)};
-vm.runInNewContext(output.outputFiles[0].text,{module,exports:module.exports,Date,crypto,Math,URL,structuredClone,AbortController,WebSocketPair:class{constructor(){return {0:socket(null),1:socket(null)}}},Response:class{constructor(body,options){Object.assign(this,options)}},require:()=>({DurableObject:class{constructor(ctx,env){this.ctx=ctx;this.env=env}}})});
+vm.runInNewContext(output.outputFiles[0].text,{module,exports:module.exports,Date,crypto,Math,URL,URLSearchParams,Request,structuredClone,AbortController,WebSocketPair:class{constructor(){return {0:socket(null),1:socket(null)}}},Response:class{constructor(body,options){Object.assign(this,options)}static json(data){return {json:async()=>data}}},require:()=>({DurableObject:class{constructor(ctx,env){this.ctx=ctx;this.env=env}}})});
 const server=new module.exports.AncientWorld(ctx,{ACCOUNT_SESSIONS:{getByName:()=>({banState:async()=>null})}});
 for(const name of ['caster','friend']){const p=server.read(name);p.level=80;p.profession='swordsman';p.skills={swordrain:3,phantomblade:3};server.save(name,p);sockets.push(socket({name,map:'tribe',tribeLayout:2,x:0,z:50,y:1.7,yaw:0,hp:100000,maxHp:100000,seen:Date.now(),weapon:p.weapons[0],lastShot:0,reloadAt:0,ammo:10,deadAt:0}));}
 const stale=socket({...sockets[0].deserializeAttachment(),hp:0,seen:Date.now()-5000});sockets.unshift(stale);const live=sockets[1],friend=sockets[2];
@@ -272,6 +273,23 @@ server.writeSocket(authoritative,approach);
 await server.tickMap('tribe');
 assert(!server.world('tribe').monsters.find(m=>m.id===roamingTribeMob.id).dormant);
 assert(authoritative.messages.findLast(m=>m.type==='state').monsters.some(m=>m.id===roamingTribeMob.id));
+
+const release=readFileSync('src/client-release.ts','utf8').match(/CLIENT_RELEASE = '([^']+)'/)[1];
+const httpTicket=await server.command('dune-necro','ticket',{map:'dunes'});
+const httpResult=await server.httpConnect('dune-necro',{ticket:httpTicket.ticket,map:'dunes',resume:true,clientVersion:release});
+assert(httpResult.ok,JSON.stringify(httpResult));
+const welcome=await server.httpExchange('dune-necro',{connection:httpResult.connection,messages:[],ack:0});
+assert(welcome.messages.some(m=>m.data.type==='welcome'));
+await server.tickMap('dunes');
+const snapshot=await server.httpExchange('dune-necro',{connection:httpResult.connection,messages:[],ack:welcome.messages.at(-1).seq});
+assert(snapshot.messages.some(m=>m.data.type==='state'));
+assert.equal((await server.httpExchange('friend',{connection:httpResult.connection,messages:[]})).ok,false);
+const restoredServer=new module.exports.AncientWorld(ctx,{ACCOUNT_SESSIONS:{getByName:()=>({banState:async()=>null})}});
+const survived=await restoredServer.httpExchange('dune-necro',{connection:httpResult.connection,messages:[]});
+assert(survived.ok,'HTTP sessions survive server reconstruction');
+const closed=await restoredServer.httpExchange('dune-necro',{connection:httpResult.connection,messages:[{type:'leave'}]});
+assert(closed.ok);
+assert.equal((await restoredServer.httpExchange('dune-necro',{connection:httpResult.connection,messages:[]})).ok,false);
 
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');
