@@ -284,11 +284,21 @@ function skillHealth(a, base, now) {
   a.maxHp = Math.floor(base * (1 + activeSkill(a, "vitality", now) * 0.03 + (t ? Math.min(1, 0.2 + 0.04 * t) : 0)) * (1 + (bossFormStats(a, now)?.health || 0)) * (activeSkill(a, "bloodSacrifice", now) ? 0.7 : 1));
   a.hp = Math.min(a.hp, a.maxHp);
 }
-function skillDrops(kind, random = Math.random) {
+function skillDrops(kind, random = Math.random, job) {
   const boss = kind === "buried_marshal" || kind === "hourglass_regent" || kind === "sky_sovereign" || kind === "thunder_warden" || kind === "frost_crowned" || kind === "furnace_regent" || kind === "starbound_heart" || kind === "immaculate_judge" || kind === "blight_lord" || kind === "oathknight" || kind === "emptyking" || kind === "chief" || kind === "lord" || kind === "rootwarden" || ["metal", "wood", "water", "fire", "earth"].some((e) => kind === "crystal_" + e);
   if (!boss) return {};
-  const ids = Object.keys(SKILLS).filter(hasSkillBook), id = ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
-  return { [skillBook(id)]: 1 };
+  const ids = Object.keys(SKILLS).filter(hasSkillBook);
+  const weight = (id) => SKILLS[id].job === job ? 2 : 1;
+  let roll = random() * ids.reduce((sum, id) => sum + weight(id), 0);
+  let selected = ids[ids.length - 1];
+  for (const id of ids) {
+    roll -= weight(id);
+    if (roll < 0) {
+      selected = id;
+      break;
+    }
+  }
+  return { [skillBook(selected)]: 1 };
 }
 export {
   ELEMENTAL_IMPACTS,
