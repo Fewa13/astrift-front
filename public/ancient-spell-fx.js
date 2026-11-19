@@ -2,10 +2,9 @@
 import {remoteSpellPolicy} from './ancient-control-feel.js';
 import {EXPANSION_FX,buildExpansionSpell} from './ancient-expansion-fx.js?v=20261014-new-professions-1';
 import * as THREE from './three.module.js';
-import {flyingSwordGeometry,flyingSwordMaterial} from './ancient-flying-sword.js';
 import {buildHolySpell} from './ancient-holy-spells.js?v=20261014-new-professions-1';
 // Reuse geometry, not spell designs. Every skill has its own composition.
-const G={flyingSword:flyingSwordGeometry,fusionBlade:new THREE.TorusGeometry(1,.024,5,40,Math.PI*1.35),ring:new THREE.TorusGeometry(1,.035,5,48),arc:new THREE.TorusGeometry(1,.075,5,40,Math.PI*1.35),crystal:new THREE.OctahedronGeometry(1,0),orb:new THREE.IcosahedronGeometry(1,2),bar:new THREE.BoxGeometry(1,1,1),beam:new THREE.CylinderGeometry(1,1,1,5),cone:new THREE.ConeGeometry(1,1,6)};
+const G={fusionBlade:new THREE.TorusGeometry(1,.024,5,40,Math.PI*1.35),ring:new THREE.TorusGeometry(1,.035,5,48),arc:new THREE.TorusGeometry(1,.075,5,40,Math.PI*1.35),crystal:new THREE.OctahedronGeometry(1,0),orb:new THREE.IcosahedronGeometry(1,2),bar:new THREE.BoxGeometry(1,1,1),beam:new THREE.CylinderGeometry(1,1,1,5),cone:new THREE.ConeGeometry(1,1,6)};
 const flame=new THREE.SphereGeometry(1,9,8);
 const flameVertices=flame.attributes.position;
 for(let i=0;i<flameVertices.count;i++){
@@ -54,43 +53,25 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
  }
  function mesh(f,geo,pos,scale,rot=[0,0,0],motion='still',soft=false){const m=new THREE.Mesh(G[geo],soft?f.soft:f.core);m.position.fromArray(pos);m.scale.fromArray(scale);m.rotation.fromArray(rot);m.userData={motion,pos,scale,rot};f.group.add(m);return m}
  function ring(f,r,y,motion='spin',soft=false){return mesh(f,'ring',[0,y,0],[r,r,r],[-Math.PI/2,0,0],motion,soft)}
- function batch(f,geo,count,pose,soft=false){const original=count;count=geo==='beam'?count:Math.max(1,Math.ceil(count*(f.particles??1)));const sample=pose;pose=(i,t)=>sample(Math.min(original-1,Math.floor(i*original/count)),t);const m=new THREE.InstancedMesh(G[geo],geo==='flyingSword'?flyingSwordMaterial:geo==='meteor'?meteorMaterial:soft?f.soft:f.core,count);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;f.group.add(m);f.batches.push({m,pose});return m}
+ function batch(f,geo,count,pose,soft=false){const original=count;count=geo==='beam'?count:Math.max(1,Math.ceil(count*(f.particles??1)));const sample=pose;pose=(i,t)=>sample(Math.min(original-1,Math.floor(i*original/count)),t);const m=new THREE.InstancedMesh(G[geo],geo==='meteor'?meteorMaterial:soft?f.soft:f.core,count);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;f.group.add(m);f.batches.push({m,pose});return m}
  function set(x,y,z,sx,sy,sz,rx=0,ry=0,rz=0){dummy.position.set(x,y,z);dummy.rotation.set(rx,ry,rz);dummy.scale.set(sx,sy,sz)}
  function beam(ax,ay,az,bx,by,bz,width){dummy.position.set((ax+bx)/2,(ay+by)/2,(az+bz)/2);dir.set(bx-ax,by-ay,bz-az);dummy.scale.set(width,dir.length(),width);dummy.quaternion.setFromUnitVectors(up,dir.normalize())}
  function burst(f,n,speed){n=Math.min(96,Math.ceil(n*Math.sqrt(Math.max(1,f.r/5))));speed=Math.max(speed,Math.min(24,f.r*.8));batch(f,'crystal',n,(i,t)=>{const a=i/n*TAU,r=ease(t*3)*speed*(.5+i%4*.15);set(Math.cos(a)*r,.7+Math.sin(i*2)*r*.4,Math.sin(a)*r,.04,.15,.04,t*5,a)})}
  function missile(f,ice){mesh(f,ice?'crystal':'orb',[0,1.2,0],ice?[.22,.75,.22]:[.25,.25,.25],[0,0,Math.PI/2],'missile');batch(f,ice?'crystal':'orb',12,(i,t)=>{const p=ease(t/.22-i*.025),s=Math.max(.015,(1-i/14)*.08);set(f.source.x*(1-p),1.2+(f.source.y-1.2)*(1-p),f.source.z*(1-p),s,ice?s*2:s,s,0,t*5)},true);burst(f,ice?22:16,ice?2:1.5)}
  function swords(f,count,position){for(const [geo,offset,scale]of [['bar',0,[.12,1.3,.05]],['cone',-.78,[.15,.3,.06]],['bar',.7,[.5,.08,.09]],['bar',.95,[.08,.4,.08]]])batch(f,geo,count,(i,t)=>{const p=position(i,t);set(p[0],p[1]+offset*p[3],p[2],scale[0]*p[3],scale[1]*p[3],scale[2]*p[3],Math.PI,0,p[4]||0)})}
- const swordSkills=new Set(['swordwave','triplecut','swordrain','phantomblade']);
- function buildSwordFlight(f){
-  const rain=f.id==='swordrain',great=f.id==='phantomblade',triple=f.id==='triplecut';
-  const count=rain?Math.min(36,Math.ceil(12+f.r*2)):great?1:triple?3:f.holy?5:3;
-  const heading=Math.atan2(-f.source.x,-f.source.z),sideX=Math.cos(heading),sideZ=-Math.sin(heading);
-  batch(f,'flyingSword',count,(i,t)=>{
-   const delay=rain?.05+(i%6)*.5:triple?i*.3:great?0:i*.018;
-   const age=t-delay,flight=great?.52:rain?.29:.19;
-   const u=Math.min(1,Math.max(0,age/flight)),p=u*u;
-   const angle=i*2.39996,distance=rain?f.r*.86*Math.sqrt((i+.5)/count):0;
-   const side=rain||great?0:(i-(count-1)/2)*(triple?.65:.52);
-   const targetX=Math.cos(angle)*distance+sideX*side,targetZ=Math.sin(angle)*distance+sideZ*side;
-   const fromX=rain?targetX+Math.sin(angle)*3:f.source.x+sideX*side;
-   const fromZ=rain?targetZ+Math.cos(angle)*3:f.source.z+sideZ*side;
-   const fromY=rain?8:great?5:f.source.y;
-   const targetY=rain?.9+f.floor(targetX,targetZ):great?2.8:1.35;
-   const follow=Math.max(0,age-flight),slash=ease(follow/.14);
-   const sweep=(triple&&i%2?-1:1)*slash;
-   const size=(great?2.3+Math.log2(Math.max(1,f.r/4))*.8:rain?.9:1.25)*(f.holy?1.35:1);
-   const visible=age>=0&&age<flight+.24?Math.min(1,(flight+.24-age)*15):0;
-   dummy.position.set(fromX+(targetX-fromX)*p+sideX*sweep,targetY+(fromY-targetY)*(1-p)+Math.sin(u*Math.PI)*(great?2:1),fromZ+(targetZ-fromZ)*p+sideZ*sweep);
-   dummy.scale.setScalar(size*visible);
-   dir.set(targetX-fromX+sideX*sweep*4,targetY-fromY+(great?-1:0),targetZ-fromZ+sideZ*sweep*4);
-   if(dir.lengthSq()<.0001)dir.set(0,0,1);
-   dummy.quaternion.setFromUnitVectors(up,dir.normalize());
-  });
-  burst(f,great?26:12,Math.min(f.r,7));
- }
  function build(f){const r=f.r;
   switch(f.id){
    case 'frostburst':missile(f,true);batch(f,'crystal',12,(i,t)=>{const u=Math.max(0,t-.2),a=i/12*TAU,s=Math.max(0,1-u),rr=f.r*ease(u*6);set(Math.cos(a)*rr,.6+Math.sin(u*5)*.5,Math.sin(a)*rr,.12*s,.5*s,.12*s,u*4,a)});ring(f,r,.12,'shock');break;
+   case 'swordwave':
+    mesh(f,'arc',[0,1.2,0],[r*.9,r*.9,.6],[0,0,-.6],'swordWave');burst(f,18,r);break;
+   case 'triplecut':
+    for(let i=0;i<3;i++){const m=mesh(f,'arc',[0,1.3,i*.1],[2.8-i*.4,2.8-i*.4,.6],[i%2?.7:-.4,0,i%2?1.1:-.8],'tripleSlash');m.userData.delay=i*.3}burst(f,20,2);break;
+   case 'swordrain':
+    batch(f,'beam',48,(i,t)=>{const a=i*2.399,rr=f.r*.8*Math.sqrt((i+.5)/48),phase=(t+i%3*.12)% .5,x=Math.cos(a)*rr,z=Math.sin(a)*rr;beam(x,10-phase*18,z,x,8-phase*18,z,.055)});ring(f,r,.08,'pulse');ring(f,r*.83,.12,'counter',true);break;
+   case 'phantomblade':
+    batch(f,'beam',18,(i,t)=>{const a=i/18*TAU,u=Math.max(0,t-.5),rr=ease(u*4)*f.r*1.5,w=t>=.5?.055*Math.max(0,1-u/2.5):0;beam(Math.cos(a)*rr*.25,.12,Math.sin(a)*rr*.25,Math.cos(a)*rr,.12,Math.sin(a)*rr,w)});
+    batch(f,'ring',2,(i,t)=>{const u=t-.5-i*.12,s=u>=0&&u<1.5?ease(u*5)*(f.r+i)*Math.max(0,1-u/1.5):0;set(0,.12+i*.08,0,s,s,s,Math.PI/2)});
+    mesh(f,'arc',[0,2,0],[7,7,.7],[0,0,-1.2],'greatCut',true);burst(f,30,5);break;
    case 'vitality':
     batch(f,'bar',24,(i,t)=>{const j=Math.floor(i/2),a=j/12*TAU+t*.9,h=(j/12+t*.45)%1;set(Math.cos(a)*1.1,h*3,Math.sin(a)*1.1,i%2?.25:.07,i%2?.07:.25,.06,0,-a)});
     batch(f,'orb',16,(i,t)=>{const a=i/16*TAU+t*1.8;set(Math.cos(a),.3+i*.12,Math.sin(a),.06,.06,.06)},true);break;
@@ -412,7 +393,7 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      shards('arc',18,(i,t)=>{const r=radius*(.62+i%3*.17);set(0,1.3,0,r,r,r,.2+i%6*.48,t*.12+i,0);},true);
      break;
    }
-  }else if(swordSkills.has(f.id)){buildSwordFlight(f);}else if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=instanceCount(f);while(effects.length&&effects.reduce((n,e)=>n+instanceCount(e),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
+  }else if(!buildExpansionSpell(f,{mesh,ring,batch,set,beam,fireSea})){if(f.holy)holyFlourish(f);else{build(f);flourish(f);}}const instances=instanceCount(f);while(effects.length&&effects.reduce((n,e)=>n+instanceCount(e),0)+instances>2400){let victim=effects.findIndex(e=>!e.local);if(victim<0){if(!local){remove(f);return;}victim=0;}remove(effects.splice(victim,1)[0]);}scene.add(group);effects.push(f);updateEffect(f,0);
  }
  function updateEffect(f,t){const p=t/f.duration,fade=Math.min(1,(1-p)*4),r=f.r;f.core.opacity=.82*fade;f.soft.opacity=.24*fade;f.dark.opacity=.7*fade;
   for(const {mesh,opacity} of f.gpu||[]){mesh.material.uniforms.age.value=t;mesh.material.uniforms.alpha.value=opacity*fade;}

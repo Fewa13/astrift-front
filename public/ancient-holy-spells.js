@@ -51,13 +51,11 @@ export function buildHolySpell(f,{mesh,ring,batch,set,beam,swords}){
   case 'triplecut':
    // Three separate sword strokes: diagonal, reverse diagonal, vertical finisher.
    batch(f,'arc',9,(i,t)=>{const hit=Math.floor(i/3),trail=i%3,u=t-hit*.3-trail*.035,show=u>=0&&u<.28?fade(u,0,.28):0,s=(4.2+hit*.25-trail*.12)*show;set(0,1.7,trail*.08,s,s,.8,hit===2?0:hit===1?.65:-.65,0,(hit===1?1:-1)*(-1.4+ease(u/.22)*3.3))});
-   for(const [geo,offset,sx,sy,sz]of [['bar',0,.28,4,.12],['cone',-2.3,.35,.7,.14],['bar',2,1.4,.18,.25],['bar',2.5,.18,.8,.18]])batch(f,geo,3,(i,t)=>{const u=t-i*.3,show=u>=0&&u<.28?1:0,a=(i===1?1:-1)*(-1.3+ease(u/.22)*2.6);set(-Math.sin(a)*offset,2.7+Math.cos(a)*offset,0,sx*show,sy*show,sz*show,0,0,a)});
    batch(f,'beam',36,(i,t)=>{const hit=Math.floor(i/12),a=i%12/12*TAU,u=t-hit*.3-.16,s=u>=0&&u<.22?1-u/.22:0,rr=ease(u*12)*(1.8+hit*.45);beam(Math.cos(a)*rr*.3,1.5,Math.sin(a)*rr*.3,Math.cos(a)*rr,1.5+Math.sin(a*3)*.5,Math.sin(a)*rr,.075*s)});
    batch(f,'ring',3,(i,t)=>{const u=t-i*.3-.16,s=u>=0&&u<.3?(1+ease(u*8)*2.3)*(1-u/.3):0;set(0,1.6,0,s,s,s,0,0,i*.7)});break;
-  case 'swordrain':portal(10,r*.75);haloBlades(24,r*.78,9,0);swords(f,24,(i,t)=>{const a=i*2.399,rr=r*Math.sqrt((i+.5)/24),phase=(t+i*.07)% .5;return [Math.cos(a)*rr,10-phase*20,Math.sin(a)*rr,2.2,a]});break;
+  case 'swordrain':
+   portal(10,r*.75);batch(f,'beam',48,(i,t)=>{const a=i*2.399,rr=r*Math.sqrt((i+.5)/48),phase=(t+i*.07)% .5,x=Math.cos(a)*rr,z=Math.sin(a)*rr;beam(x,10-phase*20,z,x,7-phase*20,z,.07)});break;
   case 'phantomblade':
-   // An actual colossal sword: bevel, edge, fuller, guard, grip and pommel.
-   for(const [geo,y,sx,sy,sz]of [['bar',0,.85,10,.3],['bar',0,.12,10,.34],['cone',-6,.85,2,.3],['bar',5,4.5,.4,.65],['bar',6.2,.45,2,.45],['crystal',7.4,.6,.6,.6]])batch(f,geo,1,(i,t)=>{const size=1+Math.log2(Math.max(1,f.r/7.5))*.48,a=-1.4+ease(Math.max(0,t-.32)/.23)*2.8,s=size*ease(t*6)*Math.max(0,1-Math.max(0,t-2)/1.3);set(-Math.sin(a)*y*size,(7+Math.cos(a)*y)*size,0,sx*s,sy*s,sz*s,0,0,a)});
    portal(11,r*.7);runes(11,r*.68,16);
    batch(f,'arc',4,(i,t)=>{const u=t-.34-i*.04,s=u>=0&&u<.8?(6-i*.3)*Math.max(0,1-u/.8):0;set(0,3,.08*i,s,s,.65,0,0,-1.4+ease(u/.25)*2.8)});
    batch(f,'beam',48,(i,t)=>{const a=Math.floor(i/3)/16*TAU,j=i%3,u=t-.5,rr=r*ease(u*5),w=u>=0?.065*Math.max(0,1-u/2.7):0;beam(Math.cos(a)*rr*j/3,.15,Math.sin(a)*rr*j/3,Math.cos(a+.08)*rr*(j+1)/3,.15,Math.sin(a+.08)*rr*(j+1)/3,w)});
