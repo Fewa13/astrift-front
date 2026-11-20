@@ -1,13 +1,13 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import type {AncientProfile} from './ancient-rules';
 export const ARTIFACTS={
- elements:{zh:'元素之心',en:'Heart of Elements',level:180,targets:['crystal_fire','crystal_water','crystal_wood','crystal_metal','crystal_earth'],job:'elementalist',color:'#ffbf65'},
- void:{zh:'虚空断刃',en:'Blade of the Void',level:200,targets:['emptyking','starbound_heart','sky_sovereign'],job:'voidsword',color:'#c086ff'},
- abyss:{zh:'深渊之心',en:'Abyssal Heart',level:200,targets:['blight_lord','immaculate_judge','furnace_regent'],job:'abyssal',color:'#ff577c'},
- hourglass:{zh:'永恒沙漏',en:'Eternal Hourglass',level:220,targets:['hourglass_regent','thunder_warden','frost_crowned'],job:'chrono',color:'#67e9ed'},
- crown:{zh:'不朽王冠',en:'Immortal Crown',level:240,targets:['buried_marshal','sky_sovereign','frost_crowned'],job:'',color:'#ffe491'},
- origin:{zh:'起源',en:'The Origin',level:300,targets:['hourglass_regent','starbound_heart','sky_sovereign'],job:'',color:'#fff7d6'},
- divinity:{zh:'破碎神格',en:'Shattered Divinity',level:280,targets:['hourglass_regent','buried_marshal','sky_sovereign','starbound_heart','furnace_regent'],job:'',color:'#f8ace9'},
+ elements:{zh:'元素之心',en:'Heart of Elements',level:150,targets:['crystal_fire','crystal_water','crystal_wood','crystal_metal','crystal_earth'],job:'elementalist',color:'#ffbf65'},
+ void:{zh:'虚空断刃',en:'Blade of the Void',level:170,targets:['emptyking','starbound_heart','sky_sovereign'],job:'voidsword',color:'#c086ff'},
+ abyss:{zh:'深渊之心',en:'Abyssal Heart',level:170,targets:['blight_lord','immaculate_judge','furnace_regent'],job:'abyssal',color:'#ff577c'},
+ hourglass:{zh:'永恒沙漏',en:'Eternal Hourglass',level:190,targets:['hourglass_regent','thunder_warden','frost_crowned'],job:'chrono',color:'#67e9ed'},
+ crown:{zh:'不朽王冠',en:'Immortal Crown',level:210,targets:['buried_marshal','sky_sovereign','frost_crowned'],job:'',color:'#ffe491'},
+ origin:{zh:'起源',en:'The Origin',level:270,targets:['hourglass_regent','starbound_heart','sky_sovereign'],job:'',color:'#fff7d6'},
+ divinity:{zh:'破碎神格',en:'Shattered Divinity',level:240,targets:['hourglass_regent','buried_marshal','sky_sovereign','starbound_heart','furnace_regent'],job:'',color:'#f8ace9'},
 };
 export type ArtifactId=keyof typeof ARTIFACTS;
 export type ArtifactRecord={stage:number;trail?:number;marks:Record<string,number>};
@@ -26,7 +26,7 @@ export function recordArtifactVictory(p:AncientProfile,kind:string,share:number)
 export function artifactRequirement(stage:number){return stage===0?1:0}
 function originEligible(p:AncientProfile){
  return Object.keys(ARTIFACTS).filter(id=>id!=='origin').every(id=>p.artifacts?.[id as ArtifactId]?.stage===4)
-  &&Object.values(p.mastery||{}).filter(skill=>skill.level>=20).length>=4
+  &&Object.values(p.mastery||{}).filter(skill=>skill.level>=ARTIFACT_ROUTES.origin.mastery).length>=4
   &&Object.values(p.secrets||{}).filter(value=>value===2).length>=3;
 }
 export function completeArtifactTrial(p:AncientProfile,id:ArtifactId,expectedStage:number){
@@ -36,14 +36,15 @@ export function completeArtifactTrial(p:AncientProfile,id:ArtifactId,expectedSta
 }
 
 export const ARTIFACT_ROUTES:Record<ArtifactId,{clue:string;mastery:number;minutes:number;guardian:string;final:string}>={
- elements:{clue:'forest',mastery:10,minutes:12,guardian:'crystal_earth',final:'crystal_fire'},
- void:{clue:'starfall',mastery:12,minutes:10,guardian:'emptyking',final:'starbound_heart'},
- abyss:{clue:'blight',mastery:12,minutes:12,guardian:'blight_lord',final:'furnace_regent'},
- hourglass:{clue:'dunes',mastery:15,minutes:5,guardian:'hourglass_regent',final:'thunder_warden'},
- crown:{clue:'frostcourt',mastery:15,minutes:12,guardian:'frost_crowned',final:'buried_marshal'},
- divinity:{clue:'skyreach',mastery:20,minutes:9,guardian:'sky_sovereign',final:'starbound_heart'},
- origin:{clue:'sanctum',mastery:20,minutes:8,guardian:'hourglass_regent',final:'starbound_heart'},
+ elements:{clue:'forest',mastery:8,minutes:12,guardian:'crystal_earth',final:'crystal_fire'},
+ void:{clue:'starfall',mastery:10,minutes:10,guardian:'emptyking',final:'starbound_heart'},
+ abyss:{clue:'blight',mastery:10,minutes:12,guardian:'blight_lord',final:'furnace_regent'},
+ hourglass:{clue:'dunes',mastery:12,minutes:5,guardian:'hourglass_regent',final:'thunder_warden'},
+ crown:{clue:'frostcourt',mastery:12,minutes:12,guardian:'frost_crowned',final:'buried_marshal'},
+ divinity:{clue:'skyreach',mastery:15,minutes:9,guardian:'sky_sovereign',final:'starbound_heart'},
+ origin:{clue:'sanctum',mastery:15,minutes:8,guardian:'hourglass_regent',final:'starbound_heart'},
 };
+export function artifactMasteryRequirement(id:ArtifactId,stage:number){return ARTIFACT_ROUTES[id].mastery+Math.max(0,Math.min(3,stage))*3}
 export function artifactClueFound(p:AncientProfile,id:ArtifactId){
  if(!Object.hasOwn(ARTIFACTS,id))return false;
  return id==='origin'?p.secrets?.sanctum===2&&originEligible(p):p.level>=ARTIFACTS[id].level||p.secrets?.[ARTIFACT_ROUTES[id].clue]===2;
@@ -53,7 +54,7 @@ export function canStartArtifactTrial(p:AncientProfile,id:ArtifactId){
  const spec=ARTIFACTS[id],record=p.artifacts?.[id],stage=record?.stage||0;
  return p.level>=spec.level&&stage<4
   &&(stage>0||(record?.trail||0)>=ARTIFACT_TRAILS[id].length)
-  &&Object.values(p.mastery||{}).some(skill=>skill.level>=ARTIFACT_ROUTES[id].mastery+stage*5)
+  &&Object.values(p.mastery||{}).some(skill=>skill.level>=artifactMasteryRequirement(id,stage))
   &&spec.targets.every(kind=>(record?.marks[kind]||0)>=artifactRequirement(stage));
 }
 

@@ -1,5 +1,5 @@
 import {previewArtifact} from './ancient-artifact-model.js';
-import {ARTIFACTS,ARTIFACT_TRAILS,ARTIFACT_ROUTES,ARTIFACT_STAGES,artifactRequirement,artifactClueFound,canStartArtifactTrial} from './ancient-artifacts.js';
+import {ARTIFACTS,ARTIFACT_TRAILS,ARTIFACT_ROUTES,ARTIFACT_STAGES,artifactMasteryRequirement,artifactRequirement,artifactClueFound,canStartArtifactTrial} from './ancient-artifacts.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {formatAncientNumber} from './ancient-number-format.js';
 import {createAncientSkinUI} from './ancient-skin-ui.js?v=20261111-skin-polish-1';
@@ -301,7 +301,7 @@ function drawPanel(){closeArtifactPreview?.();closeArtifactPreview=undefined;if(
    if(stage<4&&artifactClueFound(profile,id)){
     const route=ARTIFACT_ROUTES[id];
     const mastery=Math.max(0,...Object.values(profile.mastery||{}).map(skill=>skill.level));
-    node('small',L('角色等级 ','Character level ')+profile.level+' / '+spec.level+' · '+L('最高技能精通 ','Highest skill mastery ')+mastery+' / '+(route.mastery+stage*5),item);
+    node('small',L('角色等级 ','Character level ')+profile.level+' / '+spec.level+' · '+L('最高技能精通 ','Highest skill mastery ')+mastery+' / '+artifactMasteryRequirement(id,stage),item);
     node('small',L('试炼限时 ','Trial time limit ')+route.minutes+L(' 分钟',' min'),item);
     if(id==='abyss')node('small',L('试炼内血瓶和食物无法回血。','Potions and food cannot heal during this trial.'),item);
    }
