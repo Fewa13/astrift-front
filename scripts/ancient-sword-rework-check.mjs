@@ -28,7 +28,7 @@ const dir=[0,0,1],now=100000;
  const {p,a,c,monster,hits,effects}=fixture();
  assert.equal(castAncientSkill(a,p,'advanced:Q',dir,c,now),null);assert.equal(a.skillRuntime.advancedSword.projectiles[0].remaining,60);
  c.monsters.push(monster());for(let t=200;t<=4400;t+=100)tickAncientSkills(a,p,c,.1,now+t);
- assert.equal(hits.filter(h=>h.id==='advancement:blademaster:Q').length,9,'initial cut plus eight half-second cuts');assert(effects.some(e=>e.phase==='blade-cut'));
+ assert.equal(hits.filter(h=>h.id==='advancement:blademaster:Q').length,9,'initial cut plus eight half-second cuts');assert(effects.some(e=>e.phase==='blade-field'));
  assert.equal(castAncientSkill(a,p,'advanced:X',dir,c,now+5000),null);const flight=a.skillRuntime.advancedSword.flightUntil;assert.equal(a.skillRuntime.cooldowns['advanced:X'],flight+5000,'riding cooldown starts after flight ends');
  assert.equal(castAncientSkill(a,p,'advanced:Z',dir,c,now+5001),null);const form=a.skillRuntime.advancedSword.formUntil;assert.equal(a.skillRuntime.cooldowns['advanced:Z'],form+16000,'form cooldown starts after transformation ends');assert.equal(castAncientSkill(a,p,'advanced:Z',dir,c,form+1),'技能冷却中');assert(form<flight,'form expiration resumes active riding');
  assert.equal(ancientAuxShot(a,p,dir,c,now+5002),null);const shots=a.skillRuntime.advancedSword.projectiles.length;ancientAuxShot(a,p,dir,c,now+5100);assert.equal(a.skillRuntime.advancedSword.projectiles.length,shots,'700ms attack interval enforced');

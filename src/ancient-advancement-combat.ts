@@ -1,3 +1,4 @@
+import {SKILL_CONTACT} from './ancient-skill-flight';
 import {ancientHitbox} from './ancient-hitboxes';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {isAncientBoss} from './ancient-boss';
@@ -8,7 +9,7 @@ import {advancementRoute} from './ancient-advancement-progress';
 import {ancientSkillDamage, ancientGearStats} from './ancient-gear';
 import {ancientMapHeight, blocked, lineClear, type AncientProfile} from './ancient-rules';
 import {activeSkill, runtime, skillDamageMultiplier, SKILLS, type SkillActor} from './ancient-skills';
-import {selectSkillTarget, skillAreaTargets, skillAreaHits, type SkillContext, type SkillMonster} from './ancient-skill-combat';
+import {skillProjectileContact,skillSurfaceContact,selectSkillTarget, skillAreaTargets, skillAreaHits, type SkillContext, type SkillMonster} from './ancient-skill-combat';
 
 const ADVANCEMENT_COOLDOWNS:Record<string,readonly number[]>={
  berserker:[5,24,10,55],paladin:[16,14,28,35],stormcaller:[5,15,19,36],voltstalker:[5,9,18,34],
@@ -476,7 +477,7 @@ function castVoltstalker(a:SkillActor,p:AncientProfile,key:string,id:string,dire
   for(const m of c.monsters){
    if(m.hp<=0)continue;
    const mx=m.x-origin.x,mz=m.z-origin.z,along=mx*dx+mz*dz;
-   if(along<0||along>distance||Math.abs(mx*dz-mz*dx)>2)continue;
+   if(along<0||along>distance||Math.abs(mx*dz-mz*dx)>2+ancientHitbox(m.kind).radius+SKILL_CONTACT.lanePadding)continue;
    const pathFeet=pathHeights[Math.round(along*2)];
    if(Math.abs((m.y??ancientMapHeight(c.map,m.x,m.z,pathFeet))-pathFeet)>3)continue;
    if(!followup&&(volt.marks[m.id]||0)>now)volt.followupUntil=now+3000;
@@ -725,7 +726,7 @@ function castFireAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
    const dx=point.x-a.x,dz=point.z-a.z,distance=Math.hypot(dx,dz)||1;
    const travel=Math.min(24,distance),victims=c.monsters.filter(m=>{
     const mx=m.x-a.x,mz=m.z-a.z,projection=(mx*dx+mz*dz)/distance;
-    return m.hp>0&&projection>=0&&projection<=travel&&Math.abs(mx*dz-mz*dx)/distance<=4&&lineClear(a.x,a.y,a.z,m.x,firePoint(c,m).y+1,m.z,c.map);
+    return m.hp>0&&projection>=0&&projection<=travel&&Math.abs(mx*dz-mz*dx)/distance<=4+ancientHitbox(m.kind).radius+SKILL_CONTACT.lanePadding&&lineClear(a.x,a.y,a.z,m.x,firePoint(c,m).y+1,m.z,c.map);
    });
    for(const m of victims)hit(m,power*3.4);
    for(const field of f.patches)if(field.until>now&&Math.hypot(field.x-point.x,field.z-point.z)<=field.radius+4){
@@ -980,6 +981,7 @@ export type SwordAdvancementRuntime={
  blades:StoredBlade[];
  formUntil?:number;
  projectiles?:SwordProjectile[];
+ nets?:{visualId:string;x:number;y:number;z:number;until:number;next:number;power:number;skill:string;radius:number}[];
  flightUntil?:number;
  descending?:boolean;
  angles:Record<string,{values:number[];until:number}>;
@@ -1000,8 +1002,8 @@ function bladeLane(c:SkillContext,start:StormPoint,end:StormPoint,width:number){
  if(distance<.1)return stormTargets(c,start,width);
  return c.monsters.filter(m=>{
   if(m.hp<=0)return false;
-  const x=m.x-start.x,z=m.z-start.z,t=(x*dx+z*dz)/distance**2;
-  return t>=0&&t<=1&&Math.abs(x*dz-z*dx)/distance<=width
+  const x=m.x-start.x,z=m.z-start.z,t=(x*dx+z*dz)/distance**2,pad=ancientHitbox(m.kind).radius+SKILL_CONTACT.lanePadding;
+  return t>=-pad/distance&&t<=1+pad/distance&&Math.abs(x*dz-z*dx)/distance<=width+pad
    &&lineClear(start.x,start.y+1,start.z,m.x,firePoint(c,m).y+1,m.z,c.map);
  });
 }
@@ -1107,23 +1109,42 @@ export function tickAdvancedSword(a:SkillActor,p:AncientProfile,c:SkillContext,n
  for(const [id,angle] of Object.entries(state.angles))if(angle.until<=now)delete state.angles[id];
  for(const [id,until] of Object.entries(state.armor))if(until<=now)delete state.armor[id];
  for(const [id,at] of Object.entries(state.openings))if(at+20000<=now)delete state.openings[id];
+ const settleNet=(shot:SwordProjectile,point:StormPoint)=>{
+  const radius=shot.small?SKILL_CONTACT.smallNetRadius:SKILL_CONTACT.netRadius,duration=shot.small?SKILL_CONTACT.smallNetDuration:SKILL_CONTACT.netDuration;
+  const net={visualId:shot.visualId,...point,until:now+duration,next:now,power:shot.power,skill:shot.skill,radius};
+  (state.nets??=[]).push(net);state.nets=state.nets.slice(-24);
+  c.fx('blademaster-formation',point.x,point.z,radius,{source:{...point,y:point.y+.1},target:'',phase:'blade-field',projectile:shot.visualId,level:duration/1000});
+ };
  state.projectiles=(state.projectiles||[]).filter(shot=>{
-  if(shot.target){
-   const m=c.monsters.find(m=>m.id===shot.target&&m.hp>0);if(!m||now>(shot.until||0))return false;
-   let ticks=0;while((shot.next||0)<=now&&ticks++<8){c.damage(m,shot.power,undefined,shot.skill);shot.next=(shot.next||now)+500;}return true;
-  }
+  // Migrate an old attached net into the new stationary ground field.
+  if(shot.target){const m=c.monsters.find(m=>m.id===shot.target);if(m&&(shot.until||0)>now)settleNet(shot,firePoint(c,m));return false;}
+  const start={x:shot.x,y:shot.y,z:shot.z};
   const step=Math.min(shot.remaining,(shot.kind==='slash'?72:36)*Math.max(0,now-shot.last)/1000),end={x:shot.x+shot.direction[0]*step,y:shot.y+shot.direction[1]*step,z:shot.z+shot.direction[2]*step};
-  const start={x:shot.x,y:shot.y-1,z:shot.z};
-  const hit=bladeLane(c,start,{...end,y:end.y-1},shot.kind==='net'?(shot.small?1.25:3):1.6).filter(m=>Math.abs((firePoint(c,m).y+ancientHitbox(m.kind).height*.5)-(shot.y+end.y)*.5)<=ancientHitbox(m.kind).height*.5+2).sort((m,n)=>Math.hypot(m.x-shot.x,m.z-shot.z)-Math.hypot(n.x-shot.x,n.z-shot.z))[0];
-  if(hit){
-   c.damage(hit,shot.power,undefined,shot.skill);
-   if(shot.kind==='slash'){c.fx('blademaster-recall',hit.x,hit.z,0,{target:hit.id,phase:'flight-impact',projectile:shot.visualId});return false;}
-   shot.target=hit.id;shot.next=now+500;shot.until=now+(shot.small?2000:4000);
-   c.fx('blademaster-formation',hit.x,hit.z,shot.small?1.25:3,{source:{x:hit.x,y:firePoint(c,hit).y+1,z:hit.z},target:hit.id,phase:'blade-cut',projectile:shot.visualId,level:shot.small?2:4});return true;
+  const padding=(shot.kind==='net'?(shot.small?1.25:SKILL_CONTACT.netFlightRadius):SKILL_CONTACT.slashRadius)+SKILL_CONTACT.lanePadding;
+  const hit=skillProjectileContact(start,shot.direction,step,c,padding),surface=skillSurfaceContact(start,end,c.map);
+  if(surface&&(!hit||surface.t<hit.t)){
+   if(shot.kind==='net')settleNet(shot,surface);
+   else c.fx('blademaster-recall',surface.x,surface.z,0,{target:'',phase:'flight-impact',projectile:shot.visualId});
+   return false;
   }
-  if(!lineClear(shot.x,shot.y,shot.z,end.x,end.y,end.z,c.map)){c.fx('blademaster-recall',end.x,end.z,0,{target:'',phase:'flight-impact',projectile:shot.visualId});return false;}
+  if(hit){
+   if(shot.kind==='net')settleNet(shot,{x:hit.x,y:ancientMapHeight(c.map,hit.x,hit.z,shot.y),z:hit.z});
+   else{
+    c.damage(hit.monster,shot.power,undefined,shot.skill);
+    c.fx('blademaster-recall',hit.x,hit.z,0,{target:hit.monster.id,phase:'flight-impact',projectile:shot.visualId});
+   }
+   return false;
+  }
   Object.assign(shot,end,{last:now,remaining:shot.remaining-step});return shot.remaining>0;
  });
+ state.nets=(state.nets||[]).filter(net=>{
+  if(net.until<now)return false;
+  if(net.next>now)return true;
+  net.next=now+SKILL_CONTACT.netTick;
+  for(const m of stormTargets(c,net,net.radius))if(Math.abs(firePoint(c,m).y-net.y)<=2.5)c.damage(m,net.power,undefined,net.skill);
+  return true;
+ });
+
  if(!guard)return;
  if(guard.counter&&!guard.countered){
   guard.countered=true;const victim=c.monsters.find(m=>m.id===guard.counter&&m.hp>0);

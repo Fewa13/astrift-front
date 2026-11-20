@@ -31,7 +31,7 @@ export function ancientHitbox(kind:string){
 // Intersect the finite vertical cylinder. Projecting onto the body centre can
 // reject a valid ray at the top/bottom, especially at close range or steep pitch.
 export function rayAncientHitbox(origin:{x:number;y:number;z:number},dir:number[],target:{x:number;z:number;kind:string},floor:number,range:number,padding=0){
- const bounds=ancientHitbox(target.kind),pad=Math.max(0,Math.min(.3,padding)),height=bounds.height+pad*2,radius=bounds.radius+pad;floor-=pad;const ox=origin.x-target.x,oz=origin.z-target.z;
+ const bounds=ancientHitbox(target.kind),pad=Math.max(0,Math.min(4,padding)),height=bounds.height+pad*2,radius=bounds.radius+pad;floor-=pad;const ox=origin.x-target.x,oz=origin.z-target.z;
  const horizontal=dir[0]**2+dir[2]**2,b=2*(ox*dir[0]+oz*dir[2]),c=ox**2+oz**2-radius**2;
  let lo=0,hi=range;
  if(horizontal<1e-10){if(c>0)return;}

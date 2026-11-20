@@ -31,7 +31,7 @@ export function castExpansionSkill(a:SkillActor,p:AncientProfile,id:string,direc
  if(!recall)r.cooldowns[id]=now+skillCooldown(id,n)*1000*(1-ancientGearStats(p).cooldown);
  if(id==='shadowstep'){
   const dir=direction as number[],points=moveAlong(a,dir[0],dir[2],10,c),hit=new Set<string>();
-  for(const point of points)for(const m of c.monsters)if(!hit.has(m.id)&&Math.hypot(m.x-point.x,m.z-point.z)<=radius&&visible(m,point.x,point.z,point.y)){hit.add(m.id);c.damage(m,body*(2.6+.22*n));}
+  for(const point of points)for(const m of c.monsters)if(!hit.has(m.id)&&skillAreaHits({x:point.x,y:point.y-1.7,z:point.z},m,radius,c.map)&&visible(m,point.x,point.z,point.y)){hit.add(m.id);c.damage(m,body*(2.6+.22*n));}
   if(activeSkill(a,'nightfall',now))r.cooldowns[id]=now+3000*(1-ancientGearStats(p).cooldown);
   fx(a.x,a.z);return null;
  }

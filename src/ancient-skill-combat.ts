@@ -1,3 +1,4 @@
+import {SKILL_CONTACT,skillFlight,type SkillFlight} from './ancient-skill-flight';
 import {advancementCooldown,swordFormAttack,castAdvancement,castNecromancer,tickBerserker,tickPaladin,tickStormcaller,tickVoltstalker,tickCrystalist,tickWinterwarden,tickAdvancedFire,tickAdvancedCurse,tickAdvancedSword,tickAdvancedShadow,tickAdvancedStone,tickAdvancedSummon,tickAdvancedElements,tickAdvancedRift,tickAdvancedAbyss,tickAdvancedTime,reconcileAdvancementRuntime} from './ancient-advancement-combat';
 import {artifactStage} from './ancient-artifacts';
 import {fusionDamageMultiplier,masteryPower,masteryLevel} from './ancient-mastery';
@@ -28,14 +29,14 @@ import {blightPath} from './ancient-blight';
 import {cityPath} from './ancient-city';
 import {TEMPORAL_DISORDER} from './ancient-fusion-passives';
 export type SkillMonster={timeDistortion?:{owner:string;until:number;level:number;power:number};temporalDisorder?:{owner:string;until:number};temporalSlowUntil?:number;sanctuaryUntil?:number;charm?:{owner:string;until:number;next:number};judgment?:{owner:string;until:number;maxHp:number};contributionsForMastery?:Record<string,number>;frozenUntil?:number;frozenDamage?:{owner:string;amount:number;attack?:string}[];masteryMarks?:Record<string,{owner:string;id:string;until:number}>;buffUntil?:number;buffPower?:number;id:string;kind:string;hp:number;maxHp:number;x:number;y?:number;z:number;slow?:number;slowUntil?:number;weak?:number;weakUntil?:number;vulnerable?:number;vulnerableUntil?:number;strikes?:{skillId?:string;owner:string;at:number;damage:number}[];dots?:{skillId?:string;owner:string;until:number;next:number;damage:number}[]};
-export type SkillFXDetails={target:string;projectile?:string;direction?:number[];level?:number;phase?:string;source?:{x:number;y:number;z:number};links?:{x:number;y:number;z:number;target:string;height:number}[]};
+export type SkillFXDetails={target:string;projectile?:string;direction?:number[];level?:number;phase?:string;flight?:SkillFlight;source?:{x:number;y:number;z:number};links?:{x:number;y:number;z:number;target:string;height:number}[]};
 export function clearPendingSkillDamage(owner:string,targets:Iterable<Partial<Pick<SkillMonster,'strikes'|'dots'>>>){for(const m of targets){m.strikes=(m.strikes||[]).filter(v=>v.owner!==owner);m.dots=(m.dots||[]).filter(v=>v.owner!==owner);}}
-export type SkillContext={aimTarget?:SkillMonster;castRange?:number;projectileImpact?:boolean;motion?:(to:{x:number;y:number;z:number},speed:number)=>void;canMove?:(x:number,z:number,nx:number,nz:number)=>boolean;map:string;monsters:SkillMonster[];damage:(m:SkillMonster,n:number,source?:'summon',attack?:string)=>number;fx:(id:string,x:number,z:number,radius:number,details?:SkillFXDetails)=>void};
+export type SkillContext={aimTarget?:SkillMonster;hitPadding?:number;castRange?:number;projectileImpact?:boolean;motion?:(to:{x:number;y:number;z:number},speed:number)=>void;canMove?:(x:number,z:number,nx:number,nz:number)=>boolean;map:string;monsters:SkillMonster[];damage:(m:SkillMonster,n:number,source?:'summon',attack?:string)=>number;fx:(id:string,x:number,z:number,radius:number,details?:SkillFXDetails)=>void};
 function skillSourceContext(c:SkillContext,id:string):SkillContext{return {...c,damage:(m,n,source)=>c.damage(m,n,source,id)}}
 export function skillAreaHits(center:{x:number;z:number;y?:number},m:SkillMonster,radius:number,map:string){
  if(m.hp<=0)return false;
  const bounds=ancientHitbox(m.kind),distance=Math.hypot(m.x-center.x,m.z-center.z);
- if(distance>radius+bounds.radius)return false;
+ if(distance>radius+bounds.radius+SKILL_CONTACT.areaPadding)return false;
  const floor=ancientMapHeight(map,m.x,m.z,m.y),origin=ancientMapHeight(map,center.x,center.z,center.y);
  const near=Math.min(.8,bounds.radius/Math.max(distance,.01));
  const x=m.x+(center.x-m.x)*near,z=m.z+(center.z-m.z)*near;
@@ -54,20 +55,45 @@ export function selectSkillTarget(a:SkillActor,dir:unknown,range:number,c:SkillC
  if(c.aimTarget)return c.aimTarget;
  range=c.castRange??range;
  if(!Array.isArray(dir)||dir.length!==3||!dir.every(Number.isFinite)||Math.abs(Math.hypot(...dir)-1)>.05)return;
- const hits=c.monsters.filter(m=>m.hp>0).map(m=>{const floor=ancientMapHeight(c.map,m.x,m.z,m.y),exact=rayAncientHitbox(a,dir,m,floor,range),hit=exact||rayAncientHitbox(a,dir,m,floor,range,.2);if(!hit)return;const bounds=ancientHitbox(m.kind),dx=hit.x-m.x,dz=hit.z-m.z,n=Math.hypot(dx,dz),scale=n>bounds.radius?bounds.radius/n:1;const px=m.x+dx*scale,py=Math.max(floor+.02,Math.min(floor+bounds.height-.02,hit.y)),pz=m.z+dz*scale;const visible=Math.hypot(px-a.x,py-a.y,pz-a.z)<=range+.00001&&lineClear(a.x,a.y,a.z,px,py,pz,c.map);return visible?{m,hit,exact:!!exact}:undefined;}).filter((v):v is NonNullable<typeof v>=>!!v);
+ const hits=c.monsters.filter(m=>m.hp>0).map(m=>{const floor=ancientMapHeight(c.map,m.x,m.z,m.y),exact=rayAncientHitbox(a,dir,m,floor,range),hit=exact||rayAncientHitbox(a,dir,m,floor,range,c.hitPadding??SKILL_CONTACT.aimPadding);if(!hit)return;const bounds=ancientHitbox(m.kind),dx=hit.x-m.x,dz=hit.z-m.z,n=Math.hypot(dx,dz),scale=n>bounds.radius?bounds.radius/n:1;const px=m.x+dx*scale,py=Math.max(floor+.02,Math.min(floor+bounds.height-.02,hit.y)),pz=m.z+dz*scale;const visible=Math.hypot(px-a.x,py-a.y,pz-a.z)<=range+.00001&&lineClear(a.x,a.y,a.z,px,py,pz,c.map);return visible?{m,hit,exact:!!exact}:undefined;}).filter((v):v is NonNullable<typeof v>=>!!v);
  hits.sort((x,y)=>Number(y.exact)-Number(x.exact)||x.hit.t-y.hit.t);return hits[0]?.m;
 }
-export function skillTargetError(a:SkillActor,dir:unknown,range:number,c:SkillContext){if(!Array.isArray(dir)||dir.length!==3||!dir.every(Number.isFinite))return '请瞄准可见的敌人';const hits=c.monsters.filter(m=>m.hp>0).map(m=>({m,hit:rayAncientHitbox(a,dir,m,ancientMapHeight(c.map,m.x,m.z,m.y),Math.max(60,range),.2)})).filter(v=>v.hit).sort((x,y)=>x.hit!.t-y.hit!.t);if(!hits.length)return '请瞄准可见的敌人';return hits[0].hit!.t>range?'目标超出技能范围':'目标被障碍物遮挡';}
+export function skillProjectileContact(origin:{x:number;y:number;z:number},direction:number[],range:number,c:SkillContext,padding:number){
+ const hits=c.monsters.filter(m=>m.hp>0).map(m=>{
+  const floor=ancientMapHeight(c.map,m.x,m.z,m.y),hit=rayAncientHitbox(origin,direction,m,floor,range,padding);
+  if(!hit)return;
+  const bounds=ancientHitbox(m.kind),dx=hit.x-m.x,dz=hit.z-m.z,length=Math.hypot(dx,dz),scale=length>bounds.radius?bounds.radius/length:1;
+  const y=Math.max(floor+.05,Math.min(floor+bounds.height-.05,hit.y));
+  if(!lineClear(origin.x,origin.y,origin.z,m.x+dx*scale,y,m.z+dz*scale,c.map))return;
+  return {monster:m,...hit};
+ }).filter((hit):hit is NonNullable<typeof hit>=>!!hit);
+ return hits.sort((a,b)=>a.t-b.t)[0];
+}
+export function skillSurfaceContact(start:{x:number;y:number;z:number},end:{x:number;y:number;z:number},map:string){
+ const distance=Math.hypot(end.x-start.x,end.y-start.y,end.z-start.z),steps=Math.max(1,Math.ceil(distance/.25));
+ // Most projectiles are above clear ground; only refine a surface crossing.
+ if(end.y>ancientMapHeight(map,end.x,end.z,end.y)+.06&&lineClear(start.x,start.y,start.z,end.x,end.y,end.z,map))return;
+ let previous={...start};
+ for(let i=1;i<=steps;i++){
+  const t=i/steps,x=start.x+(end.x-start.x)*t,y=start.y+(end.y-start.y)*t,z=start.z+(end.z-start.z)*t;
+  const floor=ancientMapHeight(map,x,z,y);
+  if(y<=floor+.06)return {x,y:floor,z,t:distance*t};
+  if(!lineClear(previous.x,previous.y,previous.z,x,y,z,map))return {x:previous.x,y:ancientMapHeight(map,previous.x,previous.z,previous.y),z:previous.z,t:distance*(i-1)/steps};
+  previous={x,y,z};
+ }
+}
+export function skillTargetError(a:SkillActor,dir:unknown,range:number,c:SkillContext){if(!Array.isArray(dir)||dir.length!==3||!dir.every(Number.isFinite))return '请瞄准可见的敌人';const hits=c.monsters.filter(m=>m.hp>0).map(m=>({m,hit:rayAncientHitbox(a,dir,m,ancientMapHeight(c.map,m.x,m.z,m.y),Math.max(60,range),SKILL_CONTACT.aimPadding)})).filter(v=>v.hit).sort((x,y)=>x.hit!.t-y.hit!.t);if(!hits.length)return '请瞄准可见的敌人';return hits[0].hit!.t>range?'目标超出技能范围':'目标被障碍物遮挡';}
 
-export type FreeProjectile={visualId:string;id:string;job:string;route:string;map:string;x:number;y:number;z:number;direction:number[];remaining:number;last:number;until:number;cooldown:number;charge?:number};
+export type FreeProjectile={visualId:string;id:string;job:string;route:string;map:string;x:number;y:number;z:number;direction:number[];remaining:number;last:number;until:number;cooldown:number;charge?:number;flight?:SkillFlight};
 function queueFreeCast(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now:number,error:string|null|undefined){
  if((id==='advanced:Z'&&a.advancement==='time-sovereign'||id==='advanced:X'&&a.advancement==='veinforger')||c.projectileImpact||!error||!/(瞄准|超出技能范围|超出.*范围|障碍物遮挡)/.test(error)||!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite)||Math.abs(Math.hypot(...direction)-1)>.05)return error;
  const r=runtime(a),key=id.startsWith('advanced:')?id.slice(-1):'',level=key?p.advancements?.[p.profession||'']?.skills[key]?.level||1:(isFusionSkill(id)?masteryLevel(p,id):p.skills?.[id]||1);
+ const flight=skillFlight(p.profession||'',key||SKILLS[id]?.key||'X',p.advancements?.[p.profession||'']?.route||'');
  const range=skillTravelRange(level),cooldown=now+(key?advancementCooldown(p.advancements?.[p.profession||'']?.route||'',key):skillCooldown(id,level)||12)*1000*(1-ancientGearStats(p).cooldown)*(key||isFusionSkill(id)?1:branchCooldown(p,id));
  if((r.freeProjectiles?.length||0)>=12)return '飞行技能数量已满';
  r.cooldowns[id]=cooldown;
- (r.freeProjectiles??=[]).push({visualId:a.name+':'+now+':'+id,id,job:p.profession||'',route:p.advancements?.[p.profession||'']?.route||'',map:c.map,x:a.x,y:a.y,z:a.z,direction:direction.slice(),remaining:range,last:now,until:now+4000,cooldown,charge:runtime(a).effects.lifeChargedAttack?.level});
- c.fx('swordwave',a.x+direction[0]*range,a.z+direction[2]*range,1,{target:'',phase:'free-flight',projectile:a.name+':'+now+':'+id,direction:direction.slice(),source:{x:a.x,y:a.y,z:a.z},level:range});
+ (r.freeProjectiles??=[]).push({visualId:a.name+':'+now+':'+id,id,job:p.profession||'',route:p.advancements?.[p.profession||'']?.route||'',map:c.map,x:a.x,y:a.y,z:a.z,direction:direction.slice(),remaining:range,last:now,until:now+4000,cooldown,charge:runtime(a).effects.lifeChargedAttack?.level,flight});
+ c.fx('swordwave',a.x+direction[0]*range,a.z+direction[2]*range,1,{target:'',phase:'skill-flight',flight,projectile:a.name+':'+now+':'+id,direction:direction.slice(),source:{x:a.x,y:a.y,z:a.z},level:range});
  return null;
 }
 export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now=Date.now()):string|null{
@@ -116,7 +142,7 @@ function castSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown
    const x=startX+dx*step*.25,z=startZ+dz*step*.25,floor=ancientMapHeight(c.map,x,z,a.y-1.7),y=floor+1.7;
    if(step&&(blocked(x,z,.6,c.map,floor)||Math.abs(y-a.y)>1.2||bossBodyPathBlocked(a.x,a.z,x,z,floor,c.monsters,(bx,bz)=>ancientMapHeight(c.map,bx,bz))))break;
    a.x=x;a.z=z;a.y=y;
-   for(const m of c.monsters)if(m.hp>0&&!hit.has(m.id)&&Math.hypot(m.x-x,m.z-z)<=skillRadius(id,n,isHoly(p))*branchRadius(p,id)&&lineClear(x,y,z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map)){hit.add(m.id);c.damage(m,body*(3+.3*n))}
+   for(const m of c.monsters)if(m.hp>0&&!hit.has(m.id)&&Math.hypot(m.x-x,m.z-z)<=skillRadius(id,n,isHoly(p))*branchRadius(p,id)+ancientHitbox(m.kind).radius+SKILL_CONTACT.areaPadding&&lineClear(x,y,z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map)){hit.add(m.id);c.damage(m,body*(3+.3*n))}
    if(step%8===0)c.fx(id,x,z,1,{target:'',source:{x:startX,y:startY-.25,z:startZ}});
   }
   c.fx(id,a.x,a.z,skillRadius(id,n,isHoly(p))*branchRadius(p,id),{target:'',source:{x:startX,y:startY-.25,z:startZ}});return null;
@@ -176,8 +202,8 @@ export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,d
  const pending=runtime(a).freeProjectiles||[];
  runtime(a).freeProjectiles=pending.filter(v=>{
   if(a.hp<=0||v.map!==c.map||v.job!==p.profession||v.route!==(p.advancements?.[p.profession||'']?.route||'')||now>v.until)return false;
-  const step=Math.min(v.remaining,40*Math.max(0,now-v.last)/1000),origin={...a,x:v.x,y:v.y,z:v.z};
-  const hit=selectSkillTarget(origin,v.direction,step,{...c,castRange:undefined});
+  const step=Math.min(v.remaining,(v.flight?.speed||40)*Math.max(0,now-v.last)/1000),origin={...a,x:v.x,y:v.y,z:v.z};
+  const hit=selectSkillTarget(origin,v.direction,step,{...c,castRange:undefined,hitPadding:(v.flight?.radius||.7)+SKILL_CONTACT.lanePadding});
   const x=v.x+v.direction[0]*step,y=v.y+v.direction[1]*step,z=v.z+v.direction[2]*step;
   if(hit){c.fx('swordwave',hit.x,hit.z,0,{target:hit.id,phase:'flight-impact',projectile:v.visualId});const r=runtime(a);r.cooldowns[v.id]=0;if(v.charge)r.effects.lifeChargedAttack={until:now+1,level:v.charge};castAncientSkill(a,p,v.id,v.direction,{...c,aimTarget:hit,projectileImpact:true},now);delete r.effects.lifeChargedAttack;r.cooldowns[v.id]=v.cooldown;return false;}
   if(!lineClear(v.x,v.y,v.z,x,y,z,c.map)){c.fx('swordwave',x,z,0,{target:'',phase:'flight-impact',projectile:v.visualId});return false;}
