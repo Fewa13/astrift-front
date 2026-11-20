@@ -18,7 +18,7 @@ export async function accountApi(path,body){
  if(!result.ok)throw Error(result.error);
  return result;
 }
-export const accountEmailUI={isOpen:()=>false};
+export const accountEmailUI={get isOpen(){return false}};
 export const authenticateAccount=()=>{}, logoutAccount=()=>{};
 `;
 if(dev&&path.basename(args.path)==='ancient-titles-ui.js')s=s.replace("owned=title?.rank===rank&&title.expires>Date.now(),worn=owned&&title.worn","owned=true,worn=title?.rank===rank&&title.worn").replace("add(foot,'small',L('到期 ','Expires ')+expiry+' (Irvine)');","").replace("const expiry=new Intl","const expiry=title?new Intl").replace(".format(title.expires);",".format(title.expires):'';").replace("request('equipPuzzleTitle',{worn:!worn})","request(worn?'equipPuzzleTitle':'devTitle',{rank,worn:false})");

@@ -25,7 +25,8 @@
     "deploy:devbuild": "npm run build:html && node scripts/build-devbuild.mjs && node scripts/stage-dev-hosting.mjs && node scripts/build-static-hosting.mjs && wrangler deploy --minify && wrangler deploy --config wrangler.devbuild.jsonc && npm run deploy:surge-sites && npx firebase-tools deploy --only hosting --project astrift-front",
     "deploy:all": "npm run build:html && node scripts/build-static-hosting.mjs && wrangler deploy --minify && npm run deploy:surge-sites && npx firebase-tools deploy --only hosting --project astrift-front && wrangler deploy --config ../astrift-hub/wrangler.jsonc",
     "deploy:surge-sites": "npx surge .static-hosting astrift-front.surge.sh && npx surge .static-hosting ilovegames.surge.sh && npm run deploy:ai-mirror",
-    "deploy:ai-mirror": "node scripts/build-ai-game.mjs && npx surge ../homework-ai/surge-dist astrift-ai.surge.sh"
+    "deploy:ai-mirror": "node scripts/build-ai-game.mjs && npx surge ../homework-ai/surge-dist astrift-ai.surge.sh",
+    "check:dev": "npm run build:modes && node scripts/build-devbuild.mjs && node scripts/ancient-dev-movement-browser-check.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",
