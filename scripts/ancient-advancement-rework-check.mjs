@@ -99,6 +99,16 @@ for(const key of ['X','Q','Z','C']){
 }
 console.log('PASS: reworked storms, single-hop burn explosions, sword executions, Life Anchor branches and charges, late-entry time fields, earth placement/cap/ticks/link/explosion/three-target piercing, and every Boundary Cutter skill.');
 
+// Remaining audited skills now have independent value without forcing movement or incoming hits.
+{
+ const f=setup('ice','crystalist');f.enemy('target');assert.equal(f.cast('Z'),null);f.tick(N+100);assert(f.hits.some(h=>h.id==='advancement:crystalist:Z'));
+ const h=setup('curse','hexweaver');h.enemy('target');assert.equal(h.cast('Z'),null);assert(h.hits.length>0);assert(h.a.skillRuntime.advancedCurse.hexes.target);
+ const shadow=setup('shadowblade','shadowhunter');shadow.enemy('target');assert.equal(shadow.cast('Q'),null);const position={x:shadow.a.x,z:shadow.a.z};assert(shadow.hits.length>0);shadow.tick(N+6000);assert.equal(shadow.a.x,position.x);assert.equal(shadow.a.z,position.z);assert(!shadow.a.skillRuntime.advancedShadow.anchor);
+ const duel=setup('voidsword','riftduelist');duel.enemy('target');assert.equal(duel.cast('Z',N,[0,0,1]),null);duel.tick(N+2500);assert(duel.hits.some(h=>h.id==='advancement:riftduelist:Z'));
+ const summon=setup('summoner','spiritcaller');assert.equal(summon.cast('X'),null);const pet=summon.a.skillRuntime.summon;pet.hp=pet.maxHp*.25;assert.equal(summon.cast('C',N+100),null);assert(pet.hp>pet.maxHp*.5);assert.equal(summon.a.skillRuntime.advancedSummon.revivalUntil,pet.until);pet.hp=0;summon.tick(N+200);assert(Math.abs(pet.hp/pet.maxHp-.3)<.001);assert(!summon.a.skillRuntime.advancedSummon.revivalUntil);
+}
+console.log('PASS: Frost field damage, independent plague opener, optional shadow return, unhit riposte, and immediate guardian healing with a lifetime single revival.');
+
 // Exercise the real server entry too: queued effects and potion gates must not exist only in the fixture.
 {
  const {DatabaseSync}=await import('node:sqlite'),vm=await import('node:vm');

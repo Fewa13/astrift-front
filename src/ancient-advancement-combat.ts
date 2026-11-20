@@ -517,7 +517,7 @@ export type CrystalRuntime = {
  map:string;
  marks:Record<string,{until:number;count:number}>;
  fractures:Record<string,{until:number;count:number}>;
- field?:StormPoint & {until:number;next:number;radius:number};
+ field?:StormPoint & {until:number;next:number;radius:number;power:number};
 };
 
 function crystalState(a:SkillActor,map:string){
@@ -574,7 +574,7 @@ function castCrystalist(a:SkillActor,p:AncientProfile,key:string,id:string,direc
   c.fx('crystalist-refraction',target.x,target.z,3,{source:origin,target:target.id});
  }else if(key==='Z'){
   const radius=Math.min(16,7+.16*level);
-  state.field={x:target.x,y:target.y??ancientMapHeight(c.map,target.x,target.z),z:target.z,next:now,until:now+7000,radius};
+  state.field={x:target.x,y:target.y??ancientMapHeight(c.map,target.x,target.z),z:target.z,next:now,until:now+7000,radius,power:power*holyPower(p)};
   c.fx('crystalist-field',target.x,target.z,radius);
  }else{
   const radius=Math.min(20,10+.18*level);
@@ -600,6 +600,7 @@ export function tickCrystalist(a:SkillActor,p:AncientProfile,c:SkillContext,now:
  field.next=now+1000;
  for(const m of stormTargets(c,field,field.radius)){
   addCrystal(state,m,now);
+  c.damage(m,(field.power??ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p))*1.2,undefined,'advancement:crystalist:Z');
   if(m.contributionsForMastery?.[a.name])(m.masteryMarks??={})[a.name+':crystal-field']={owner:a.name,id:'advancement:crystalist:Z',until:now+1500};
  }
 }
@@ -851,7 +852,13 @@ function castCurseAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
    c.damage(target,power*2.9,undefined,tag);
    c.fx('hexweaver-tether',target.x,target.z,12,{target:target.id,links:linked.map(m=>({...firePoint(c,m),height:(m.y||0)+1,target:m.id}))});
   }else if(key==='Z'){
-   for(const source of [target,...area(target,12)]){
+   if(!state.hexes[target.id]||state.hexes[target.id].until<=now){
+    state.hexes[target.id]={until:now+8500,next:now+1000,damage:power*.9,spread:true};
+    target.weak=Math.max(target.weak||0,.18);target.weakUntil=Math.max(target.weakUntil||0,now+8500);
+   }
+   fx('plague',target,5);
+   const sources=[target,...area(target,12)].filter(m=>state.hexes[m.id]?.until>now);
+   for(const source of sources){
     const hex=state.hexes[source.id];
     if(!hex||hex.until<=now)continue;
     const next=area(source,8).find(m=>!state.hexes[m.id]);
@@ -1225,6 +1232,7 @@ function castShadowAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    const end=groundDash(a,c,dx,dz,Math.min(23,10+level*.24));
    if(Math.hypot(end.x-start.x,end.z-start.z)<.4)return '冲刺路径被阻挡';
    state.anchor={...start,until:now+5500,power:power*3.6};
+   for(const m of bladeLane(c,start,end,2.5))hit(m,3.2*holyPower(p));
    shadowMotion(a,c,end);
    c.fx('shadowhunter-swap',end.x,end.z,3,{target:'',source:start});
   }else if(key==='Z'){
@@ -1286,7 +1294,7 @@ export function tickAdvancedShadow(a:SkillActor,p:AncientProfile,c:SkillContext,
  const state=a.skillRuntime?.advancedShadow,route=advancementRoute(p)?.id;
  if(!state||state.map!==c.map||a.hp<=0||(route!=='shadowhunter'&&route!=='boundarycutter'))return;
  for(const [id,mark] of Object.entries(state.marks))if(mark.until<=now)delete state.marks[id];
- if(state.anchor&&state.anchor.until<=now)recallAdvancedShadow(a,c,state,now);
+ if(state.anchor&&state.anchor.until<=now)delete state.anchor;
  const returning=state.returning;
  if(returning&&returning.at<=now){
   delete state.returning;
@@ -1578,7 +1586,8 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
    c.fx('spiritcaller-ascendant',a.x,a.z,6);
   }else{
    if(!r.summon||r.summon.hp<=0||r.summon.until<=now)return '需要一个在场的圣灵护卫';
-   state.revivalUntil=now+26000;
+   r.summon.hp=Math.min(r.summon.maxHp,r.summon.hp+r.summon.maxHp*.35);
+   state.revivalUntil=r.summon.until;
    c.fx('spiritcaller-rebirth',r.summon.x,r.summon.z,4);
   }
  }else{
@@ -1901,7 +1910,7 @@ export type RiftRuntime={
  anchor?:{from:StormPoint;to:StormPoint;until:number;power:number};
  domain?:StormPoint&{until:number;radius:number;power:number;previous:Record<string,boolean>;next:Record<string,number>};
  duel?:{target:string;until:number};
- guard?:{until:number;power:number;source?:string};
+ guard?:{until:number;power:number;source?:string;direction?:{x:number;z:number}};
 };
 function riftState(a:SkillActor,map:string){
  const r=runtime(a);
@@ -1984,7 +1993,7 @@ function castRiftAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
    for(const m of bladeLane(c,origin,end,2.5)){hit(m,3.4);if(m.hp>0)state.marks[m.id]=now+8000;}
    c.fx('riftduelist-displace',end.x,end.z,3,{target:'',source:origin});
   }else if(key==='Z'){
-   state.guard={until:now+2300,power};
+   state.guard={until:now+2300,power,direction:flatAim(direction)??{x:0,z:1}};
    r.effects.riftGuard={until:state.guard.until,level:1};
    c.fx('riftduelist-guard',origin.x,origin.z,4);
   }else if(target){
@@ -2020,6 +2029,11 @@ export function tickAdvancedRift(a:SkillActor,p:AncientProfile,c:SkillContext,no
    c.damage(m,guard.power*(marked?6.8:5),undefined,'advancement:riftduelist:Z');
    delete state.marks[m.id];
    c.fx('riftduelist-riposte',m.x,m.z,4,{target:m.id,source:{x:a.x,y:a.y,z:a.z}});
+  }else{
+   const from={x:a.x,y:a.y-1.7,z:a.z},d=guard.direction??{x:0,z:1};
+   const end={x:a.x+d.x*50,y:from.y,z:a.z+d.z*50};
+   for(const victim of bladeLane(c,from,end,3))c.damage(victim,guard.power*((state.marks[victim.id]||0)>now?6.8:5),undefined,'advancement:riftduelist:Z');
+   c.fx('riftduelist-riposte',end.x,end.z,3,{target:'',source:from});
   }
  }
  const domain=state.domain;
