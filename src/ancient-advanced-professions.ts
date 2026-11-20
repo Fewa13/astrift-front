@@ -5,7 +5,7 @@ type Route = {id: string; name: Localized; skills: readonly [Localized, Localize
 const route = (id: string, name: Localized, ...skills: Route['skills']): Route => ({id, name, skills});
 
 // Skills are ordered by X, Q, Z, C for inheritance from the original profession.
-export const ADVANCED_PROFESSIONS: Readonly<Record<string, readonly [Route, Route]>> = {
+const ALL_ADVANCED_PROFESSIONS: Readonly<Record<string, readonly [Route, Route]>> = {
  warrior: [
   route('berserker',['狂战士','Berserker'],['嗜血飞弹','Bloodseeker Bolt'],['献祭','Sacrifice'],['冲锋','Charge'],['浴血重生','Blood Rebirth']),
   route('paladin',['圣战士','Paladin'],['净化','Purify'],['圣光恢复','Radiant Recovery'],['圣光领域','Sanctuary'],['审判','Judgment']),
@@ -59,6 +59,11 @@ export const ADVANCED_PROFESSIONS: Readonly<Record<string, readonly [Route, Rout
   route('time-weaver',['因果织者','Causality Weaver'],['延时印记','Delayed Mark'],['因果连线','Causal Link'],['未来借位','Borrowed Position'],['因果倒置','Causal Inversion']),
  ],
 };
+
+// Fusion professions keep their original kit and mastery; only ordinary Holy jobs have branches.
+const fusionJobs=new Set(['elementalist','voidsword','abyssal','chrono','necromancer']);
+export const ADVANCED_PROFESSIONS:Readonly<Record<string,readonly [Route,Route]>>=Object.fromEntries(Object.entries(ALL_ADVANCED_PROFESSIONS).filter(([job])=>!fusionJobs.has(job)));
+export const LEGACY_FUSION_ADVANCEMENTS:Readonly<Record<string,readonly [Route,Route]>>=Object.fromEntries(Object.entries(ALL_ADVANCED_PROFESSIONS).filter(([job])=>fusionJobs.has(job)));
 
 export const ADVANCEMENT_KEYS = ['X','Q','Z','C'] as const;
 export function advancementCastKey(id:string){

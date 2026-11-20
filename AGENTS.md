@@ -10,14 +10,12 @@
 
 - For each published player-facing update, update both Desktop announcements, `Astrift Update(zh-CN).txt` and `Astrift Update(EN).txt`. Append changes for the same Irvine calendar day. On a new day, replace the previous day's announcement and update its date.
 
-## 未完成更新：Ancient 职业升华
+## Ancient 职业升华规则
 
-用户已批准完整实现。任务未全部完成时继续实现和验证，不能把预览、配置、部分职业可用或仅通过类型检查当成交付。
-
-- 9 个基础职业和 4 个融合职业各有两条升华路线。按照已确认的技能设计实现 26 条路线的实战行为、被动、模型和专属特效。
-- 职业达到圣级后可选择一次分支，按 X、Q、Z、C 继承技能等级。融合职业保留同槽位的精通点。升华后的职业仍可参与融合。
-- 升华技能通过服务端校验的战斗精通成长。按有效命中、击杀、治疗、召唤及增减益等不同机制结算，防止重复奖励。职业和技能界面显示双语效果、等级和进度，提供可操作的技能与外观预览。
-- 验证正式客户端的选择、施法、进阶、重连、存档及融合流程，检查每条路线的视觉和性能。完成后按项目流程同步网站、正版单 HTML 和 GitHub。
-- 26 条路线的 104 个技能已接入实战入口和视觉预览。继续逐条核对机制、数值、被动与边界条件。全技能施法检查只验证接入，不能代替逐技能行为验证。
+- 用户要求完成全部相关实现、验证和发布，不能把预览或类型检查当作交付。
+- 9 个普通圣级职业各有两条升华路线，共 18 条路线、72 个技能。普通圣级分支保持不变，保留技能成长、实战行为和视觉预览。
+- 2026-11-20：融合职业不再选择升华路线。所有账户中已选择的融合分支自动回退到原融合职业，按 X、Q、Z、C 保留技能等级及换算后的精通进度，不消耗回退卷轴；融合所有权、多次点亮被动及普通职业不变。服务端必须拒绝重新选择融合分支。
+- 融合职业仍使用独立技能精通成长和多次点亮；本次全部融合伤害统一下调 15%，包含召唤物，避免重复乘算。
+- 验证选择、施法、重连、离线存档迁移及普通职业不受影响，再同步网站、单 HTML、Canva、Dev 和 GitHub。更新公告不写 Dev 更新。
 
 - `astrift-ai.surge.sh` ships complete local game assets together with the AI frontend via `scripts/build-ai-game.mjs` and `deploy:ai-mirror`. Keep it in `deploy:surge-sites`; do not replace its local `/game.html` entry with a remote website. The AI title stays unchanged. AI styles use `ai-style.css` to avoid game asset collisions.

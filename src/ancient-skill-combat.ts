@@ -3,7 +3,7 @@ import {advancementCooldown,swordFormAttack,castAdvancement,castNecromancer,tick
 import {artifactStage} from './ancient-artifacts';
 import {fusionDamageMultiplier,masteryPower,masteryLevel} from './ancient-mastery';
 import {castFusion,tickFusion} from './ancient-fusion-combat';
-import {isFusionSkill} from './ancient-skills';
+import {isFusionSkill,isFusionJob} from './ancient-skills';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {skillDirectMultiplier} from './ancient-skills';
 import {activeBranch,branchRadius,branchCooldown} from './ancient-branches';
@@ -198,7 +198,15 @@ export function ancientAuxShot(a:SkillActor,p:AncientProfile,direction:unknown,c
  const n=p.skills?.weaken||0;if(p.profession!=='summoner'||n<=0)return '技能尚未修炼';if((r.cooldowns.weaken||0)>now)return '技能冷却中';r.cooldowns.weaken=now+12000*(1-ancientGearStats(p).cooldown);c.damage(target,ancientSkillDamage(p)*(2.8+.3*n)*skillDamageMultiplier(a,now)*holyPower(p),undefined,'weaken');weaken(target,Math.min(.8,.05*n),now+n*8000);queueBranchFinisher(a,p,'weaken',target,now);c.fx('weaken',target.x,target.z,1);
 }
 export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,dt:number,now=Date.now()){
+ const retiredFusion=isFusionJob(p.profession||'')&&!!runtime(a).advancementIdentity?.includes('|')&&runtime(a).advancementIdentity!.split('|')[1]!==p.profession;
  reconcileAdvancementRuntime(a,p,c.map,a.hp<=0);
+ if(retiredFusion)for(const m of c.monsters){
+  m.strikes=m.strikes?.filter(v=>v.owner!==a.name||!v.skillId?.startsWith('advancement:'));
+  m.dots=m.dots?.filter(v=>v.owner!==a.name||!v.skillId?.startsWith('advancement:'));
+  m.frozenDamage=m.frozenDamage?.filter(v=>v.owner!==a.name||!v.attack?.startsWith('advancement:'));
+  if(m.timeDistortion?.owner===a.name)delete m.timeDistortion;
+ }
+
  const pending=runtime(a).freeProjectiles||[];
  runtime(a).freeProjectiles=pending.filter(v=>{
   if(a.hp<=0||v.map!==c.map||v.job!==p.profession||v.route!==(p.advancements?.[p.profession||'']?.route||'')||now>v.until)return false;

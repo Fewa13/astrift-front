@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 const route = (id, name, ...skills) => ({ id, name, skills });
-const ADVANCED_PROFESSIONS = {
+const ALL_ADVANCED_PROFESSIONS = {
   warrior: [
     route("berserker", ["\u72C2\u6218\u58EB", "Berserker"], ["\u55DC\u8840\u98DE\u5F39", "Bloodseeker Bolt"], ["\u732E\u796D", "Sacrifice"], ["\u51B2\u950B", "Charge"], ["\u6D74\u8840\u91CD\u751F", "Blood Rebirth"]),
     route("paladin", ["\u5723\u6218\u58EB", "Paladin"], ["\u51C0\u5316", "Purify"], ["\u5723\u5149\u6062\u590D", "Radiant Recovery"], ["\u5723\u5149\u9886\u57DF", "Sanctuary"], ["\u5BA1\u5224", "Judgment"])
@@ -54,6 +54,9 @@ const ADVANCED_PROFESSIONS = {
     route("time-weaver", ["\u56E0\u679C\u7EC7\u8005", "Causality Weaver"], ["\u5EF6\u65F6\u5370\u8BB0", "Delayed Mark"], ["\u56E0\u679C\u8FDE\u7EBF", "Causal Link"], ["\u672A\u6765\u501F\u4F4D", "Borrowed Position"], ["\u56E0\u679C\u5012\u7F6E", "Causal Inversion"])
   ]
 };
+const fusionJobs = /* @__PURE__ */ new Set(["elementalist", "voidsword", "abyssal", "chrono", "necromancer"]);
+const ADVANCED_PROFESSIONS = Object.fromEntries(Object.entries(ALL_ADVANCED_PROFESSIONS).filter(([job]) => !fusionJobs.has(job)));
+const LEGACY_FUSION_ADVANCEMENTS = Object.fromEntries(Object.entries(ALL_ADVANCED_PROFESSIONS).filter(([job]) => fusionJobs.has(job)));
 const ADVANCEMENT_KEYS = ["X", "Q", "Z", "C"];
 function advancementCastKey(id) {
   return /^advanced:[XQZC]$/.test(id) ? id.slice(-1) : void 0;
@@ -71,5 +74,6 @@ export {
   ADVANCED_PROFESSIONS,
   ADVANCEMENT_KEYS,
   ADVANCEMENT_REWORK,
+  LEGACY_FUSION_ADVANCEMENTS,
   advancementCastKey
 };

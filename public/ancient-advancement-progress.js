@@ -10,7 +10,7 @@ function advancementRoute(profile, profession = profile.profession || "") {
 function chooseAdvancement(profile, routeId) {
   const profession = profile.profession || "";
   const route = ADVANCED_PROFESSIONS[profession]?.find((candidate) => candidate.id === routeId);
-  if (!route || !isHoly(profile) || profile.consumedJobs?.[profession]) return false;
+  if (isFusionJob(profession) || !route || !isHoly(profile) || profile.consumedJobs?.[profession]) return false;
   const fused = isFusionJob(profession);
   if (fused && !profile.fusedJobs?.[profession]) return false;
   const records = profile.advancements ??= {};
@@ -70,10 +70,30 @@ function awardAdvancementMastery(profile, routeId, key, points) {
   if (skill.level >= 100) skill.points = 0;
   return skill.level > before;
 }
+function retireFusionAdvancements(profile) {
+  let changed = false;
+  for (const [job, progress] of Object.entries(profile.advancements || {})) {
+    if (!isFusionJob(job)) continue;
+    if (progress.route) {
+      for (const id of PROFESSIONS[job].skills) {
+        const trained = progress.skills?.[SKILLS[id].key];
+        if (!trained || !Number.isSafeInteger(trained.level) || trained.level < 1 || trained.level > 100) continue;
+        const saved = profile.mastery?.[id];
+        const points = trained.level >= 100 ? 0 : Math.floor(Math.max(0, Number.isFinite(trained.points) ? trained.points : 0) * masteryCost(id, trained.level) / advancementCost(trained.level));
+        if (!saved || saved.level < trained.level) (profile.mastery ??= {})[id] = { level: trained.level, points };
+        else if (saved.level === trained.level) saved.points = Math.max(saved.points, points);
+      }
+    }
+    delete profile.advancements[job];
+    changed = true;
+  }
+  return changed;
+}
 export {
   advancementCost,
   advancementRoute,
   awardAdvancementMastery,
   chooseAdvancement,
+  retireFusionAdvancements,
   rollbackAdvancement
 };

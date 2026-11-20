@@ -341,12 +341,14 @@ fusionRollback.advancements={elementalist:{route:'elemental-god',skills:Object.f
 fusionRollback.materials['supply:rollback']=1;
 server.save('element-healing',fusionRollback);
 const revertedFusion=await server.command('element-healing','useSupply',{id:'rollback'});
-assert(revertedFusion.ok,JSON.stringify(revertedFusion));
-assert(revertedFusion.profile.fusedJobs.elementalist);
-assert.equal(revertedFusion.profile.mastery.prism.level,8);
+assert.equal(revertedFusion.ok,false,'automatic retirement does not consume a reversion scroll');
+const autoReverted=server.read('element-healing');
+assert(autoReverted.fusedJobs.elementalist);
+assert.equal(autoReverted.mastery.prism.level,8);
+assert.equal(autoReverted.materials['supply:rollback'],1);
 const newFusionBranch=await server.command('element-healing','chooseAdvancement',{route:'elemental-ward'});
-assert(newFusionBranch.ok,JSON.stringify(newFusionBranch));
-assert.equal(newFusionBranch.profile.advancements.elementalist.skills.X.points,17);
+assert.equal(newFusionBranch.ok,false);
+assert.equal(server.read('element-healing').advancements.elementalist,undefined);
 
 let alarms=0;ctx.storage.setAlarm=async()=>alarms++;const ticks=[];server.tickMap=async map=>{ticks.push(map);throw Error('simulated map failure')};await server.alarm();assert.equal(alarms,1,'failed tick must still schedule the next alarm');assert(ticks.includes('tribe'));
 db.close();console.log('PASS: two players, stale dead attachment, nine-second tick delay, exactly-once rain/giant hits, real WebSocket replacement, late old-close safety and alarm recovery.');

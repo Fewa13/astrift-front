@@ -18,7 +18,7 @@ export function advancementRoute(profile: AncientProfile, profession = profile.p
 export function chooseAdvancement(profile: AncientProfile, routeId: string) {
  const profession = profile.profession || '';
  const route = ADVANCED_PROFESSIONS[profession]?.find(candidate => candidate.id === routeId);
- if (!route || !isHoly(profile) || profile.consumedJobs?.[profession]) return false;
+ if (isFusionJob(profession) || !route || !isHoly(profile) || profile.consumedJobs?.[profession]) return false;
  const fused = isFusionJob(profession);
  if (fused && !profile.fusedJobs?.[profession]) return false;
  const records = profile.advancements ??= {};
@@ -76,4 +76,24 @@ export function awardAdvancementMastery(profile: AncientProfile, routeId: string
  }
  if (skill.level >= 100) skill.points = 0;
  return skill.level > before;
+}
+
+// Returns progress to the base fusion kit without spending scrolls or changing profession ownership.
+export function retireFusionAdvancements(profile:AncientProfile){
+ let changed=false;
+ for(const [job,progress] of Object.entries(profile.advancements||{})){
+  if(!isFusionJob(job))continue;
+  if(progress.route){
+   for(const id of PROFESSIONS[job].skills){
+    const trained=progress.skills?.[SKILLS[id].key];
+    if(!trained||!Number.isSafeInteger(trained.level)||trained.level<1||trained.level>100)continue;
+    const saved=profile.mastery?.[id];
+    const points=trained.level>=100?0:Math.floor(Math.max(0,Number.isFinite(trained.points)?trained.points:0)*masteryCost(id,trained.level)/advancementCost(trained.level));
+    if(!saved||saved.level<trained.level)(profile.mastery??={})[id]={level:trained.level,points};
+    else if(saved.level===trained.level)saved.points=Math.max(saved.points,points);
+   }
+  }
+  delete profile.advancements![job];changed=true;
+ }
+ return changed;
 }

@@ -95,10 +95,11 @@ fusionPlayer.ascension={day:'',attempts:0,jobs:{lightning:{holy:true,permit:true
 server.save('fusioncheck',fusionPlayer);
 assert((await cmd('fusioncheck','chooseAdvancement',{route:'stormcaller'})).ok);
 assert((await cmd('fusioncheck','fuseProfession',{job:'chrono'})).ok);
-assert((await cmd('fusioncheck','chooseAdvancement',{route:'time-weaver'})).ok);
+assert.equal((await cmd('fusioncheck','chooseAdvancement',{route:'time-weaver'})).ok,false);
 const fusionSaved=server.read('fusioncheck');
 assert.equal(fusionSaved.advancements.lightning.route,'stormcaller');
-assert.equal(fusionSaved.advancements.chrono.route,'time-weaver');
+assert.equal(fusionSaved.advancements.chrono,undefined);
+assert(fusionSaved.fusedJobs.chrono);
 const switching=server.read('switching');
 switching.level=80;
 switching.profession='lightning';

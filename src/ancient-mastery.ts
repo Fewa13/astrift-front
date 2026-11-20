@@ -1,10 +1,11 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import type {AncientProfile} from './ancient-rules';
 
-export const FUSION_DAMAGE_MULTIPLIER=2.8;
+export const FUSION_DAMAGE_SCALE=.85;
+export const FUSION_DAMAGE_MULTIPLIER=2.8*FUSION_DAMAGE_SCALE;
 const fusionDamageByJob: Record<string,number>={elementalist:3.2,voidsword:3.5,abyssal:3.35,chrono:3.15};
 export function fusionDamageMultiplier(job?:string){
- return fusionDamageByJob[job||'']??FUSION_DAMAGE_MULTIPLIER;
+ return fusionDamageByJob[job||'']===undefined?FUSION_DAMAGE_MULTIPLIER:Math.round(fusionDamageByJob[job||'']*FUSION_DAMAGE_SCALE*10000)/10000;
 }
 
 const growth: Record<string,number> = {

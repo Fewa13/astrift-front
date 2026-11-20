@@ -2,7 +2,7 @@ import {SKILL_CONTACT} from './ancient-skill-flight';
 import {ancientHitbox} from './ancient-hitboxes';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {isAncientBoss} from './ancient-boss';
-import {ADVANCEMENT_REWORK as RW,advancementCastKey} from './ancient-advanced-professions';
+import {ADVANCEMENT_REWORK as RW,ADVANCED_PROFESSIONS,advancementCastKey} from './ancient-advanced-professions';
 import {holyPower} from './ancient-ascension';
 import {FUSION_DAMAGE_MULTIPLIER,fusionDamageMultiplier,masteryLevel,releasableSkeletons,skeletonLimit,skeletonSlots,skeletonAttackEfficiency,skeletonFormation} from './ancient-mastery';
 import {advancementRoute} from './ancient-advancement-progress';
@@ -47,7 +47,7 @@ const castRoutes: Readonly<Record<string,CastRoute>> = {
  wildfire:(a,p,k,i,d,c,n,l)=>castFireAdvancement(a,p,'wildfire',k,i,d,c,n,l),
  hellfire:(a,p,k,i,d,c,n,l)=>castFireAdvancement(a,p,'hellfire',k,i,d,c,n,l),
 };
-export const ADVANCEMENT_COMBAT_ROUTES = Object.freeze(Object.keys(castRoutes));
+export const ADVANCEMENT_COMBAT_ROUTES = Object.freeze(Object.keys(castRoutes).filter(id=>Object.values(ADVANCED_PROFESSIONS).some(routes=>routes.some(route=>route.id===id))));
 
 export function castAdvancement(actor: SkillActor, profile: AncientProfile, id: string, direction: unknown, context: SkillContext, now: number) {
  reconcileAdvancementRuntime(actor,profile,context.map);

@@ -11,7 +11,7 @@ const SQL=await initSqlJs();
 function seed(job,route){const p=M.newAncientProfile();p.level=150;p.profession=job;p.skills=Object.fromEntries(M.PROFESSIONS[job].skills.map(id=>[id,5]));p.ascension={jobs:{[job]:{holy:true}},attempts:0,day:''};if(job==='chrono'){p.fusedJobs={[job]:true};p.mastery=Object.fromEntries(M.PROFESSIONS[job].skills.map(id=>[id,{level:5,points:0}]))}assert(M.chooseAdvancement(p,route));const db=new SQL.Database();db.run('CREATE TABLE ancient_profiles(name TEXT PRIMARY KEY,data TEXT NOT NULL)');db.run('INSERT INTO ancient_profiles VALUES(?,?)',['admintest',JSON.stringify(p)]);const bytes=Buffer.from(db.export()).toString('base64');db.close();return bytes;}
 const browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-webgl','--use-gl=angle','--use-angle=swiftshader']});
 try{
- for(const [job,route] of [['stonewright','veinforger'],['chrono','time-sovereign']]){
+ for(const [job,route] of [['stonewright','veinforger']]){
   const context=await browser.newContext({viewport:{width:1200,height:800}}),page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
   await page.addInitScript(bytes=>{localStorage.setItem('Astrift-DevBuildAncient.activation.1','local-regression-fixture');localStorage.setItem('astrift.dev.database.v1',bytes)},seed(job,route));
@@ -27,14 +27,8 @@ try{
    await page.waitForFunction(()=>window.qaSocket.peer.deserializeAttachment()?.skillRuntime?.advancedStone?.spikes.length===2);await send('C');
    await page.waitForFunction(()=>window.qaSocket.peer.deserializeAttachment()?.skillRuntime?.advancedStone?.formation?.points.length>0);
    await page.screenshot({path:'/tmp/astrift-earth-rework.png'});await send('Z');await page.waitForFunction(()=>window.qaSocket.peer.deserializeAttachment()?.skillRuntime?.advancedStone?.spikes.length===0);
-  }else{
-   await send('Z');await page.waitForFunction(()=>window.qaSocket.peer.deserializeAttachment()?.skillRuntime?.advancedTime?.rewind);
-   await page.evaluate(()=>{const a=window.qaSocket.peer.deserializeAttachment();a.hp=Math.floor(a.hp*.5);window.qaSocket.peer.serializeAttachment(a)});await send('Z');
-   await page.waitForFunction(()=>window.qaSocket.peer.deserializeAttachment()?.skillRuntime?.advancedTime?.charges===1);
-   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>/Life Anchor \(1\)|生命锚点 \(1\)/.test(b.textContent)));
-   await page.screenshot({path:'/tmp/astrift-life-anchor-rework.png'});await send('X');await page.waitForFunction(()=>window.qaSocket.peer.deserializeAttachment()?.skillRuntime?.advancedTime?.charges===0);
   }
   assert.deepEqual(errors,[],route);await context.close();
  }
- console.log('PASS: real Dev HTML renders earth placement/link/detonation and Life Anchor charged HUD, consumes charges, and has no browser runtime errors.');
+ console.log('PASS: real Dev HTML renders earth placement/link/detonation, and has no browser runtime errors.');
 }finally{await browser.close()}

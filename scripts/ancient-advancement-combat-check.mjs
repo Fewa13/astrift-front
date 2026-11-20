@@ -255,8 +255,8 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
  assert.deepEqual(defeated.skillRuntime.cooldowns,saved.cooldowns);
 
 }
-assert.equal(verified,104);
-console.log('PASS: all 104 skill slots cast through the authoritative combat entry and emit registered visuals.');
+assert.equal(verified,72);
+console.log('PASS: all 72 skill slots cast through the authoritative combat entry and emit registered visuals.');
 
 {
  const profile=newAncientProfile();
@@ -291,9 +291,10 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  assert.equal(profile.profession,job);
  const saved=JSON.parse(JSON.stringify(profile));
  for(const source of sources)assert.equal(chooseAncientProfession(saved,source),'职业不可用');
- if(!ADVANCED_PROFESSIONS[job])continue;
- assert(chooseAdvancement(saved,ADVANCED_PROFESSIONS[job][1].id),job);
- for(const key of ADVANCEMENT_KEYS)assert.deepEqual(saved.advancements[job].skills[key],{level:1,points:0});
+ assert.equal(ADVANCED_PROFESSIONS[job],undefined);
+ assert.equal(chooseAdvancement(saved,'riftlord'),false);
+ assert.equal(saved.profession,job);
+ assert(saved.fusedJobs[job]);
 }
 
 {
@@ -425,15 +426,6 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  assert.equal(safety.actor.x,0,'automatic rewind returns to the recorded position');
  assert.equal(safety.actor.skillRuntime.cooldowns.rewind,rewindCooldown);
  assert.equal(safety.actor.skillRuntime.fusion.rewind,undefined);
-
- const weaver=fixture('chrono',{});
- weaver.profile.advancements={chrono:{route:'time-weaver',skills:Object.fromEntries([...('XQZC')].map(key=>[key,{level:8,points:0}]))}};
- weaver.actor.advancement='time-weaver';
- weaver.monsters.pop();
- assert.equal(weaver.cast('advanced:Q',now),null,'weaver can attack a single boss without a second enemy');
- assert.equal(weaver.cast('advanced:Z',now+1),null);
- assert(weaver.actor.skillRuntime.cooldowns['advanced:Z']>now,'weaver movement starts its cooldown on the first cast');
- assert.equal(weaver.cast('advanced:Z',now+2),'技能冷却中');
 
  const chrono=fixture('chrono',{0:passive});
  assert.equal(chrono.cast('rewind',now),null);

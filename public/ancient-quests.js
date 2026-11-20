@@ -8,7 +8,7 @@ import { BESTIARY_HUNTS, bestiaryQuestSteps } from "./ancient-bestiary-quests.js
 import { BLIGHT_NPCS, BLIGHT_QUESTS } from "./ancient-blight-quests.js";
 import { ANCIENT_SECRETS, SECRET_ORIGINS, secretLocation } from "./ancient-secrets.js";
 import { blocked, ancientMapHeight, tribeCompactZ, gainXP, xpNeeded, xpRewardBase } from "./ancient-rules.js";
-import { PROFESSIONS, SKILLS, hasSkillBook, skillBook } from "./ancient-skills.js";
+import { isFusionJob, PROFESSIONS, SKILLS, hasSkillBook, skillBook } from "./ancient-skills.js";
 const QUEST_NPCS = {
   gruk: { name: "\u683C\u9C81\u514B", en: "Gruk", map: "tribe", x: -10, z: 14, role: ["\u90E8\u843D\u5B88\u671B\u8005", "Tribal Watchkeeper"] },
   tok: { name: "\u6258\u514B", en: "Tok", map: "tribe", x: -8, z: 212, role: ["\u730E\u9053\u5F15\u8DEF\u4EBA", "Hunting Trail Guide"] },
@@ -359,7 +359,7 @@ function questRewardInfo(p, q) {
 }
 function questSkillBook(p, q) {
   const job = p.profession;
-  if (!job || p.advancements?.[job]?.route) return;
+  if (!job || isFusionJob(job) || p.advancements?.[job]?.route) return;
   const index = q.reward?.qBook ? 0 : q.id === "tok-second" ? 1 : q.id === "tok-third" ? 2 : -1;
   const id = PROFESSIONS[job]?.skills[index];
   if (id && hasSkillBook(id)) return skillBook(id);

@@ -1,8 +1,9 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const FUSION_DAMAGE_MULTIPLIER = 2.8;
+const FUSION_DAMAGE_SCALE = 0.85;
+const FUSION_DAMAGE_MULTIPLIER = 2.8 * FUSION_DAMAGE_SCALE;
 const fusionDamageByJob = { elementalist: 3.2, voidsword: 3.5, abyssal: 3.35, chrono: 3.15 };
 function fusionDamageMultiplier(job) {
-  return fusionDamageByJob[job || ""] ?? FUSION_DAMAGE_MULTIPLIER;
+  return fusionDamageByJob[job || ""] === void 0 ? FUSION_DAMAGE_MULTIPLIER : Math.round(fusionDamageByJob[job || ""] * FUSION_DAMAGE_SCALE * 1e4) / 1e4;
 }
 const growth = {
   raiseSkeleton: 0.055,
@@ -61,6 +62,7 @@ function awardMastery(p, id, points) {
 }
 export {
   FUSION_DAMAGE_MULTIPLIER,
+  FUSION_DAMAGE_SCALE,
   awardMastery,
   fusionDamageMultiplier,
   masteryCost,

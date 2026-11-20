@@ -8,7 +8,7 @@ import {BESTIARY_HUNTS,bestiaryQuestSteps} from './ancient-bestiary-quests.js';
 import {BLIGHT_NPCS,BLIGHT_QUESTS} from './ancient-blight-quests.js';
 import {ANCIENT_SECRETS,SECRET_ORIGINS,secretLocation} from './ancient-secrets.js';
 import {blocked,ancientMapHeight,tribeCompactZ,gainXP,xpNeeded,xpRewardBase,type AncientProfile} from './ancient-rules.js';
-import {PROFESSIONS,SKILLS,hasSkillBook,skillBook} from './ancient-skills.js';
+import {isFusionJob,PROFESSIONS,SKILLS,hasSkillBook,skillBook} from './ancient-skills.js';
 export type QuestState={step:number;count:number;revision?:number};
 type Text=[string,string];
 type Reward={unlockPurification?:boolean;xp?:number;xpFraction?:number;coins?:number;materials?:Record<string,number>;potions?:Record<string,number>;qBook?:boolean};
@@ -255,7 +255,7 @@ export function questText(text:Text,p:AncientProfile,english=false){const job=p.
 export function questRewardInfo(p:AncientProfile,q:QuestStep){const r=q.reward,result:Reward=r?.xpFraction?{...r,xp:Math.max(1,Math.floor(xpRewardBase(p.level)*r.xpFraction))}:{...r};if(q.kind==='kill'||q.patrol?.last){result.coins=(result.coins||0)+Math.min(100,Math.max(2,p.level*2));if((q.count||0)>=20||q.patrol?.last){const potion=p.level<30?'minor':p.level<70?'medium':p.level<100?'major':'superior';result.potions={...result.potions,[potion]:(result.potions?.[potion]||0)+1}}}if(result.potions){const order=['minor','medium','major','superior','ultimate'],upgraded:Record<string,number>={};for(const [key,count]of Object.entries(result.potions)){const index=order.indexOf(key),next=index<0?key:order[Math.min(index+1,order.length-1)];upgraded[next]=(upgraded[next]||0)+count}result.potions=upgraded}return Object.keys(result).length?result:undefined}
 export function questSkillBook(p:AncientProfile,q:QuestStep){
  const job=p.profession;
- if(!job||p.advancements?.[job]?.route)return;
+ if(!job||isFusionJob(job)||p.advancements?.[job]?.route)return;
  const index=q.reward?.qBook?0:q.id==='tok-second'?1:q.id==='tok-third'?2:-1;
  const id=PROFESSIONS[job]?.skills[index];
  if(id&&hasSkillBook(id))return skillBook(id);

@@ -46,35 +46,6 @@ function setup(job,route){
  g.enemy('third',6,16);g.a.x=3;g.a.z=10;g.a.skillRuntime.cooldowns['advanced:Z']=0;
  assert.equal(g.cast('Z',N+100),null);assert.equal(g.a.skillRuntime.advancedFire.embers.third,undefined,'copied burn cannot hop again');
 }
-// Sword hits inside the domain are amplified and queue a nonrecursive execution exactly 1s later.
-{
- const f=setup('voidsword','riftlord'),m=f.enemy('target');assert.equal(f.cast('Z'),null);f.tick(N+1);
- assert.equal(f.cast('X',N+100),null);const echo=m.strikes.find(v=>v.skillId==='advancement:riftlord:Z:proc');assert(echo);assert.equal(echo.at,N+1100);
- const first=f.hits.find(h=>h.id==='advancement:riftlord:X');assert(Math.abs(echo.damage/first.v-2.4)<1e-8);
- const n=m.strikes.length;f.tick(N+1100);assert(m.strikes.length<n,'echo does not create another echo');
- f.a.x=50;f.tick(N+1300);assert(!f.a.skillRuntime.effects.riftDomain);
-}
-// Life Anchor records an aimed position; damaged return heals and stacks charges. Offensive casts consume once.
-{
- const f=setup('chrono','time-sovereign');f.enemy('target');
- assert.equal(f.cast('Z'),null);const point={...f.a.skillRuntime.advancedTime.rewind};assert(point.z>20&&point.z<60);
- f.a.hp=5000;assert.equal(f.cast('Z',N+500),null);assert.equal(f.a.hp,10000);assert.equal(f.a.skillRuntime.advancedTime.charges,1);assert.equal(f.a.z,point.z);
- f.a.z=10;assert.equal(f.cast('Z',N+24000),null);f.a.hp=4000;assert.equal(f.cast('Z',N+24500),null);assert.equal(f.a.skillRuntime.advancedTime.charges,2);
- f.a.z=10;const control=setup('chrono','time-sovereign');control.enemy('target');assert.equal(control.cast('X',N+25000),null);assert.equal(f.cast('X',N+25000),null);
- assert(Math.abs(f.hits.at(-1).v/control.hits.at(-1).v-3)<1e-8);assert.equal(f.a.skillRuntime.advancedTime.charges,0);
- const g=setup('chrono','time-sovereign');g.enemy('target');assert.equal(g.cast('Z'),null);assert.equal(g.cast('Z',N+500),null);
- assert.equal(M.skillSpeedMultiplier(g.a,N+600),1.2);assert.equal(M.skillDamageMultiplier(g.a,N+600),1.2);
- assert.equal(M.aimGroundPoint(g.a,[NaN,0,1],g.c,50),undefined);
-}
-// Time field affects later entrants including bosses, stops movement, scales random bounds, and echoes only on real attacks.
-{
- const f=setup('chrono','time-sovereign');const m=f.enemy('boss',0,16,'chief');assert.equal(f.cast('C'),null);f.tick(N+1);
- assert.equal(M.monsterSpeed(m,N+2),0);assert(m.timeDistortion);
- const n=f.enemy('late',2,16);f.tick(N+1100);assert(n.timeDistortion,'new entrants are affected');
- const before=m.strikes.length;f.c.damage(m,100,undefined,'weapon');assert.equal(m.strikes.length,before+1);
- f.tick(N+1700);assert(m.strikes.length<=before);
- assert(M.ADVANCEMENT_REWORK.verdict.min(20)>M.ADVANCEMENT_REWORK.verdict.min(5));
-}
 // Earth placement works without targets; limit scales, contact ticks, connected spikes and detonation consume correctly.
 {
  const f=setup('stonewright','veinforger');
@@ -97,17 +68,16 @@ for(const key of ['X','Q','Z','C']){
  assert(f.hits.length>0,key+' has independent damage');if(key==='Z'){f.tick(N+800);assert(f.hits.length>=2)}
  if(key==='C'){const before=f.hits.length;f.tick(N+1000);f.tick(N+7000);assert(f.hits.length>before)}
 }
-console.log('PASS: reworked storms, single-hop burn explosions, sword executions, Life Anchor branches and charges, late-entry time fields, earth placement/cap/ticks/link/explosion/three-target piercing, and every Boundary Cutter skill.');
+console.log('PASS: reworked storms, single-hop burn explosions, earth placement/cap/ticks/link/explosion/three-target piercing, and every Boundary Cutter skill.');
 
 // Remaining audited skills now have independent value without forcing movement or incoming hits.
 {
  const f=setup('ice','crystalist');f.enemy('target');assert.equal(f.cast('Z'),null);f.tick(N+100);assert(f.hits.some(h=>h.id==='advancement:crystalist:Z'));
  const h=setup('curse','hexweaver');h.enemy('target');assert.equal(h.cast('Z'),null);assert(h.hits.length>0);assert(h.a.skillRuntime.advancedCurse.hexes.target);
  const shadow=setup('shadowblade','shadowhunter');shadow.enemy('target');assert.equal(shadow.cast('Q'),null);const position={x:shadow.a.x,z:shadow.a.z};assert(shadow.hits.length>0);shadow.tick(N+6000);assert.equal(shadow.a.x,position.x);assert.equal(shadow.a.z,position.z);assert(!shadow.a.skillRuntime.advancedShadow.anchor);
- const duel=setup('voidsword','riftduelist');duel.enemy('target');assert.equal(duel.cast('Z',N,[0,0,1]),null);duel.tick(N+2500);assert(duel.hits.some(h=>h.id==='advancement:riftduelist:Z'));
  const summon=setup('summoner','spiritcaller');assert.equal(summon.cast('X'),null);const pet=summon.a.skillRuntime.summon;pet.hp=pet.maxHp*.25;assert.equal(summon.cast('C',N+100),null);assert(pet.hp>pet.maxHp*.5);assert.equal(summon.a.skillRuntime.advancedSummon.revivalUntil,pet.until);pet.hp=0;summon.tick(N+200);assert(Math.abs(pet.hp/pet.maxHp-.3)<.001);assert(!summon.a.skillRuntime.advancedSummon.revivalUntil);
 }
-console.log('PASS: Frost field damage, independent plague opener, optional shadow return, unhit riposte, and immediate guardian healing with a lifetime single revival.');
+console.log('PASS: Frost field damage, independent plague opener, optional shadow return, and immediate guardian healing with a lifetime single revival.');
 
 // Exercise the real server entry too: queued effects and potion gates must not exist only in the fixture.
 {
@@ -117,11 +87,7 @@ console.log('PASS: Frost field damage, independent plague opener, optional shado
  const rng=Object.create(Math);rng.random=()=>0;
  vm.runInNewContext(out.outputFiles[0].text,{module:mod,exports:mod.exports,Math:rng,Date,crypto,URL,URLSearchParams,Request,Response,AbortController,structuredClone,require:()=>({DurableObject:class{constructor(ctx,env){this.ctx=ctx;this.env=env}}})});
  const server=new mod.exports.AncientWorld({storage:{sql,setAlarm:async()=>{},transactionSync:f=>f()},getWebSockets:()=>peers},{});
- const f=setup('voidsword','riftlord');f.a.level=150;f.a.map='tribe';f.a.seen=Date.now();server.save('tester',f.p);
- let attachment=f.a;const ws={readyState:1,deserializeAttachment:()=>attachment,serializeAttachment:p=>attachment=p,send(){}};peers.push(ws);
- f.cast('Z',Date.now());const m=f.enemy('server-target');const now=Date.now();
- const actual=server.damageMonster(ws,f.a,m,100,'body','tester','skill','advancement:riftlord:X',[m]);
- assert(actual>100);assert(m.strikes.some(hit=>hit.skillId==='advancement:riftlord:Z:proc'&&hit.at>=now+1000));
+ let attachment;const ws={readyState:1,deserializeAttachment:()=>attachment,serializeAttachment:p=>attachment=p,send(){}};peers.push(ws);
  const storm=setup('lightning','stormcaller');Object.assign(storm.a,{level:150,map:'tribe',seen:Date.now()});server.save('tester',storm.p);attachment=storm.a;
  const primary=storm.enemy('primary'),near=storm.enemy('nearby',2,16);storm.cast('Z',Date.now());storm.tick(Date.now()+1);
  storm.a.skillRuntime.stormcaller.attraction={primary:{until:Date.now()+10000,level:5}};
@@ -131,5 +97,5 @@ console.log('PASS: Frost field damage, independent plague opener, optional shado
  // Use an actual potion id from the profile's inventory, avoiding any production account.
  const denied=await server.command('tester','usePotion',{id:'minor'});
  assert(!denied.ok);assert(/时间扭曲/.test(denied.error));
- db.close();console.log('PASS: authoritative server amplifies sword hits, queues spatial executions, and produces attraction criticals with splash.');
+ db.close();console.log('PASS: authoritative server produces attraction criticals with splash and enforces potion gates.');
 }
