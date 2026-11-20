@@ -997,7 +997,8 @@ function castSwordAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
    c.fx('linebreaker-break',center.x,center.z,6,{source:origin,target:target.id});
   }
  }
- r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
+ const cooldownStart=route==='blademaster'&&key==='X'?state.flightUntil!:route==='blademaster'&&key==='Z'?state.formUntil!:now;
+ r.cooldowns[id]=cooldownStart+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
@@ -1025,7 +1026,7 @@ export function tickAdvancedSword(a:SkillActor,p:AncientProfile,c:SkillContext,n
    const m=c.monsters.find(m=>m.id===shot.target&&m.hp>0);if(!m||now>(shot.until||0))return false;
    let ticks=0;while((shot.next||0)<=now&&ticks++<8){c.damage(m,shot.power,undefined,shot.skill);shot.next=(shot.next||now)+500;}return true;
   }
-  const step=Math.min(shot.remaining,36*Math.max(0,now-shot.last)/1000),end={x:shot.x+shot.direction[0]*step,y:shot.y+shot.direction[1]*step,z:shot.z+shot.direction[2]*step};
+  const step=Math.min(shot.remaining,(shot.kind==='slash'?72:36)*Math.max(0,now-shot.last)/1000),end={x:shot.x+shot.direction[0]*step,y:shot.y+shot.direction[1]*step,z:shot.z+shot.direction[2]*step};
   const start={x:shot.x,y:shot.y-1,z:shot.z};
   const hit=bladeLane(c,start,{...end,y:end.y-1},shot.kind==='net'?(shot.small?1.25:3):1.6).filter(m=>Math.abs((firePoint(c,m).y+ancientHitbox(m.kind).height*.5)-(shot.y+end.y)*.5)<=ancientHitbox(m.kind).height*.5+2).sort((m,n)=>Math.hypot(m.x-shot.x,m.z-shot.z)-Math.hypot(n.x-shot.x,n.z-shot.z))[0];
   if(hit){
