@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 const SKILL_CONTACT = { aimPadding: 0.75, areaPadding: 0.55, lanePadding: 0.45, slashRadius: 2.8, netFlightRadius: 3, netRadius: 5, smallNetRadius: 2.5, netDuration: 4e3, smallNetDuration: 2e3, netTick: 500 };
 const families = {
-  warrior: ["blood-bolt", "war-ring", "war-spear", "war-comet"],
+  warrior: ["war-crescent", "war-ring", "war-lance", "war-comet"],
   summoner: ["soul-orb", "soul-ring", "soul-sigil", "soul-comet"],
   fire: ["flame-orb", "flame-ring", "flame-comet", "meteor-core"],
   ice: ["ice-shard", "ice-lance", "frost-ring", "ice-comet"],

@@ -2,7 +2,7 @@
 // Spell-only tolerances: firearm/body hitboxes remain unchanged.
 export const SKILL_CONTACT = {aimPadding:.75,areaPadding:.55,lanePadding:.45,slashRadius:2.8,netFlightRadius:3,netRadius:5,smallNetRadius:2.5,netDuration:4000,smallNetDuration:2000,netTick:500};
 const families:Record<string,readonly string[]>={
- warrior:['blood-bolt','war-ring','war-spear','war-comet'],
+ warrior:['war-crescent','war-ring','war-lance','war-comet'],
  summoner:['soul-orb','soul-ring','soul-sigil','soul-comet'],
  fire:['flame-orb','flame-ring','flame-comet','meteor-core'],
  ice:['ice-shard','ice-lance','frost-ring','ice-comet'],

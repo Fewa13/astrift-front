@@ -962,7 +962,7 @@ function launchSword(a:SkillActor,c:SkillContext,state:SwordAdvancementRuntime,d
  const shots=state.projectiles??=[];if(shots.length>=24)return false;
  const visualId=a.name+':'+now+':'+shots.length;
  shots.push({visualId,kind,x:a.x,y:a.y-.2,z:a.z,direction:direction.slice(),remaining:range,last:now,power,skill,small});
- c.fx(kind==='net'?'blademaster-formation':'blademaster-recall',a.x+direction[0]*range,a.z+direction[2]*range,small?1.25:kind==='net'?3:2,{target:'',phase:kind==='net'?'blade-net':'blade-wave',projectile:visualId,direction:direction.slice(),source:{x:a.x,y:a.y-.2,z:a.z},level:range});
+ c.fx(kind==='net'?'blademaster-formation':'blademaster-recall',a.x+direction[0]*range,a.z+direction[2]*range,small?1.25:kind==='net'?SKILL_CONTACT.netFlightRadius:SKILL_CONTACT.slashRadius,{target:'',phase:kind==='net'?'blade-net':'blade-wave',projectile:visualId,direction:direction.slice(),source:{x:a.x,y:a.y-.2,z:a.z},level:range});
  return true;
 }
 export function swordFormAttack(a:SkillActor,p:AncientProfile,direction:unknown,c:SkillContext,now:number){

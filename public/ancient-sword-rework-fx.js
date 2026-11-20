@@ -1,3 +1,4 @@
+import {SKILL_CONTACT} from './ancient-skill-flight.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as THREE from './three.module.js';
 import {flyingSwordGeometry,flyingSwordMaterial} from './ancient-flying-sword.js';
@@ -8,7 +9,7 @@ for(let i=-8;i<=8;i++){
 }
 const groundNetGeometry=new THREE.BufferGeometry();groundNetGeometry.setAttribute('position',new THREE.Float32BufferAttribute(groundNetVertices,3));
 const groundNetRing=new THREE.TorusGeometry(1,.008,4,64);
-export function createGroundBladeNet(radius=5){
+export function createGroundBladeNet(radius=SKILL_CONTACT.netRadius){
  const group=new THREE.Group();group.name='ground-blade-net';group.userData.radius=radius;
  const lines=new THREE.LineSegments(groundNetGeometry,new THREE.LineBasicMaterial({color:0x45d995,transparent:true,opacity:.6,depthWrite:false}));group.add(lines);
  const rim=new THREE.Mesh(groundNetRing,new THREE.MeshBasicMaterial({color:0x8feab8,transparent:true,opacity:.8,depthWrite:false}));rim.rotation.x=-Math.PI/2;rim.position.y=.03;group.add(rim);
@@ -33,11 +34,12 @@ export function createSwordReworkFX(scene,camera){
   if(d.phase==='flight-impact')return true;
   if(d.phase==='blade-field'){const group=createGroundBladeNet(d.radius||5);group.position.set(d.x,d.source?.y??.1,d.z);scene.add(group);active.push({projectile:d.projectile,group,at:performance.now(),cut:true,ground:true,life:(d.level||4)*1000});while(active.length>(camera.userData.renderPressure?12:28))release(active.shift());return true;}
   if(!['blade-net','blade-wave','blade-cut'].includes(d.phase))return false;
+  const slashRadius=SKILL_CONTACT.slashRadius;
   const start=d.source||{x:d.x,y:1,z:d.z},cut=d.phase==='blade-cut',isNet=d.phase==='blade-net'||cut;
   const group=new THREE.Group(),material=new THREE.LineBasicMaterial({color:isNet?0x65ffae:0xc2ffe9,transparent:true,opacity:.9,depthWrite:false,blending:THREE.AdditiveBlending});
-  const shape=isNet?new THREE.LineSegments(net,material):new THREE.Mesh(wave,new THREE.MeshBasicMaterial({color:0x68ff9b,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending}));if(!isNet){material.dispose();shape.scale.set(2.8,2.8,.6);shape.rotation.z=-.6;}group.add(shape);
+  const shape=isNet?new THREE.LineSegments(net,material):new THREE.Mesh(wave,new THREE.MeshBasicMaterial({color:0x68ff9b,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending}));if(!isNet){material.dispose();shape.scale.set(slashRadius,slashRadius,.6);shape.rotation.z=-.6;}group.add(shape);
   if(isNet){const inner=new THREE.LineSegments(net,material.clone());inner.scale.setScalar(.96);inner.rotation.z=Math.PI/4;group.add(inner);group.scale.setScalar((d.radius||3)/3);}
-  else{for(let i=0;i<3;i++){const echo=new THREE.Mesh(wave,shape.material.clone());echo.material.color.set(i?0x22ed70:0xe5ffed);echo.position.z=-i*.32;echo.rotation.z=-.6+i*.035;echo.scale.set(2.8-i*.18,2.8-i*.18,i?.32:.16);group.add(echo);}}
+  else{for(let i=0;i<3;i++){const echo=new THREE.Mesh(wave,shape.material.clone());echo.material.color.set(i?0x22ed70:0xe5ffed);echo.position.z=-i*.32;echo.rotation.z=-.6+i*.035;echo.scale.set(slashRadius-i*.18,slashRadius-i*.18,i?.32:.16);group.add(echo);}}
   const range=d.level||60,dx=d.x-start.x,dz=d.z-start.z,length=Math.hypot(dx,dz),direction=new THREE.Vector3(dx,0,dz).normalize();
   // Horizontal range determines elevation from the actual camera pitch for local casts.
   const owner=camera.userData.localName,local=d.owner===owner;
