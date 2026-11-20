@@ -51,6 +51,12 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
   let now=100000+index*1200+(route.id==='paladin'&&key==='C'?8000:0);const tag='advanced:'+key;
   resetPosition();
   if(route.id==='abyss-king'&&key==='C')actor.skillRuntime.advancedAbyss.energy=40;
+  if(route.id==='veinforger'&&key==='C'){
+   assert.equal(castAncientSkill(actor,profile,'advanced:X',aim,context,now),null);
+   now+=1300;
+   assert.equal(castAncientSkill(actor,profile,'advanced:X',aim,context,now),null);
+   now++;
+  }
   const before=events.length;
   const result=castAncientSkill(actor,profile,tag,route.id==='paladin'&&key==='C'?bossAim:aim,context,now);
   assert.equal(result,null,route.id+' '+key+': '+result);

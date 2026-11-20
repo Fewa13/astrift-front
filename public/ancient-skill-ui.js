@@ -239,7 +239,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    for(const [index,key] of ADVANCEMENT_KEYS.entries()){
     const skill=p.advancements[p.profession].skills[key],goal=masteryGoal(skill.level);
     const item=el('section','',list);item.className='weaponCard ancientSkillCard';
-    el('strong',ancientKeyLabel('Key'+key,en())+' · '+L(...route.skills[index]),item);
+    el('strong',ancientKeyLabel('Key'+key,en())+' · '+L(...route.skills[index])+(route.id==='time-sovereign'&&key==='Z'?' ('+(getPlayer()?.skillRuntime?.advancedTime?.charges||0)+')':''),item);
     el('small',L('技能等级','Skill level')+' · '+skill.level,item);
     el('p',advancementDescription(route.id,index,en()),item);
     if(skill.level<100){
@@ -313,7 +313,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    const ready=route.id==='time-sovereign'&&key==='Z'&&(runtime?.advancedTime?.rewind?.until||0)>now||key==='Q'&&(route.id==='shadowhunter'&&runtime?.advancedShadow?.anchor||route.id==='voltstalker'&&(runtime?.volt?.followupUntil||0)>now);
    const flight=route.id==='blademaster'?runtime?.advancedSword:undefined;
    const riding=(flight?.flightUntil||0)>now;
-   const name=L(...route.skills[index]);
+   const name=L(...route.skills[index])+(route.id==='time-sovereign'&&key==='Z'?' ('+(runtime?.advancedTime?.charges||0)+')':'');
    const seconds=riding&&key==='X'?Math.ceil((flight.flightUntil-now)/1000):key==='Z'&&(flight?.formUntil||0)>now?Math.ceil((flight.formUntil-now)/1000):cd;
    b.textContent=ancientKeyLabel('Key'+key,en())+' · '+name+(seconds&&!ready?' · '+seconds+'s':'');
    b.disabled=riding&&key==='X'||(cd>0&&!ready);

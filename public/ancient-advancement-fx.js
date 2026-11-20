@@ -9,31 +9,31 @@ const effects={
  spiritcaller:[0x80ffe0,0xd3fff3,{ascendant:'wings',domain:'ward',guardian:'portal',rebirth:'halo'}],
  beastlord:[0xc7a46c,0xf6f0b0,{bind:'portal',hunt:'slash',guard:'ward',pounce:'heavy'}],
  necromancer:[0x97fd8b,0xcdb2ff,{fusion:'heavy',consume:'bind',domain:'ward',raise:'spires',release:'portal',strike:'slash'}],
- stormcaller:[0xa1d9ff,0xf1f8ff,{arc:'arc',heavenfall:'storm',prison:'ward',rod:'spires',seal:'pillar'}],
+ stormcaller:[0xa1d9ff,0xf1f8ff,{arc:'arc',heavenfall:'storm',prison:'lightningfield',rain:'lightningfield',critical:'arc',rod:'spires',seal:'pillar'}],
  voltstalker:[0x7658ff,0xb0e8ff,{break:'cross',counter:'arc',dash:'trail',guard:'halo',spike:'bolt'}],
  crystalist:[0x75f1ff,0xd1a6ff,{bolt:'bolt',collapse:'shatter',field:'spires',fracture:'shatter',refraction:'ray'}],
  winterwarden:[0x94dfff,0xedfcff,{lock:'trail',rampart:'wall',shatter:'shatter',spear:'bolt',veil:'ward'}],
  wildfire:[0xff6a25,0xffde72,{confluence:'fire',front:'trail',meteor:'meteor',seed:'bolt'}],
- hellfire:[0xeb395c,0xffad62,{bone:'pillar',brand:'bolt',threads:'ray',undying:'orbital'}],
+ hellfire:[0xeb395c,0xffad62,{bone:'pillar',brand:'bolt',threads:'ray',eruption:'shatter',undying:'orbital'}],
  hexweaver:[0xb46cff,0xff9be7,{collapse:'cross',decay:'bind',plague:'spires',tether:'threads'}],
  pactbinder:[0x9e386e,0xe9c1ff,{brand:'bind',reckoning:'pillar',inverse:'orbital',doom:'ward'}],
  blademaster:[0x58ed9d,0xd4ffe0,{formation:'trail',launch:'bolt',recall:'trail',resonance:'halo',union:'heavy'}],
  linebreaker:[0xebf8a4,0xffca77,{break:'heavy',counter:'slash',fork:'slash',guard:'ward',sunder:'slash',triple:'cross'}],
  shadowhunter:[0x8747d8,0xe9bcff,{flank:'slash',hunt:'cross',mark:'bolt',recall:'trail',swap:'trail',twin:'portal'}],
- boundarycutter:[0xff729e,0xd4b4ff,{grid:'threads',intercept:'trail',return:'slash',throw:'bolt',trigger:'shatter',wire:'ray'}],
+ boundarycutter:[0xff729e,0xd4b4ff,{grid:'threads',intercept:'trail',return:'slash',throw:'bolt',trigger:'shatter',wire:'ray',blade:'slash',assault:'trail',reprise:'cross',execution:'bladefield',pulse:'bladefield',collapse:'bladefield'}],
  mountainguard:[0xdd9851,0xffd4a3,{armor:'orbital',fist:'trail',gate:'wall',peaks:'spires',shatter:'shatter'}],
- veinforger:[0xd5a86b,0xfdb977,{core:'shatter',current:'trail',fracture:'cross',shift:'pillar',spike:'spires'}],
+ veinforger:[0xd5a86b,0xfdb977,{core:'shatter',current:'trail',fracture:'cross',shift:'pillar',spike:'spires',plant:'groundspike',flying:'earthbolt',pierce:'earthburst',link:'groundspike',detonate:'earthburst'}],
  'elemental-god':[0xff9d58,0xa8f3ff,{arc:'arc',brand:'bolt',dominion:'threads',erosion:'bind',eruption:'spires',judgment:'storm',thermal:'shatter'}],
  'elemental-ward':[0x4af2db,0xffe69c,{counter:'trail',equilibrium:'clock',field:'ward',shift:'orbital'}],
- riftlord:[0x8863ff,0xf5d4ff,{cut:'slash',domain:'ward',edge:'cross',finale:'heavy',rear:'slash',return:'portal',twin:'threads'}],
+ riftlord:[0x8863ff,0xf5d4ff,{cut:'slash',domain:'ward',edge:'cross',finale:'heavy',rear:'slash',return:'portal',twin:'threads',strangle:'cross'}],
  riftduelist:[0x6178ff,0xc9deff,{arena:'ward',displace:'trail',guard:'halo',riposte:'slash',sever:'cross'}],
  'abyss-king':[0xc73762,0xffa99c,{brand:'bind',consume:'portal',field:'ward',form:'wings'}],
  'abyss-herald':[0xa14dd2,0x84ffee,{brand:'bind',consume:'orbital',converge:'threads',field:'spires',fracture:'ray'}],
- 'time-sovereign':[0xffda76,0xb6edff,{anchor:'clock',double:'trail',echo:'portal',rewind:'threads',rift:'ray',settle:'shatter',verdict:'clock'}],
+ 'time-sovereign':[0xffda76,0xb6edff,{anchor:'lifeanchor',double:'trail',echo:'portal',rewind:'liferecall',rift:'ray',settle:'shatter',verdict:'timefield',warp:'timefield',strangle:'cross'}],
  'time-weaver':[0x6cf6dd,0xb39dff,{borrow:'trail',invert:'clock',link:'threads',mark:'bind',return:'portal',settle:'shatter'}],
 };
 
-const durations={bolt:520,ray:520,arc:420,slash:530,trail:640,cross:850,heavy:1050,shatter:1050,meteor:1250,storm:1550,
+const durations={groundspike:600,earthbolt:900,earthburst:800,lifeanchor:1100,liferecall:650,timefield:1100,lightningfield:1000,bladefield:950,bolt:520,ray:520,arc:420,slash:530,trail:640,cross:850,heavy:1050,shatter:1050,meteor:1250,storm:1550,
  pillar:1040,orbital:1700,halo:1200,wings:1550,bind:1750,portal:1400,threads:1550,spires:1700,wall:3000,ward:3200,clock:3000,fire:3200};
 const elementalColors={fire:0xff672a,ice:0xa5f0ff,storm:0x9d84ff,earth:0xf4bb71};
 const routes=Object.keys(effects).sort((a,b)=>b.length-a.length);
@@ -107,10 +107,52 @@ export function createAdvancementFX(scene,camera,milliseconds=()=>performance.no
    }
   };
 
+  if(style==='groundspike'){
+   // A grounded physical spike with a restrained edge glow, not a screen-filling pillar.
+   const physical=new THREE.MeshBasicMaterial({color:0x886346,transparent:true,opacity:1,depthWrite:true});materials.push(physical);
+   const tip=new THREE.Mesh(wedge,physical);tip.position.copy(target).addScaledVector(up,.65);tip.scale.set(.35,1.4,.35);group.add(tip);
+   loop(.65,.02,0);loop(.38,.04,1);
+  }else if(style==='earthbolt'){
+   const tip=put(wedge,2,source,.3,1.6,.3);tip.quaternion.setFromUnitVectors(up,high.clone().sub(source).normalize());
+   movers.push({mesh:tip,from:source,to:high,spin:0,arc:0});beam(source,high,.025,0);
+  }else if(style==='earthburst'){
+   loop(radius,.05,0);loop(radius*.45,.08,1);
+   for(let i=0;i<(low?7:14);i++){
+    const angle=i*2.399,from=target.clone(),to=target.clone().add(new THREE.Vector3(Math.cos(angle)*radius*.8,1.2+(i%3)*.4,Math.sin(angle)*radius*.8));
+    const rock=put(stone,2,from,.23,.32,.24);movers.push({mesh:rock,from,to,spin:.7,arc:1.2});
+   }
+  }else if(style==='lifeanchor'||style==='liferecall'){
+   loop(style==='lifeanchor'?1.6:2.2,.03,0);loop(1.1,.08,1);
+   for(let i=0;i<12;i++){
+    const angle=i*Math.PI/6,from=target.clone().add(new THREE.Vector3(Math.sin(angle)*1.25,.08,Math.cos(angle)*1.25));
+    const to=target.clone().add(new THREE.Vector3(Math.sin(angle)*1.52,.08,Math.cos(angle)*1.52));beam(from,to,.025,i%3?0:1);
+   }
+   beam(target.clone().add(new THREE.Vector3(0,.12,0)),target.clone().add(new THREE.Vector3(0,1.9,0)),.035,0);
+  }else if(style==='lightningfield'){
+   loop(radius,.02,0);
+   for(let i=0;i<(low?4:8);i++){
+    const angle=i*2.399+milliseconds()*.001,dist=radius*(.25+(i%4)*.19),to=target.clone().add(new THREE.Vector3(Math.cos(angle)*dist,.15,Math.sin(angle)*dist));
+    lightning(to.clone().add(new THREE.Vector3(.4,7+(i%3),.3)),to,.035);
+   }
+  }else if(style==='timefield'||style==='bladefield'){
+   loop(radius,.03,0);loop(radius*.94,.08,1);
+   for(let i=0;i<(low?8:16);i++){
+    const angle=i*Math.PI/(low?4:8)+milliseconds()*.0003,from=target.clone().add(new THREE.Vector3(Math.sin(angle)*radius,.15,Math.cos(angle)*radius));
+    const to=target.clone().add(new THREE.Vector3(Math.sin(angle+.12)*radius*.8,style==='timefield'?.18:1.4,Math.cos(angle+.12)*radius*.8));beam(from,to,.025,i%2);
+   }
+   if(style==='bladefield')for(let i=0;i<3;i++){
+    const angle=i*Math.PI/3+milliseconds()*.001,from=target.clone().add(new THREE.Vector3(Math.sin(angle)*radius,.5,Math.cos(angle)*radius));
+    const to=target.clone().add(new THREE.Vector3(-Math.sin(angle)*radius,.55,-Math.cos(angle)*radius));beam(from,to,.035,0);
+   }
+  }
+
   const swordFlight=route==='blademaster'&&id!=='blademaster-resonance'||
    id==='boundarycutter-throw'||id==='riftlord-finale'||id==='riftduelist-sever'||
    false;
-  if(swordFlight){
+  const custom=['groundspike','earthbolt','earthburst','lifeanchor','liferecall','lightningfield','timefield','bladefield'].includes(style);
+  if(custom){
+   // Geometry above shares the same bounded lifetime and disposal path.
+  }else if(swordFlight){
    const count=id==='blademaster-union'?1:id==='riftlord-finale'||id==='linebreaker-triple'?3:1;
    const direction=high.clone().sub(source).normalize(),across=direction.clone().cross(up).normalize();
    for(let i=0;i<count;i++){
@@ -218,7 +260,7 @@ export function createAdvancementFX(scene,camera,milliseconds=()=>performance.no
    const entry=live[i],t=Math.max(0,(time-entry.start)/entry.duration);
    if(t>=1){dispose(entry);live.splice(i,1);continue;}
    const alpha=Math.min(1,.48+t*6)*Math.min(1,(1-t)*2.8);
-   entry.materials[0].opacity=alpha*.69;entry.materials[1].opacity=alpha*.88;entry.materials[2].opacity=alpha;
+   entry.materials[0].opacity=alpha*.69;entry.materials[1].opacity=alpha*.88;entry.materials[2].opacity=alpha;for(const material of entry.materials.slice(3))material.opacity=alpha;
    for(const part of entry.movers){
     const progress=part.blade?Math.max(0,Math.min(1,(t-part.delay)*1.65)):Math.min(1,t*(entry.style==='meteor'?2.5:1.5));
     if(part.blade){
@@ -248,22 +290,22 @@ export const advancementPreviewEvents=Object.freeze({
  crystalist:['bolt','refraction','field','collapse'],
  winterwarden:['spear','rampart','veil','lock'],
  wildfire:['seed','front','confluence','meteor'],
- hellfire:['brand','bone','threads','undying'],
+ hellfire:['brand','bone','eruption','undying'],
  hexweaver:['decay','tether','plague','collapse'],
  pactbinder:['brand','reckoning','inverse','doom'],
  blademaster:['launch','formation','recall','union'],
  linebreaker:['sunder','triple','counter','break'],
  shadowhunter:['mark','swap','twin','hunt'],
- boundarycutter:['wire','intercept','return','grid'],
+ boundarycutter:['blade','assault','reprise','execution'],
  mountainguard:['fist','armor','gate','peaks'],
- veinforger:['spike','current','shift','core'],
+ veinforger:['plant','flying','detonate','link'],
  'elemental-god':['brand','judgment','erosion','dominion'],
  'elemental-ward':['shift','counter','field','equilibrium'],
  riftlord:['cut','twin','domain','finale'],
  riftduelist:['sever','displace','riposte','arena'],
  'abyss-king':['brand','consume','field','form'],
  'abyss-herald':['brand','fracture','field','converge'],
- 'time-sovereign':['rift','double','rewind','verdict'],
+ 'time-sovereign':['rift','double','anchor','verdict'],
  'time-weaver':['mark','link','borrow','invert'],
 });
 

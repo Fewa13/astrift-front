@@ -31,11 +31,11 @@ const ADVANCED_PROFESSIONS = {
   ],
   shadowblade: [
     route("shadowhunter", ["\u5F71\u72E9\u8005", "Shadow Hunter"], ["\u8FFD\u5F71\u5203", "Stalking Blade"], ["\u6362\u5F71", "Shadow Swap"], ["\u53CC\u5F71\u5939\u51FB", "Twin Ambush"], ["\u7FA4\u5F71\u8FFD\u730E", "Shadow Hunt"]),
-    route("boundarycutter", ["\u65AD\u754C\u5BA2", "Boundary Cutter"], ["\u65AD\u8DEF", "Sever Path"], ["\u77AC\u6B65\u622A\u51FB", "Interception"], ["\u6298\u8FD4\u5200", "Returning Blade"], ["\u5C01\u8DEF\u6740\u9635", "Cutting Grid"])
+    route("boundarycutter", ["\u65AD\u754C\u5BA2", "Boundary Cutter"], ["\u65AD\u754C\u5203", "Boundary Blade"], ["\u7A7F\u754C\u7A81\u88AD", "Boundary Assault"], ["\u88C2\u754C\u56DE\u65A9", "Rift Reprise"], ["\u65AD\u754C\u6740\u9635", "Boundary Execution"])
   ],
   stonewright: [
     route("mountainguard", ["\u5C71\u5CB3\u5B88\u536B", "Mountain Guard"], ["\u9707\u5CA9\u62F3", "Quake Fist"], ["\u5CA9\u7532", "Stone Armor"], ["\u5C71\u95E8", "Mountain Gate"], ["\u7FA4\u5C71\u5408\u62E2", "Closing Peaks"]),
-    route("veinforger", ["\u5730\u8109\u94F8\u5E08", "Veinforger"], ["\u9489\u8109", "Stone Spike"], ["\u8D70\u8109", "Tectonic Current"], ["\u5730\u5C42\u9519\u52A8", "Fault Shift"], ["\u5730\u6838\u7834\u88C2", "Core Fracture"])
+    route("veinforger", ["\u5730\u8109\u94F8\u5E08", "Veinforger"], ["\u5927\u5730\u5E03\u9635", "Earth Formation"], ["\u98DE\u523A", "Piercing Spike"], ["\u7206\u7834", "Detonation"], ["\u8FDE\u9635", "Linked Formation"])
   ],
   elementalist: [
     route("elemental-god", ["\u4E07\u8C61\u6218\u795E", "God of Elements"], ["\u5143\u7D20\u70D9\u5370", "Elemental Brand"], ["\u5929\u8C61\u795E\u7F5A", "Skyfall Judgment"], ["\u4E07\u8C61\u4FB5\u8680", "Prismatic Erosion"], ["\u5143\u7D20\u593A\u6743", "Elemental Dominion"]),
@@ -50,7 +50,7 @@ const ADVANCED_PROFESSIONS = {
     route("abyss-herald", ["\u8680\u754C\u5148\u77E5", "Abyssal Prophet"], ["\u5BC4\u8680", "Parasite"], ["\u79BB\u9B42", "Soul Fracture"], ["\u8680\u6F6E", "Corruption Tide"], ["\u4E07\u8680\u5F52\u6F6E", "Abyssal Convergence"])
   ],
   chrono: [
-    route("time-sovereign", ["\u65F6\u5E8F\u4E3B\u5BB0", "Time Sovereign"], ["\u53CC\u523B\u88C2\u9699", "Double Rift"], ["\u65F6\u95F4\u5206\u8EAB", "Temporal Double"], ["\u53CC\u91CD\u951A\u70B9", "Double Anchor"], ["\u65F6\u5E8F\u88C1\u51B3", "Temporal Verdict"]),
+    route("time-sovereign", ["\u65F6\u5E8F\u4E3B\u5BB0", "Time Sovereign"], ["\u53CC\u523B\u88C2\u9699", "Double Rift"], ["\u65F6\u95F4\u5206\u8EAB", "Temporal Double"], ["\u751F\u547D\u951A\u70B9", "Life Anchor"], ["\u65F6\u5E8F\u88C1\u51B3", "Temporal Verdict"]),
     route("time-weaver", ["\u56E0\u679C\u7EC7\u8005", "Causality Weaver"], ["\u5EF6\u65F6\u5370\u8BB0", "Delayed Mark"], ["\u56E0\u679C\u8FDE\u7EBF", "Causal Link"], ["\u672A\u6765\u501F\u4F4D", "Borrowed Position"], ["\u56E0\u679C\u5012\u7F6E", "Causal Inversion"])
   ]
 };
@@ -58,8 +58,18 @@ const ADVANCEMENT_KEYS = ["X", "Q", "Z", "C"];
 function advancementCastKey(id) {
   return /^advanced:[XQZC]$/.test(id) ? id.slice(-1) : void 0;
 }
+const ADVANCEMENT_REWORK = {
+  storm: { duration: 9e3, tick: 1e3, radius: 18, markDuration: 1e4, chance: 0.3, critical: 2.8, splash: 0.8, splashRadius: 7, tickPower: 1.6 },
+  ember: { radius: 12, power: 6.5, transfer: 0.8, duration: 8e3 },
+  rift: { duration: 11e3, bonus: 1, followup: 2.4, delay: 1e3, attackBuff: 0.35, speedBuff: 0.2 },
+  life: { range: 50, duration: 15e3, buffDuration: 8e3, buff: 0.2 },
+  verdict: { duration: 7e3, tick: 1e3, vulnerability: 0.4, min: (level) => 2.5 + level * 0.08, max: (level) => 5 + level * 0.16 },
+  earth: { range: 50, duration: 45e3, limit: (level) => level * 2 + 5, radius: 2, tick: 1e3, tickPower: 0.85, linkDuration: 1e4, spacing: 2.5, innerRadius: 3, outerRadius: 7, innerPower: 8, outerPower: 3.5, pierce: 3, projectileSpeed: 55 },
+  boundary: { markDuration: 8e3, markBonus: 0.3, fieldDuration: 6500, fieldTick: 1e3 }
+};
 export {
   ADVANCED_PROFESSIONS,
   ADVANCEMENT_KEYS,
+  ADVANCEMENT_REWORK,
   advancementCastKey
 };

@@ -36,11 +36,11 @@ export const ADVANCED_PROFESSIONS: Readonly<Record<string, readonly [Route, Rout
  ],
  shadowblade: [
   route('shadowhunter',['影狩者','Shadow Hunter'],['追影刃','Stalking Blade'],['换影','Shadow Swap'],['双影夹击','Twin Ambush'],['群影追猎','Shadow Hunt']),
-  route('boundarycutter',['断界客','Boundary Cutter'],['断路','Sever Path'],['瞬步截击','Interception'],['折返刀','Returning Blade'],['封路杀阵','Cutting Grid']),
+  route('boundarycutter',['断界客','Boundary Cutter'],['断界刃','Boundary Blade'],['穿界突袭','Boundary Assault'],['裂界回斩','Rift Reprise'],['断界杀阵','Boundary Execution']),
  ],
  stonewright: [
   route('mountainguard',['山岳守卫','Mountain Guard'],['震岩拳','Quake Fist'],['岩甲','Stone Armor'],['山门','Mountain Gate'],['群山合拢','Closing Peaks']),
-  route('veinforger',['地脉铸师','Veinforger'],['钉脉','Stone Spike'],['走脉','Tectonic Current'],['地层错动','Fault Shift'],['地核破裂','Core Fracture']),
+  route('veinforger',['地脉铸师','Veinforger'],['大地布阵','Earth Formation'],['飞刺','Piercing Spike'],['爆破','Detonation'],['连阵','Linked Formation']),
  ],
  elementalist: [
   route('elemental-god',['万象战神','God of Elements'],['元素烙印','Elemental Brand'],['天象神罚','Skyfall Judgment'],['万象侵蚀','Prismatic Erosion'],['元素夺权','Elemental Dominion']),
@@ -55,7 +55,7 @@ export const ADVANCED_PROFESSIONS: Readonly<Record<string, readonly [Route, Rout
   route('abyss-herald',['蚀界先知','Abyssal Prophet'],['寄蚀','Parasite'],['离魂','Soul Fracture'],['蚀潮','Corruption Tide'],['万蚀归潮','Abyssal Convergence']),
  ],
  chrono: [
-  route('time-sovereign',['时序主宰','Time Sovereign'],['双刻裂隙','Double Rift'],['时间分身','Temporal Double'],['双重锚点','Double Anchor'],['时序裁决','Temporal Verdict']),
+  route('time-sovereign',['时序主宰','Time Sovereign'],['双刻裂隙','Double Rift'],['时间分身','Temporal Double'],['生命锚点','Life Anchor'],['时序裁决','Temporal Verdict']),
   route('time-weaver',['因果织者','Causality Weaver'],['延时印记','Delayed Mark'],['因果连线','Causal Link'],['未来借位','Borrowed Position'],['因果倒置','Causal Inversion']),
  ],
 };
@@ -64,3 +64,14 @@ export const ADVANCEMENT_KEYS = ['X','Q','Z','C'] as const;
 export function advancementCastKey(id:string){
  return /^advanced:[XQZC]$/.test(id)?id.slice(-1):undefined;
 }
+
+// Shared authoritative tuning and client descriptions. Durations are milliseconds.
+export const ADVANCEMENT_REWORK = {
+ storm:{duration:9000,tick:1000,radius:18,markDuration:10000,chance:.3,critical:2.8,splash:.8,splashRadius:7,tickPower:1.6},
+ ember:{radius:12,power:6.5,transfer:.8,duration:8000},
+ rift:{duration:11000,bonus:1.0,followup:2.4,delay:1000,attackBuff:.35,speedBuff:.2},
+ life:{range:50,duration:15000,buffDuration:8000,buff:.2},
+ verdict:{duration:7000,tick:1000,vulnerability:.4,min:(level:number)=>2.5+level*.08,max:(level:number)=>5+level*.16},
+ earth:{range:50,duration:45000,limit:(level:number)=>level*2+5,radius:2,tick:1000,tickPower:.85,linkDuration:10000,spacing:2.5,innerRadius:3,outerRadius:7,innerPower:8,outerPower:3.5,pierce:3,projectileSpeed:55},
+ boundary:{markDuration:8000,markBonus:.3,fieldDuration:6500,fieldTick:1000},
+} as const;

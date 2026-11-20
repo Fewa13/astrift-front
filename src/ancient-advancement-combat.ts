@@ -1,7 +1,7 @@
 import {ancientHitbox} from './ancient-hitboxes';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {isAncientBoss} from './ancient-boss';
-import {advancementCastKey} from './ancient-advanced-professions';
+import {ADVANCEMENT_REWORK as RW,advancementCastKey} from './ancient-advanced-professions';
 import {holyPower} from './ancient-ascension';
 import {FUSION_DAMAGE_MULTIPLIER,fusionDamageMultiplier,masteryLevel,releasableSkeletons,skeletonLimit,skeletonSlots,skeletonAttackEfficiency,skeletonFormation} from './ancient-mastery';
 import {advancementRoute} from './ancient-advancement-progress';
@@ -14,7 +14,7 @@ const ADVANCEMENT_COOLDOWNS:Record<string,readonly number[]>={
  berserker:[5,24,10,55],paladin:[16,14,28,35],stormcaller:[5,15,19,36],voltstalker:[5,9,18,34],
  crystalist:[5,11,18,32],winterwarden:[5,18,22,35],wildfire:[5,11,17,36],hellfire:[5,11,17,36],
  hexweaver:[5,11,17,34],pactbinder:[5,11,17,34],blademaster:[5,10,16,30],linebreaker:[5,10,16,30],
- shadowhunter:[5,11,16,34],boundarycutter:[5,11,16,34],mountainguard:[5,11,18,34],veinforger:[5,11,18,34],
+ shadowhunter:[5,11,16,34],boundarycutter:[3.5,8,12,30],mountainguard:[5,11,18,34],veinforger:[1.2,2.5,16,22],
  'elemental-god':[5,12,20,33],'elemental-ward':[5,12,20,33],riftlord:[5,12,20,35],riftduelist:[5,12,20,35],
  'abyss-king':[5,12,22,39],'abyss-herald':[5,12,22,39],'time-sovereign':[5,13,23,38],'time-weaver':[5,13,23,38],
 };
@@ -212,13 +212,89 @@ export type StormRuntime = {
  heavenfall?:StormPoint & {radius:number;power:number;round:number;next:number;struck:string[]};
  resonance?:Record<string,{mask:number;until:number}>;
  rod?:StormPoint & {until:number;next:number;radius:number;damage:number};
- prison?:StormPoint & {until:number;radius:number;damage:number;seen:Record<string,boolean>;struck:Record<string,boolean>};
+ prison?:StormPoint & {until:number;radius:number;damage:number;next:number};
+ attraction?:Record<string,{until:number;level:number}>;
 };
 
 function stormState(a:SkillActor,map:string){
  const r=runtime(a);
  if(r.stormcaller?.map!==map)r.stormcaller={map,seals:{}};
  return r.stormcaller;
+}
+
+function flatAim(direction:unknown){
+ if(!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite))return;
+ const length=Math.hypot(direction[0],direction[2]);
+ return length>.001?{x:direction[0]/length,z:direction[2]/length}:undefined;
+}
+export function aimGroundPoint(a:SkillActor,direction:unknown,c:SkillContext,range:number):StormPoint|undefined{
+ if(!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite)||Math.abs(Math.hypot(...direction)-1)>.05)return;
+ // Trace terrain instead of requiring a monster under the crosshair.
+ let previous={x:a.x,y:a.y,z:a.z};
+ for(let d=.25;d<=range;d+=.25){
+  const x=a.x+direction[0]*d,y=a.y+direction[1]*d,z=a.z+direction[2]*d;
+  const floor=ancientMapHeight(c.map,x,z,y);
+  if(y<=floor+.05){
+   const point={x,y:floor,z};
+   if(Math.hypot(x-a.x,floor+1.7-a.y,z-a.z)>range+.01||blocked(x,z,.35,c.map,floor)||c.canMove&&!c.canMove(a.x,a.z,x,z))return;
+   return point;
+  }
+  if(!lineClear(previous.x,previous.y,previous.z,x,y,z,c.map))return;
+  previous={x,y,z};
+ }
+ const vector=flatAim(direction);
+ if(!vector)return;
+ const x=a.x+vector.x*(range-.1),z=a.z+vector.z*(range-.1),y=ancientMapHeight(c.map,x,z,a.y-1.7);
+ if(Math.hypot(x-a.x,y+1.7-a.y,z-a.z)>range||blocked(x,z,.35,c.map,y)||!lineClear(a.x,a.y,a.z,x,y+1.7,z,c.map)||c.canMove&&!c.canMove(a.x,a.z,x,z))return;
+ return {x,y,z};
+}
+function visualPoints<T>(points:T[],limit:number){
+ if(points.length<=limit)return points;
+ return Array.from({length:limit},(_,i)=>points[Math.floor(i*points.length/limit)]);
+}
+function linkedSpikePoints(spikes:StormPoint[],spacing:number){
+ const points:StormPoint[]=spikes.map(point=>({x:point.x,y:point.y,z:point.z}));
+ // Connect neighbours in placement order and close the formation. Keep server and render work bounded.
+ for(let i=0;i<spikes.length;i++){
+  const a=spikes[i],b=spikes[(i+1)%spikes.length],distance=Math.hypot(b.x-a.x,b.z-a.z);
+  const steps=Math.max(1,Math.ceil(distance/spacing));
+  for(let n=1;n<steps&&points.length<1200;n++)points.push({x:a.x+(b.x-a.x)*n/steps,y:a.y+(b.y-a.y)*n/steps,z:a.z+(b.z-a.z)*n/steps});
+ }
+ return points;
+}
+
+// Runs once at the authoritative damage entry, including delayed slashes and normal attacks.
+// Secondary hits carry :proc and never generate another secondary hit.
+export function advancementAttack(a:SkillActor,p:AncientProfile,m:SkillMonster,amount:number,attack:string|undefined,c:SkillContext,now:number,random= Math.random){
+ if(!(amount>0)||!Number.isFinite(amount)||attack?.includes(':proc')||attack?.startsWith('artifact:'))return amount;
+ const queue=(target:SkillMonster,damage:number,id:string,delay:number)=>{
+  if(target.hp<=0)return;
+  const list=target.strikes??=[];
+  if(list.length<64)list.push({owner:a.name,skillId:id,at:now+delay,damage});
+ };
+ const storm=a.skillRuntime?.stormcaller;
+ const attraction=storm?.map===c.map?storm.attraction?.[m.id]:undefined;
+ const lightning=attack&&(/^(chain|storm|tempest)$/.test(attack)||/^advancement:(stormcaller|voltstalker):[XQZC]/.test(attack));
+ if(lightning&&attraction&&attraction.until>now&&random()<RW.storm.chance){
+  amount*=RW.storm.critical;
+  for(const near of stormTargets(c,firePoint(c,m),RW.storm.splashRadius))if(near!==m)queue(near,amount*RW.storm.splash,'advancement:stormcaller:Z:proc',1);
+  c.fx('stormcaller-critical',m.x,m.z,RW.storm.splashRadius);
+ }
+ const domain=a.skillRuntime?.advancedRift?.domain;
+ const sword=attack&&(/^(swordwave|triplecut|swordrain|phantomblade|voidslash|riftassault|execution)$/.test(attack)||/^advancement:(riftlord|riftduelist|blademaster|linebreaker):[XQZC]/.test(attack));
+ if(sword&&domain&&a.skillRuntime?.advancedRift?.map===c.map&&domain.until>now&&skillAreaHits(domain,m,domain.radius,c.map)){
+  amount*=1+RW.rift.bonus;
+  queue(m,amount*RW.rift.followup,'advancement:riftlord:Z:proc',RW.rift.delay);
+  c.fx('riftlord-strangle',m.x,m.z,3,{phase:'windup',target:m.id});
+ }
+ const distortion=m.timeDistortion;
+ if(distortion&&distortion.owner===a.name&&distortion.until>now){
+  amount*=1+RW.verdict.vulnerability;
+  const coefficient=RW.verdict.min(distortion.level)+(RW.verdict.max(distortion.level)-RW.verdict.min(distortion.level))*random();
+  queue(m,distortion.power*coefficient,'advancement:time-sovereign:C:proc',450);
+  c.fx('time-sovereign-strangle',m.x,m.z,3);
+ }
+ return amount;
 }
 
 function stormTargets(c:SkillContext,point:StormPoint,radius:number){
@@ -241,7 +317,7 @@ function castStormcaller(a:SkillActor,p:AncientProfile,key:string,id:string,dire
  const target=selectSkillTarget(a,direction,60,c);
  if(!target)return '请瞄准可见的敌人';
  const point={x:target.x,y:target.y??ancientMapHeight(c.map,target.x,target.z),z:target.z};
- const state=stormState(a,c.map),power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
+ const state=stormState(a,c.map),power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p)*(1+Math.min(99,level-1)*.055);
  const attack='advancement:stormcaller:'+key;
  if(key==='X'){
   const marked=(state.seals[target.id]||0)>now;
@@ -259,8 +335,8 @@ function castStormcaller(a:SkillActor,p:AncientProfile,key:string,id:string,dire
   state.rod={...point,until:now+7000,next:now,radius:Math.min(18,8+level*.16),damage:power*1.25};
   c.fx('stormcaller-rod',point.x,point.z,state.rod.radius);
  }else if(key==='Z'){
-  state.prison={...point,until:now+6500+Math.min(3500,level*100),radius:11,damage:power*3.5,seen:{},struck:{}};
-  c.fx('stormcaller-prison',point.x,point.z,11);
+  state.prison={...point,until:now+RW.storm.duration,radius:RW.storm.radius,damage:power*RW.storm.tickPower,next:now};
+  c.fx('stormcaller-prison',point.x,point.z,RW.storm.radius);
  }else{
   const radius=Math.min(20,12+level*.15);
   state.heavenfall={...point,radius,power,round:0,next:now+300,struck:[]};
@@ -313,23 +389,19 @@ export function tickStormcaller(a:SkillActor,p:AncientProfile,c:SkillContext,now
   }
  }
  const prison=state.prison;
- if(!prison||prison.until<=now)return;
- for(const m of c.monsters){
-  if(m.hp<=0)continue;
-  const inside=skillAreaHits(prison,m,prison.radius,c.map);
-  if(inside){
-   prison.seen[m.id]=true;
-   if((m.slowUntil||0)<=now||(m.slow||0)<=.25){m.slow=.25;m.slowUntil=now+350;}
-   if(m.contributionsForMastery?.[a.name]){
-    (m.masteryMarks??={})[a.name+':storm-prison']={owner:a.name,id:'advancement:stormcaller:Z',until:now+350};
-   }
-  }else if(prison.seen[m.id]&&!prison.struck[m.id]){
-   prison.struck[m.id]=true;
-   if(!isAncientBoss(m.kind)){m.slow=.95;m.slowUntil=now+650;}
-   stormDamage(a,c,m,'Z',prison.damage,now);
-   c.fx('stormcaller-seal',m.x,m.z,3);
-  }
+ if(!prison||prison.until<=now){delete state.prison;return;}
+ if(prison.next>now)return;
+ prison.next=now+RW.storm.tick;
+ const attraction=state.attraction??={};
+ for(const [id,mark] of Object.entries(attraction))if(mark.until<=now)delete attraction[id];
+ const rank=p.advancements?.lightning?.skills.Z.level||1;
+ for(const m of stormTargets(c,prison,prison.radius)){
+  attraction[m.id]={until:now+RW.storm.markDuration,level:rank};
+  (m.masteryMarks??={})[a.name+':storm-prison']={owner:a.name,id:'advancement:stormcaller:Z',until:now+RW.storm.markDuration};
+  stormDamage(a,c,m,'Z',prison.damage,now);
  }
+ c.fx('stormcaller-rain',prison.x,prison.z,prison.radius);
+
 }
 
 export type VoltRuntime = {
@@ -638,7 +710,7 @@ function castFireAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const target=selectSkillTarget(a,direction,60,c);
  if(!target)return '请瞄准可见的敌人';
  const f=fireState(a,c.map,route),point=firePoint(c,target);
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p)*(1+Math.min(99,level-1)*.055);
  const tag='advancement:'+route+':'+key;
  const source={x:a.x,y:a.y,z:a.z};
  const hit=(m:SkillMonster,n:number)=>c.damage(m,n,undefined,tag);
@@ -687,12 +759,19 @@ function castFireAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
    hit(target,power*2.4+burn.damage*ticks);
    c.fx('hellfire-bone',point.x,point.z,4);
   }else if(key==='Z'){
-   if(!burn||burn.until<=now)return '目标还没有燃烧';
-   for(const m of stormTargets(c,point,12).filter(m=>m!==target).slice(0,3)){
-    if(f.embers[m.id]?.kind!=='undying')f.embers[m.id]=emberRecord(tag,'burn',burn.damage*.62,now,6500);
-    hit(m,power*2.2);
-    c.fx('hellfire-threads',m.x,m.z,3,{source:point,target:m.id});
+   const otherBurn=target.dots?.find(dot=>dot.until>now&&/fire|inferno|burn|ember/.test(dot.skillId||''));
+   if((!burn||burn.until<=now)&&!otherBurn)return '目标还没有燃烧';
+   const burning=burn&&burn.until>now?burn:undefined;
+   const damage=burning?.damage??otherBurn!.damage;
+   // One cast produces one burst. Transferred burns cannot propagate this burst.
+   const victims=stormTargets(c,point,RW.ember.radius);
+   for(const m of victims){
+    if(m!==target&&(!burning||burning.hops===0)&&f.embers[m.id]?.kind!=='undying'){
+     f.embers[m.id]={...emberRecord(tag,'burn',damage*RW.ember.transfer,now,RW.ember.duration),hops:1};
+    }
+    hit(m,power*RW.ember.power);
    }
+   c.fx('hellfire-eruption',point.x,point.z,RW.ember.radius,{source,target:target.id});
   }else{
    f.embers[target.id]=emberRecord(tag,'undying',power*1.7,now,14000);
    hit(target,power*4.5);
@@ -1059,6 +1138,7 @@ export type AdvancedShadowRuntime={
  wire?:ShadowLine & {until:number;power:number;side:Record<string,number>};
  returning?:{from:StormPoint;at:number;power:number};
  cuts?:{line:ShadowLine;at:number;power:number}[];
+ boundaryField?:StormPoint&{until:number;next:number;power:number;radius:number};
 };
 
 function shadowState(a:SkillActor,map:string){
@@ -1163,36 +1243,41 @@ function castShadowAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
   }
  }else{
   if(length<.01)return '请先瞄准';
-  const end=groundDash(a,c,dx,dz,key==='Q'?Math.min(25,11+level*.27):23);
+  const body=power*holyPower(p);
+  const mark=(m:SkillMonster)=>{if(m.hp>0)state.marks[m.id]={until:now+RW.boundary.markDuration,angle:0,flanks:0};};
+  const strike=(m:SkillMonster,multiplier:number)=>{
+   const marked=(state.marks[m.id]?.until||0)>now;
+   c.damage(m,body*multiplier*(marked?1+RW.boundary.markBonus:1),undefined,'advancement:boundarycutter:'+key);
+   mark(m);
+  };
   if(key==='X'){
-   state.wire={start,end,until:now+8500,power:power*4.5,side:{}};
-   c.fx('boundarycutter-wire',end.x,end.z,1,{target:'',source:start});
+   const end={x:a.x+dx*50,y:start.y,z:a.z+dz*50};
+   for(const m of bladeLane(c,start,end,2.8))strike(m,4.2);
+   c.fx('boundarycutter-blade',end.x,end.z,3,{source:start,target:''});
   }else if(key==='Q'){
+   const end=groundDash(a,c,dx,dz,Math.min(30,17+level*.3));
    if(Math.hypot(end.x-start.x,end.z-start.z)<.4)return '冲刺路径被阻挡';
-   for(const m of bladeLane(c,start,end,2.8)){
+   for(const m of bladeLane(c,start,end,3.4)){
+    strike(m,5.2);
     const mob=m as SkillMonster&{action?:string;attackWindup?:unknown;special?:unknown};
-    if(mob.action!=='windup')continue;
-    if(!isAncientBoss(m.kind)){delete mob.attackWindup;delete mob.special;mob.action='idle';}
-    hit(m,isAncientBoss(m.kind)?5.1:4.1);
-    r.effects.shadowStride={until:now+3500,level:1};
+    if(mob.action==='windup'&&!isAncientBoss(m.kind)){delete mob.attackWindup;delete mob.special;mob.action='idle';}
    }
+   r.effects.shadowStride={until:now+5000,level:1};
    shadowMotion(a,c,end);
-   c.fx('boundarycutter-intercept',end.x,end.z,3,{target:'',source:start});
+   c.fx('boundarycutter-assault',end.x,end.z,4,{source:start,target:''});
   }else if(key==='Z'){
-   for(const m of bladeLane(c,start,end,2))hit(m,3.4);
-   state.returning={from:end,at:now+850,power:power*3.9};
-   c.fx('boundarycutter-throw',end.x,end.z,2,{target:'',source:start});
+   const end={x:a.x+dx*50,y:start.y,z:a.z+dz*50};
+   for(const m of bladeLane(c,start,end,3))strike(m,4.6);
+   state.returning={from:end,at:now+700,power:body*5.4};
+   c.fx('boundarycutter-reprise',end.x,end.z,3,{source:start,target:''});
   }else{
-   const center=target?firePoint(c,target):end;
-   state.cuts=[];
-   for(const angle of [0,Math.PI/3,Math.PI*2/3]){
-    const x=Math.sin(angle)*12,z=Math.cos(angle)*12;
-    const from={...center,x:center.x-x,z:center.z-z},to={...center,x:center.x+x,z:center.z+z};
-    state.cuts.push({line:{start:from,end:to},at:now+450+state.cuts.length*270,power:power*3.6});
-    c.fx('boundarycutter-grid',to.x,to.z,2,{source:from,target:''});
-   }
+   const center=target?firePoint(c,target):{x:a.x+dx*14,y:start.y,z:a.z+dz*14};
+   state.boundaryField={...center,until:now+RW.boundary.fieldDuration,next:now,power:body,radius:Math.min(20,12+level*.12)};
+   for(const m of stormTargets(c,center,state.boundaryField.radius))strike(m,4.5);
+   c.fx('boundarycutter-execution',center.x,center.z,state.boundaryField.radius);
   }
  }
+
  r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
@@ -1206,7 +1291,7 @@ export function tickAdvancedShadow(a:SkillActor,p:AncientProfile,c:SkillContext,
  if(returning&&returning.at<=now){
   delete state.returning;
   const end={x:a.x,y:a.y-1.7,z:a.z};
-  for(const m of bladeLane(c,returning.from,end,2.1))shadowHit(a,c,m,route,'Z',returning.power,now);
+  for(const m of bladeLane(c,returning.from,end,route==='boundarycutter'?3:2.1))shadowHit(a,c,m,route,'Z',returning.power*(route==='boundarycutter'&&(state.marks[m.id]?.until||0)>now?1+RW.boundary.markBonus:1),now);
   c.fx('boundarycutter-return',end.x,end.z,2,{target:'',source:returning.from});
  }
  if(state.cuts?.length){
@@ -1217,27 +1302,35 @@ export function tickAdvancedShadow(a:SkillActor,p:AncientProfile,c:SkillContext,
    shadowHit(a,c,m,route,'C',power*(Math.hypot(m.x-x,m.z-z)<=2?1.33:1),now);
   }
  }
- const wire=state.wire;
- if(!wire)return;
- if(wire.until<=now){delete state.wire;return;}
- const dx=wire.end.x-wire.start.x,dz=wire.end.z-wire.start.z,length=Math.hypot(dx,dz)||1;
- for(const m of c.monsters){
-  if(m.hp<=0)continue;
-  const x=m.x-wire.start.x,z=m.z-wire.start.z,along=(x*dx+z*dz)/length,side=(x*dz-z*dx)/length;
-  const previous=wire.side[m.id];wire.side[m.id]=side;
-  if(previous===undefined||previous*side>0||Math.abs(side)>5||along<0||along>length)continue;
-  delete state.wire;
-  m.slow=.3;m.slowUntil=now+2500;
-  shadowHit(a,c,m,route,'X',wire.power,now);
-  c.fx('boundarycutter-trigger',m.x,m.z,3);
-  break;
+ const field=state.boundaryField;
+ if(!field)return;
+ if(field.until<=now){
+  delete state.boundaryField;
+  for(const m of stormTargets(c,field,field.radius)){
+   const marked=(state.marks[m.id]?.until||0)>now;
+   c.damage(m,field.power*(marked?9:6),undefined,'advancement:boundarycutter:C');
+   delete state.marks[m.id];
+  }
+  c.fx('boundarycutter-collapse',field.x,field.z,field.radius);
+ }else if(field.next<=now){
+  field.next=now+RW.boundary.fieldTick;
+  for(const m of stormTargets(c,field,field.radius)){
+   c.damage(m,field.power*1.6,undefined,'advancement:boundarycutter:C');
+   state.marks[m.id]={until:now+RW.boundary.markDuration,angle:0,flanks:0};
+   m.slow=Math.max((m.slowUntil||0)>now?m.slow||0:0,.35);m.slowUntil=now+1300;
+  }
+  c.fx('boundarycutter-pulse',field.x,field.z,field.radius);
  }
+
 }
 
 type StoneWall={start:StormPoint;end:StormPoint;until:number};
 export type StoneAdvancementRuntime={
  map:string;
- spikes:(StormPoint & {until:number})[];
+ spikes:(StormPoint & {until:number;power?:number;serial?:number})[];
+ formation?:{until:number;next:number;power:number;points:StormPoint[]};
+ spikeTick?:number;
+ projectiles?:{start:StormPoint;end:StormPoint;at:number;power:number;hits:string[];remaining:number}[];
  cracks:(StormPoint & {until:number})[];
  walls:StoneWall[];
  armor?:{left:number;absorbed:number;until:number;power:number};
@@ -1332,60 +1425,81 @@ function castStoneAdvancement(a:SkillActor,p:AncientProfile,route:string,key:str
   }
  }else{
   state.spikes=state.spikes.filter(point=>point.until>now);
-  state.cracks=state.cracks.filter(point=>point.until>now);
+  const body=power*holyPower(p);
   if(key==='X'){
-   if(!target)return '请瞄准可见的敌人';
-   const point=firePoint(c,target);
-   state.spikes.push({...point,until:now+22000});
-   if(state.spikes.length>4)state.spikes.shift();
-   hit(target,4.1);
-   c.fx('veinforger-spike',point.x,point.z,3);
-  }else{
-   if(!state.spikes.length)return '先用钉脉放下岩钉';
-   if(key==='Q'){
-    const route=[start,...state.spikes],hits=new Set<SkillMonster>();
-    for(let i=1;i<route.length;i++){
-     const from=route[i-1],to=route[i];
-     const nearCrack=state.cracks.some(crack=>Math.hypot(crack.x-to.x,crack.z-to.z)<5);
-     for(const m of bladeLane(c,from,to,nearCrack?4.5:2.6))if(!hits.has(m)){hits.add(m);hit(m,nearCrack?5.1:4.1);}
-     c.fx('veinforger-current',to.x,to.z,nearCrack?5:3,{source:from,target:''});
-    }
-   }else if(key==='Z'){
-    const aim=target?firePoint(c,target):start;
-    const point=[...state.spikes].sort((a,b)=>Math.hypot(a.x-aim.x,a.z-aim.z)-Math.hypot(b.x-aim.x,b.z-aim.z))[0];
-    for(const m of stormTargets(c,point,7)){
-     const dx=m.x-point.x,dz=m.z-point.z,distance=Math.hypot(dx,dz)||1;
-     const x=m.x+dx/distance*2.8,z=m.z+dz/distance*2.8;
-     const y=firePoint(c,m).y;
-     if(!isAncientBoss(m.kind)&&m.kind!=='player'&&!blocked(x,z,.65,c.map,y)&&lineClear(m.x,y+1,m.z,x,y+1,z,c.map)){m.x=x;m.z=z;}
-     m.slow=.35;m.slowUntil=now+2400;
-     hit(m,4.6);
-    }
-    c.fx('veinforger-shift',point.x,point.z,7);
-   }else{
-    const points=state.spikes;
-    state.spikes=[];
-    for(const point of points){
-     state.cracks.push({...point,until:now+15000});
-     for(const m of stormTargets(c,point,5))hit(m,3.9);
-     c.fx('veinforger-core',point.x,point.z,5);
-    }
-    state.cracks=state.cracks.slice(-8);
-    if(points.length>=3)for(const m of c.monsters){
-     if(m.hp<=0)continue;
-     const inside=points.some((a,i)=>points.slice(i+1).some((b,j)=>points.slice(i+j+2).some(crack=>triangleContains(m,a,b,crack)&&skillAreaHits(a,m,35,c.map))));
-     if(inside){hit(m,5.6);c.fx('veinforger-fracture',m.x,m.z,4);}
+   const point=aimGroundPoint(a,direction,c,RW.earth.range);
+   if(!point)return '请瞄准50米内可放置的地面';
+   state.spikes.push({...point,until:now+RW.earth.duration,power:body,serial:now});
+   state.spikes=state.spikes.slice(-RW.earth.limit(level));
+   c.fx('veinforger-plant',point.x,point.z,RW.earth.radius,{phase:'place',target:''});
+  }else if(key==='Q'){
+   const vector=flatAim(direction);
+   if(!vector)return '请先瞄准飞刺方向';
+   const end={x:a.x+vector.x*RW.earth.range,y:start.y,z:a.z+vector.z*RW.earth.range};
+   (state.projectiles??=[]).push({start:{...start},end,at:now,power:body*3.8,hits:[],remaining:RW.earth.range});
+   state.projectiles=state.projectiles.slice(-12);
+   c.fx('veinforger-flying',end.x,end.z,2,{source:{...start,y:start.y+1},target:''});
+  }else if(key==='Z'){
+   if(!state.spikes.length&&!state.formation)return '地面上还没有地刺';
+   const points=[...new Map([...state.spikes,...(state.formation?.points||[])].map(point=>[point.x.toFixed(3)+':'+point.z.toFixed(3),point])).values()];
+   state.spikes=[];delete state.formation;
+   // Overlapping explosions remain rewarding but bounded for dense formations.
+   const hits=new Map<SkillMonster,{inner:number;outer:number}>();
+   for(const point of points){
+    for(const m of stormTargets(c,point,RW.earth.outerRadius)){
+     const record=hits.get(m)||{inner:0,outer:0};
+     if(Math.hypot(m.x-point.x,m.z-point.z)<=RW.earth.innerRadius)record.inner++;else record.outer++;
+     hits.set(m,record);
     }
    }
+   for(const [m,count] of hits)c.damage(m,body*(RW.earth.innerPower*count.inner+RW.earth.outerPower*count.outer),undefined,tag);
+   for(const point of visualPoints(points,24))c.fx('veinforger-detonate',point.x,point.z,RW.earth.outerRadius);
+  }else{
+   if(state.spikes.length<2)return '连阵需要至少两颗地刺';
+   const points=linkedSpikePoints(state.spikes,RW.earth.spacing);
+   state.formation={until:now+RW.earth.linkDuration,next:now,power:body*1.25,points};
+   for(const point of visualPoints(points,48))c.fx('veinforger-link',point.x,point.z,1.4);
   }
  }
+
  r.cooldowns[id]=now+advancementCooldown(route,key)*1000*(1-ancientGearStats(p).cooldown);
  return null;
 }
 
 export function tickAdvancedStone(a:SkillActor,p:AncientProfile,c:SkillContext,now:number){
  const state=a.skillRuntime?.advancedStone;
- if(!state||state.map!==c.map||a.hp<=0||advancementRoute(p)?.id!=='mountainguard')return;
+ if(!state||state.map!==c.map||a.hp<=0)return;
+ if(advancementRoute(p)?.id==='veinforger'){
+  state.spikes=state.spikes.filter(point=>point.until>now);
+  if(state.formation&&state.formation.until<=now)delete state.formation;
+  if((state.spikeTick||0)<=now){
+   state.spikeTick=now+RW.earth.tick;
+   for(const m of c.monsters){
+    if(m.hp<=0)continue;
+    let damage=0,key='X';
+    for(const point of state.spikes)if(Math.hypot(point.x-m.x,point.z-m.z)<=RW.earth.radius+ancientHitbox(m.kind).radius&&skillAreaHits(point,m,RW.earth.radius,c.map))damage=Math.max(damage,(point.power||0)*RW.earth.tickPower);
+    const formation=state.formation;
+    if(formation&&formation.power>damage&&formation.points.some(point=>Math.hypot(point.x-m.x,point.z-m.z)<=1.5+ancientHitbox(m.kind).radius&&skillAreaHits(point,m,1.5,c.map))){damage=formation.power;key='C';}
+    if(damage)c.damage(m,damage,undefined,'advancement:veinforger:'+key);
+   }
+   for(const point of visualPoints([...state.spikes,...(state.formation?.points||[])],32))c.fx('veinforger-plant',point.x,point.z,1.5,{phase:'pulse',target:''});
+  }
+  state.projectiles=(state.projectiles||[]).filter(shot=>{
+   const length=Math.hypot(shot.end.x-shot.start.x,shot.end.z-shot.start.z)||1;
+   const travel=Math.min(shot.remaining,RW.earth.projectileSpeed*Math.max(0,now-shot.at)/1000);
+   const end={x:shot.start.x+(shot.end.x-shot.start.x)/length*travel,y:shot.start.y,z:shot.start.z+(shot.end.z-shot.start.z)/length*travel};
+   const victims=bladeLane(c,shot.start,end,1.1).filter(m=>!shot.hits.includes(m.id)).sort((x,y)=>Math.hypot(x.x-shot.start.x,x.z-shot.start.z)-Math.hypot(y.x-shot.start.x,y.z-shot.start.z));
+   for(const m of victims){
+    shot.hits.push(m.id);c.damage(m,shot.power,undefined,'advancement:veinforger:Q');
+    c.fx('veinforger-pierce',m.x,m.z,2);
+    if(shot.hits.length>=RW.earth.pierce)return false;
+   }
+   if(!lineClear(shot.start.x,shot.start.y+1,shot.start.z,end.x,end.y+1,end.z,c.map))return false;
+   shot.start=end;shot.remaining-=travel;shot.at=now;return shot.remaining>0;
+  });
+  return;
+ }
+ if(advancementRoute(p)?.id!=='mountainguard')return;
  state.walls=state.walls.filter(wall=>wall.until>now);
  const armor=state.armor;
  if(!armor||armor.left>0&&armor.until>now)return;
@@ -1836,8 +1950,9 @@ function castRiftAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
    for(const m of bladeLane(c,origin,end,2.7))hit(m,3.8);
    c.fx('riftlord-twin',end.x,end.z,4,{target:target.id,source:origin});
   }else if(key==='Z'){
-   state.domain={...origin,until:now+9500,radius:Math.min(17,9+level*.15),power,previous:{},next:{}};
-   r.effects.riftDomain={until:state.domain.until,level:1};
+   state.domain={...origin,until:now+RW.rift.duration,radius:Math.min(17,9+level*.15),power,previous:{},next:{}};
+   // Membership is refreshed each tick; leaving the field removes its buffs.
+   if(skillAreaHits(state.domain,{...a,id:a.name,kind:'player',maxHp:a.maxHp||100},state.domain.radius,c.map))r.effects.riftDomain={until:now+350,level:level};
    c.fx('riftlord-domain',origin.x,origin.z,state.domain.radius);
   }else if(target){
    const queue=target.strikes??=[];
@@ -1908,19 +2023,13 @@ export function tickAdvancedRift(a:SkillActor,p:AncientProfile,c:SkillContext,no
   }
  }
  const domain=state.domain;
- if(!domain)return;
- if(domain.until<=now){delete state.domain;return;}
- for(const m of c.monsters){
-  if(m.hp<=0)continue;
-  const inside=skillAreaHits(domain,m,domain.radius,c.map);
-  const prior=domain.previous[m.id];domain.previous[m.id]=inside;
-  if(inside&&((m.slowUntil||0)<=now||(m.slow||0)<.32)){m.slow=.32;m.slowUntil=now+350;}
-  if(prior!==undefined&&prior!==inside&&(domain.next[m.id]||0)<=now){
-   domain.next[m.id]=now+1600;
-   c.damage(m,domain.power*3.7,undefined,'advancement:riftlord:Z');
-   c.fx('riftlord-edge',m.x,m.z,3);
-  }
+ if(!domain||domain.until<=now){delete state.domain;delete runtime(a).effects.riftDomain;return;}
+ if(Math.hypot(a.x-domain.x,a.z-domain.z)<=domain.radius)runtime(a).effects.riftDomain={until:now+350,level:1};
+ else delete runtime(a).effects.riftDomain;
+ for(const m of stormTargets(c,domain,domain.radius)){
+  (m.masteryMarks??={})[a.name+':rift-domain']={owner:a.name,id:'advancement:riftlord:Z',until:now+400};
  }
+
 }
 
 type BloodMark={count:number;until:number;next:number;power:number;key:string;spread:number};
@@ -2080,11 +2189,12 @@ type TimeSnapshot=StormPoint&{hp:number;cooldowns:Record<string,number>;until:nu
 type TimeDebt={until:number;power:number;stored:number};
 export type TimeAdvancementRuntime={
  map:string;
+ charges?:number;
  marks:Record<string,TimeDebt>;
  anchor?:StormPoint&{until:number;power:number};
  rewind?:TimeSnapshot;
  linked?:{first:string;second:string;until:number};
- field?:StormPoint&{until:number;radius:number;targets:string[]};
+ field?:StormPoint&{until:number;radius:number;targets:string[];next?:number;power?:number;level?:number};
 };
 
 function timeState(a:SkillActor,map:string){
@@ -2113,14 +2223,16 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  expireTimeRewind(a,p,state,route,now);
  const anchor=state.anchor,snapshot=state.rewind;
  if(route==='time-sovereign'&&key==='Z'&&snapshot&&snapshot.until>now){
-  if(!riftMovement(a,c,snapshot))return '回溯位置被阻挡';
-  for(const [skill,until] of Object.entries(snapshot.cooldowns))if(skill!==id)r.cooldowns[skill]=Math.min(r.cooldowns[skill]||0,until);
-  for(const skill of ['advanced:X','advanced:Q','advanced:C'])if(!Object.hasOwn(snapshot.cooldowns,skill))delete r.cooldowns[skill];
-  if(snapshot.hp>a.hp){
+  const previous=a.hp;
+  if(!riftMovement(a,c,snapshot))return '锚点位置被阻挡';
+  if(previous>=snapshot.hp){
+   r.effects.lifeAnchorBuff={until:now+RW.life.buffDuration,level:1};
+  }else{
+   state.charges=(state.charges||0)+1;
    a.hp=Math.min(a.maxHp||100,snapshot.hp);
-   for(const m of stormTargets(c,origin,13))if(m.contributionsForMastery?.[a.name]){
-    (m.masteryMarks??={})[a.name+':double-anchor']={owner:a.name,id:tag,until:now+5000};
-   }
+  }
+  for(const m of stormTargets(c,origin,50))if(m.contributionsForMastery?.[a.name]){
+   (m.masteryMarks??={})[a.name+':life-anchor']={owner:a.name,id:tag,until:now+8000};
   }
   delete state.rewind;
   c.fx('time-sovereign-rewind',snapshot.x,snapshot.z,6,{source:origin,target:''});
@@ -2153,16 +2265,13 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
    for(const m of stormTargets(c,end,6))hit(m,3.2);
    c.fx('time-sovereign-double',end.x,end.z,5,{source:origin,target:''});
   }else if(key==='Z'){
-   state.rewind={...origin,hp:a.hp,cooldowns:{...r.cooldowns},until:now+10000,updated:false,castId:id};
-   c.fx('time-sovereign-anchor',origin.x,origin.z,5);
+   const point=aimGroundPoint(a,direction,c,RW.life.range);
+   if(!point)return '请瞄准50米内可设置锚点的位置';
+   state.rewind={...point,hp:a.hp,cooldowns:{},until:now+RW.life.duration,updated:false,castId:id};
+   c.fx('time-sovereign-anchor',point.x,point.z,5);
   }else{
-   const radius=Math.min(18,11+level*.16),until=now+4000;
-   const targets=stormTargets(c,center,radius).filter(m=>m.kind!=='player');
-   state.field={...center,until,radius,targets:targets.map(m=>m.id)};
-   for(const m of targets){
-    if(isAncientBoss(m.kind)){m.slow=.68;m.slowUntil=until;hit(m,4.8);}
-    else{m.frozenUntil=Math.max(m.frozenUntil||0,until);hit(m,6);}
-   }
+   const radius=Math.min(20,13+level*.16),until=now+RW.verdict.duration;
+   state.field={...center,until,radius,targets:[],next:now,power,level};
    c.fx('time-sovereign-verdict',center.x,center.z,radius);
   }
  }else if(key==='X'&&target){
@@ -2217,7 +2326,18 @@ export function tickAdvancedTime(a:SkillActor,p:AncientProfile,c:SkillContext,no
  if(!state||state.map!==c.map||a.hp<=0||(route!=='time-sovereign'&&route!=='time-weaver'))return;
  if(state.anchor&&state.anchor.until<=now)delete state.anchor;
  expireTimeRewind(a,p,state,route,now);
- if(state.field&&state.field.until<=now)delete state.field;
+ const field=state.field;
+ if(field&&field.until<=now)delete state.field;
+ else if(field&&(field.next||0)<=now){
+  field.next=now+RW.verdict.tick;
+  for(const m of stormTargets(c,field,field.radius)){
+   m.slow=1;m.slowUntil=now+1100;
+   m.timeDistortion={owner:a.name,until:now+1100,level:field.level||1,power:field.power||0};
+   (m.masteryMarks??={})[a.name+':time-verdict']={owner:a.name,id:'advancement:time-sovereign:C',until:now+1500};
+   c.damage(m,(field.power||0)*1.2,undefined,'advancement:time-sovereign:C:proc');
+  }
+  c.fx('time-sovereign-warp',field.x,field.z,field.radius);
+ }
  for(const [id,mark] of Object.entries(state.marks)){
   if(mark.until>now)continue;
   delete state.marks[id];
@@ -2233,7 +2353,7 @@ const advancementTransientKeys=[
  'advancedShadow','advancedStone','advancedSummon','advancedElements','advancedRift','advancedAbyss','advancedTime','advancedPriority','bloodCharge','bloodRevenge',
 ] as const;
 const advancementEffects=[
- 'swordForm','swordEmpower','bloodSacrifice','bloodRebirth','radiantRecovery','voltGuard','winterShield','snowVeil','lineGuard','shadowStride',
+ 'lifeAnchorBuff','lifeChargedAttack','swordForm','swordEmpower','bloodSacrifice','bloodRebirth','radiantRecovery','voltGuard','winterShield','snowVeil','lineGuard','shadowStride',
  'spiritAscendant','beastGuard','elementCycle','elementFire','elementIce','elementStorm','elementEarth','riftDomain','riftGuard','abyssKingForm',
 ];
 
@@ -2242,7 +2362,9 @@ export function reconcileAdvancementRuntime(a:SkillActor,p:AncientProfile,map:st
  a.advancement=route;
  if(!r)return;
  const identity=identityRoute?map+'|'+identityRoute:undefined;
- if(!reset&&identity===r.advancementIdentity)return;
+ const reworked=!!identityRoute&&['stormcaller','hellfire','riftlord','time-sovereign','veinforger','boundarycutter'].includes(identityRoute);
+ if(!reset&&identity===r.advancementIdentity&&(!reworked||r.advancementReworkVersion===2))return;
+ r.advancementReworkVersion=2;
  if(r.advancedSummon&&r.summon)delete r.summon;
  for(const key of advancementTransientKeys)delete r[key];
  for(const key of advancementEffects)delete r.effects[key];
