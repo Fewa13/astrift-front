@@ -1,7 +1,42 @@
 {
-  "hosting": {
-    "public": ".static-hosting",
-    "ignore": ["**/.*", "CNAME"],
-    "headers": [{"source": "**", "headers": [{"key": "Cache-Control", "value": "no-cache"}]}]
-  }
+  "hosting": [
+    {
+      "target": "primary",
+      "public": ".static-hosting",
+      "ignore": [
+        "**/.*",
+        "CNAME"
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "target": "ilovegames",
+      "public": ".static-hosting",
+      "ignore": [
+        "**/.*",
+        "CNAME"
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
