@@ -236,11 +236,14 @@ const navigationResize=new ResizeObserver(measureAncientNavigation);navigationRe
 
 function renderPanel(){panelMemory.capture();drawPanel();if(profile)panelMemory.restore(view+':'+(view==='bag'?inventoryUI.category:view==='shop'?shopCategory:tab));}
 let trackedArtifact;
+const artifactTraceHint=node('div','',document.body);artifactTraceHint.style.cssText='position:fixed;left:50%;top:22%;transform:translateX(-50%);padding:10px 18px;background:#10232ee8;border:1px solid #ffdc8d;border-radius:8px;color:#ffecaf;z-index:15;pointer-events:none';artifactTraceHint.hidden=true;
 const artifactMarker=new THREE.Mesh(new THREE.OctahedronGeometry(.38),new THREE.MeshBasicMaterial({color:0xffdc8d}));
 artifactMarker.visible=false;scene.add(artifactMarker);
 function updateArtifactMarker(){
  const point=trackedArtifact;
  artifactMarker.visible=active&&point?.map===currentMap;
+ artifactTraceHint.hidden=!artifactMarker.visible||paused;
+ if(artifactMarker.visible){const distance=Math.hypot(camera.position.x-point.x,camera.position.z-point.z),delta=Math.atan2(point.x-camera.position.x,point.z-camera.position.z)+yaw-Math.PI,angle=Math.atan2(Math.sin(delta),Math.cos(delta));artifactTraceHint.textContent=L('神器遗迹','Artifact trace')+' · '+Math.ceil(distance)+'m · '+(distance<=3?L('按 F 检查','Press F to inspect'):Math.abs(angle)<.35?L('↑ 前方','↑ Ahead'):angle>0?L('← 左转','← Turn left'):L('右转 →','Turn right →'));}
  if(artifactMarker.visible){
   artifactMarker.position.set(point.x,ground(point.x,point.z)+.86,point.z);
   artifactMarker.rotation.y=performance.now()*.002;
@@ -302,14 +305,14 @@ function drawPanel(){closeArtifactPreview?.();closeArtifactPreview=undefined;if(
     node('small',L('试炼限时 ','Trial time limit ')+route.minutes+L(' 分钟',' min'),item);
     if(id==='abyss')node('small',L('试炼内血瓶和食物无法回血。','Potions and food cannot heal during this trial.'),item);
    }
-   if(stage||artifactClueFound(profile,id))for(const target of spec.targets){if(stage===0)node('small',target.replaceAll('_',' ')+' · '+(record?.marks[target]||0)+' / '+artifactRequirement(stage),item);}
-   else node('small',L('线索藏在世界秘闻中','Search the world’s hidden stories for a clue'),item);
+   if(stage||artifactClueFound(profile,id))for(const target of spec.targets){if(stage===0)node('small',L(...(names[target]||[target,target]))+' · '+Math.min(record?.marks[target]||0,artifactRequirement(stage))+' / '+artifactRequirement(stage),item);}
+   else node('small',L('达到角色等级后自动解锁线索：','Clue unlocks automatically at character level ')+spec.level,item);
    if(stage&&['elements','divinity','origin'].includes(id))node('small',L('觉醒试炼中须使用不同技能 · ','Distinct skills required during awakening · ')+(id==='elements'?3:4),item);
    if(stage&&id==='hourglass')node('small',L('觉醒试炼中须成功回溯一次','Use Time Rewind successfully during awakening trials'),item);
    if(stage&&id==='crown')node('small',L('觉醒试炼中须在低于35%生命时承受 ','Survive ') + stage*3 + L('次攻击',' hits below 35% health during the trial'),item);
    if(stage)node('p',L(...descriptions[id]),item);
    if(!stage&&artifactClueFound(profile,id)){
-    const found=record?.trail||0,total=ARTIFACT_TRAILS[id].length;
+    const total=ARTIFACT_TRAILS[id].length,found=Math.min(record?.trail||0,total);
     node('small',L('探索遗迹','Trace the relic')+' · '+found+' / '+total,item);
     if(found<total){
      const location=node('p','',item);
@@ -321,11 +324,12 @@ function drawPanel(){closeArtifactPreview?.();closeArtifactPreview=undefined;if(
        if(point){void trackArtifact(id,point);location.textContent=point.map+' · X '+Math.round(point.x)+' / Z '+Math.round(point.z);}
       }catch(error){location.textContent=error.message;}
      };
-     button(L('查看线索位置','Locate trace'),()=>void trace(false),item);
+     button(L('追踪神器遗迹','Track artifact trace'),()=>void trace(false),item);
+     button(L('前往线索地图','Travel to clue map'),async()=>{await trace(false);if(trackedArtifact?.id===id)await selectMap(trackedArtifact.map);},item);
      button(L('检查附近遗迹','Inspect nearby trace'),()=>void trace(true),item);
     }
    }
-   if(id==='void'&&!stage&&artifactClueFound(profile,id))node('small',L('到沉星遗境的秘闻遗物旁开启裂隙。','Open the rift beside the hidden relic in the Sunken Star Ruins.'),item);
+
    if(id==='divinity'&&stage>=2)node('small',L('元素窃取传播，次元终结追加三斩，深渊化身释放侵蚀，时间静止扩大三米。','Siphon spreads, Execution adds three cuts, Avatar releases corruption, and Chronostasis expands by three meters.'),item);
    if(stage){const equipped=profile.artifactEquipped===id;button(equipped?L('卸下','Unequip'):L('装备','Equip'),()=>void action('equipArtifact',{id:equipped?'':id}),item);}
    if(artifactClueFound(profile,id)&&stage<4)button(stage?L('进入觉醒试炼','Enter awakening trial'):L('进入神器试炼','Enter artifact trial'),async()=>{

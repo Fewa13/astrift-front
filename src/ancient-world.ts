@@ -611,11 +611,6 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
    const id=String(data.id||'') as ArtifactId;
    if(action==='startArtifactTrial'){
     if(!canStartArtifactTrial(p,id))return fail('Artifact requirements not met.');
-    if(id==='void'&&!p.artifacts?.void?.stage){
-     const clue=mapSecret('starfall');
-     const actor=this.allSockets().map(ws=>this.readSocket(ws) as Player|null).find(player=>player?.name===name&&player.map==='starfall'&&player.hp>0);
-     if(!clue||!actor||Math.hypot(actor.x-clue.x,actor.z-clue.z)>6)return fail('Return to the hidden relic in the Sunken Star Ruins to open the rift.');
-    }
     const error=this.ctx.storage.transactionSync(()=>{const error=this.dungeons().createArtifactTrial(name,id,p.artifacts?.[id]?.stage||0,ARTIFACTS[id].level,ARTIFACT_ROUTES[id].minutes);if(!error)this.trials().leave(name);return error;});
     if(error)return fail(error);
     return {ok:true,profile:p,dungeonState:this.dungeons().state(name)};

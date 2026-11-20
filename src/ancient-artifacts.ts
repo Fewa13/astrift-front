@@ -23,7 +23,7 @@ export function recordArtifactVictory(p:AncientProfile,kind:string,share:number)
   record.marks[kind]=Math.min(artifactRequirement(record.stage),(record.marks[kind]||0)+1);
  }
 }
-export function artifactRequirement(stage:number){return stage===0?3:0}
+export function artifactRequirement(stage:number){return stage===0?1:0}
 function originEligible(p:AncientProfile){
  return Object.keys(ARTIFACTS).filter(id=>id!=='origin').every(id=>p.artifacts?.[id as ArtifactId]?.stage===4)
   &&Object.values(p.mastery||{}).filter(skill=>skill.level>=20).length>=4
@@ -45,7 +45,8 @@ export const ARTIFACT_ROUTES:Record<ArtifactId,{clue:string;mastery:number;minut
  origin:{clue:'sanctum',mastery:20,minutes:8,guardian:'hourglass_regent',final:'starbound_heart'},
 };
 export function artifactClueFound(p:AncientProfile,id:ArtifactId){
- return p.secrets?.[ARTIFACT_ROUTES[id].clue]===2&&(id!=='origin'||originEligible(p));
+ if(!Object.hasOwn(ARTIFACTS,id))return false;
+ return id==='origin'?p.secrets?.sanctum===2&&originEligible(p):p.level>=ARTIFACTS[id].level||p.secrets?.[ARTIFACT_ROUTES[id].clue]===2;
 }
 export function canStartArtifactTrial(p:AncientProfile,id:ArtifactId){
  if(!Object.hasOwn(ARTIFACTS,id)||!artifactClueFound(p,id))return false;
@@ -65,9 +66,9 @@ export const ARTIFACT_COMBAT={
 
 // Relative search offsets keep the trail anchored to each map's hidden relic.
 export const ARTIFACT_TRAILS:Record<ArtifactId,readonly (readonly [number,number])[]>={
- elements:[[9,0],[-7,9],[3,15]],void:[[0,-12],[12,4]],abyss:[[-12,-4],[0,13],[13,-2]],
- hourglass:[[0,14],[11,10],[-11,7]],crown:[[-10,13],[10,13],[0,-15]],
- divinity:[[14,-6],[-14,-7],[0,17]],origin:[[0,-9],[13,0],[0,15],[-13,0]],
+ elements:[[9,0]],void:[[0,-12]],abyss:[[-12,-4]],
+ hourglass:[[0,14]],crown:[[-10,13]],
+ divinity:[[14,-6]],origin:[[0,-9]],
 };
 export function artifactTrailPoint(id:ArtifactId,index:number,origin:{x:number;z:number},safe:(x:number,z:number)=>boolean){
  const offset=ARTIFACT_TRAILS[id][index];if(!offset)return null;

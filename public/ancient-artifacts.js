@@ -23,7 +23,7 @@ function recordArtifactVictory(p, kind, share) {
   }
 }
 function artifactRequirement(stage) {
-  return stage === 0 ? 3 : 0;
+  return stage === 0 ? 1 : 0;
 }
 function originEligible(p) {
   return Object.keys(ARTIFACTS).filter((id) => id !== "origin").every((id) => p.artifacts?.[id]?.stage === 4) && Object.values(p.mastery || {}).filter((skill) => skill.level >= 20).length >= 4 && Object.values(p.secrets || {}).filter((value) => value === 2).length >= 3;
@@ -45,7 +45,8 @@ const ARTIFACT_ROUTES = {
   origin: { clue: "sanctum", mastery: 20, minutes: 8, guardian: "hourglass_regent", final: "starbound_heart" }
 };
 function artifactClueFound(p, id) {
-  return p.secrets?.[ARTIFACT_ROUTES[id].clue] === 2 && (id !== "origin" || originEligible(p));
+  if (!Object.hasOwn(ARTIFACTS, id)) return false;
+  return id === "origin" ? p.secrets?.sanctum === 2 && originEligible(p) : p.level >= ARTIFACTS[id].level || p.secrets?.[ARTIFACT_ROUTES[id].clue] === 2;
 }
 function canStartArtifactTrial(p, id) {
   if (!Object.hasOwn(ARTIFACTS, id) || !artifactClueFound(p, id)) return false;
@@ -66,13 +67,13 @@ const ARTIFACT_COMBAT = {
   abyssHealingMultiplier: 1.12
 };
 const ARTIFACT_TRAILS = {
-  elements: [[9, 0], [-7, 9], [3, 15]],
-  void: [[0, -12], [12, 4]],
-  abyss: [[-12, -4], [0, 13], [13, -2]],
-  hourglass: [[0, 14], [11, 10], [-11, 7]],
-  crown: [[-10, 13], [10, 13], [0, -15]],
-  divinity: [[14, -6], [-14, -7], [0, 17]],
-  origin: [[0, -9], [13, 0], [0, 15], [-13, 0]]
+  elements: [[9, 0]],
+  void: [[0, -12]],
+  abyss: [[-12, -4]],
+  hourglass: [[0, 14]],
+  crown: [[-10, 13]],
+  divinity: [[14, -6]],
+  origin: [[0, -9]]
 };
 function artifactTrailPoint(id, index, origin, safe) {
   const offset = ARTIFACT_TRAILS[id][index];
