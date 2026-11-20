@@ -19,3 +19,5 @@
 - 升华技能通过服务端校验的战斗精通成长。按有效命中、击杀、治疗、召唤及增减益等不同机制结算，防止重复奖励。职业和技能界面显示双语效果、等级和进度，提供可操作的技能与外观预览。
 - 验证正式客户端的选择、施法、进阶、重连、存档及融合流程，检查每条路线的视觉和性能。完成后按项目流程同步网站、正版单 HTML 和 GitHub。
 - 26 条路线的 104 个技能已接入实战入口和视觉预览。继续逐条核对机制、数值、被动与边界条件。全技能施法检查只验证接入，不能代替逐技能行为验证。
+
+- `astrift-ai.surge.sh` ships complete local game assets together with the AI frontend via `scripts/build-ai-game.mjs` and `deploy:ai-mirror`. Keep it in `deploy:surge-sites`; do not replace its local `/game.html` entry with a remote website. The AI title stays unchanged. AI styles use `ai-style.css` to avoid game asset collisions.

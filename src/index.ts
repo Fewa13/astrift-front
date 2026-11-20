@@ -789,6 +789,7 @@ const PUBLIC_ORIGINS=new Set(['https://astrift-front.fewa3729.workers.dev','http
   'https://astrift.codeberg.page',
   'https://astrift-front.surge.sh','https://polite-gold-qcohaxy8.edgeone.dev',
   'https://astrift-2b44b8.gitlab.io',
+  'https://astrift-ai.surge.sh',
   'https://ilovegames.surge.sh',
   'https://ilovegames.web.app',
   'https://ilovegames.firebaseapp.com',
