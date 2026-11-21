@@ -21,3 +21,5 @@
 - `astrift-ai.surge.sh` ships complete local game assets together with the AI frontend via `scripts/build-ai-game.mjs` and `deploy:ai-mirror`. Keep it in `deploy:surge-sites`; do not replace its local `/game.html` entry with a remote website. The AI title stays unchanged. AI styles use `ai-style.css` to avoid game asset collisions.
 
 - 2026-11-20 武器词条：武器的召唤兽伤害和减速强化替换为吸血、挥击加速、暴击概率、暴击伤害或武器伤害，保留原数值档位与隐藏品阶；其他槽位不变。近战普攻基础暴击率30%、暴击倍率1.5；暴击概率加概率，暴击伤害加额外伤害（+10%为1.6倍），武器伤害只提高近战基础伤害。暴击由服务端命中时判定，技能及召唤物不套用武器暴击。
+
+- 2026-11-20：近战普通攻击不暴击时，伤害保底为当前职业常用攻击技能单次伤害的20%，随技能等级、圣级、融合精通和装备技能强度增长；不按大招、全场总和或整段持续伤害比较。保底只提高普攻，武器伤害词条在保底后加成，暴击另外计算，不能反向抬高技能或重复乘算融合系数。

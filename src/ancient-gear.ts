@@ -1,3 +1,4 @@
+import {meleeBasicSkillFloor} from './ancient-melee-balance.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {jadeBonuses} from './ancient-jade-wear.js';
 import type {AncientProfile} from './ancient-rules';
@@ -249,7 +250,7 @@ export function salvageAncientGear(p:AncientProfile,id:string){
  if(!Number.isSafeInteger((p.materials[key]||0)+amount))return '数量已达上限';
  p.gear=p.gear!.filter(i=>i.id!==id);p.materials[key]=(p.materials[key]||0)+amount;return null;
 }
-export function ancientMeleeDamage(p:AncientProfile){const d=equippedGear(p,'weapon');if(!d)return 0;const s=ancientGearStats(p);return Math.floor((ancientBaseAttack(p.level)+(d.damage||0))*(1+s.weaponDamage)*(1+s.bonus)*(1+s.jadeAttack)*(1+puzzleTitleBonus(p)))}
+export function ancientMeleeDamage(p:AncientProfile){const d=equippedGear(p,'weapon');if(!d)return 0;const s=ancientGearStats(p);const natural=(ancientBaseAttack(p.level)+(d.damage||0))*(1+s.bonus)*(1+s.jadeAttack)*(1+puzzleTitleBonus(p));return Math.max(Math.floor(natural*(1+s.weaponDamage)),Math.ceil(meleeBasicSkillFloor(p,ancientSkillDamage(p)*(1+s.bossSkill)*(1+s.finisherSkill))*(1+s.weaponDamage)))}
 export function ancientMeleeInterval(p:AncientProfile){return (equippedGear(p,'weapon')?.interval||600)*(1-ancientGearStats(p).haste)}
 export function equipAncientGear(p:AncientProfile,slot:string,id:string){if(!Object.hasOwn(GEAR_SLOTS,slot))return '装备槽不存在';if(!id){p.gearEquipped??={};delete p.gearEquipped[slot as GearSlot];return null}const item=p.gear?.find(i=>i.id===id),d=item&&gearDefinition(item.key);if(!d||d.slot!==slot)return '装备不存在';if(p.level<GEAR_LEVELS[d.quality-1])return '玩家等级不足';p.gearEquipped??={};p.gearEquipped[slot as GearSlot]=id;return null}
 // Weights are conditional on an equipment drop; map progression, never player level, sets the tier.

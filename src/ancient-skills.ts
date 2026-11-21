@@ -111,6 +111,8 @@ export function skillDirectMultiplier(id:string, level:number){
  switch(id){
   case 'haste': case 'power': case 'icearmor': case 'icebolt': case 'chain': return 3+.3*level;
   case 'rage': case 'drain': return 4+.4*level;
+  case 'riftblade': return (3+.25*level)*.5;
+  case 'stonefist': return 3.2+.3*level;
   case 'slash': return 3.2+.3*level;
   case 'soulbolt': return 3.3+.3*level;
   case 'frostburst': return 2.6+.25*level;

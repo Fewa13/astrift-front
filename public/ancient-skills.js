@@ -164,6 +164,10 @@ function skillDirectMultiplier(id, level) {
     case "rage":
     case "drain":
       return 4 + 0.4 * level;
+    case "riftblade":
+      return (3 + 0.25 * level) * 0.5;
+    case "stonefist":
+      return 3.2 + 0.3 * level;
     case "slash":
       return 3.2 + 0.3 * level;
     case "soulbolt":
