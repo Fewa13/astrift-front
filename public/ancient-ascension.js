@@ -1,6 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { isAuthorityJob } from "./ancient-authority.js";
 import { PROFESSIONS, skillRadius } from "./ancient-skills.js";
-const ASCENSION_SKILLS = Object.fromEntries(Object.entries(PROFESSIONS).map(([job, definition]) => [job, definition.skills]));
+const ASCENSION_SKILLS = Object.fromEntries(Object.entries(PROFESSIONS).filter(([job]) => !isAuthorityJob(job)).map(([job, definition]) => [job, definition.skills]));
 function ascensionProgress(p, job = p.profession || "") {
   return p.ascension?.jobs?.[job];
 }

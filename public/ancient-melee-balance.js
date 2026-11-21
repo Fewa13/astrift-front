@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { isAuthorityJob, AUTHORITY_BALANCE } from "./ancient-authority.js";
 import { skillDirectMultiplier, isFusionJob } from "./ancient-skills.js";
 import { holyPower } from "./ancient-ascension.js";
 import { advancementRoute } from "./ancient-advancement-progress.js";
@@ -29,6 +30,10 @@ function meleeBasicSkillReference(p) {
   if (advanced) {
     const level2 = p.advancements?.[job]?.skills[advanced.key]?.level || 1;
     return { id: "advancement:" + route.id + ":" + advanced.key, multiplier: advanced.multiplier * (1 + Math.min(99, level2 - 1) * 0.055) * (advanced.holy ? holyPower(p) : 1) };
+  }
+  if (isAuthorityJob(job) && p.authority?.[job]?.unlocked) {
+    const id2 = job === "timelord" ? "timecurse" : "spacefracture";
+    return { id: id2, multiplier: AUTHORITY_BALANCE.damage * (job === "timelord" ? 1.3 : AUTHORITY_BALANCE.fractureHit) * masteryPower(p, id2) };
   }
   const fused = fusionBasics[job];
   if (fused && p.fusedJobs?.[job]) {

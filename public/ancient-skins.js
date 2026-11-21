@@ -62,6 +62,8 @@ function unlockAncientSkin(profile, id) {
   return null;
 }
 const SKIN_PROFESSIONS = {
+  timelord: { zh: "\u65F6\u95F4\u4E4B\u4E3B", en: "Lord of Time", cloth: 1457993, accent: 16044419 },
+  spacelord: { zh: "\u7A7A\u95F4\u4E4B\u4E3B", en: "Lord of Space", cloth: 2368325, accent: 12888063 },
   elementalist: { zh: "\u5143\u7D20\u6218\u58EB", en: "Elemental Warrior", cloth: 2374729, accent: 16764264 },
   voidsword: { zh: "\u865A\u7A7A\u5251\u5723", en: "Void Swordmaster", cloth: 2233908, accent: 11572730 },
   abyssal: { zh: "\u6DF1\u6E0A\u9886\u4E3B", en: "Abyssal Overlord", cloth: 3150363, accent: 14830207 },

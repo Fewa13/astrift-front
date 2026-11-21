@@ -1,3 +1,5 @@
+import {castAuthority,tickAuthority} from './ancient-authority-combat';
+import {isAuthorityJob,AUTHORITY_BALANCE} from './ancient-authority';
 import {SKILL_CONTACT,skillFlight,isTravelingSkill,type SkillFlight} from './ancient-skill-flight';
 import {advancementCooldown,swordFormAttack,castAdvancement,castNecromancer,tickBerserker,tickPaladin,tickStormcaller,tickVoltstalker,tickCrystalist,tickWinterwarden,tickAdvancedFire,tickAdvancedCurse,tickAdvancedSword,tickAdvancedShadow,tickAdvancedStone,tickAdvancedSummon,tickAdvancedElements,tickAdvancedRift,tickAdvancedAbyss,tickAdvancedTime,reconcileAdvancementRuntime} from './ancient-advancement-combat';
 import {advancementRoute} from './ancient-advancement-progress';
@@ -29,7 +31,7 @@ import {sanctumPath} from './ancient-sanctum';
 import {blightPath} from './ancient-blight';
 import {cityPath} from './ancient-city';
 import {TEMPORAL_DISORDER} from './ancient-fusion-passives';
-export type SkillMonster={timeDistortion?:{owner:string;until:number;level:number;power:number};temporalDisorder?:{owner:string;until:number};temporalSlowUntil?:number;sanctuaryUntil?:number;charm?:{owner:string;until:number;next:number};judgment?:{owner:string;until:number;maxHp:number};contributionsForMastery?:Record<string,number>;frozenUntil?:number;frozenDamage?:{owner:string;amount:number;attack?:string}[];masteryMarks?:Record<string,{owner:string;id:string;until:number}>;buffUntil?:number;buffPower?:number;id:string;kind:string;hp:number;maxHp:number;x:number;y?:number;z:number;slow?:number;slowUntil?:number;weak?:number;weakUntil?:number;vulnerable?:number;vulnerableUntil?:number;strikes?:{skillId?:string;owner:string;at:number;damage:number}[];dots?:{skillId?:string;owner:string;until:number;next:number;damage:number}[]};
+export type SkillMonster={authorityOriginalHp?:number;authorityDeprivedUntil?:number;authorityFracture?:{owner:string;until:number};authorityCurse?:{owner:string;id:string;next:number;until:number;interval:number;power:number};timeDistortion?:{owner:string;until:number;level:number;power:number};temporalDisorder?:{owner:string;until:number};temporalSlowUntil?:number;sanctuaryUntil?:number;charm?:{owner:string;until:number;next:number};judgment?:{owner:string;until:number;maxHp:number};contributionsForMastery?:Record<string,number>;frozenUntil?:number;frozenDamage?:{owner:string;amount:number;attack?:string}[];masteryMarks?:Record<string,{owner:string;id:string;until:number}>;buffUntil?:number;buffPower?:number;id:string;kind:string;hp:number;maxHp:number;x:number;y?:number;z:number;slow?:number;slowUntil?:number;weak?:number;weakUntil?:number;vulnerable?:number;vulnerableUntil?:number;strikes?:{skillId?:string;owner:string;at:number;damage:number}[];dots?:{skillId?:string;owner:string;until:number;next:number;damage:number}[]};
 export type SkillFXDetails={target:string;projectile?:string;direction?:number[];level?:number;phase?:string;flight?:SkillFlight;source?:{x:number;y:number;z:number};links?:{x:number;y:number;z:number;target:string;height:number}[]};
 export function clearPendingSkillDamage(owner:string,targets:Iterable<Partial<Pick<SkillMonster,'strikes'|'dots'>>>){for(const m of targets){m.strikes=(m.strikes||[]).filter(v=>v.owner!==owner);m.dots=(m.dots||[]).filter(v=>v.owner!==owner);}}
 export type SkillContext={aimTarget?:SkillMonster;hitPadding?:number;castRange?:number;projectileImpact?:boolean;motion?:(to:{x:number;y:number;z:number},speed:number)=>void;canMove?:(x:number,z:number,nx:number,nz:number)=>boolean;map:string;monsters:SkillMonster[];damage:(m:SkillMonster,n:number,source?:'summon',attack?:string,critical?:boolean)=>number;fx:(id:string,x:number,z:number,radius:number,details?:SkillFXDetails)=>void};
@@ -47,9 +49,9 @@ export function skillAreaHits(center:{x:number;z:number;y?:number},m:SkillMonste
 export function skillAreaTargets(target:SkillMonster,radius:number,c:SkillContext){
  return c.monsters.filter(m=>m.id===target.id?m.hp>0:skillAreaHits(target,m,radius,c.map));
 }
-export function monsterIncoming(m:SkillMonster,now:number){return (m.kind==='oathknight'&&(m as SkillMonster & {bossCast?:{id:string}}).bossCast?.id==='oathGuard'?.35:1)*(m.vulnerableUntil&&m.vulnerableUntil>now?1+(m.vulnerable||0):1)*((m.temporalDisorder?.until||0)>now?1+TEMPORAL_DISORDER.vulnerability:1)}
-export function monsterOutgoing(m:SkillMonster,now:number){return ((m.sanctuaryUntil||0)>now?.8:1)*(1-Math.max((m.weakUntil||0)>now?m.weak||0:0,(m.judgment?.until||0)>now?.3:0,(m.temporalDisorder?.until||0)>now?TEMPORAL_DISORDER.weakness:0))*((m.buffUntil||0)>now?m.buffPower||1:1)}
-export function monsterSpeed(m:SkillMonster,now:number){return 1-Math.max((m.slowUntil||0)>now?m.slow||0:0,(m.judgment?.until||0)>now?.3:0,(m.temporalSlowUntil||0)>now?TEMPORAL_DISORDER.slow:0)}
+export function monsterIncoming(m:SkillMonster,now:number){return ((m.authorityDeprivedUntil||0)>now?1.25:1)*(m.kind==='oathknight'&&(m as SkillMonster & {bossCast?:{id:string}}).bossCast?.id==='oathGuard'?.35:1)*(m.vulnerableUntil&&m.vulnerableUntil>now?1+(m.vulnerable||0):1)*((m.temporalDisorder?.until||0)>now?1+TEMPORAL_DISORDER.vulnerability:1)}
+export function monsterOutgoing(m:SkillMonster,now:number){return ((m.authorityDeprivedUntil||0)>now?.8:1)*((m.sanctuaryUntil||0)>now?.8:1)*(1-Math.max((m.weakUntil||0)>now?m.weak||0:0,(m.judgment?.until||0)>now?.3:0,(m.temporalDisorder?.until||0)>now?TEMPORAL_DISORDER.weakness:0))*((m.buffUntil||0)>now?m.buffPower||1:1)}
+export function monsterSpeed(m:SkillMonster,now:number){return ((m.authorityDeprivedUntil||0)>now?.8:1)*(1-Math.max((m.slowUntil||0)>now?m.slow||0:0,(m.judgment?.until||0)>now?.3:0,(m.temporalSlowUntil||0)>now?TEMPORAL_DISORDER.slow:0))}
 function slow(m:SkillMonster,n:number,until:number){const amount=FOREST_KINDS[m.kind]?.boss||m.kind==='chief'||m.kind==='lord'?n/2:n;if(!m.slowUntil||m.slowUntil<=Date.now()||amount>=(m.slow||0)){m.slow=amount;m.slowUntil=until}}
 function weaken(m:SkillMonster,n:number,until:number){if(!m.weakUntil||m.weakUntil<=Date.now()||n>=(m.weak||0)){m.weak=n;m.weakUntil=until}}
 export function selectSkillTarget(a:SkillActor,dir:unknown,range:number,c:SkillContext){
@@ -92,7 +94,7 @@ function launchSkillProjectile(a:SkillActor,p:AncientProfile,id:string,direction
  if(a.hp<=0)return '请在存活时使用技能';
  const key=id.startsWith('advanced:')?id.slice(-1):'',definition=SKILLS[id];
  if(route&&!key)return '技能不属于当前职业';
- const level=key?p.advancements?.[p.profession||'']?.skills[key]?.level||0:isFusionSkill(id)?masteryLevel(p,id):p.skills?.[id]||0;
+ const level=key?p.advancements?.[p.profession||'']?.skills[key]?.level||0:isFusionSkill(id)||isAuthorityJob(SKILLS[id]?.job||'')?masteryLevel(p,id):p.skills?.[id]||0;
  if(key?(!route||!level):(!definition||definition.job!==p.profession||!level||p.level<definition.unlock||isFusionSkill(id)&&!p.fusedJobs?.[p.profession||'']))return '技能尚未修炼';
  if(!key&&activeSkill(a,'transform',now))return '变身期间只能使用爪子';
  if((runtime(a).cooldowns[id]||0)>now)return '技能冷却中';
@@ -109,7 +111,7 @@ function launchSkillProjectile(a:SkillActor,p:AncientProfile,id:string,direction
 }
 export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now=Date.now()):string|null{
  if(/^advanced:[XQZC]$/.test(id)&&!p.advancements?.[p.profession||'']?.route){const base=PROFESSIONS[p.profession||'']?.skills.find(s=>SKILLS[s].key===id.slice(-1));if(base)id=base;}
- const level=id.startsWith('advanced:')?p.advancements?.[p.profession||'']?.skills[id.slice(-1)]?.level||1:(isFusionSkill(id)?masteryLevel(p,id):p.skills?.[id]||1);
+ const level=id.startsWith('advanced:')?p.advancements?.[p.profession||'']?.skills[id.slice(-1)]?.level||1:(isFusionSkill(id)||isAuthorityJob(SKILLS[id]?.job||'')?masteryLevel(p,id):p.skills?.[id]||1);
  c={...c,castRange:skillTravelRange(level)};
  const time=a.skillRuntime?.advancedTime,charge=id!=='advanced:Z'&&a.advancement==='time-sovereign'?(time?.charges||0):0;
  const temporary=runtime(a).effects.lifeChargedAttack;
@@ -121,18 +123,19 @@ export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,directi
  return error;
 }
 function castAncientSkillImpl(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now=Date.now()){
+ const authority=castAuthority(a,p,id,direction,c,now);if(authority!==undefined)return authority;
  const advanced=castAdvancement(a,p,id,direction,c,now);
  if(advanced!==undefined)return advanced;
  if(isFusionSkill(id)){if(a.hp<=0||SKILLS[id].job!==p.profession||!p.fusedJobs?.[p.profession])return '技能尚未修炼';if(p.profession==='necromancer')return castNecromancer(a,p,id,direction,skillSourceContext(c,id),now);return castFusion(a,p,id,direction,skillSourceContext(c,id),now,ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p)*fusionDamageMultiplier(p.profession)*masteryPower(p,id)*(p.artifactEquipped==='divinity'&&SKILLS[id].key==='C'?1+.12*artifactStage(p):1));}
  const recalling=id==='shadowreturn'&&shadowRecallReady(a,now);
  const d=equippedGear(p,'weapon'),combo=d?.combo&&d.combo===p.profession?GROWTH_COMBOS[d.combo]:undefined,r=runtime(a),ready=!!combo&&!!r.gearChain&&r.gearChain.key===d!.combo&&r.gearChain.until>now&&id===combo.to;
- const start={x:a.x,z:a.z},relic=activeRelic(p),range=skillCastRange(id,(isFusionSkill(id)?masteryLevel(p,id):p.skills?.[id]||1)),target=['icebolt','stoneprison','storm'].includes(id)?selectSkillTarget(a,direction,range,c):undefined;
+ const start={x:a.x,z:a.z},relic=activeRelic(p),range=skillCastRange(id,(isFusionSkill(id)||isAuthorityJob(SKILLS[id]?.job||'')?masteryLevel(p,id):p.skills?.[id]||1)),target=['icebolt','stoneprison','storm'].includes(id)?selectSkillTarget(a,direction,range,c):undefined;
  const error=castSkillImpl(a,p,id,direction,relicCastContext(a,p,id,branchContext(a,p,id,skillSourceContext(c,id),now),now),now,ready?1+combo!.bonus:1);
  if(!error){if(!recalling&&r.cooldowns[id]>now)r.cooldowns[id]=now+(r.cooldowns[id]-now)*branchCooldown(p,id);if(id!=='weaken')queueBranchFinisher(a,p,id,target??selectSkillTarget(a,direction,range||30,c)??c.monsters.find(m=>m.hp>0&&Math.hypot(m.x-a.x,m.z-a.z)<=6&&lineClear(a.x,a.y,a.z,m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,c.map)),now);const body=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p);
   if(relic==='ice'&&id==='icebolt'&&target)for(let i=0;i<3;i++)queueRelic(a,p,{at:now+1000+i*1000,x:target.x,z:target.z,radius:4,damage:body*.15,fx:'icebolt',slow:true});
   if(relic==='shadowblade'&&id==='shadowstep')queueRelic(a,p,{at:now+800,...start,radius:4,damage:body*.5,fx:'riftblade'});
   if(relic==='stonewright'&&id==='stoneprison'&&target)queueRelic(a,p,{at:now+1500,x:target.x,z:target.z,radius:5,damage:body*.6,fx:'faultline'});
-  if(relic==='lightning'&&id==='storm'&&target){const marks=r.relic?.marks||[];for(const m of skillAreaTargets(target,skillRadius(id,(isFusionSkill(id)?masteryLevel(p,id):p.skills?.[id]||1),isHoly(p)),c))if(marks.some(v=>v.id===m.id&&v.until>now)){queueRelic(a,p,{at:now+100,x:m.x,z:m.z,radius:3.5,damage:body*(1.6+.15*((isFusionSkill(id)?masteryLevel(p,id):p.skills?.[id]||1)))*.35,fx:'haste'});r.relic!.marks=r.relic!.marks.filter(v=>v.id!==m.id);}}
+  if(relic==='lightning'&&id==='storm'&&target){const marks=r.relic?.marks||[];for(const m of skillAreaTargets(target,skillRadius(id,(isFusionSkill(id)||isAuthorityJob(SKILLS[id]?.job||'')?masteryLevel(p,id):p.skills?.[id]||1),isHoly(p)),c))if(marks.some(v=>v.id===m.id&&v.until>now)){queueRelic(a,p,{at:now+100,x:m.x,z:m.z,radius:3.5,damage:body*(1.6+.15*((isFusionSkill(id)||isAuthorityJob(SKILLS[id]?.job||'')?masteryLevel(p,id):p.skills?.[id]||1)))*.35,fx:'haste'});r.relic!.marks=r.relic!.marks.filter(v=>v.id!==m.id);}}
  }
  if(!error&&combo){if(ready)delete r.gearChain;if(id===combo.from)r.gearChain={key:d!.combo!,until:now+10000};}
  return error;
@@ -210,6 +213,7 @@ export function ancientAuxShot(a:SkillActor,p:AncientProfile,direction:unknown,c
  const n=p.skills?.weaken||0;if(p.profession!=='summoner'||n<=0)return '技能尚未修炼';if((r.cooldowns.weaken||0)>now)return '技能冷却中';r.cooldowns.weaken=now+12000*(1-ancientGearStats(p).cooldown);c.damage(target,ancientSkillDamage(p)*(2.8+.3*n)*skillDamageMultiplier(a,now)*holyPower(p),undefined,'weaken');weaken(target,Math.min(.8,.05*n),now+n*8000);queueBranchFinisher(a,p,'weaken',target,now);c.fx('weaken',target.x,target.z,1);
 }
 export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,dt:number,now=Date.now()){
+ tickAuthority(a,p,c,dt,now);
  const retiredFusion=isFusionJob(p.profession||'')&&!!runtime(a).advancementIdentity?.includes('|')&&runtime(a).advancementIdentity!.split('|')[1]!==p.profession;
  reconcileAdvancementRuntime(a,p,c.map,a.hp<=0);
  if(retiredFusion)for(const m of c.monsters){

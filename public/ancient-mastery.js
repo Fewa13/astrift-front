@@ -6,6 +6,14 @@ function fusionDamageMultiplier(job) {
   return fusionDamageByJob[job || ""] === void 0 ? FUSION_DAMAGE_MULTIPLIER : Math.round(fusionDamageByJob[job || ""] * FUSION_DAMAGE_SCALE * 1e4) / 1e4;
 }
 const growth = {
+  timecurse: 0.04,
+  timedominion: 0.035,
+  timeflow: 0.025,
+  timeresurrection: 0.03,
+  spacefracture: 0.045,
+  spacefold: 0.035,
+  spaceswap: 0.035,
+  spacecollapse: 0.03,
   raiseSkeleton: 0.055,
   consumeSoul: 0.04,
   necropolis: 0.04,

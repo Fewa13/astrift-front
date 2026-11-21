@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { AUTHORITY_JOBS, AUTHORITY_SKILLS, AUTHORITY_DESCRIPTIONS, isAuthorityJob } from "./ancient-authority.js";
 import { ARTIFACT_COMBAT } from "./ancient-artifacts.js";
 import { bossFormStats } from "./ancient-boss-cards.js";
 const PROFESSIONS = {
@@ -72,6 +73,10 @@ for (const job of Object.keys(FUSION_SKILLS)) {
   PROFESSIONS[job] = { name: recipe.name, en: recipe.en, icon: "\u2726", skills: FUSION_SKILLS[job].map((skill) => skill[0]) };
   for (const [id, name, en, key, cooldown] of FUSION_SKILLS[job]) SKILLS[id] = { job, name, en, key, cooldown, unlock: 0, duration: 0 };
 }
+for (const job of Object.keys(AUTHORITY_JOBS)) {
+  PROFESSIONS[job] = { ...AUTHORITY_JOBS[job], skills: AUTHORITY_SKILLS[job].map((s) => s[0]) };
+  for (const [id, name, en, key, cooldown] of AUTHORITY_SKILLS[job]) SKILLS[id] = { job, name, en, key, cooldown, unlock: 0, duration: 0 };
+}
 function isFusionSkill(id) {
   return isFusionJob(SKILLS[id]?.job || "");
 }
@@ -86,7 +91,7 @@ function runtime(a) {
   return a.skillRuntime ??= { cooldowns: {}, effects: {}, mode: 1, lastAux: 0 };
 }
 function hasSkillBook(id) {
-  return Object.hasOwn(SKILLS, id) && !isFusionSkill(id);
+  return Object.hasOwn(SKILLS, id) && !isFusionSkill(id) && !isAuthorityJob(SKILLS[id].job);
 }
 function skillBook(id) {
   return "skillbook:" + id;
@@ -137,7 +142,7 @@ function skillTrainingCost(current) {
 }
 function trainSkill(p, id) {
   const s = Object.hasOwn(SKILLS, id) ? SKILLS[id] : void 0;
-  if (!s || isFusionSkill(id) || p.profession !== s.job) return "\u804C\u4E1A\u4E0D\u5339\u914D";
+  if (!s || isFusionSkill(id) || isAuthorityJob(s.job) || p.profession !== s.job) return "\u804C\u4E1A\u4E0D\u5339\u914D";
   if (p.level < s.unlock) return "\u73A9\u5BB6\u7B49\u7EA7\u4E0D\u8DB3";
   const next = (p.skills?.[id] || 0) + 1, cost = skillTrainingCost(next - 1);
   if (!Object.values(cost).every(Number.isSafeInteger)) return "\u6280\u80FD\u7B49\u7EA7\u5DF2\u8FBE\u4E0A\u9650";
@@ -226,6 +231,7 @@ function skillDamagePreview(id, level) {
   }
 }
 function skillDescription(id, n, en = false) {
+  if (AUTHORITY_DESCRIPTIONS[id]) return AUTHORITY_DESCRIPTIONS[id][en ? 1 : 0];
   const level = Math.max(1, n), cd = skillCooldown(id, level), range = skillCastRange(id, level);
   const texts = {
     riftblade: [`${range}\u7C73\u88C2\u5F71\u53CC\u5203\uFF0C\u603B\u8BA1${300 + 25 * level}%\u57FA\u7840\u653B\u51FB\u4F24\u5BB3\uFF1B\u51B7\u53744\u79D2\u3002\u81EA\u5E261\u7EA7\uFF0C\u6309X\u4F7F\u7528\u3002`, `${range}m twin rift blades: ${300 + 25 * level}% base attack damage in total. Cooldown 4s. Starts at level 1; press X.`],
@@ -270,7 +276,7 @@ function activeSkill(a, id, now = Date.now()) {
 function skillDamageMultiplier(a, now = Date.now()) {
   const blood = a.advancement === "berserker" ? 1 + 0.35 * Math.max(0, 1 - a.hp / (a.maxHp || 100)) : 1;
   const legion = a.profession === "necromancer" ? a.skillRuntime?.advancedSummon?.legion.reduce((count, pet) => count + (pet.until > now ? pet.count ?? 1 : 0), 0) || 0 : 0;
-  return (activeSkill(a, "lifeChargedAttack", now) ? 1 + activeSkill(a, "lifeChargedAttack", now) : 1) * (activeSkill(a, "lifeAnchorBuff", now) ? 1.2 : 1) * (activeSkill(a, "swordEmpower", now) ? 1.4 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 0.025 : 1) * (activeSkill(a, "abyssKingForm", now) ? 1.3 : 1) * (activeSkill(a, "riftDomain", now) ? 1.35 : 1) * (activeSkill(a, "elementCycle", now) ? 1.15 : 1) * (activeSkill(a, "elementFire", now) ? 1.18 : 1) * (1 + legion * 0.025) * (activeSkill(a, "spiritAscendant", now) ? 1.5 : 1) * (activeSkill(a, "radiantRecovery", now) ? 1.3 : 1) * blood * (1 + Math.min(1.5, activeSkill(a, "bloodSacrifice", now) * 0.04)) * (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.4 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
+  return (a.skillRuntime?.authority?.bonusUntil > now ? 1 + (a.skillRuntime?.authority?.bonus || 0) : 1) * (activeSkill(a, "lifeChargedAttack", now) ? 1 + activeSkill(a, "lifeChargedAttack", now) : 1) * (activeSkill(a, "lifeAnchorBuff", now) ? 1.2 : 1) * (activeSkill(a, "swordEmpower", now) ? 1.4 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 0.025 : 1) * (activeSkill(a, "abyssKingForm", now) ? 1.3 : 1) * (activeSkill(a, "riftDomain", now) ? 1.35 : 1) * (activeSkill(a, "elementCycle", now) ? 1.15 : 1) * (activeSkill(a, "elementFire", now) ? 1.18 : 1) * (1 + legion * 0.025) * (activeSkill(a, "spiritAscendant", now) ? 1.5 : 1) * (activeSkill(a, "radiantRecovery", now) ? 1.3 : 1) * blood * (1 + Math.min(1.5, activeSkill(a, "bloodSacrifice", now) * 0.04)) * (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.4 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
 }
 function skillSpeedMultiplier(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), h = activeSkill(a, "haste", now);

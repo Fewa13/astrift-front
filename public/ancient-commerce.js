@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { isAuthorityJob } from "./ancient-authority.js";
 import { rollbackAdvancement } from "./ancient-advancement-progress.js";
 import { PROFESSION_FUSIONS, isFusionJob } from "./ancient-skills.js";
 import { FUSION_SCROLLS } from "./ancient-fusion-passives.js";
@@ -12,7 +13,7 @@ const ANCIENT_SUPPLIES = {
   experience: { name: "\u7ECF\u9A8C\u836F\u6C34", en: "XP Potion", price: 300, kind: "boost", duration: 6e5 }
 };
 for (const [id, scroll] of Object.entries(FUSION_SCROLLS)) ANCIENT_SUPPLIES[id] = { ...scroll, kind: "scroll" };
-for (const [id, j] of Object.entries(PROFESSIONS)) if (!isFusionJob(id)) ANCIENT_SUPPLIES["book:" + id] = { name: j.name + "\u6280\u80FD\u4E66", en: j.en + " Skill Book", price: 300, kind: "book", job: id };
+for (const [id, j] of Object.entries(PROFESSIONS)) if (!isFusionJob(id) && !isAuthorityJob(id)) ANCIENT_SUPPLIES["book:" + id] = { name: j.name + "\u6280\u80FD\u4E66", en: j.en + " Skill Book", price: 300, kind: "book", job: id };
 function supplyKey(id) {
   return "supply:" + id;
 }
@@ -86,7 +87,7 @@ function useAncientSupply(p, id, now = Date.now(), random = Math.random) {
   return null;
 }
 function chooseAncientProfession(p, job) {
-  if (!Object.hasOwn(PROFESSIONS, job) || p.consumedJobs?.[job] || isFusionJob(job) && !p.fusedJobs?.[job]) return "\u804C\u4E1A\u4E0D\u53EF\u7528";
+  if (!Object.hasOwn(PROFESSIONS, job) || isAuthorityJob(job) && !p.authority?.[job]?.unlocked || p.consumedJobs?.[job] || isFusionJob(job) && !p.fusedJobs?.[job]) return "\u804C\u4E1A\u4E0D\u53EF\u7528";
   if (p.profession === job) return "\u5DF2\u662F\u5F53\u524D\u804C\u4E1A";
   const key = supplyKey("transfer");
   if (p.profession) {

@@ -67,6 +67,8 @@ export function unlockAncientSkin(profile:SkinProfile,id:string){
 }
 
 export const SKIN_PROFESSIONS={
+ timelord:{zh:'时间之主',en:'Lord of Time',cloth:0x163f49,accent:0xf4d183},
+ spacelord:{zh:'空间之主',en:'Lord of Space',cloth:0x242345,accent:0xc4a7ff},
  elementalist:{zh:'元素战士',en:'Elemental Warrior',cloth:0x243c49,accent:0xffcd68},
  voidsword:{zh:'虚空剑圣',en:'Void Swordmaster',cloth:0x221634,accent:0xb095fa},
  abyssal:{zh:'深渊领主',en:'Abyssal Overlord',cloth:0x30121b,accent:0xe24a7f},

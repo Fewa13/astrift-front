@@ -1,7 +1,8 @@
+import {isAuthorityJob} from './ancient-authority.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import type {AncientProfile} from './ancient-rules';
 import {PROFESSIONS,skillRadius} from './ancient-skills.js';
-export const ASCENSION_SKILLS = Object.fromEntries(Object.entries(PROFESSIONS).map(([job, definition]) => [job, definition.skills]));
+export const ASCENSION_SKILLS = Object.fromEntries(Object.entries(PROFESSIONS).filter(([job])=>!isAuthorityJob(job)).map(([job, definition]) => [job, definition.skills]));
 export type AscensionProgress={permit:boolean;step:number;count:number;holy:boolean};
 export type AscensionState={day:string;attempts:number;jobs:Record<string,AscensionProgress>};
 export function ascensionProgress(p:AncientProfile,job=p.profession||''){return p.ascension?.jobs?.[job]}

@@ -8,7 +8,7 @@ export function fusionDamageMultiplier(job?:string){
  return fusionDamageByJob[job||'']===undefined?FUSION_DAMAGE_MULTIPLIER:Math.round(fusionDamageByJob[job||'']*FUSION_DAMAGE_SCALE*10000)/10000;
 }
 
-const growth: Record<string,number> = {
+const growth: Record<string,number> = {timecurse:.04,timedominion:.035,timeflow:.025,timeresurrection:.03,spacefracture:.045,spacefold:.035,spaceswap:.035,spacecollapse:.03,
  raiseSkeleton:.055,consumeSoul:.04,necropolis:.04,
  prism:.045,judgment:.035,erosion:.06,siphon:.05,
  voidslash:.05,riftassault:.045,voiddomain:.03,execution:.032,

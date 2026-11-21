@@ -1,3 +1,4 @@
+import {isAuthorityJob,AUTHORITY_BALANCE} from './ancient-authority.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import type {AncientProfile} from './ancient-rules';
 import {skillDirectMultiplier,isFusionJob} from './ancient-skills.js';
@@ -21,6 +22,7 @@ const fusionBasics:Record<string,{id:string;multiplier:number}>={elementalist:{i
 export function meleeBasicSkillReference(p:AncientProfile){
  const job=p.profession||'',route=advancementRoute(p),advanced=route&&ADVANCEMENT_BASIC_REFERENCES[route.id];
  if(advanced){const level=p.advancements?.[job]?.skills[advanced.key]?.level||1;return {id:'advancement:'+route!.id+':'+advanced.key,multiplier:advanced.multiplier*(1+Math.min(99,level-1)*.055)*(advanced.holy?holyPower(p):1)};}
+ if(isAuthorityJob(job)&&p.authority?.[job]?.unlocked){const id=job==='timelord'?'timecurse':'spacefracture';return {id,multiplier:AUTHORITY_BALANCE.damage*(job==='timelord'?1.3:AUTHORITY_BALANCE.fractureHit)*masteryPower(p,id)};}
  const fused=fusionBasics[job];
  if(fused&&p.fusedJobs?.[job]){
   const second=job==='abyssal'?p.fusionPassives?.[job]?.[0]?.level||0:0;

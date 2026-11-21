@@ -1,3 +1,4 @@
+import {isAuthorityJob} from './ancient-authority';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {PROFESSIONS, PROFESSION_FUSIONS, SKILLS} from './ancient-skills';
 import {BOSS_CARDS,bossCardKey} from './ancient-boss-cards';
@@ -28,6 +29,7 @@ export function restoreTestProfessions(name:string,p:AncientProfile){
  p.fusedJobs??={};
  p.consumedJobs??={};
  for(const [job,definition] of Object.entries(PROFESSIONS)){
+  if(isAuthorityJob(job))continue;
   delete p.consumedJobs[job];
   const progress=p.ascension.jobs[job]??={permit:true,step:3,count:0,holy:true};
   Object.assign(progress,{permit:true,step:3,holy:true});

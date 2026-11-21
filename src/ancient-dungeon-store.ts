@@ -25,6 +25,11 @@ export class AncientDungeonStore{
   }
   this.sql.exec('DELETE FROM ancient_dungeon_members WHERE name=? AND run=?',name,run.id);
  }
+ createAuthority(name:string,job:import('./ancient-authority').AuthorityJob,source:string,level:number){
+  if(!this.alive(name))return '请先复活 / Revive first';this.reset(name);
+  const now=Date.now(),id=this.sql.exec<{id:number}>("INSERT INTO ancient_dungeon_runs(data) VALUES('{}') RETURNING id").one().id;
+  const r:DungeonRun={id,map:'dungeon:'+id,leader:name,members:[name],ready:[name],tier:'authority',level,stage:0,authority:{job,source,round:0,nextAttack:now+10000},gateZ:145,status:'active',created:now,expires:now+30*60000,started:now,joined:[],fallen:[],positions:{},seed:0,traps:[],trapAt:0,collapsed:[]};this.save(r);this.sql.exec('INSERT INTO ancient_dungeon_members VALUES(?,?) ON CONFLICT(name) DO UPDATE SET run=excluded.run',name,id);return null;
+ }
  createTower(name:string){
   if((this.profile(name).tower?.best||0)>=100)return "试炼之塔已登顶 / Trial Tower already completed";
   const old=this.get(name);if(old?.tower&&old.status==='active'&&!old.fallen.includes(name)&&!old.abandoned?.includes(name))return null;
@@ -63,7 +68,7 @@ export class AncientDungeonStore{
   this.save(run);
   return null;
  }
- state(name:string){const r=this.get(name),online=this.online();return {run:r?{...r,positions:undefined,members:r.members.map(n=>({name:n,ready:r.ready.includes(n),online:online.has(n),fallen:r.fallen.includes(n)}))}:null}}
+ state(name:string){const r=this.get(name),online=this.online();return {run:r?{...r,serverNow:Date.now(),positions:undefined,members:r.members.map(n=>({name:n,ready:r.ready.includes(n),online:online.has(n),fallen:r.fallen.includes(n)}))}:null}}
  command(name:string,action:string,data:Record<string,unknown>):string|null{
   if(action==='dungeonState')return null;
   if(action==='dungeonCreate'){

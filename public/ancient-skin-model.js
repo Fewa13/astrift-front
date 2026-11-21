@@ -332,6 +332,12 @@ export function createAncientSkinModel(id,profession){
    const crown=new T.Mesh(new T.TorusGeometry(.48,.023,5,36),metals[0]);
    crown.rotation.x=Math.PI/2; crown.position.y=2.34;model.add(crown);
   }
+  if(profession==='timelord'||profession==='spacelord'){
+   const time=profession==='timelord',metal=new T.MeshStandardMaterial({color:time?0xf3cd7a:0xb4a0e2,metalness:.8,roughness:.25}),glow=new T.MeshBasicMaterial({color:time?0x90ffdc:0xd5c7ff});
+   for(let i=0;i<(time?3:5);i++){const ring=new T.Mesh(new T.TorusGeometry(.5+i*.12,.02,5,time?48:4),i%2?metal:glow);ring.position.set(0,1.65,.35+i*.05);ring.rotation.set(time?i*.5:0,time?0:i*.35,time?0:Math.PI/4);model.add(ring);}
+   for(const side of [-1,1])for(let i=0;i<6;i++){const shard=new T.Mesh(new T.OctahedronGeometry(.13),i%2?metal:glow);shard.position.set(side*(.5+i*.07),1.8-i*.12,.18);shard.scale.set(.55,2+i*.2,.5);shard.rotation.z=side*(time?.45:1);model.add(shard);}
+   const crown=new T.Mesh(new T.TorusGeometry(.32,.025,5,time?24:4),glow);crown.position.y=2.3;crown.rotation.x=Math.PI/2;model.add(crown);
+  }
   templates.set(key,model);
  }
  const root=templates.get(key).clone(true);

@@ -1,6 +1,8 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 const SKILL_CONTACT = { aimPadding: 0.75, areaPadding: 0.55, lanePadding: 0.45, slashRadius: 2.8, netFlightRadius: 3, netRadius: 5, smallNetRadius: 2.5, netDuration: 4e3, smallNetDuration: 2e3, netTick: 500 };
 const families = {
+  timelord: ["time-sigil", "time-ring", "time-double", "time-comet"],
+  spacelord: ["void-crescent", "void-ring", "void-double", "void-lance"],
   warrior: ["war-crescent", "war-ring", "war-lance", "war-comet"],
   summoner: ["soul-orb", "soul-ring", "soul-sigil", "soul-comet"],
   fire: ["flame-orb", "flame-ring", "flame-comet", "meteor-core"],
@@ -45,14 +47,14 @@ const routeFamilies = {
   "time-weaver": ["time-orb", "time-double", "time-sigil", "time-ring"]
 };
 const routeColors = { paladin: [14993006, 16771774], beastlord: [11768164, 15067310], voltstalker: [8944361, 12970495], hellfire: [14632828, 16758138], pactbinder: [12078473, 15184617], boundarycutter: [15044526, 13023219], riftduelist: [8230889, 13293823], "abyss-herald": [10253267, 9102015], "time-weaver": [7135183, 13087218] };
-const palettes = { warrior: [15291728, 16763022], summoner: [5561524, 12910572], fire: [16742702, 16765292], ice: [7395573, 13889535], lightning: [9416703, 14151167], curse: [11363817, 15316717], swordsman: [4841361, 12712920], shadowblade: [9597655, 15316199], stonewright: [11897431, 15911815], elementalist: [6019278, 16761203], voidsword: [10190319, 13814015], abyssal: [13913718, 16755082], chrono: [15910508, 11134956], necromancer: [8051074, 12760303] };
+const palettes = { timelord: [8323045, 16766593], spacelord: [9535999, 15656447], warrior: [15291728, 16763022], summoner: [5561524, 12910572], fire: [16742702, 16765292], ice: [7395573, 13889535], lightning: [9416703, 14151167], curse: [11363817, 15316717], swordsman: [4841361, 12712920], shadowblade: [9597655, 15316199], stonewright: [11897431, 15911815], elementalist: [6019278, 16761203], voidsword: [10190319, 13814015], abyssal: [13913718, 16755082], chrono: [15910508, 11134956], necromancer: [8051074, 12760303] };
 function skillFlight(job, key, route = "") {
   const slot = Math.max(0, "XQZC".indexOf(key)), list = families[job] || families.summoner;
   const shape = routeFamilies[route]?.[slot] || list[slot];
   const colors = routeColors[route] || palettes[job] || palettes.summoner;
   return { shape, color: colors[0], trim: colors[1], radius: shape.includes("crescent") || shape.includes("double") && /^(jade|void|shadow)/.test(shape) ? SKILL_CONTACT.slashRadius : shape.includes("ring") || shape.includes("sigil") ? 1.1 : 0.7, speed: 40, slot };
 }
-const projectileSkills = /* @__PURE__ */ new Set(["slash", "soulbolt", "icebolt", "frostburst", "blizzard", "chain", "storm", "hex", "drain", "doom", "firebolt", "firewave", "firestorm", "inferno", "tempest", "swordwave", "triplecut", "swordrain", "phantomblade", "riftblade", "stonefist", "faultline", "stoneprison", "mountainfall", "prism", "judgment", "erosion", "voidslash", "abysstouch", "devour", "temporalrift"]);
+const projectileSkills = /* @__PURE__ */ new Set(["timecurse", "spacefracture", "slash", "soulbolt", "icebolt", "frostburst", "blizzard", "chain", "storm", "hex", "drain", "doom", "firebolt", "firewave", "firestorm", "inferno", "tempest", "swordwave", "triplecut", "swordrain", "phantomblade", "riftblade", "stonefist", "faultline", "stoneprison", "mountainfall", "prism", "judgment", "erosion", "voidslash", "abysstouch", "devour", "temporalrift"]);
 const projectileRoutes = { berserker: "X", paladin: "C", stormcaller: "XC", voltstalker: "X", crystalist: "XQC", wildfire: "X", hellfire: "XQZ", hexweaver: "XQZC", pactbinder: "XQC", linebreaker: "XQC", shadowhunter: "X" };
 function isTravelingSkill(id, route = "") {
   return id.startsWith("advanced:") ? /^advanced:[XQZC]$/.test(id) && !!projectileRoutes[route]?.includes(id.slice(-1)) : projectileSkills.has(id);

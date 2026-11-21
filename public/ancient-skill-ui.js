@@ -1,3 +1,5 @@
+import {renderAuthorityPanel} from './ancient-authority-ui.js';
+import {isAuthorityJob,AUTHORITY_DESCRIPTIONS,AUTHORITY_TYPES,AUTHORITY_BALANCE,authorityDamageCoefficients} from './ancient-authority.js';
 import {FUSION_PASSIVES,FUSION_SCROLLS,FUSION_PASSIVE_REQUIREMENTS,ignitionEligible,passiveCost,passiveLevel} from './ancient-fusion-passives.js';
 import {advancementDescription} from './ancient-advancement-descriptions.js';
 import {ADVANCED_PROFESSIONS,ADVANCEMENT_KEYS,advancementCastKey} from './ancient-advanced-professions.js';
@@ -161,13 +163,14 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    renderIgnition(card,p);
    render(card);
    btn(L('职业试炼','Profession Trials'),()=>open('trials'),card);
-   if(!ascensionProgress(p)?.holy){
+   if(!isAuthorityJob(p.profession)&&!ascensionProgress(p)?.holy){
     const trial=el('details','',card);trial.className='ancientAscensionEntry';trial.open=ascensionEligible(p)||!!ascensionProgress(p)?.permit;
     el('summary',L('圣级试炼','Holy Ascension Trial'),trial);
     renderAscensionPanel(trial,{getProfile,en,job:p.profession,request,join,refresh});
    }
    renderBranchPanel(card,{p,job:p.profession,en,action,refresh});
   }
+  renderAuthorityPanel(card,{p,en,el,btn,action,request,join});
   const toggle=currentJob?btn(L('其他职业','Other professions'),()=>{
    otherProfessionsOpen=!otherProfessionsOpen;
    change.hidden=!otherProfessionsOpen;
@@ -183,7 +186,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   }
   const list=el('div','',change);list.className='ancientProfessionList';
   for(const [id,job] of Object.entries(PROFESSIONS)){
-   if(id===p.profession||p.consumedJobs?.[id]||isFusionJob(id)&&!p.fusedJobs?.[id])continue;
+   if(isAuthorityJob(id)&&!p.authority?.[id]?.unlocked||id===p.profession||p.consumedJobs?.[id]||isFusionJob(id)&&!p.fusedJobs?.[id])continue;
    const item=el('article','',list);item.className='weaponCard';
    el('strong',job.icon+' '+L(job.name,job.en),item);
    const [good,bad,goodEn,badEn]=descriptions[id]||['自带圣级技能','融合会永久消耗配方职业','Holy skills unlocked','Fusion permanently consumes its source professions'];
@@ -256,6 +259,9 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
    const item=el('section','',list);item.className='weaponCard ancientSkillCard';
    el('strong',ancientKeyLabel('Key'+skill.key,en())+' · '+holyName(L(skill.name,skill.en),en(),isHoly(p)),item);
    el('small',level?L('技能当前等级','Current skill level')+' · '+level:L('技能解锁等级','Required player level')+' · '+skill.unlock,item);
+   if(isAuthorityJob(p.profession)){
+    const rank=masteryLevel(p,id),points=p.mastery?.[id]?.points||0,goal=masteryCost(id,rank);item.querySelector('small').textContent=L('技能等级','Skill level')+' · '+rank;el('span',L(...AUTHORITY_TYPES[id]),item);el('p',L(...AUTHORITY_DESCRIPTIONS[id]),item);const base=ancientSkillDamage(p)*AUTHORITY_BALANCE.damage*masteryPower(p,id);for(const [type,value]of Object.entries(authorityDamageCoefficients(id)))el('small',L({tick:'每次周期伤害',hit:'单次命中伤害',detonation:'引爆伤害',summon:'每名召唤物单次攻击'}[type],{tick:'Damage per tick',hit:'Damage per hit',detonation:'Detonation damage',summon:'Damage per summon attack'}[type])+' · '+Math.floor(base*value).toLocaleString(),item);el('small',L('技能冷却','Cooldown')+' · '+skill.cooldown+'s',item);const bar=el('progress','',item);bar.max=goal;bar.value=points;el('small',points+' / '+goal,item);continue;
+   }
    if(isFusionSkill(id)){
     if(id==='unleashLegion'){
      item.querySelector('small').remove();
