@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {newAncientProfile} from '../public/ancient-rules.js';
 import {rollGearItem} from '../public/ancient-gear.js';
-class Element{constructor(tag){this.tag=tag;this.textContent='';this.children=[];this.dataset={};this.className=''}append(n){this.children.push(n)}get childElementCount(){return this.children.length}}
+class Element{constructor(tag){this.tag=tag;this.textContent='';this.children=[];this.dataset={};this.className=''}append(n){this.children.push(n)}insertRow(){const row=new Element('tr');this.append(row);return row}insertCell(){const cell=new Element('td');this.append(cell);return cell}get childElementCount(){return this.children.length}}
 globalThis.document={createElement:tag=>new Element(tag)};
 const compiled=await build({entryPoints:['public/ancient-gear-ui.js'],bundle:true,write:false,format:'esm',platform:'node'}),{createAncientGearUI}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
 const p=newAncientProfile();p.level=50;const setItem=rollGearItem('set_thunder_armor2',()=>.5);p.gear.push(setItem,rollGearItem('purifyHoly',()=>.5));let english=false,card,actions=[];const ui=createAncientGearUI({getProfile:()=>p,en:()=>english,action:(a,d)=>actions.push([a,d]),refresh:()=>render()});function render(){card=new Element('main');ui.render(card)}const all=n=>[n,...n.children.flatMap(all)],find=(tag,text)=>all(card).find(n=>n.tag===tag&&n.textContent===text),items=()=>all(card).filter(n=>n.className.includes('ancientGearItem'));

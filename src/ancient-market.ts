@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {grantGearBonusAffix} from './ancient-gear';
+import {grantGearBonusAffix,migrateWeaponAffixes} from './ancient-gear';
 import {jadeQualitySummary,priceJadeCollection} from './ancient-jade-quality';
 import {marketGearItem,isMarketGear,MARKET_CATEGORIES,type MarketItem} from './ancient-market-rules';
 import {isJadeWorn} from './ancient-jade-wear';
@@ -23,7 +23,7 @@ export class AncientMarket{
   sql.exec('CREATE TABLE IF NOT EXISTS ancient_market_receipts(name TEXT NOT NULL,request_id TEXT NOT NULL,signature TEXT NOT NULL,listing TEXT NOT NULL,created INTEGER NOT NULL,PRIMARY KEY(name,request_id))');
   // Upgrade escrowed equipment in place, preserving seller, listing ID and asking price.
   for(const row of sql.exec<{id:string;data:string}>("SELECT id,data FROM ancient_market WHERE kind IN ('weapon','helmet','armor')").toArray()){
-   const item=JSON.parse(row.data) as MarketItem;if(isMarketGear(item)&&grantGearBonusAffix(item.gear))sql.exec('UPDATE ancient_market SET data=? WHERE id=?',JSON.stringify({...item,...marketGearItem(item.gear)}),row.id);
+   const item=JSON.parse(row.data) as MarketItem;if(isMarketGear(item)&&(Number(migrateWeaponAffixes(item.gear))|Number(grantGearBonusAffix(item.gear))))sql.exec('UPDATE ancient_market SET data=? WHERE id=?',JSON.stringify({...item,...marketGearItem(item.gear)}),row.id);
   }
   sql.exec("UPDATE ancient_market SET price=MAX(1,CAST((json_extract(data,'$.value')*2+2)/3 AS INTEGER)) WHERE price<MAX(1,CAST((json_extract(data,'$.value')*2+2)/3 AS INTEGER))");
  }

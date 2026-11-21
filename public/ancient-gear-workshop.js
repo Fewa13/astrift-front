@@ -66,6 +66,9 @@ const effects={
  speed:['提高移动速度。','Increases movement speed.'],
  haste:['缩短近战攻击间隔。','Shortens the interval between melee attacks.'],
  lifesteal:['武器命中时，按伤害的一定比例回复生命。','Weapon hits restore health based on damage dealt.'],
+ critChance:['提高近战普攻暴击概率；基础30%，最高100%。','Adds to melee critical chance: 30% base, capped at 100%.'],
+ critDamage:['提高暴击的额外伤害；基础暴击1.5倍，+10%变为1.6倍。','Adds to critical bonus damage: 1.5x base; +10% makes it 1.6x.'],
+ weaponDamage:['提高近战普攻基础伤害，不提高技能或召唤物伤害。','Increases base melee damage; does not boost skills or summons.'],
  pet:['提高召唤兽造成的伤害。','Increases damage dealt by summons.'],
  slow:['增强你施加的减速效果。','Strengthens the slows you apply.'],
 };

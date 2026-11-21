@@ -18,9 +18,30 @@ const GEAR_AFFIXES = {
   haste: { name: "\u6325\u51FB\u52A0\u901F", en: "Melee haste", min: 0.02, max: 0.04, slots: ["weapon", "wings"] },
   lifesteal: { name: "\u6B66\u5668\u5438\u8840", en: "Weapon lifesteal", min: 5e-3, max: 0.015, slots: ["weapon"] },
   cooldown: { name: "\u6280\u80FD\u51B7\u5374\u7F29\u51CF", en: "Skill cooldown reduction", min: 0.01, max: 0.025, slots: ["helmet", "armor", "wings"] },
-  pet: { name: "\u53EC\u5524\u517D\u4F24\u5BB3", en: "Summon damage", min: 0.03, max: 0.06, slots: ["weapon", "helmet", "armor", "wings"] },
-  slow: { name: "\u51CF\u901F\u5F3A\u5316", en: "Slow strength", min: 0.02, max: 0.04, slots: ["weapon", "helmet", "armor", "wings"] }
+  pet: { name: "\u53EC\u5524\u517D\u4F24\u5BB3", en: "Summon damage", min: 0.03, max: 0.06, slots: ["helmet", "armor", "wings"] },
+  critChance: { name: "\u66B4\u51FB\u6982\u7387", en: "Critical chance", min: 0.02, max: 0.04, slots: ["weapon"] },
+  critDamage: { name: "\u66B4\u51FB\u4F24\u5BB3", en: "Critical damage", min: 0.05, max: 0.1, slots: ["weapon"] },
+  weaponDamage: { name: "\u6B66\u5668\u4F24\u5BB3", en: "Weapon damage", min: 0.04, max: 0.08, slots: ["weapon"] },
+  slow: { name: "\u51CF\u901F\u5F3A\u5316", en: "Slow strength", min: 0.02, max: 0.04, slots: ["helmet", "armor", "wings"] }
 };
+function migrateWeaponAffixes(item) {
+  if (gearDefinition(item.key)?.slot !== "weapon") return false;
+  let changed = false;
+  for (const [group, lines] of [["normal", item.affixes], ["hidden", item.hiddenAffixes]]) {
+    for (const [index, line] of (lines || []).entries()) {
+      if (line.key !== "pet" && line.key !== "slow") continue;
+      const old = GEAR_AFFIXES[line.key], strength = Math.max(0, Math.min(1, (line.value - old.min) / (old.max - old.min)));
+      const pool = ["lifesteal", "haste", "critChance", "critDamage", "weaponDamage"].filter((key2) => !lines.some((other) => other !== line && other.key === key2));
+      let seed = 2166136261;
+      for (const ch of item.id + ":" + group + ":" + index) seed = Math.imul(seed ^ ch.charCodeAt(0), 16777619);
+      const key = pool[(seed >>> 0) % pool.length], rule = GEAR_AFFIXES[key];
+      line.key = key;
+      line.value = Math.round((rule.min + (rule.max - rule.min) * strength) * 1e4) / 1e4;
+      changed = true;
+    }
+  }
+  return changed;
+}
 function rollGearItem(key, random = Math.random) {
   const item = { id: crypto.randomUUID(), key };
   rollGearAffixes(item, random);
@@ -261,8 +282,8 @@ function gearPromotion(item, random = Math.random) {
   return (def.slot === "weapon" ? "blade" : def.slot) + quality;
 }
 function ensureAncientGear(p) {
-  if (p.gear !== void 0 && p.gearAffixVersion === 2 && p.gear.every((i) => i.affixBonusVersion === 1 && i.hiddenAffixes !== void 0)) return false;
-  let changed = p.gearAffixVersion !== 2;
+  if (p.gear !== void 0 && p.gearAffixVersion === 3 && p.gear.every((i) => i.affixBonusVersion === 1 && i.hiddenAffixes !== void 0 && (gearDefinition(i.key)?.slot !== "weapon" || ![...i.affixes || [], ...i.hiddenAffixes].some((v) => v.key === "pet" || v.key === "slow")))) return false;
+  let changed = p.gearAffixVersion !== 3;
   if (p.gear === void 0) {
     const starter = rollGearItem("stoneRough");
     p.gear = [starter];
@@ -270,13 +291,28 @@ function ensureAncientGear(p) {
     changed = true;
   }
   for (const item of p.gear) {
+    changed = migrateWeaponAffixes(item) || changed;
     changed = grantGearBonusAffix(item) || changed;
     if (!item.hiddenAffixes) {
       item.hiddenAffixes = rollHiddenAffixes(item);
       changed = true;
     }
   }
-  p.gearAffixVersion = 2;
+  if (p.gearReroll) {
+    const pending = p.gearReroll, item = p.gear.find((i) => i.id === pending.id);
+    if (item && gearDefinition(item.key)?.slot === "weapon") {
+      const candidate = { ...item, id: item.id + ":pending", affixes: item.affixes?.map((line, index) => index === pending.index ? { ...pending.candidate } : { ...line }), hiddenAffixes: [] };
+      if (migrateWeaponAffixes(candidate)) {
+        pending.candidate = candidate.affixes[pending.index];
+        changed = true;
+      }
+      if (item.affixes?.[pending.index] && JSON.stringify(pending.original) !== JSON.stringify(item.affixes[pending.index])) {
+        pending.original = { ...item.affixes[pending.index] };
+        changed = true;
+      }
+    }
+  }
+  p.gearAffixVersion = 3;
   return changed;
 }
 function equippedGear(p, slot) {
@@ -290,7 +326,7 @@ function gearKeys(p) {
   }));
 }
 function ancientGearStats(p) {
-  let health2 = 0, reduction = 0, speed = 0, bonus = 0, hpPercent = 0, haste = 0, lifesteal = 0, cooldown = 0, pet = 0, slow = 0, skillBonus = 0, chainTargets = 0, slowedBonus = 0, petHealth = 0, tempo = 0, tempoCapacity = 0, bossSkill = 0, finisherSkill = 0;
+  let health2 = 0, reduction = 0, speed = 0, bonus = 0, hpPercent = 0, haste = 0, lifesteal = 0, cooldown = 0, pet = 0, slow = 0, skillBonus = 0, chainTargets = 0, slowedBonus = 0, petHealth = 0, tempo = 0, tempoCapacity = 0, bossSkill = 0, finisherSkill = 0, critChance = 0, critDamage = 0, weaponDamage = 0;
   const sets = {};
   for (const slot of Object.keys(GEAR_SLOTS)) {
     const d = equippedGear(p, slot);
@@ -340,6 +376,15 @@ function ancientGearStats(p) {
         case "cooldown":
           cooldown += n;
           break;
+        case "critChance":
+          critChance += n;
+          break;
+        case "critDamage":
+          critDamage += n;
+          break;
+        case "weaponDamage":
+          weaponDamage += n;
+          break;
         case "pet":
           pet += n;
           break;
@@ -371,7 +416,7 @@ function ancientGearStats(p) {
   health2 += Math.floor(ancientBaseHealth(p.level) * Math.min(0.6, hpPercent));
   const jade = jadeBonuses(p);
   health2 += Math.floor((ancientBaseHealth(p.level) + health2) * jade.health);
-  return { health: health2, jadeAttack: jade.attack, reduction: Math.min(0.6, reduction) + (1 - Math.min(0.6, reduction)) * jade.reduction, speed: Math.min(0.3, speed), bonus, haste: Math.min(0.2, haste), lifesteal: Math.min(0.05, lifesteal), cooldown: Math.min(0.5, Math.min(0.16, cooldown * 0.8) + Math.min(tempoCapacity, tempo)), bossSkill, finisherSkill, pet: Math.min(0.4, pet), slow: Math.min(0.2, slow), skillBonus, chainTargets, slowedBonus, petHealth, sets };
+  return { critChance: Math.min(1, Math.round((0.3 + critChance) * 1e4) / 1e4), critMultiplier: Math.round((1.5 + critDamage) * 1e4) / 1e4, weaponDamage, health: health2, jadeAttack: jade.attack, reduction: Math.min(0.6, reduction) + (1 - Math.min(0.6, reduction)) * jade.reduction, speed: Math.min(0.3, speed), bonus, haste: Math.min(0.2, haste), lifesteal: Math.min(0.05, lifesteal), cooldown: Math.min(0.5, Math.min(0.16, cooldown * 0.8) + Math.min(tempoCapacity, tempo)), bossSkill, finisherSkill, pet: Math.min(0.4, pet), slow: Math.min(0.2, slow), skillBonus, chainTargets, slowedBonus, petHealth, sets };
 }
 function ancientBaseHealth(level) {
   const l = Math.max(1, Number.isFinite(level) ? level : 1), anchors = [[1, 100], [5, 3e3], [10, 12e3], [30, 9e4], [50, 25e4], [60, 32e4], [80, 47e4], [100, 65e4]];
@@ -432,7 +477,7 @@ function ancientMeleeDamage(p) {
   const d = equippedGear(p, "weapon");
   if (!d) return 0;
   const s = ancientGearStats(p);
-  return Math.floor((ancientBaseAttack(p.level) + (d.damage || 0)) * (1 + s.bonus) * (1 + s.jadeAttack) * (1 + puzzleTitleBonus(p)));
+  return Math.floor((ancientBaseAttack(p.level) + (d.damage || 0)) * (1 + s.weaponDamage) * (1 + s.bonus) * (1 + s.jadeAttack) * (1 + puzzleTitleBonus(p)));
 }
 function ancientMeleeInterval(p) {
   return (equippedGear(p, "weapon")?.interval || 600) * (1 - ancientGearStats(p).haste);
@@ -538,6 +583,10 @@ function gearDescription(key, en = false) {
   if (d.interval) parts.push(`${en ? "Attack interval" : "\u653B\u51FB\u95F4\u9694"} ${d.interval / 1e3}s`);
   return parts.join(" \xB7 ");
 }
+function rollAncientMeleeCritical(p, random = Math.random) {
+  const stats = ancientGearStats(p), critical = random() < stats.critChance;
+  return { critical, multiplier: critical ? stats.critMultiplier : 1 };
+}
 export {
   ANCIENT_FORGE,
   ANCIENT_FORGE_LEGACY,
@@ -581,7 +630,9 @@ export {
   grantGearBonusAffix,
   growthComboText,
   growthTier,
+  migrateWeaponAffixes,
   puzzleTitleBonus,
+  rollAncientMeleeCritical,
   rollGearItem,
   salvageAncientGear
 };

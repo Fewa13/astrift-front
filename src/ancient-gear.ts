@@ -23,9 +23,28 @@ export const GEAR_AFFIXES:Record<string,{name:string;en:string;min:number;max:nu
  haste:{name:'挥击加速',en:'Melee haste',min:.02,max:.04,slots:['weapon','wings']},
  lifesteal:{name:'武器吸血',en:'Weapon lifesteal',min:.005,max:.015,slots:['weapon']},
  cooldown:{name:'技能冷却缩减',en:'Skill cooldown reduction',min:.01,max:.025,slots:['helmet','armor','wings']},
- pet:{name:'召唤兽伤害',en:'Summon damage',min:.03,max:.06,slots:['weapon','helmet','armor','wings']},
- slow:{name:'减速强化',en:'Slow strength',min:.02,max:.04,slots:['weapon','helmet','armor','wings']}
+ pet:{name:'召唤兽伤害',en:'Summon damage',min:.03,max:.06,slots:['helmet','armor','wings']},
+ critChance:{name:'暴击概率',en:'Critical chance',min:.02,max:.04,slots:['weapon']},
+ critDamage:{name:'暴击伤害',en:'Critical damage',min:.05,max:.1,slots:['weapon']},
+ weaponDamage:{name:'武器伤害',en:'Weapon damage',min:.04,max:.08,slots:['weapon']},
+ slow:{name:'减速强化',en:'Slow strength',min:.02,max:.04,slots:['helmet','armor','wings']}
 };
+// Keep existing roll strength and hidden rarity; change only retired weapon affix types.
+export function migrateWeaponAffixes(item:AncientGear){
+ if(gearDefinition(item.key)?.slot!=='weapon')return false;
+ let changed=false;
+ for(const [group,lines] of [['normal',item.affixes],['hidden',item.hiddenAffixes]] as const){
+  for(const [index,line] of (lines||[]).entries()){
+   if(line.key!=='pet'&&line.key!=='slow')continue;
+   const old=GEAR_AFFIXES[line.key],strength=Math.max(0,Math.min(1,(line.value-old.min)/(old.max-old.min)));
+   const pool=['lifesteal','haste','critChance','critDamage','weaponDamage'].filter(key=>!lines!.some(other=>other!==line&&other.key===key));
+   let seed=2166136261;for(const ch of item.id+':'+group+':'+index)seed=Math.imul(seed^ch.charCodeAt(0),16777619);
+   const key=pool[(seed>>>0)%pool.length],rule=GEAR_AFFIXES[key];
+   line.key=key;line.value=Math.round((rule.min+(rule.max-rule.min)*strength)*10000)/10000;changed=true;
+  }
+ }
+ return changed;
+}
 export function rollGearItem(key:string,random=Math.random):AncientGear {const item:AncientGear={id:crypto.randomUUID(),key};rollGearAffixes(item,random);grantGearBonusAffix(item,random);item.hiddenAffixes=rollHiddenAffixes(item);return item}
 function rollGearAffixes(item:AncientGear,random=Math.random){const d=gearDefinition(item.key);item.affixes=[];if(!d)return;const pool=Object.entries(GEAR_AFFIXES).filter(([key,a])=>a.slots.includes(d.slot)&&!a.quality&&(d.quality<7||key!=='cooldown'));if(d.quality>=7){const exclusive=d.quality===7?['astralTempo','starHunter']:['primalTempo','starHunter','primalVerdict'],key=exclusive[Math.min(exclusive.length-1,Math.floor(random()*exclusive.length))],a=GEAR_AFFIXES[key];item.affixes.push({key,value:Math.round((a.min+(a.max-a.min)*Math.max(0,Math.min(1,random())))*10000)/10000});}const count=d.quality===1?0:Math.min(3,d.quality-1);for(let i=0;i<count-(d.quality>=7?1:0)&&pool.length;i++){const index=Math.max(0,Math.min(pool.length-1,Math.floor(random()*pool.length))),[key,a]=pool.splice(index,1)[0];item.affixes.push({key,value:Math.round((a.min+(a.max-a.min)*Math.max(0,Math.min(1,random())))*10000)/10000})}}
 // The item marker travels through trades/market, so the one-time bonus cannot be farmed.
@@ -163,18 +182,27 @@ export function gearPromotion(item:AncientGear,random=Math.random){
  return (def.slot==='weapon'?'blade':def.slot)+quality;
 }
 export function ensureAncientGear(p:AncientProfile){
- if(p.gear!==undefined&&p.gearAffixVersion===2&&p.gear.every(i=>i.affixBonusVersion===1&&i.hiddenAffixes!==undefined))return false;
- let changed=p.gearAffixVersion!==2;
+ if(p.gear!==undefined&&p.gearAffixVersion===3&&p.gear.every(i=>i.affixBonusVersion===1&&i.hiddenAffixes!==undefined&&(gearDefinition(i.key)?.slot!=='weapon'||![...(i.affixes||[]),...i.hiddenAffixes].some(v=>v.key==='pet'||v.key==='slow'))))return false;
+ let changed=p.gearAffixVersion!==3;
  if(p.gear===undefined){const starter=rollGearItem('stoneRough');p.gear=[starter];p.gearEquipped={weapon:starter.id};changed=true}
  for(const item of p.gear){
+  changed=migrateWeaponAffixes(item)||changed;
   changed=grantGearBonusAffix(item)||changed;
   if(!item.hiddenAffixes){item.hiddenAffixes=rollHiddenAffixes(item);changed=true;}
  }
- p.gearAffixVersion=2;return changed;
+ if(p.gearReroll){
+  const pending=p.gearReroll,item=p.gear.find(i=>i.id===pending.id);
+  if(item&&gearDefinition(item.key)?.slot==='weapon'){
+   const candidate={...item,id:item.id+':pending',affixes:item.affixes?.map((line,index)=>index===pending.index?{...pending.candidate}:{...line}),hiddenAffixes:[]};
+   if(migrateWeaponAffixes(candidate)){pending.candidate=candidate.affixes![pending.index];changed=true;}
+   if(item.affixes?.[pending.index]&&JSON.stringify(pending.original)!==JSON.stringify(item.affixes[pending.index])){pending.original={...item.affixes[pending.index]};changed=true;}
+  }
+ }
+ p.gearAffixVersion=3;return changed;
 }
 export function equippedGear(p:AncientProfile,slot:GearSlot){const item=p.gear?.find(i=>i.id===p.gearEquipped?.[slot]),d=item&&gearDefinition(item.key);return d?.slot===slot&&p.level>=GEAR_LEVELS[d.quality-1]?d:undefined}
 export function gearKeys(p:AncientProfile){return Object.fromEntries(Object.keys(GEAR_SLOTS).map(slot=>{const id=p.gearEquipped?.[slot as GearSlot],item=p.gear?.find(i=>i.id===id);return [slot,item&&equippedGear(p,slot as GearSlot)?item.key:'']}))}
-export function ancientGearStats(p:AncientProfile){let health=0,reduction=0,speed=0,bonus=0,hpPercent=0,haste=0,lifesteal=0,cooldown=0,pet=0,slow=0,skillBonus=0,chainTargets=0,slowedBonus=0,petHealth=0,tempo=0,tempoCapacity=0,bossSkill=0,finisherSkill=0;const sets:Record<string,number>={};for(const slot of Object.keys(GEAR_SLOTS) as GearSlot[]){const d=equippedGear(p,slot);if(!d)continue;if(d.quality>=7)tempoCapacity+=(d.quality===8?.5:.45)/4;skillBonus+=d.skillPower||0;hpPercent+=d.hpPercent||0;cooldown+=d.cooldown||0;if(slot!=='weapon'){health+=d.health||0;reduction+=d.reduction||0;speed+=d.speed||0;bonus+=d.bonus||0;if(d.set)sets[d.set]=(sets[d.set]||0)+1}const item=p.gear?.find(i=>i.id===p.gearEquipped?.[slot]);for(const v of [...(item?.affixes||[]),...(item?.hiddenAffixes||[]).slice(0,Math.max(0,d.quality-5))]){const def=GEAR_AFFIXES[v.key];if(!def?.slots.includes(slot)||!Number.isFinite(v.value)||(def.quality||0)>d.quality)continue;const n=Math.max(0,Math.min(def.max,v.value));switch(v.key){case 'astralTempo':case 'primalTempo':tempo+=n;break;case 'starHunter':bossSkill+=n;break;case 'primalVerdict':finisherSkill+=n;break;case 'health':hpPercent+=n;break;case 'reduction':reduction+=n;break;case 'speed':speed+=n;break;case 'haste':haste+=n;break;case 'lifesteal':lifesteal+=n;break;case 'cooldown':cooldown+=n;break;case 'pet':pet+=n;break;case 'slow':slow+=n;break}}}if(sets.thunder>=2)skillBonus+=.05;if(sets.thunder>=3){skillBonus+=.03;chainTargets=1}if(sets.frost>=2)slow+=.08;if(sets.frost>=3)slowedBonus=.12;if(sets.blood>=2)haste+=.08;if(sets.blood>=3)lifesteal+=.03;if(sets.beast>=2)pet+=.12;if(sets.beast>=3){pet+=.08;petHealth=.2}if(sets.arcane>=2)cooldown+=.06;if(sets.arcane>=3){cooldown+=.04;hpPercent+=.05}health+=Math.floor(ancientBaseHealth(p.level)*Math.min(.6,hpPercent));const jade=jadeBonuses(p);health+=Math.floor((ancientBaseHealth(p.level)+health)*jade.health);return {health,jadeAttack:jade.attack,reduction:Math.min(.6,reduction)+(1-Math.min(.6,reduction))*jade.reduction,speed:Math.min(.3,speed),bonus,haste:Math.min(.2,haste),lifesteal:Math.min(.05,lifesteal),cooldown:Math.min(.5,Math.min(.16,cooldown*.8)+Math.min(tempoCapacity,tempo)),bossSkill,finisherSkill,pet:Math.min(.4,pet),slow:Math.min(.2,slow),skillBonus,chainTargets,slowedBonus,petHealth,sets}}
+export function ancientGearStats(p:AncientProfile){let health=0,reduction=0,speed=0,bonus=0,hpPercent=0,haste=0,lifesteal=0,cooldown=0,pet=0,slow=0,skillBonus=0,chainTargets=0,slowedBonus=0,petHealth=0,tempo=0,tempoCapacity=0,bossSkill=0,finisherSkill=0,critChance=0,critDamage=0,weaponDamage=0;const sets:Record<string,number>={};for(const slot of Object.keys(GEAR_SLOTS) as GearSlot[]){const d=equippedGear(p,slot);if(!d)continue;if(d.quality>=7)tempoCapacity+=(d.quality===8?.5:.45)/4;skillBonus+=d.skillPower||0;hpPercent+=d.hpPercent||0;cooldown+=d.cooldown||0;if(slot!=='weapon'){health+=d.health||0;reduction+=d.reduction||0;speed+=d.speed||0;bonus+=d.bonus||0;if(d.set)sets[d.set]=(sets[d.set]||0)+1}const item=p.gear?.find(i=>i.id===p.gearEquipped?.[slot]);for(const v of [...(item?.affixes||[]),...(item?.hiddenAffixes||[]).slice(0,Math.max(0,d.quality-5))]){const def=GEAR_AFFIXES[v.key];if(!def?.slots.includes(slot)||!Number.isFinite(v.value)||(def.quality||0)>d.quality)continue;const n=Math.max(0,Math.min(def.max,v.value));switch(v.key){case 'astralTempo':case 'primalTempo':tempo+=n;break;case 'starHunter':bossSkill+=n;break;case 'primalVerdict':finisherSkill+=n;break;case 'health':hpPercent+=n;break;case 'reduction':reduction+=n;break;case 'speed':speed+=n;break;case 'haste':haste+=n;break;case 'lifesteal':lifesteal+=n;break;case 'cooldown':cooldown+=n;break;case 'critChance':critChance+=n;break;case 'critDamage':critDamage+=n;break;case 'weaponDamage':weaponDamage+=n;break;case 'pet':pet+=n;break;case 'slow':slow+=n;break}}}if(sets.thunder>=2)skillBonus+=.05;if(sets.thunder>=3){skillBonus+=.03;chainTargets=1}if(sets.frost>=2)slow+=.08;if(sets.frost>=3)slowedBonus=.12;if(sets.blood>=2)haste+=.08;if(sets.blood>=3)lifesteal+=.03;if(sets.beast>=2)pet+=.12;if(sets.beast>=3){pet+=.08;petHealth=.2}if(sets.arcane>=2)cooldown+=.06;if(sets.arcane>=3){cooldown+=.04;hpPercent+=.05}health+=Math.floor(ancientBaseHealth(p.level)*Math.min(.6,hpPercent));const jade=jadeBonuses(p);health+=Math.floor((ancientBaseHealth(p.level)+health)*jade.health);return {critChance:Math.min(1,Math.round((.3+critChance)*10000)/10000),critMultiplier:Math.round((1.5+critDamage)*10000)/10000,weaponDamage,health,jadeAttack:jade.attack,reduction:Math.min(.6,reduction)+(1-Math.min(.6,reduction))*jade.reduction,speed:Math.min(.3,speed),bonus,haste:Math.min(.2,haste),lifesteal:Math.min(.05,lifesteal),cooldown:Math.min(.5,Math.min(.16,cooldown*.8)+Math.min(tempoCapacity,tempo)),bossSkill,finisherSkill,pet:Math.min(.4,pet),slow:Math.min(.2,slow),skillBonus,chainTargets,slowedBonus,petHealth,sets}}
 export function ancientBaseHealth(level:number){
  const l=Math.max(1,Number.isFinite(level)?level:1),anchors=[[1,100],[5,3000],[10,12000],[30,90000],[50,250000],[60,320000],[80,470000],[100,650000]];
  for(let i=1;i<anchors.length;i++){const [a,h]=anchors[i-1],[b,k]=anchors[i];if(l<=b)return Math.round(h*(l/a)**(Math.log(k/h)/Math.log(b/a)))}
@@ -221,7 +249,7 @@ export function salvageAncientGear(p:AncientProfile,id:string){
  if(!Number.isSafeInteger((p.materials[key]||0)+amount))return '数量已达上限';
  p.gear=p.gear!.filter(i=>i.id!==id);p.materials[key]=(p.materials[key]||0)+amount;return null;
 }
-export function ancientMeleeDamage(p:AncientProfile){const d=equippedGear(p,'weapon');if(!d)return 0;const s=ancientGearStats(p);return Math.floor((ancientBaseAttack(p.level)+(d.damage||0))*(1+s.bonus)*(1+s.jadeAttack)*(1+puzzleTitleBonus(p)))}
+export function ancientMeleeDamage(p:AncientProfile){const d=equippedGear(p,'weapon');if(!d)return 0;const s=ancientGearStats(p);return Math.floor((ancientBaseAttack(p.level)+(d.damage||0))*(1+s.weaponDamage)*(1+s.bonus)*(1+s.jadeAttack)*(1+puzzleTitleBonus(p)))}
 export function ancientMeleeInterval(p:AncientProfile){return (equippedGear(p,'weapon')?.interval||600)*(1-ancientGearStats(p).haste)}
 export function equipAncientGear(p:AncientProfile,slot:string,id:string){if(!Object.hasOwn(GEAR_SLOTS,slot))return '装备槽不存在';if(!id){p.gearEquipped??={};delete p.gearEquipped[slot as GearSlot];return null}const item=p.gear?.find(i=>i.id===id),d=item&&gearDefinition(item.key);if(!d||d.slot!==slot)return '装备不存在';if(p.level<GEAR_LEVELS[d.quality-1])return '玩家等级不足';p.gearEquipped??={};p.gearEquipped[slot as GearSlot]=id;return null}
 // Weights are conditional on an equipment drop; map progression, never player level, sets the tier.
@@ -265,3 +293,9 @@ export function gearRerollQuote(item:AncientGear,index:number,random=Math.random
 }
 export function gearName(key:string,en=false){const d=gearDefinition(key);return d?`[${GEAR_QUALITIES[d.quality-1][en?1:0]}] ${en?d.en:d.name}`:key}
 export function gearDescription(key:string,en=false){const d=gearDefinition(key);if(!d)return '';const parts=[`${en?'Required level':'穿戴等级'} ${GEAR_LEVELS[d.quality-1]}`];for(const [k,zh,eng]of [['damage','普攻伤害','Melee damage'],['skillPower','技能强度','Skill power'],['hpPercent','最大生命','Max HP'],['cooldown','技能冷却缩减','Skill cooldown reduction'],['health','生命','HP'],['reduction','减伤','Damage reduction'],['speed','移速','Speed'],['bonus','所有伤害','All damage'],['lifesteal','吸血','Lifesteal']] as const){const n=(d[k]||0)*(k==='cooldown'?.8:1);if(n)parts.push(`${en?eng:zh} +${k==='damage'||k==='health'?n.toLocaleString():+(n*100).toFixed(2)+'%'}`)}if(d.combo){const c=GROWTH_COMBOS[d.combo];parts.push(growthComboText(d.combo,en))}if(d.slow)parts.push(en?`Hits slow ${Math.round(d.slow*100)}% for 2s (half on bosses)`:`命中减速${Math.round(d.slow*100)}%，2秒（头目减半）`);if(d.execute)parts.push(en?`+${Math.round(d.execute*100)}% damage below 30% enemy HP`:`敌人血量低于30%时伤害+${Math.round(d.execute*100)}%`);if(d.interval)parts.push(`${en?'Attack interval':'攻击间隔'} ${d.interval/1000}s`);return parts.join(' · ')}
+
+// Server rolls once per connected melee hit. Critical damage adds to the default +50% bonus.
+export function rollAncientMeleeCritical(p:AncientProfile,random=Math.random){
+ const stats=ancientGearStats(p),critical=random()<stats.critChance;
+ return {critical,multiplier:critical?stats.critMultiplier:1};
+}
