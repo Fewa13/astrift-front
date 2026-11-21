@@ -234,7 +234,7 @@ export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,d
    r.cooldowns[v.id]=0;
    if(v.charge)r.effects.lifeChargedAttack={until:now+1,level:v.charge};
    try{castAncientSkill(a,p,v.id,v.direction,{...c,aimTarget:hit.monster,projectileImpact:true},now);}
-   finally{if(savedCharge)r.effects.lifeChargedAttack=savedCharge;else delete r.effects.lifeChargedAttack;r.cooldowns[v.id]=Math.max(savedCooldown||0,v.cooldown);}
+   finally{if(savedCharge)r.effects.lifeChargedAttack=savedCharge;else delete r.effects.lifeChargedAttack;if(savedCooldown===undefined)delete r.cooldowns[v.id];else r.cooldowns[v.id]=savedCooldown;}
    return false;
   }
   Object.assign(v,{...end,last:now,remaining:v.remaining-step});
