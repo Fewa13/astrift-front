@@ -5,7 +5,7 @@ import {flyingSwordGeometry,flyingSwordMaterial} from './ancient-flying-sword.js
 const effects={
  thermal:[0xff7b4d,0xa0eaff,{clash:'shatter'}],
  berserker:[0xf74552,0xffc171,{bolt:'bolt',charge:'trail',impact:'shatter',rebirth:'wings',revival:'halo',sacrifice:'bind'}],
- paladin:[0xffdc82,0xffffff,{judgment:'pillar',purify:'halo',recovery:'wings',sanctuary:'ward'}],
+ paladin:[0xffdc82,0xffffff,{judgment:'pillar',purify:'slash',recovery:'wings',sanctuary:'ward'}],
  spiritcaller:[0x80ffe0,0xd3fff3,{ascendant:'wings',domain:'ward',guardian:'portal',rebirth:'halo'}],
  beastlord:[0xc7a46c,0xf6f0b0,{bind:'portal',hunt:'slash',guard:'ward',pounce:'heavy'}],
  necromancer:[0x97fd8b,0xcdb2ff,{fusion:'heavy',consume:'bind',domain:'ward',raise:'spires',release:'portal',strike:'slash'}],

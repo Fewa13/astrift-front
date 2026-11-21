@@ -3,7 +3,7 @@ const route = (id, name, ...skills) => ({ id, name, skills });
 const ALL_ADVANCED_PROFESSIONS = {
   warrior: [
     route("berserker", ["\u72C2\u6218\u58EB", "Berserker"], ["\u55DC\u8840\u98DE\u5F39", "Bloodseeker Bolt"], ["\u732E\u796D", "Sacrifice"], ["\u51B2\u950B", "Charge"], ["\u6D74\u8840\u91CD\u751F", "Blood Rebirth"]),
-    route("paladin", ["\u5723\u6218\u58EB", "Paladin"], ["\u51C0\u5316", "Purify"], ["\u5723\u5149\u6062\u590D", "Radiant Recovery"], ["\u5723\u5149\u9886\u57DF", "Sanctuary"], ["\u5BA1\u5224", "Judgment"])
+    route("paladin", ["\u5723\u6218\u58EB", "Paladin"], ["\u5723\u88C1\u65A9", "Radiant Slash"], ["\u5723\u5149\u6062\u590D", "Radiant Recovery"], ["\u5723\u5149\u9886\u57DF", "Sanctuary"], ["\u5BA1\u5224", "Judgment"])
   ],
   summoner: [
     route("spiritcaller", ["\u5723\u7075\u53EC\u5524\u5E08", "Spiritcaller"], ["\u53EC\u5524", "Call Guardian"], ["\u7075\u57DF", "Spirit Domain"], ["\u53D8\u8EAB", "Spirit Ascendant"], ["\u65B0\u751F", "Rebirth"]),

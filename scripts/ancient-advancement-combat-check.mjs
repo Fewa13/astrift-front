@@ -39,7 +39,7 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
  ];
  const events=[],damageEvents=[];
  const context={
-  map:'tribe',monsters,
+  map:'tribe',projectileImpact:true,monsters,
   damage(target,amount,source,id){damageEvents.push({target:target.id,id,amount});assert(Number.isFinite(amount)&&amount>=0,id);if(target.hp<=0)return 0;const actual=Math.min(target.hp,amount);target.hp-=actual;return actual;},
   fx(id,x,z,radius,details){assert(fxIds.has(id)||id==='petHit',id);assert([x,z,radius].every(Number.isFinite),id);events.push(id);castVisuals.push({id,x,z,radius,details});},
   motion(point){Object.assign(actor,point);},
@@ -155,24 +155,12 @@ for(const [profession,routes] of Object.entries(ADVANCED_PROFESSIONS))for(const 
  assert.equal(chooseAdvancement(profile,routes.find(other=>other.id!==route.id).id),false);
  assert.deepEqual(record.skills.X,{level:level+1,points:1});
  if(route.id==='paladin'){
-  const now=150000;
-  const ally={...monsters[0],id:'ally',charm:{owner:name,until:now+1000,next:now}};
-  const dormant={...ally,id:'dormant',charm:undefined,dormant:true,z:17};
-  const player={...dormant,id:'player',kind:'player',dormant:false};
-  const expired={...ally,id:'expired',z:18,charm:{owner:name,until:now,next:now}};
-  const before=damageEvents.length;
-  tickPaladin(actor,profile,{...context,monsters:[ally,dormant,player,expired]},now);
-  assert.deepEqual(damageEvents.slice(before).map(hit=>hit.target),['expired']);
-  resetPosition();
-  actor.hp=50000;
+  const now=150000,legacy={...monsters[0],id:'legacy-charm',charm:{owner:name,until:now+1000,next:now}};
+  tickPaladin(actor,profile,{...context,monsters:[legacy]},now);assert.equal(legacy.charm,undefined);
+  resetPosition();actor.hp=50000;
   const victim={...monsters[0],id:'recovery-target',z:13,hp:100,maxHp:100};
-  const friendly={...victim,id:'still-purified',z:14,charm:{owner:name,until:now+1000,next:now}};
-  assert.equal(castAncientSkill(actor,profile,'advanced:Q',aim,{...context,monsters:[victim,friendly]},now),null);
-  assert.equal(victim.hp,0);
-  assert.equal(friendly.hp,100);
-  assert.equal(actor.hp,50020,'recovery heals from actual damage rather than overkill');
-  assert.equal(actor.skillRuntime.effects.radiantRecovery.until,now+8000);
-
+  assert.equal(castAncientSkill(actor,profile,'advanced:Q',aim,{...context,monsters:[victim]},now),null);
+  assert.equal(victim.hp,0);assert.equal(actor.hp,50020);assert.equal(actor.skillRuntime.effects.radiantRecovery.until,now+8000);
  }
  if(route.id==='berserker'){
   resetPosition();
@@ -266,7 +254,7 @@ console.log('PASS: all 72 skill slots cast through the authoritative combat entr
  const actor={name:'sword-test',profession:'swordsman',x:0,y:1.7,z:10,hp:100000,maxHp:100000};
  const target={id:'sword-target',kind:'grox',x:0,y:0,z:16,hp:9e12,maxHp:9e12};
  const hits=[];
- const context={map:'tribe',monsters:[target],fx(){},damage(_target,amount,_source,id){hits.push(id);return amount;}};
+ const context={map:'tribe',projectileImpact:true,monsters:[target],fx(){},damage(_target,amount,_source,id){hits.push(id);return amount;}};
  const aim=[0,-.09,Math.sqrt(1-.09**2)];
  assert.equal(castAncientSkill(actor,profile,'swordrain',aim,context,100000),null);
  assert.equal(castAncientSkill(actor,profile,'triplecut',aim,context,100250),null);
@@ -322,7 +310,7 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
  const actor={name,profession:'necromancer',x:0,y:1.7,z:10,hp:500,maxHp:1000,weapon:profile.weapons[0]};
  const monster={id:'target',kind:'grox',x:0,z:12,hp:1e9};
  const hits=[],fx=[];
- const context={map:'tribe',monsters:[monster],damage(target,amount,source,id){hits.push(id);return amount;},fx(id){fx.push(id);}};
+ const context={map:'tribe',projectileImpact:true,monsters:[monster],damage(target,amount,source,id){hits.push(id);return amount;},fx(id){fx.push(id);}};
  const aim=[0,-.09,Math.sqrt(1-.09**2)],now=100000;
  for(const id of ['raiseSkeleton','unleashLegion','consumeSoul'])assert.equal(castAncientSkill(actor,profile,id,aim,context,now),null);
  assert.equal(actor.skillRuntime.advancedSummon.legion.length,1);
@@ -378,7 +366,7 @@ for(const [job,{sources}] of Object.entries(PROFESSION_FUSIONS)){
   const actor={name:'fusion-qa',profession,x:0,y:1.7,z:10,hp:500,maxHp:1000,weapon:profile.weapons[0]};
   const monsters=[{id:'primary',kind:'grox',x:0,z:16,hp:1e12},{id:'secondary',kind:'grox',x:3,z:17,hp:1e12}];
   const damages=[],effects=[];
-  const context={map:'tribe',monsters,damage(target,amount){damages.push(amount);target.hp-=amount;return amount;},fx(id){effects.push(id);}};
+  const context={map:'tribe',projectileImpact:true,monsters,damage(target,amount){damages.push(amount);target.hp-=amount;return amount;},fx(id){effects.push(id);}};
   return {profile,actor,monsters,damages,effects,context,cast:(id,at)=>castAncientSkill(actor,profile,id,aim,context,at)};
  };
  const passive={level:8,points:0};

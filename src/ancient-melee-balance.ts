@@ -8,7 +8,7 @@ export const MELEE_BASIC_SKILL_FLOOR=.2;
 const basics:Record<string,string>={warrior:'slash',swordsman:'swordwave',shadowblade:'riftblade',stonewright:'stonefist',summoner:'soulbolt',ice:'frostburst',fire:'firebolt',lightning:'chain',curse:'hex'};
 // Direct single-target hit only: no ultimate, full duration, group total, or random critical.
 export const ADVANCEMENT_BASIC_REFERENCES:Record<string,{key:string;multiplier:number;holy?:boolean}>={
- berserker:{key:'X',multiplier:9},paladin:{key:'Q',multiplier:3.6},
+ berserker:{key:'X',multiplier:9},paladin:{key:'X',multiplier:3.8,holy:true},
  stormcaller:{key:'X',multiplier:6.8,holy:true},voltstalker:{key:'X',multiplier:3.9},
  crystalist:{key:'X',multiplier:3.7*1.15},winterwarden:{key:'X',multiplier:4.1},
  wildfire:{key:'X',multiplier:3.8,holy:true},hellfire:{key:'X',multiplier:3.25,holy:true},

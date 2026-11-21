@@ -41,3 +41,11 @@ export function skillFlight(job:string,key:string,route=''):SkillFlight{
  const colors=routeColors[route]||palettes[job]||palettes.summoner;
  return {shape,color:colors[0],trim:colors[1],radius:shape.includes('crescent')||shape.includes('double')&&/^(jade|void|shadow)/.test(shape)?SKILL_CONTACT.slashRadius:shape.includes('ring')||shape.includes('sigil')?1.1:.7,speed:40,slot};
 }
+
+// Only attacks that travel as a projectile. Movement, self buffs, placed fields and
+// sword/earth attacks with their own authoritative projectile simulation stay separate.
+export const projectileSkills=new Set(['slash','soulbolt','icebolt','frostburst','blizzard','chain','storm','hex','drain','doom','firebolt','firewave','firestorm','inferno','tempest','swordwave','triplecut','swordrain','phantomblade','riftblade','stonefist','faultline','stoneprison','mountainfall','prism','judgment','erosion','voidslash','abysstouch','devour','temporalrift']);
+export const projectileRoutes:Record<string,string>={berserker:'X',paladin:'C',stormcaller:'XC',voltstalker:'X',crystalist:'XQC',wildfire:'X',hellfire:'XQZ',hexweaver:'XQZC',pactbinder:'XQC',linebreaker:'XQC',shadowhunter:'X'};
+export function isTravelingSkill(id:string,route=''){
+ return id.startsWith('advanced:')?/^advanced:[XQZC]$/.test(id)&&!!projectileRoutes[route]?.includes(id.slice(-1)):projectileSkills.has(id);
+}

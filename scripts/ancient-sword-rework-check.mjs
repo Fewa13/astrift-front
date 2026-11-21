@@ -13,7 +13,7 @@ function fixture(route='blademaster'){
 const dir=[0,0,1],now=100000;
 {
  const {p,a,c,monster,hits}=fixture();assert.equal(rollbackAdvancement(p),null);assert.equal(p.advancements.swordsman.route,'');
- c.monsters.push(monster());assert.equal(castAncientSkill(a,p,'advanced:X',dir,c,now),null);assert(hits.length>0,'stale branch binding maps back to base skill');
+ c.monsters.push(monster());assert.equal(castAncientSkill(a,p,'advanced:X',dir,c,now),null);assert.equal(hits.length,0);tickAncientSkills(a,p,c,.2,now+200);assert(hits.length>0,'stale branch binding maps back to a flying base skill');
  assert(readFileSync('public/ancient-client.js','utf8').includes("id=advanced?.route&&/^Key[XQZC]$/"));
 }
 {

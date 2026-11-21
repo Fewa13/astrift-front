@@ -21,7 +21,7 @@ function setup(job,route){
  const a={name:'tester',profession:job,advancement:route,holy:true,x:0,y:1.7,z:10,hp:10000,maxHp:10000,weapon:p.weapons[0]};
  const monsters=[],hits=[],visuals=[];
  let now=N,random=()=>1;
- const c={map:'tribe',monsters,damage(m,v,source,id){v=M.advancementAttack(a,p,m,v,id,c,now,random);assert(Number.isFinite(v)&&v>=0);hits.push({m:m.id,v,id,at:now});m.hp-=Math.min(v,m.hp);return v},fx(id,x,z,radius){assert(fxIds.has(id),id);assert([x,z,radius].every(Number.isFinite));visuals.push(id)}};
+ const c={map:'tribe',projectileImpact:true,monsters,damage(m,v,source,id){v=M.advancementAttack(a,p,m,v,id,c,now,random);assert(Number.isFinite(v)&&v>=0);hits.push({m:m.id,v,id,at:now});m.hp-=Math.min(v,m.hp);return v},fx(id,x,z,radius){assert(fxIds.has(id),id);assert([x,z,radius].every(Number.isFinite));visuals.push(id)}};
  const enemy=(id,x=0,z=16,kind='grox')=>{const m={id,kind,x,y:0,z,hp:1e20,maxHp:1e20};monsters.push(m);return m};
  const cast=(key,t=now,dir=[0,-.08,Math.sqrt(1-.08**2)])=>{now=t;return M.castAncientSkill(a,p,'advanced:'+key,dir,c,t)};
  const tick=t=>{now=t;M.tickAncientSkills(a,p,c,.2,t);for(const m of monsters){const due=(m.strikes||[]).filter(v=>v.at<=t);m.strikes=(m.strikes||[]).filter(v=>v.at>t);for(const hit of due)c.damage(m,hit.damage,undefined,hit.skillId)}};

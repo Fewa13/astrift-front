@@ -7,7 +7,7 @@ const MELEE_BASIC_SKILL_FLOOR = 0.2;
 const basics = { warrior: "slash", swordsman: "swordwave", shadowblade: "riftblade", stonewright: "stonefist", summoner: "soulbolt", ice: "frostburst", fire: "firebolt", lightning: "chain", curse: "hex" };
 const ADVANCEMENT_BASIC_REFERENCES = {
   berserker: { key: "X", multiplier: 9 },
-  paladin: { key: "Q", multiplier: 3.6 },
+  paladin: { key: "X", multiplier: 3.8, holy: true },
   stormcaller: { key: "X", multiplier: 6.8, holy: true },
   voltstalker: { key: "X", multiplier: 3.9 },
   crystalist: { key: "X", multiplier: 3.7 * 1.15 },

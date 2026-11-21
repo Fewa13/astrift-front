@@ -1,5 +1,6 @@
-import {SKILL_CONTACT,skillFlight,type SkillFlight} from './ancient-skill-flight';
+import {SKILL_CONTACT,skillFlight,isTravelingSkill,type SkillFlight} from './ancient-skill-flight';
 import {advancementCooldown,swordFormAttack,castAdvancement,castNecromancer,tickBerserker,tickPaladin,tickStormcaller,tickVoltstalker,tickCrystalist,tickWinterwarden,tickAdvancedFire,tickAdvancedCurse,tickAdvancedSword,tickAdvancedShadow,tickAdvancedStone,tickAdvancedSummon,tickAdvancedElements,tickAdvancedRift,tickAdvancedAbyss,tickAdvancedTime,reconcileAdvancementRuntime} from './ancient-advancement-combat';
+import {advancementRoute} from './ancient-advancement-progress';
 import {artifactStage} from './ancient-artifacts';
 import {fusionDamageMultiplier,masteryPower,masteryLevel} from './ancient-mastery';
 import {castFusion,tickFusion} from './ancient-fusion-combat';
@@ -59,7 +60,7 @@ export function selectSkillTarget(a:SkillActor,dir:unknown,range:number,c:SkillC
  hits.sort((x,y)=>Number(y.exact)-Number(x.exact)||x.hit.t-y.hit.t);return hits[0]?.m;
 }
 export function skillProjectileContact(origin:{x:number;y:number;z:number},direction:number[],range:number,c:SkillContext,padding:number){
- const hits=c.monsters.filter(m=>m.hp>0).map(m=>{
+ const hits=c.monsters.filter(m=>m.hp>0&&!(m as SkillMonster&{dormant?:boolean}).dormant).map(m=>{
   const floor=ancientMapHeight(c.map,m.x,m.z,m.y),hit=rayAncientHitbox(origin,direction,m,floor,range,padding);
   if(!hit)return;
   const bounds=ancientHitbox(m.kind),dx=hit.x-m.x,dz=hit.z-m.z,length=Math.hypot(dx,dz),scale=length>bounds.radius?bounds.radius/length:1;
@@ -85,25 +86,36 @@ export function skillSurfaceContact(start:{x:number;y:number;z:number},end:{x:nu
 export function skillTargetError(a:SkillActor,dir:unknown,range:number,c:SkillContext){if(!Array.isArray(dir)||dir.length!==3||!dir.every(Number.isFinite))return '请瞄准可见的敌人';const hits=c.monsters.filter(m=>m.hp>0).map(m=>({m,hit:rayAncientHitbox(a,dir,m,ancientMapHeight(c.map,m.x,m.z,m.y),Math.max(60,range),SKILL_CONTACT.aimPadding)})).filter(v=>v.hit).sort((x,y)=>x.hit!.t-y.hit!.t);if(!hits.length)return '请瞄准可见的敌人';return hits[0].hit!.t>range?'目标超出技能范围':'目标被障碍物遮挡';}
 
 export type FreeProjectile={visualId:string;id:string;job:string;route:string;map:string;x:number;y:number;z:number;direction:number[];remaining:number;last:number;until:number;cooldown:number;charge?:number;flight?:SkillFlight};
-function queueFreeCast(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now:number,error:string|null|undefined){
- if((id==='advanced:Z'&&a.advancement==='time-sovereign'||id==='advanced:X'&&a.advancement==='veinforger')||c.projectileImpact||!error||!/(瞄准|超出技能范围|超出.*范围|障碍物遮挡)/.test(error)||!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite)||Math.abs(Math.hypot(...direction)-1)>.05)return error;
- const r=runtime(a),key=id.startsWith('advanced:')?id.slice(-1):'',level=key?p.advancements?.[p.profession||'']?.skills[key]?.level||1:(isFusionSkill(id)?masteryLevel(p,id):p.skills?.[id]||1);
- const flight=skillFlight(p.profession||'',key||SKILLS[id]?.key||'X',p.advancements?.[p.profession||'']?.route||'');
- const range=skillTravelRange(level),cooldown=now+(key?advancementCooldown(p.advancements?.[p.profession||'']?.route||'',key):skillCooldown(id,level)||12)*1000*(1-ancientGearStats(p).cooldown)*(key||isFusionSkill(id)?1:branchCooldown(p,id));
+function launchSkillProjectile(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now:number):string|null|undefined{
+ const route=advancementRoute(p)?.id||'';
+ if(c.projectileImpact||!isTravelingSkill(id,route))return;
+ if(a.hp<=0)return '请在存活时使用技能';
+ const key=id.startsWith('advanced:')?id.slice(-1):'',definition=SKILLS[id];
+ if(route&&!key)return '技能不属于当前职业';
+ const level=key?p.advancements?.[p.profession||'']?.skills[key]?.level||0:isFusionSkill(id)?masteryLevel(p,id):p.skills?.[id]||0;
+ if(key?(!route||!level):(!definition||definition.job!==p.profession||!level||p.level<definition.unlock||isFusionSkill(id)&&!p.fusedJobs?.[p.profession||'']))return '技能尚未修炼';
+ if(!key&&activeSkill(a,'transform',now))return '变身期间只能使用爪子';
+ if((runtime(a).cooldowns[id]||0)>now)return '技能冷却中';
+ if(!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite)||Math.abs(Math.hypot(...direction)-1)>.05)return '请瞄准可见的敌人';
+ const vector=direction.map(v=>v/Math.hypot(...direction));
+ const r=runtime(a),flight=skillFlight(p.profession||'',key||definition?.key||'X',route),range=skillTravelRange(level);
+ const cooldown=now+(key?advancementCooldown(route,key):skillCooldown(id,level)||12)*1000*(1-ancientGearStats(p).cooldown)*(key||isFusionSkill(id)?1:branchCooldown(p,id));
  if((r.freeProjectiles?.length||0)>=12)return '飞行技能数量已满';
+ const visualId=a.name+':'+now+':'+id;
  r.cooldowns[id]=cooldown;
- (r.freeProjectiles??=[]).push({visualId:a.name+':'+now+':'+id,id,job:p.profession||'',route:p.advancements?.[p.profession||'']?.route||'',map:c.map,x:a.x,y:a.y,z:a.z,direction:direction.slice(),remaining:range,last:now,until:now+4000,cooldown,charge:runtime(a).effects.lifeChargedAttack?.level,flight});
- c.fx('swordwave',a.x+direction[0]*range,a.z+direction[2]*range,1,{target:'',phase:'skill-flight',flight,projectile:a.name+':'+now+':'+id,direction:direction.slice(),source:{x:a.x,y:a.y,z:a.z},level:range});
+ (r.freeProjectiles??=[]).push({visualId,id,job:p.profession||'',route,map:c.map,x:a.x,y:a.y,z:a.z,direction:vector,remaining:range,last:now,until:now+range/flight.speed*1000+500,cooldown,charge:r.effects.lifeChargedAttack?.level,flight});
+ c.fx('swordwave',a.x+vector[0]*range,a.z+vector[2]*range,1,{target:'',phase:'skill-flight',flight,projectile:visualId,direction:vector,source:{x:a.x,y:a.y,z:a.z},level:range});
  return null;
 }
 export function castAncientSkill(a:SkillActor,p:AncientProfile,id:string,direction:unknown,c:SkillContext,now=Date.now()):string|null{
- if(id.startsWith('advanced:')&&!p.advancements?.[p.profession||'']?.route){const base=PROFESSIONS[p.profession||'']?.skills.find(s=>SKILLS[s].key===id.slice(-1));if(base)id=base;}
+ if(/^advanced:[XQZC]$/.test(id)&&!p.advancements?.[p.profession||'']?.route){const base=PROFESSIONS[p.profession||'']?.skills.find(s=>SKILLS[s].key===id.slice(-1));if(base)id=base;}
  const level=id.startsWith('advanced:')?p.advancements?.[p.profession||'']?.skills[id.slice(-1)]?.level||1:(isFusionSkill(id)?masteryLevel(p,id):p.skills?.[id]||1);
  c={...c,castRange:skillTravelRange(level)};
  const time=a.skillRuntime?.advancedTime,charge=id!=='advanced:Z'&&a.advancement==='time-sovereign'?(time?.charges||0):0;
  const temporary=runtime(a).effects.lifeChargedAttack;
  if(charge)runtime(a).effects.lifeChargedAttack={until:now+1,level:charge};
- const error=queueFreeCast(a,p,id,direction,c,now,castAncientSkillImpl(a,p,id,direction,c,now))??null;
+ const launched=launchSkillProjectile(a,p,id,direction,c,now);
+ const error=(launched!==undefined?launched:castAncientSkillImpl(a,p,id,direction,c,now))??null;
  if(charge&&!error&&time)time.charges=0;
  if(temporary)runtime(a).effects.lifeChargedAttack=temporary;else delete runtime(a).effects.lifeChargedAttack;
  return error;
@@ -211,11 +223,22 @@ export function tickAncientSkills(a:SkillActor,p:AncientProfile,c:SkillContext,d
  runtime(a).freeProjectiles=pending.filter(v=>{
   if(a.hp<=0||v.map!==c.map||v.job!==p.profession||v.route!==(p.advancements?.[p.profession||'']?.route||'')||now>v.until)return false;
   const step=Math.min(v.remaining,(v.flight?.speed||40)*Math.max(0,now-v.last)/1000),origin={...a,x:v.x,y:v.y,z:v.z};
-  const hit=selectSkillTarget(origin,v.direction,step,{...c,castRange:undefined,hitPadding:(v.flight?.radius||.7)+SKILL_CONTACT.lanePadding});
-  const x=v.x+v.direction[0]*step,y=v.y+v.direction[1]*step,z=v.z+v.direction[2]*step;
-  if(hit){c.fx('swordwave',hit.x,hit.z,0,{target:hit.id,phase:'flight-impact',projectile:v.visualId});const r=runtime(a);r.cooldowns[v.id]=0;if(v.charge)r.effects.lifeChargedAttack={until:now+1,level:v.charge};castAncientSkill(a,p,v.id,v.direction,{...c,aimTarget:hit,projectileImpact:true},now);delete r.effects.lifeChargedAttack;r.cooldowns[v.id]=v.cooldown;return false;}
-  if(!lineClear(v.x,v.y,v.z,x,y,z,c.map)){c.fx('swordwave',x,z,0,{target:'',phase:'flight-impact',projectile:v.visualId});return false;}
-  Object.assign(v,{x,y,z,last:now,remaining:v.remaining-step});return v.remaining>0;
+  const end={x:v.x+v.direction[0]*step,y:v.y+v.direction[1]*step,z:v.z+v.direction[2]*step};
+  const hit=skillProjectileContact(origin,v.direction,step,{...c,aimTarget:undefined,castRange:undefined},(v.flight?.radius||.7)+SKILL_CONTACT.lanePadding);
+  const surface=skillSurfaceContact(origin,end,c.map);
+  const finish=(x:number,z:number,target='')=>c.fx('swordwave',x,z,0,{target,phase:'flight-impact',projectile:v.visualId});
+  if(surface&&(!hit||surface.t<=hit.t)){finish(surface.x,surface.z);return false;}
+  if(hit){
+   finish(hit.x,hit.z,hit.monster.id);
+   const r=runtime(a),savedCooldown=r.cooldowns[v.id],savedCharge=r.effects.lifeChargedAttack;
+   r.cooldowns[v.id]=0;
+   if(v.charge)r.effects.lifeChargedAttack={until:now+1,level:v.charge};
+   try{castAncientSkill(a,p,v.id,v.direction,{...c,aimTarget:hit.monster,projectileImpact:true},now);}
+   finally{if(savedCharge)r.effects.lifeChargedAttack=savedCharge;else delete r.effects.lifeChargedAttack;r.cooldowns[v.id]=Math.max(savedCooldown||0,v.cooldown);}
+   return false;
+  }
+  Object.assign(v,{...end,last:now,remaining:v.remaining-step});
+  if(v.remaining<=0){finish(end.x,end.z);return false;}return true;
  });
  tickFusion(a,p,c,now,dt);
  tickBerserker(a,p,c,now);

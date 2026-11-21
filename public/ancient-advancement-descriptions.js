@@ -2,7 +2,7 @@
 // Entries follow X, Q, Z, C, then the passive or core mechanic.
 const zh={
  berserker:['发射飞弹。当前生命比例越低，飞弹伤害越高。','暂时献祭 30% 生命上限，按技能等级提高伤害。','冲向锁定的敌人，重击目标并伤害周围敌人。','在 10 秒内抵消一次致命伤，恢复 40% 生命，并短暂提高对袭击者的伤害 30%。','生命越低，攻击越强。'],
- paladin:['净化近处普通怪，使其短时间为你战斗。','伤害附近敌人，回复实伤的 20%，并短暂提高攻击与防御。','削弱领域内敌人，强化净化怪物，并从范围内的伤害汲取生命。','暂降目标生命上限、伤害和移速。击杀时削弱附近敌人。','受到的伤害降低 15%。'],
+ paladin:['挥出圣光范围斩击，对近处敌人造成伤害，不再控制怪物。','伤害附近敌人，回复实伤的20%，并短暂提高攻击与防御。','展开12秒圣光领域，每秒灼伤敌人并使其伤害降低20%；回复领域实伤的15%，每秒最多回复自身生命上限的3%。','发射审判圣光，命中后造成高额伤害，8秒内使目标伤害和移速降低25%、受到伤害增加20%；不修改生命上限。','受到的伤害降低15%。'],
  spiritcaller:['召唤自动寻敌的圣灵护卫，优先攻击你打过的敌人。','治疗领域内的护卫，降低范围内敌人的攻击和速度。','化身圣灵之主，提高自己和护卫的伤害与移动速度。','立即恢复护卫35%最大生命，并赋予一次30%生命复活机会，保护持续至当前护卫存在时间结束。','无需手动标记敌人。'],
  beastlord:['召唤一只自动作战的契兽。','与契兽合击并集中攻击目标。','恢复契兽部分生命并短暂减轻自身所受伤害。','指挥契兽重击目标与附近敌人。','契兽优先攻击你锁定的敌人。'],
  necromancer:['召唤一个待命的骷髅战士。','放出待命骷髅自动作战。可放出数量随等级提高。','期间击杀符合等级的敌人，永久提高骷髅强度。','强化领域内的骷髅，削弱敌人。','场上的骷髅越多，你的伤害越高。'],
@@ -31,7 +31,7 @@ const zh={
 };
 const en={
  berserker:['Fire a projectile that grows stronger as you lose health.','Sacrifice 30% maximum health temporarily to raise damage.','Charge the selected enemy and strike nearby foes on impact.','Negate one lethal hit within 10 seconds, recover 40% health, and briefly deal 30% more damage to the attacker.','Deal more damage at low health.'],
- paladin:['Purify nearby regular monsters to fight for you temporarily.','Damage nearby enemies, heal for 20% of damage dealt, and gain attack and defense.','Weaken enemies, empower purified allies, and heal from damage in the field.','Reduce enemy maximum health, damage and movement. Defeating it weakens nearby foes.','Take 15% less damage.'],
+ paladin:['Slash nearby enemies with holy light. No charm or mind control.','Damage nearby enemies, heal for 20% of damage dealt, and briefly gain attack and defense.','Create a 12s sanctuary. Burn enemies each second and reduce their damage by 20%. Heal for 15% of field damage, capped at 3% max HP per second.','Fire a judgment light. On contact, deal heavy damage and reduce damage and speed by 25%, while increasing damage taken by 20% for 8s. Does not alter max HP.','Take 15% less damage.'],
  spiritcaller:['Summon a guardian that prioritizes enemies you have attacked.','Heal the guardian and weaken and slow enemies within a spirit field.','Transform to increase your and your guardian’s damage and movement speed.','Immediately restore 35% of guardian maximum health and grant one revival at 30% health, lasting for its remaining lifetime.','The guardian selects targets automatically.'],
  beastlord:['Summon a beast that fights alongside you.','Strike with your beast and focus its attacks on the target.','Restore some of your beast’s health and briefly reduce incoming damage.','Command a heavy strike that hits the target and nearby enemies.','Your beast prioritizes the target you select.'],
  necromancer:['Raise a skeleton and hold it in reserve.','Deploy skeletons to fight. Capacity scales with skill level.','Defeat eligible enemies during the effect to permanently strengthen skeletons.','Empower skeletons and weaken enemies inside the domain.','More active skeletons increase your damage.'],

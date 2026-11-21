@@ -20,6 +20,10 @@ for(const id of ['swordrain','phantomblade']){
  for(const peer of [live,friend]){const a=peer.deserializeAttachment();delete a.skillRuntime;peer.serializeAttachment(a);peer.messages=[];}
  const w=server.world('tribe');for(const m of w.monsters)m.hp=0;const target=w.monsters[0];Object.assign(target,{kind:'grox',level:150,x:0,z:55,hp:19129500,maxHp:19129500});server.persist(w);
  for(const peer of [live,friend])await server.webSocketMessage(peer,JSON.stringify({type:'skill',id,direction:[0,-.15,Math.sqrt(1-.15**2)]}));
+ // Advance the physical projectile to contact before testing stalled delayed damage.
+ for(const peer of [live,friend]){const a=peer.deserializeAttachment();for(const shot of a.skillRuntime.freeProjectiles||[])shot.last-=200;peer.serializeAttachment(a);}
+ await server.tickMap('tribe');
+ for(const peer of [live,friend])peer.messages=peer.messages.filter(m=>m.type!=='hit');
  const saved=server.world('tribe'),locked=saved.monsters.find(m=>m.id===target.id),count=id==='swordrain'?6:1;
  assert.equal(locked.strikes.length,count*2);for(const strike of locked.strikes)strike.at=Date.now()-9000;server.persist(saved);
  await server.tickMap('tribe');
@@ -142,7 +146,7 @@ assert.equal(berserker.hp,0,'Blood Rebirth can absorb only one lethal hit per ca
 assert.equal(revivalVisuals(authoritative).length,1);
 const paladin={...authoritative.deserializeAttachment(),hp:500,maxHp:1000,
  skillRuntime:{effects:{},cooldowns:{},mode:1,paladin:{map:'tribe',field:{x:0,y:0,z:50,radius:5,until:Date.now()+10000}}}};
-for(const [z,expected] of [[53,520],[75,520]]){
+for(const [z,expected] of [[53,500],[75,500]]){
  const enemy={...released,id:'sanctuary-target-'+z,kind:'grox',x:0,y:0,z,hp:100,maxHp:100,contributions:[],dormant:false};
  assert.equal(server.damageMonster(authoritative,paladin,enemy,1000,'body','caster','skill'),100);
  assert.equal(paladin.hp,expected);
@@ -150,7 +154,7 @@ for(const [z,expected] of [[53,520],[75,520]]){
 const purified={...released,id:'sanctuary-friendly',kind:'grox',x:0,y:0,z:53,hp:100,maxHp:100,contributions:[],dormant:false,
  charm:{owner:paladin.name,until:Date.now()+10000,next:0}};
 server.damageMonster(authoritative,paladin,purified,1,'body','caster','skill');
-assert.equal(paladin.hp,520,'a purified ally does not provide Sanctuary healing');
+assert.equal(paladin.hp,500,'legacy Sanctuary on-hit healing has been retired');
 const spreadAt=Date.now();
 const judgedEnemy={...released,id:'judged-spread',kind:'grox',x:0,y:0,z:53,hp:100,maxHp:100,
  contributions:[],dormant:false,judgment:{owner:'caster',until:spreadAt+10000,maxHp:143}};

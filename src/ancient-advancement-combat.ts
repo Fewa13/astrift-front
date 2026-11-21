@@ -12,7 +12,7 @@ import {activeSkill, runtime, skillDamageMultiplier, SKILLS, type SkillActor} fr
 import {skillProjectileContact,skillSurfaceContact,selectSkillTarget, skillAreaTargets, skillAreaHits, type SkillContext, type SkillMonster} from './ancient-skill-combat';
 
 const ADVANCEMENT_COOLDOWNS:Record<string,readonly number[]>={
- berserker:[5,24,10,55],paladin:[16,14,28,35],stormcaller:[5,15,19,36],voltstalker:[5,9,18,34],
+ berserker:[5,24,10,55],paladin:[5,14,28,35],stormcaller:[5,15,19,36],voltstalker:[5,9,18,34],
  crystalist:[5,11,18,32],winterwarden:[5,18,22,35],wildfire:[5,11,17,36],hellfire:[5,11,17,36],
  hexweaver:[5,11,17,34],pactbinder:[5,11,17,34],blademaster:[5,10,16,30],linebreaker:[5,10,16,30],
  shadowhunter:[5,11,16,34],boundarycutter:[3.5,8,12,30],mountainguard:[5,11,18,34],veinforger:[1.2,2.5,16,22],
@@ -148,62 +148,49 @@ export function consumeBloodRebirth(actor: SkillActor, now: number, attacker?:st
 
 export type PaladinRuntime = {
  map:string;
- field?:{x:number;y:number;z:number;until:number;radius:number};
+ field?:{x:number;y:number;z:number;until:number;radius:number;next?:number;power?:number};
 };
 
+function retirePaladinControl(a:SkillActor,c:SkillContext){
+ for(const m of c.monsters){
+  if(m.charm?.owner===a.name)delete m.charm;
+  if(m.judgment?.owner===a.name){m.maxHp=m.judgment.maxHp;delete m.judgment;}
+ }
+}
 function castPaladin(a:SkillActor,p:AncientProfile,key:string,id:string,direction:unknown,c:SkillContext,now:number,level:number){
  if(a.hp<=0)return '请在存活时使用技能';
- const r=runtime(a);
- if((r.cooldowns[id]||0)>now)return '技能冷却中';
+ const r=runtime(a);if((r.cooldowns[id]||0)>now)return '技能冷却中';
+ retirePaladinControl(a,c);
  const point={x:a.x,y:a.y,z:a.z} as SkillMonster;
- const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055);
- const radius=Math.min(12,6+level*.15);
+ const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*holyPower(p)*(1+Math.min(99,level-1)*.055),radius=Math.min(12,6+level*.15);
  if(key==='X'){
-  const candidates=skillAreaTargets(point,radius,c).filter(m=>m.kind!=='player'&&!(m as SkillMonster&{dormant?:boolean}).dormant&&!isAncientBoss(m.kind)&&!m.judgment&&(!m.charm||m.charm.until<=now));
-  if(!candidates.length)return '附近没有可净化的怪物';
-  for(const m of candidates.slice(0,Math.min(5,1+Math.ceil(level/5))))m.charm={owner:a.name,until:now+8000,next:now};
-  c.fx('paladin-purify',a.x,a.z,radius);
+  for(const m of skillAreaTargets(point,Math.min(8,4+level*.04),c))c.damage(m,power*3.8,undefined,'advancement:paladin:X');
+  c.fx('paladin-purify',a.x,a.z,Math.min(8,4+level*.04));
  }else if(key==='Q'){
-  let total=0;
-  for(const m of skillAreaTargets(point,radius,c))if(m.charm?.owner!==a.name||m.charm.until<=now)total+=c.damage(m,power*3.6,undefined,'advancement:paladin:Q');
-  a.hp=Math.min(a.maxHp||100,a.hp+total*.2);
-  r.effects.radiantRecovery={until:now+8000,level:1};
+  let total=0;for(const m of skillAreaTargets(point,radius,c))total+=c.damage(m,power*3.6,undefined,'advancement:paladin:Q');
+  a.hp=Math.min(a.maxHp||100,a.hp+total*.2);r.effects.radiantRecovery={until:now+8000,level:1};
   c.fx('paladin-recovery',a.x,a.z,radius);
  }else if(key==='Z'){
-  r.paladin={map:c.map,field:{x:a.x,y:a.y,z:a.z,radius:radius+3,until:now+12000}};
+  r.paladin={map:c.map,field:{x:a.x,y:ancientMapHeight(c.map,a.x,a.z,a.y-1.7),z:a.z,radius:radius+3,until:now+12000,next:now,power}};
   c.fx('paladin-sanctuary',a.x,a.z,radius+3);
  }else{
-  const target=selectSkillTarget(a,direction,60,c);
-  if(!target||target.kind==='player'||target.judgment||target.charm?.owner===a.name&&target.charm.until>now)return '请瞄准可审判的敌人';
-  target.judgment={owner:a.name,until:now+10000,maxHp:target.maxHp};
-  target.maxHp=Math.max(1,Math.floor(target.maxHp*.7));
-  target.hp=Math.min(target.hp,target.maxHp);
-  (target.masteryMarks??={})[a.name+':judgment']={owner:a.name,id:'advancement:paladin:C',until:now+10000};
+  const target=selectSkillTarget(a,direction,60,c);if(!target)return '请瞄准可审判的敌人';
+  c.damage(target,power*8.2,undefined,'advancement:paladin:C');
+  Object.assign(target,{weak:Math.max(target.weak||0,.25),weakUntil:now+8000,slow:Math.max(target.slow||0,.25),slowUntil:now+8000,vulnerable:Math.max(target.vulnerable||0,.2),vulnerableUntil:now+8000});
+  (target.masteryMarks??={})[a.name+':judgment']={owner:a.name,id:'advancement:paladin:C',until:now+8000};
   c.fx('paladin-judgment',target.x,target.z,4);
  }
- const cooldown=advancementCooldown('paladin',key);
- r.cooldowns[id]=now+cooldown*1000*(1-ancientGearStats(p).cooldown);
- return null;
+ r.cooldowns[id]=now+advancementCooldown('paladin',key)*1000*(1-ancientGearStats(p).cooldown);return null;
 }
-
 export function tickPaladin(a:SkillActor,p:AncientProfile,c:SkillContext,now:number){
  if(advancementRoute(p)?.id!=='paladin'||a.hp<=0)return;
- const field=a.skillRuntime?.paladin?.map===c.map?a.skillRuntime.paladin.field:undefined;
- const inside=field&&field.until>now?new Set(c.monsters.filter(m=>skillAreaHits(field,m,field.radius,c.map))):undefined;
- for(const m of c.monsters){
-  if(m.hp<=0)continue;
-  if(m.charm?.owner===a.name&&m.charm.until>now){
-   if(m.charm.next>now)continue;
-   const victim=skillAreaTargets(m,8,c).filter(v=>v!==m&&v.kind!=='player'&&!(v as SkillMonster&{dormant?:boolean}).dormant&&(v.charm?.owner!==a.name||v.charm.until<=now)).sort((x,y)=>Math.hypot(x.x-m.x,x.z-m.z)-Math.hypot(y.x-m.x,y.z-m.z))[0];
-   if(!victim)continue;
-   m.charm.next=now+1100;
-   c.damage(victim,ancientSkillDamage(p)*1.5*(inside?.has(m)?1.2:1),undefined,'advancement:paladin:X');
-   c.fx('paladin-purify',victim.x,victim.z,2);
-  }else if(inside?.has(m)){
-   m.sanctuaryUntil=now+350;
-   if(m.contributionsForMastery?.[a.name])(m.masteryMarks??={})[a.name+':sanctuary']={owner:a.name,id:'advancement:paladin:Z',until:now+350};
-  }
- }
+ retirePaladinControl(a,c);
+ const field=a.skillRuntime?.paladin?.map===c.map?a.skillRuntime.paladin.field:undefined;if(!field||field.until<=now)return;
+ const enemies=c.monsters.filter(m=>skillAreaHits(field,m,field.radius,c.map));
+ for(const m of enemies){m.sanctuaryUntil=now+350;if(m.contributionsForMastery?.[a.name])(m.masteryMarks??={})[a.name+':sanctuary']={owner:a.name,id:'advancement:paladin:Z',until:now+350};}
+ if((field.next||0)>now)return;field.next=now+1000;
+ let total=0;for(const m of enemies)total+=c.damage(m,(field.power||ancientSkillDamage(p)*holyPower(p))*1.1,undefined,'advancement:paladin:Z');
+ a.hp=Math.min(a.maxHp||100,a.hp+Math.min((a.maxHp||100)*.03,total*.15));
 }
 
 type StormPoint = {x:number;y:number;z:number};

@@ -53,7 +53,7 @@ const enemy=()=>({id:'target',kind:'grox',x:0,y:0,z:14,hp:1e12,maxHp:1e12,level:
 assert.equal(world.damageMonster(ws,a,enemy(),100,'body','active','weapon',undefined,[]),85);
 assert.equal(world.damageMonster(ws,a,enemy(),100,'body','active','skill','voidslash',[]),100,'skill body is scaled exactly once by the caster');
 assert.equal(world.damageMonster(ws,a,enemy(),100,'body','active','skill','advancement:riftlord:X',[]),0);
-const hits=[],m=enemy(),now=100000,c={map:'tribe',monsters:[m],damage(_m,n,_s,id){hits.push({n,id});return n},fx(){}};
+const hits=[],m=enemy(),now=100000,c={map:'tribe',projectileImpact:true,monsters:[m],damage(_m,n,_s,id){hits.push({n,id});return n},fx(){}};
 assert.equal(M.castAncientSkill(a,p,'advanced:X',[0,0,1],c,now),null);assert(hits.some(h=>h.id==='voidslash'));
 Object.assign(a.skillRuntime,{advancementIdentity:'tribe|riftlord',advancedRift:{domain:{until:now+10000}},effects:{riftDomain:{until:now+10000,level:5}}});
 m.strikes=[{owner:a.name,skillId:'advancement:riftlord:Z:proc',at:now+1000,damage:100},{owner:a.name,skillId:'voidslash',at:now+1000,damage:10}];

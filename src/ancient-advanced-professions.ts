@@ -8,7 +8,7 @@ const route = (id: string, name: Localized, ...skills: Route['skills']): Route =
 const ALL_ADVANCED_PROFESSIONS: Readonly<Record<string, readonly [Route, Route]>> = {
  warrior: [
   route('berserker',['狂战士','Berserker'],['嗜血飞弹','Bloodseeker Bolt'],['献祭','Sacrifice'],['冲锋','Charge'],['浴血重生','Blood Rebirth']),
-  route('paladin',['圣战士','Paladin'],['净化','Purify'],['圣光恢复','Radiant Recovery'],['圣光领域','Sanctuary'],['审判','Judgment']),
+  route('paladin',['圣战士','Paladin'],['圣裁斩','Radiant Slash'],['圣光恢复','Radiant Recovery'],['圣光领域','Sanctuary'],['审判','Judgment']),
  ],
  summoner: [
   route('spiritcaller',['圣灵召唤师','Spiritcaller'],['召唤','Call Guardian'],['灵域','Spirit Domain'],['变身','Spirit Ascendant'],['新生','Rebirth']),

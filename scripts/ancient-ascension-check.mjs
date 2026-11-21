@@ -78,6 +78,7 @@ const map=server.world('tribe');
 const enemy={...server.makeMonster('grox',80,0,16,0),id:'advancement-target',y:0,hp:100,dormant:false,scripted:false,temporary:false,contributions:[]};
 map.monsters=[enemy];server.persist(map);
 await server.webSocketMessage(fighter,JSON.stringify({type:'skill',id:'advanced:X',direction:[0,-.09,Math.sqrt(1-.09**2)]}));
+assert(!messages.get('ascender').some(message=>message.type==='hit'&&message.id===enemy.id),'launch does not instantly hit');now+=300;await server.tickMap('tribe');
 const log=messages.get('ascender'),observerLog=messages.get('observer');
 assert(log.some(message=>message.type==='hit'&&message.id===enemy.id),'advanced cast hit the server monster');
 assert(observerLog.some(message=>message.type==='skillFx'&&message.id==='stormcaller-seal'),'observer received the advanced effect');
