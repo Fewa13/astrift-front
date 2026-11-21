@@ -48,3 +48,13 @@ const THREE=await import('../public/three.module.js');const {createSwordReworkFX
 const scene=new THREE.Scene(),camera=new THREE.Camera(),fx=createSwordReworkFX(scene,camera);camera.userData.renderPressure=true;
 for(let i=0;i<40;i++)fx.effect({phase:'blade-net',source:{x:0,y:2,z:0},x:0,z:60,radius:3,level:60,direction:dir});assert(scene.children.length<=12);fx.update(performance.now()+5000);assert.equal(scene.children.length,0);const form=createSwordForm();form.updateMatrixWorld();form.traverse(n=>assert(n.matrixWorld.elements.every(Number.isFinite)));
 console.log('PASS: rollback keyboard/server recovery, no-lock cast/cooldown/one-time impact, 50–100m range, net half-second cuts, stacked flight/form, 700ms attacks, empowerment, map cleanup, unconditional guard slash and bounded net visuals.');
+
+// The mesh points along +Y before mounting; camera/player forward is local -Z.
+for(const yaw of [0,Math.PI/2,Math.PI,-Math.PI/2]){
+ const camera=new THREE.PerspectiveCamera(),sword=createSwordForm();camera.rotation.set(.35,yaw,0,'YXZ');camera.add(sword);camera.updateMatrixWorld(true);
+ const blade=sword.children[0],tip=blade.localToWorld(new THREE.Vector3(0,1.445,0)),hilt=blade.localToWorld(new THREE.Vector3(0,-.57,0)),forward=camera.getWorldDirection(new THREE.Vector3());
+ assert(tip.sub(hilt).normalize().dot(forward)>.999,'Sword Form tip faces travel direction at every camera yaw');
+ const remote=createSwordForm();remote.rotation.y=yaw;remote.updateMatrixWorld(true);const mesh=remote.children[0],direction=mesh.localToWorld(new THREE.Vector3(0,1.445,0)).sub(mesh.localToWorld(new THREE.Vector3(0,-.57,0))).normalize();
+ assert(direction.dot(new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0),yaw))>.999,'remote Sword Form faces forward');
+}
+console.log('PASS: local camera and remote Sword Form point tip-first across yaw angles.');

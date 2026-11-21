@@ -19,7 +19,7 @@ export function createGroundBladeNet(radius=SKILL_CONTACT.netRadius){
 export function releaseGroundBladeNet(group){group.removeFromParent();group.traverse(n=>n.material?.dispose());}
 export function createSwordForm(){
  const group=new THREE.Group(),sword=new THREE.Mesh(flyingSwordGeometry,flyingSwordMaterial);
- sword.scale.setScalar(1.65);sword.rotation.x=Math.PI/2;sword.position.y=1;group.add(sword);group.userData.height=2;
+ sword.scale.setScalar(1.65);sword.rotation.x=-Math.PI/2;sword.position.y=1;group.add(sword);group.userData.height=2;
  return group;
 }
 export function createSwordReworkFX(scene,camera){
