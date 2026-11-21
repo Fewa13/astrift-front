@@ -50,9 +50,9 @@ const routeColors = { paladin: [14993006, 16771774], beastlord: [11768164, 15067
 const palettes = { timelord: [8323045, 16766593], spacelord: [9535999, 15656447], warrior: [15291728, 16763022], summoner: [5561524, 12910572], fire: [16742702, 16765292], ice: [7395573, 13889535], lightning: [9416703, 14151167], curse: [11363817, 15316717], swordsman: [4841361, 12712920], shadowblade: [9597655, 15316199], stonewright: [11897431, 15911815], elementalist: [6019278, 16761203], voidsword: [10190319, 13814015], abyssal: [13913718, 16755082], chrono: [15910508, 11134956], necromancer: [8051074, 12760303] };
 function skillFlight(job, key, route = "") {
   const slot = Math.max(0, "XQZC".indexOf(key)), list = families[job] || families.summoner;
-  const shape = routeFamilies[route]?.[slot] || list[slot];
+  const shape = job === "timelord" && key === "X" ? "sovereign-time-needle" : routeFamilies[route]?.[slot] || list[slot];
   const colors = routeColors[route] || palettes[job] || palettes.summoner;
-  return { shape, color: colors[0], trim: colors[1], radius: shape.includes("crescent") || shape.includes("double") && /^(jade|void|shadow)/.test(shape) ? SKILL_CONTACT.slashRadius : shape.includes("ring") || shape.includes("sigil") ? 1.1 : 0.7, speed: 40, slot };
+  return { shape, color: colors[0], trim: colors[1], radius: shape === "sovereign-time-needle" ? 1.1 : shape.includes("crescent") || shape.includes("double") && /^(jade|void|shadow)/.test(shape) ? SKILL_CONTACT.slashRadius : shape.includes("ring") || shape.includes("sigil") ? 1.1 : 0.7, speed: 40, slot };
 }
 const projectileSkills = /* @__PURE__ */ new Set(["timecurse", "spacefracture", "slash", "soulbolt", "icebolt", "frostburst", "blizzard", "chain", "storm", "hex", "drain", "doom", "firebolt", "firewave", "firestorm", "inferno", "tempest", "swordwave", "triplecut", "swordrain", "phantomblade", "riftblade", "stonefist", "faultline", "stoneprison", "mountainfall", "prism", "judgment", "erosion", "voidslash", "abysstouch", "devour", "temporalrift"]);
 const projectileRoutes = { berserker: "X", paladin: "C", stormcaller: "XC", voltstalker: "X", crystalist: "XQC", wildfire: "X", hellfire: "XQZ", hexweaver: "XQZC", pactbinder: "XQC", linebreaker: "XQC", shadowhunter: "X" };

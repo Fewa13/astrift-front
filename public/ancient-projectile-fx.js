@@ -1,10 +1,11 @@
+import {createTimeLordProjectile} from './ancient-time-lord-fx.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import * as THREE from './three.module.js';
 export function createSkillProjectileFX(scene,camera){
  const active=[],up=new THREE.Vector3(0,1,0),forward=new THREE.Vector3(0,0,1);
  const ball=new THREE.IcosahedronGeometry(1,1),shard=new THREE.OctahedronGeometry(1,0),cone=new THREE.ConeGeometry(1,1,5),bar=new THREE.BoxGeometry(1,1,1);
  const ring=new THREE.TorusGeometry(1,.035,5,32),crescent=new THREE.TorusGeometry(1,.035,5,40,Math.PI*1.35);
- function release(v){scene.remove(v.group);v.materials.forEach(m=>m.dispose());}
+ function release(v){v.presentation?.dispose();scene.remove(v.group);v.materials.forEach(m=>m.dispose());}
  function remove(id){let matched=false;for(let i=active.length-1;i>=0;i--)if(active[i].id===id){release(active[i]);active.splice(i,1);matched=true;}return matched;}
  function effect(d){
   if(d.phase==='flight-impact')return remove(d.projectile);
@@ -15,9 +16,9 @@ export function createSkillProjectileFX(scene,camera){
   const materials=[f.color,f.trim].map((color,i)=>new THREE.MeshBasicMaterial({color,transparent:true,opacity:i?.65:.85,depthWrite:false,side:THREE.DoubleSide}));
   const put=(geometry,index,x,y,z,sx,sy,sz)=>{const mesh=new THREE.Mesh(geometry,materials[index]);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);group.add(mesh);return mesh};
   const halo=(radius,z=0,index=0)=>put(ring,index,0,0,z,radius,radius,radius);
-  const name=f.shape,radius=f.radius||.7;
+  const name=f.shape,radius=f.radius||.7;let presentation;
   const temporal=name.startsWith('time'),crystal=name.startsWith('crystal'),lightning=/thunder|lightning|storm/.test(name),earth=name.startsWith('stone')||name.startsWith('bone');
-  if((name.includes('crescent')||name.includes('double'))&&!temporal&&!crystal){
+  if(name==='sovereign-time-needle'){presentation=createTimeLordProjectile(group,f,low);}else if((name.includes('crescent')||name.includes('double'))&&!temporal&&!crystal){
    const count=name.includes('double')?2:1;
    for(let i=0;i<count;i++){
     const blade=put(crescent,0,0,0,-i*.35,radius,radius,.3);blade.rotation.z=-.6+i*Math.PI;
@@ -56,9 +57,9 @@ export function createSkillProjectileFX(scene,camera){
   if(direction.lengthSq()<.5){materials.forEach(m=>m.dispose());return true;}
   group.quaternion.setFromUnitVectors(forward,direction);group.position.set(d.source.x,d.source.y,d.source.z);scene.add(group);
   const range=Math.max(1,Math.min(100,d.level||60)),speed=f.speed||40;
-  active.push({id:d.projectile,group,materials,start:group.position.clone(),direction,range,speed,at:performance.now(),life:range/speed*1000,spin:!name.includes('crescent')&&!name.includes('lance')&&!earth});
+  active.push({id:d.projectile,group,materials,start:group.position.clone(),direction,range,speed,at:performance.now(),life:range/speed*1000,presentation,spin:!presentation&&!name.includes('crescent')&&!name.includes('lance')&&!earth});
   while(active.length>(low?14:32))release(active.shift());return true;
  }
- function update(now){for(let i=active.length-1;i>=0;i--){const v=active[i],age=now-v.at;if(age>=v.life){release(v);active.splice(i,1);continue;}v.group.position.copy(v.start).addScaledVector(v.direction,Math.min(v.range,Math.max(0,age)*v.speed/1000));if(v.spin)v.group.rotateZ(.012);v.materials.forEach((m,i)=>m.opacity=(i?.65:.85)*Math.min(1,(v.life-age)/140));}}
+ function update(now){for(let i=active.length-1;i>=0;i--){const v=active[i],age=now-v.at;if(age>=v.life){release(v);active.splice(i,1);continue;}v.presentation?.update(now);v.group.position.copy(v.start).addScaledVector(v.direction,Math.min(v.range,Math.max(0,age)*v.speed/1000));if(v.spin)v.group.rotateZ(.012);v.materials.forEach((m,i)=>m.opacity=(i?.65:.85)*Math.min(1,(v.life-age)/140));}}
  return {effect,update,clear(){active.splice(0).forEach(release)},dispose(){active.splice(0).forEach(release);for(const g of [ball,shard,cone,bar,ring,crescent])g.dispose()}};
 }

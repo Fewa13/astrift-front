@@ -37,9 +37,9 @@ const palettes:Record<string,readonly [number,number]>={timelord:[0x7effe5,0xffd
 export type SkillFlight={shape:string;color:number;trim:number;radius:number;speed:number;slot:number};
 export function skillFlight(job:string,key:string,route=''):SkillFlight{
  const slot=Math.max(0,'XQZC'.indexOf(key)),list=families[job]||families.summoner;
- const shape=routeFamilies[route]?.[slot]||list[slot];
+ const shape=job==='timelord'&&key==='X'?'sovereign-time-needle':routeFamilies[route]?.[slot]||list[slot];
  const colors=routeColors[route]||palettes[job]||palettes.summoner;
- return {shape,color:colors[0],trim:colors[1],radius:shape.includes('crescent')||shape.includes('double')&&/^(jade|void|shadow)/.test(shape)?SKILL_CONTACT.slashRadius:shape.includes('ring')||shape.includes('sigil')?1.1:.7,speed:40,slot};
+ return {shape,color:colors[0],trim:colors[1],radius:shape==='sovereign-time-needle'?1.1:shape.includes('crescent')||shape.includes('double')&&/^(jade|void|shadow)/.test(shape)?SKILL_CONTACT.slashRadius:shape.includes('ring')||shape.includes('sigil')?1.1:.7,speed:40,slot};
 }
 
 // Only attacks that travel as a projectile. Movement, self buffs, placed fields and
