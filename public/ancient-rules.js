@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import { ancientLateGrowth } from "./ancient-growth.js";
+import { ANCIENT_GROWTH, ancientLateGrowth } from "./ancient-growth.js";
 import { chapterSurface, CHAPTER_ROUTES } from "./ancient-geography.js";
 import { DUNES_KINDS, dunesSurface, dunesHeight, dunesBlocked, dunesLineClear, dunesMonsterDamage } from "./ancient-dunes.js";
 import { communityId, communityHeight, communityBlocked, communityClear } from "./ancient-community.js";
@@ -217,7 +217,7 @@ function legacyXPNeeded(level) {
 }
 function xpNeeded(level) {
   if (level <= 220) return legacyXPNeeded(level);
-  const start = legacyXPNeeded(220) / ancientKillExperience(legacyAncientMonsterXP("grox", 220), 220), t = Math.min(1, (level - 220) / 80), kills = start + (80 - start) * t;
+  const start = legacyXPNeeded(220) / ancientKillExperience(legacyAncientMonsterXP("grox", 220), 220), t = Math.min(1, (level - 220) / 80), kills = start + (ANCIENT_GROWTH.normalKillsAt300 - start) * t;
   return Math.ceil(ancientKillExperience(ancientMonsterXP("grox", level), level) * kills);
 }
 function migrateAncientGrowth(p) {

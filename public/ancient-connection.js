@@ -36,6 +36,7 @@ export function createAncientConnection({session,map,origin,onSocket,onMessage,o
     if(data.type==='clientUpdateRequired'){stop();requireClientUpdate(data);onStatus('error',data.error);return}
     if(data.type==='sessionEnded'){stop();onDisconnect();onStatus('auth');return}
     const authoritative=data.type==='welcome'||data.type==='state';
+    if(authoritative&&data.you&&(![data.you.hp,data.you.maxHp,data.you.x,data.you.y,data.you.z].every(Number.isFinite)||data.you.maxHp<=0||data.you.hp<0||data.you.hp>data.you.maxHp)){dropped(ws);return}
     if(data.type==='state'&&Number.isFinite(data.time)&&lastServerTime&&data.time<=lastServerTime)return;
     try{onMessage(data,reconnect)}catch(error){console.error('Ancient world message could not be applied:',data.type,error instanceof Error?error.message:String(error));if(authoritative)dropped(ws);return}
     if(socket!==ws||!enabled)return;
