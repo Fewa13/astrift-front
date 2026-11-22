@@ -1,3 +1,4 @@
+import {potionRangeMultiplier,potionDamageMultiplier} from './ancient-potion-effects';
 import {SKILL_CONTACT} from './ancient-skill-flight';
 import {ancientHitbox} from './ancient-hitboxes';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
@@ -945,6 +946,7 @@ export function hexTetherTargets(a:SkillActor,map:string,id:string,attack:string
 
 type SwordProjectile={visualId:string;kind:'net'|'slash';x:number;y:number;z:number;direction:number[];remaining:number;last:number;power:number;skill:string;small?:boolean;target?:string;next?:number;until?:number};
 function launchSword(a:SkillActor,c:SkillContext,state:SwordAdvancementRuntime,direction:unknown,power:number,skill:string,now:number,kind:'net'|'slash',small=false,range=60){
+ range*=potionRangeMultiplier(a,now);
  if(!Array.isArray(direction)||direction.length!==3||!direction.every(Number.isFinite)||Math.abs(Math.hypot(...direction)-1)>.05)return false;
  const shots=state.projectiles??=[];if(shots.length>=24)return false;
  const visualId=a.name+':'+now+':'+shots.length;
@@ -1729,7 +1731,7 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
  }
  state.legion=state.legion.filter(pet=>pet.hp!==0);
  const efficiency=skeletonAttackEfficiency(skeletonLimit(summonLevel)-free);
- const bonus=(1+Math.min(2,Math.log1p(p.necromancerStrength||0)*.18))*efficiency;
+ const bonus=(1+Math.min(2,Math.log1p(p.necromancerStrength||0)*.18))*efficiency*potionDamageMultiplier(a,now);
  for(const pet of state.legion){
   const target=summonTarget(a,c,pet.x,pet.z);
   const enhanced=!!field&&Math.hypot(pet.x-field.x,pet.z-field.z)<=field.radius;

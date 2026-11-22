@@ -381,8 +381,9 @@ export function createAncientMagicFX(scene,resolveOwner,camera=null){
      trail(12,(i,t)=>{const a=t*5+i*.24;beam(0,1.5,0,Math.cos(a)*radius*.53,1.5+Math.sin(a)*radius*.53,0,.055);});
      break;
     case 'chronoshift':
-     shards('bar',52,(i,t)=>{const u=i/51,a=i*2.4+t*4,r=.4+u*1.8;set(source.x*u+Math.cos(a)*r,1.5+Math.sin(a)*r,source.z*u,.063,.063,.65,0,a,t);});
-     shards('ring',12,(i,t)=>{const u=i/11,r=.7+Math.sin(u*Math.PI)*1.5;set(source.x*u,1.4,source.z*u,r,r,r,0,Math.atan2(source.x,source.z),t);},true);
+     // Only the actual departure/arrival damage zones, never the travel corridor.
+     shards('bar',32,(i,t)=>{const a=angle(i,32),r=f.r*(.9+.1*Math.sin(t*5));set(Math.cos(a)*r,.15,Math.sin(a)*r,.045,.045,.32,0,a,t);});
+     shards('ring',3,(i,t)=>{const r=f.r*(.9+i*.04);set(0,.12+i*.04,0,r,r,r,-Math.PI/2,0,t*.35);},true);
      break;
     case 'rewind':
      shards('crystal',72,(i,t)=>{const u=1-(t*.85+i*.043)%1,a=i*2.4-t*4,r=.25+u*radius;set(Math.cos(a)*r,1+u*2.8,Math.sin(a)*r,.13,.29,.13,-t,a,-t);});

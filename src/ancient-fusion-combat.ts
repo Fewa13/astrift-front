@@ -107,12 +107,12 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
  if(id==='avatar'&&f.energy<30)return '需要30点深渊能量';
  if(id==='chronoshift'){
   const dir=Array.isArray(direction)?direction:[];
-  if(dir.length!==3||!dir.every(Number.isFinite)||!shiftToward(a,c,a.x+dir[0]*12,a.z+dir[2]*12))return '跃迁位置被阻挡';
+  if(dir.length!==3||!dir.every(Number.isFinite)||!shiftToward(a,c,a.x+dir[0]*20,a.z+dir[2]*20))return '跃迁位置被阻挡';
   delete f.anchor;
   for(const m of area(origin,7))c.damage(m,body*3.4*(hourglass?ARTIFACT_COMBAT.chronoEchoMultiplier:1));
   fx(origin,7);
   for(const m of area(a,8))c.damage(m,body*2.6);
-  fx(a,4);
+  fx(a,8);
  }
  if(id==='riftassault'&&!target){
   const dir=Array.isArray(direction)?direction:[];
@@ -174,7 +174,7 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
    const signs=(f.elementalSigns??={})[m.id]??={};
    if(fire)signs.fire=now+4000;
    if(ice)signs.ice=now+duration;
-   const burning=(signs.fire||0)>now||m.dots?.some(d=>d.until>now&&['firebolt','firewave','firestorm','inferno'].includes(d.skillId||''));
+   const burning=(signs.fire||0)>now||m.dots?.some(d=>d.until>now&&['firebolt','firewave','firestorm','inferno','potion:fire'].includes(d.skillId||''));
    if(burning&&((signs.ice||0)>now||(m.frozenUntil||0)>now)&&(signs.reacted||0)<=now){
     signs.reacted=now+2500;
     delete signs.fire;delete signs.ice;

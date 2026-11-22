@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { potionDamageMultiplier, potionSpeedMultiplier, potionIncomingMultiplier, potionMeleeMultiplier, potionRangeMultiplier } from "./ancient-potion-effects.js";
 import { AUTHORITY_JOBS, AUTHORITY_SKILLS, AUTHORITY_DESCRIPTIONS, isAuthorityJob } from "./ancient-authority.js";
 import { ARTIFACT_COMBAT } from "./ancient-artifacts.js";
 import { bossFormStats } from "./ancient-boss-cards.js";
@@ -113,8 +114,8 @@ const targetedSkillRanges = new Map([
   ["mountainfall", 25],
   ...[...Object.keys(ELEMENTAL_IMPACTS), "frostburst", "swordwave", "swordrain", "phantomblade", "soulbolt", "icebolt", "blizzard", "chain", "storm", "hex", "doom"].map((id) => [id, 30])
 ]);
-function skillTravelRange(level) {
-  return Math.min(100, 50 + Math.max(0, level - 1) * 2);
+function skillTravelRange(level, a = {}, now = Date.now()) {
+  return Math.min(100, 50 + Math.max(0, level - 1) * 2) * potionRangeMultiplier(a, now);
 }
 function skillCastRange(id, level) {
   const base = targetedSkillRanges.get(id);
@@ -276,19 +277,19 @@ function activeSkill(a, id, now = Date.now()) {
 function skillDamageMultiplier(a, now = Date.now()) {
   const blood = a.advancement === "berserker" ? 1 + 0.35 * Math.max(0, 1 - a.hp / (a.maxHp || 100)) : 1;
   const legion = a.profession === "necromancer" ? a.skillRuntime?.advancedSummon?.legion.reduce((count, pet) => count + (pet.until > now ? pet.count ?? 1 : 0), 0) || 0 : 0;
-  return (a.skillRuntime?.authority?.bonusUntil > now ? 1 + (a.skillRuntime?.authority?.bonus || 0) : 1) * (activeSkill(a, "lifeChargedAttack", now) ? 1 + activeSkill(a, "lifeChargedAttack", now) : 1) * (activeSkill(a, "lifeAnchorBuff", now) ? 1.2 : 1) * (activeSkill(a, "swordEmpower", now) ? 1.4 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 0.025 : 1) * (activeSkill(a, "abyssKingForm", now) ? 1.3 : 1) * (activeSkill(a, "riftDomain", now) ? 1.35 : 1) * (activeSkill(a, "elementCycle", now) ? 1.15 : 1) * (activeSkill(a, "elementFire", now) ? 1.18 : 1) * (1 + legion * 0.025) * (activeSkill(a, "spiritAscendant", now) ? 1.5 : 1) * (activeSkill(a, "radiantRecovery", now) ? 1.3 : 1) * blood * (1 + Math.min(1.5, activeSkill(a, "bloodSacrifice", now) * 0.04)) * (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.4 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * ((a.boosts?.damage || 0) > now ? 2 : 1) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
+  return (1 - ((a.pvpEffects?.weakUntil || 0) > now ? a.pvpEffects?.weak || 0 : 0)) * (a.skillRuntime?.authority?.bonusUntil > now ? 1 + (a.skillRuntime?.authority?.bonus || 0) : 1) * (activeSkill(a, "lifeChargedAttack", now) ? 1 + activeSkill(a, "lifeChargedAttack", now) : 1) * (activeSkill(a, "lifeAnchorBuff", now) ? 1.2 : 1) * (activeSkill(a, "swordEmpower", now) ? 1.4 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 0.025 : 1) * (activeSkill(a, "abyssKingForm", now) ? 1.3 : 1) * (activeSkill(a, "riftDomain", now) ? 1.35 : 1) * (activeSkill(a, "elementCycle", now) ? 1.15 : 1) * (activeSkill(a, "elementFire", now) ? 1.18 : 1) * (1 + legion * 0.025) * (activeSkill(a, "spiritAscendant", now) ? 1.5 : 1) * (activeSkill(a, "radiantRecovery", now) ? 1.3 : 1) * blood * (1 + Math.min(1.5, activeSkill(a, "bloodSacrifice", now) * 0.04)) * (activeSkill(a, "crownWeakness", now) ? ARTIFACT_COMBAT.crownDamageScale : 1) * (activeSkill(a, "abyssHealing", now) ? ARTIFACT_COMBAT.abyssHealingMultiplier : 1) * (activeSkill(a, "voiddomain", now) ? 1.4 : 1) * (activeSkill(a, "avatar", now) ? 1.35 : 1) * (a.corrupted ? 1.3 : 1) * potionDamageMultiplier(a, now) * (activeSkill(a, "nightfall", now) ? 1.25 : 1) * (1 + activeSkill(a, "power", now) * 0.02) * (1 + activeSkill(a, "rage", now) * 0.3) * (1 + (bossFormStats(a, now)?.damage || 0));
 }
 function skillSpeedMultiplier(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), h = activeSkill(a, "haste", now);
-  return ((a.pvpEffects?.timeDistortion?.until || 0) > now ? 0 : 1) * (activeSkill(a, "lifeAnchorBuff", now) ? 1.2 : 1) * (activeSkill(a, "riftDomain", now) ? 1.2 : 1) * (activeSkill(a, "swordEmpower", now) ? 1.2 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 5e-3 : 1) * (activeSkill(a, "elementStorm", now) ? 1.2 : 1) * (activeSkill(a, "spiritAscendant", now) ? 1.2 : 1) * (activeSkill(a, "shadowStride", now) ? 1.25 : 1) * (activeSkill(a, "voiddomain", now) ? 1.3 : 1) * (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
+  return (1 - ((a.pvpEffects?.slowUntil || 0) > now ? a.pvpEffects?.slow || 0 : 0)) * potionSpeedMultiplier(a, now) * ((a.pvpEffects?.timeDistortion?.until || 0) > now ? 0 : 1) * (activeSkill(a, "lifeAnchorBuff", now) ? 1.2 : 1) * (activeSkill(a, "riftDomain", now) ? 1.2 : 1) * (activeSkill(a, "swordEmpower", now) ? 1.2 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 5e-3 : 1) * (activeSkill(a, "elementStorm", now) ? 1.2 : 1) * (activeSkill(a, "spiritAscendant", now) ? 1.2 : 1) * (activeSkill(a, "shadowStride", now) ? 1.25 : 1) * (activeSkill(a, "voiddomain", now) ? 1.3 : 1) * (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
 }
 function skillFireMultiplier(a, now = Date.now()) {
   const h = activeSkill(a, "haste", now);
-  return h ? 1 - Math.min(0.25, 0.08 + 0.01 * h) : 1;
+  return potionMeleeMultiplier(a, now) * (h ? 1 - Math.min(0.25, 0.08 + 0.01 * h) : 1);
 }
 function skillIncoming(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), i = activeSkill(a, "icearmor", now);
-  return (activeSkill(a, "beastGuard", now) ? 0.72 : 1) * (activeSkill(a, "riftGuard", now) ? 0.4 : 1) * (activeSkill(a, "elementEarth", now) ? 0.8 : 1) * (activeSkill(a, "elementIce", now) ? 0.9 : 1) * (activeSkill(a, "lineGuard", now) ? 0.35 : 1) * (activeSkill(a, "winterShield", now) ? 0.75 : 1) * (activeSkill(a, "voltGuard", now) ? 0.7 : 1) * (a.advancement === "paladin" ? 0.85 : 1) * (activeSkill(a, "radiantRecovery", now) ? 0.8 : 1) * (activeSkill(a, "execution", now) ? 0 : 1 - activeSkill(a, "prism", now) / 100) * ((a.boosts?.defense || 0) > now ? 0.5 : 1) * (1 - (a.gearReduction || 0)) * (activeSkill(a, "rage", now) ? 2 : 1) * (t ? 1 - Math.min(0.35, 0.1 + 0.01 * t) : 1) * (i ? 1 - Math.min(0.5, 0.15 + 0.02 * i) : 1) * (1 - (bossFormStats(a, now)?.reduction || 0));
+  return potionIncomingMultiplier(a, now) * (activeSkill(a, "beastGuard", now) ? 0.72 : 1) * (activeSkill(a, "riftGuard", now) ? 0.4 : 1) * (activeSkill(a, "elementEarth", now) ? 0.8 : 1) * (activeSkill(a, "elementIce", now) ? 0.9 : 1) * (activeSkill(a, "lineGuard", now) ? 0.35 : 1) * (activeSkill(a, "winterShield", now) ? 0.75 : 1) * (activeSkill(a, "voltGuard", now) ? 0.7 : 1) * (a.advancement === "paladin" ? 0.85 : 1) * (activeSkill(a, "radiantRecovery", now) ? 0.8 : 1) * (activeSkill(a, "execution", now) ? 0 : 1 - activeSkill(a, "prism", now) / 100) * ((a.boosts?.defense || 0) > now ? 0.5 : 1) * (1 - (a.gearReduction || 0)) * (activeSkill(a, "rage", now) ? 2 : 1) * (t ? 1 - Math.min(0.35, 0.1 + 0.01 * t) : 1) * (i ? 1 - Math.min(0.5, 0.15 + 0.02 * i) : 1) * (1 - (bossFormStats(a, now)?.reduction || 0));
 }
 function skillHealth(a, base, now) {
   const t = activeSkill(a, "transform", now);

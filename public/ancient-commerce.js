@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { POTION_EFFECTS } from "./ancient-potion-effects.js";
 import { isAuthorityJob } from "./ancient-authority.js";
 import { rollbackAdvancement } from "./ancient-advancement-progress.js";
 import { PROFESSION_FUSIONS, isFusionJob } from "./ancient-skills.js";
@@ -8,9 +9,16 @@ const ANCIENT_SUPPLIES = {
   purity: { name: "\u51C0\u5316\u5370\u8BB0", en: "Purification Sigil", price: 0, kind: "cleanse" },
   rollback: { name: "\u804C\u4E1A\u56DE\u9000\u5377\u8F74", en: "Profession Reversion Scroll", price: 1e5, kind: "rollback" },
   transfer: { name: "\u8F6C\u804C\u4E66", en: "Profession Change Book", price: 1e3, kind: "transfer" },
-  damage: { name: "\u53CC\u500D\u4F24\u5BB3\u836F\u6C34", en: "Double Damage Potion", price: 200, kind: "boost", duration: 6e5 },
-  defense: { name: "\u53CC\u500D\u9632\u5FA1\u836F\u6C34", en: "Double Defense Potion", price: 200, kind: "boost", duration: 6e5 },
-  experience: { name: "\u7ECF\u9A8C\u836F\u6C34", en: "XP Potion", price: 300, kind: "boost", duration: 6e5 }
+  damage: { name: "\u53CC\u500D\u4F24\u5BB3\u836F\u6C34", en: "Double Damage Potion", price: 200, kind: "boost", duration: POTION_EFFECTS.duration },
+  defense: { name: "\u53CC\u500D\u9632\u5FA1\u836F\u6C34", en: "Double Defense Potion", price: 200, kind: "boost", duration: POTION_EFFECTS.duration },
+  speed: { name: "\u901F\u5EA6\u836F\u6C34", en: "Speed Potion", price: 200, kind: "boost", duration: POTION_EFFECTS.duration },
+  berserk: { name: "\u72C2\u66B4\u836F\u6C34", en: "Berserk Potion", price: 5e3, kind: "boost", duration: POTION_EFFECTS.duration },
+  elementFire: { name: "\u706B\u7130\u5143\u7D20\u836F\u6C34", en: "Fire Element Potion", price: 400, kind: "boost", duration: POTION_EFFECTS.duration },
+  elementLightning: { name: "\u96F7\u7535\u5143\u7D20\u836F\u6C34", en: "Lightning Element Potion", price: 400, kind: "boost", duration: POTION_EFFECTS.duration },
+  elementCurse: { name: "\u8BC5\u5492\u5143\u7D20\u836F\u6C34", en: "Curse Element Potion", price: 400, kind: "boost", duration: POTION_EFFECTS.duration },
+  elementEarth: { name: "\u5927\u5730\u5143\u7D20\u836F\u6C34", en: "Earth Element Potion", price: 400, kind: "boost", duration: POTION_EFFECTS.duration },
+  elementIce: { name: "\u5BD2\u51B0\u5143\u7D20\u836F\u6C34", en: "Ice Element Potion", price: 400, kind: "boost", duration: POTION_EFFECTS.duration },
+  experience: { name: "\u7ECF\u9A8C\u836F\u6C34", en: "XP Potion", price: 300, kind: "boost", duration: POTION_EFFECTS.duration }
 };
 for (const [id, scroll] of Object.entries(FUSION_SCROLLS)) ANCIENT_SUPPLIES[id] = { ...scroll, kind: "scroll" };
 for (const [id, j] of Object.entries(PROFESSIONS)) if (!isFusionJob(id) && !isAuthorityJob(id)) ANCIENT_SUPPLIES["book:" + id] = { name: j.name + "\u6280\u80FD\u4E66", en: j.en + " Skill Book", price: 300, kind: "book", job: id };
@@ -24,6 +32,9 @@ function supplyDescription(id, en = false) {
   if (d.kind === "rollback") return en ? "Revert the current ordinary Holy advancement branch. Retains Holy status and trained skill progress; lets you choose a branch again." : "\u56DE\u9000\u5F53\u524D\u666E\u901A\u804C\u4E1A\u7684\u5723\u7EA7\u5347\u534E\u5206\u652F\uFF0C\u4FDD\u7559\u5723\u7EA7\u4E0E\u6280\u80FD\u6210\u957F\uFF0C\u53EF\u91CD\u65B0\u9009\u62E9\u5206\u652F\u3002";
   if (d.kind === "transfer") return en ? "Consumed when choosing or changing profession. Trained skill levels are retained." : "\u9009\u62E9\u6216\u5207\u6362\u804C\u4E1A\u65F6\u6D88\u8017\u4E00\u672C\uFF0C\u5DF2\u4FEE\u70BC\u6280\u80FD\u7B49\u7EA7\u4FDD\u7559\u3002";
   if (d.kind === "scroll") return en ? "Used to ignite a fusion passive." : "\u7528\u4E8E\u70B9\u4EAE\u878D\u5408\u804C\u4E1A\u88AB\u52A8\u6280\u80FD\u3002";
+  if (id === "speed") return en ? "Movement speed +50% for 10 minutes. Reuse refreshes duration." : "10\u5206\u949F\u5185\u79FB\u52A8\u901F\u5EA6+50%\uFF0C\u91CD\u590D\u4F7F\u7528\u5237\u65B0\u6301\u7EED\u65F6\u95F4\u3002";
+  if (id === "berserk") return en ? "10 minutes: skill cooldown \xD70.8, damage \xD72, movement +30%, incoming damage \xD71.5, melee interval \xD70.7, skill cast range +10%. Shares the \xD72 damage category with Double Damage Potion; no \xD74 stacking." : "10\u5206\u949F\u5185\uFF1A\u6280\u80FD\u51B7\u5374\u221220%\u3001\u4F24\u5BB3+100%\u3001\u79FB\u901F+30%\u3001\u53D7\u5230\u4F24\u5BB3+50%\u3001\u8FD1\u6218\u653B\u51FB\u95F4\u9694\u221230%\u3001\u6280\u80FD\u65BD\u653E\u8DDD\u79BB+10%\u3002\u4E0E\u53CC\u500D\u4F24\u5BB3\u836F\u6C34\u7684\u589E\u4F24\u53D6\u8F83\u9AD8\u503C\uFF0C\u4E0D\u53E0\u62104\u500D\u3002";
+  if (id.startsWith("element")) return (en ? "For 10 minutes, skill hits have a 20% chance to apply " : "10\u5206\u949F\u5185\u6280\u80FD\u547D\u4E2D\u670920%\u6982\u7387\u9644\u52A0") + (en ? { elementFire: "burning (30% hit damage over 3s)", elementLightning: "20% extra damage and a 75%-strength chain to one nearby enemy", elementCurse: "20% extra damage, \u221210% attack and +10% incoming damage for 4s", elementEarth: "20% extra damage, a brief stagger and 15% slow", elementIce: "20% extra damage and 30% slow for 4s" }[id] : { elementFire: "\u71C3\u70E7\uFF083\u79D2\u5185\u989D\u5916\u9020\u6210\u672C\u6B21\u4F24\u5BB3\u768430%\uFF09", elementLightning: "\u989D\u591620%\u4F24\u5BB3\uFF0C\u5E76\u4EE5\u517675%\u7684\u5F3A\u5EA6\u8FDE\u9501\u9644\u8FD11\u4E2A\u654C\u4EBA", elementCurse: "\u989D\u591620%\u4F24\u5BB3\uFF0C\u76EE\u68074\u79D2\u5185\u653B\u51FB\u221210%\u3001\u53D7\u5230\u4F24\u5BB3+10%", elementEarth: "\u989D\u591620%\u4F24\u5BB3\u3001\u77ED\u6682\u9707\u51FB\u4E0E15%\u51CF\u901F", elementIce: "\u989D\u591620%\u4F24\u5BB3\uFF0C\u76EE\u68074\u79D2\u5185\u51CF\u901F30%" }[id]) + (en ? ". Per target and element: at most once per second. Same potion refreshes; different elements coexist." : "\u3002\u540C\u76EE\u6807\u540C\u5143\u7D20\u6BCF\u79D2\u6700\u591A\u89E6\u53D1\u4E00\u6B21\uFF1B\u540C\u7C7B\u5237\u65B0\uFF0C\u4E0D\u540C\u5143\u7D20\u53EF\u5171\u5B58\u3002");
   if (d.kind === "book") return en ? "Use to receive one random skill book for this profession." : "\u4F7F\u7528\u540E\u968F\u673A\u83B7\u5F97\u4E00\u672C\u8BE5\u804C\u4E1A\u7684\u5177\u4F53\u6280\u80FD\u4E66\u3002";
   return (en ? { damage: "All damage \xD72", defense: "Incoming damage \xD70.5", experience: "XP +50%" } : { damage: "\u6240\u6709\u4F24\u5BB3 \xD72", defense: "\u53D7\u5230\u4F24\u5BB3 \xD70.5", experience: "\u7ECF\u9A8C +50%" })[id] + " \xB7 " + (en ? "10 minutes; expires while offline; does not stack." : "10\u5206\u949F\uFF1B\u79BB\u7EBF\u4ECD\u8BA1\u65F6\uFF1B\u540C\u7C7B\u4E0D\u53E0\u52A0\u3002");
 }
@@ -35,7 +46,7 @@ function buyAncientSupply(p, id, quantity, now = Date.now()) {
   if (d.kind === "transfer" && quantity > remaining) return "\u4ECA\u65E5\u8F6C\u804C\u4E66\u9650\u8D2D2\u672C";
   if (d.kind === "book" && quantity > remaining) return "\u4ECA\u65E5\u6BCF\u79CD\u6280\u80FD\u4E66\u9650\u8D2D8\u672C";
   const boostRemaining = ancientBoostsRemaining(p, id, now);
-  if (d.kind === "boost" && quantity > boostRemaining) return "\u4ECA\u65E5\u6BCF\u79CD\u7279\u6B8A\u6548\u679C\u836F\u6C34\u9650\u8D2D5\u74F6";
+  if (d.kind === "boost" && quantity > boostRemaining) return id === "berserk" ? "\u4ECA\u65E5\u72C2\u66B4\u836F\u6C34\u9650\u8D2D3\u74F6" : "\u4ECA\u65E5\u6BCF\u79CD\u7279\u6B8A\u6548\u679C\u836F\u6C34\u9650\u8D2D5\u74F6";
   const key = supplyKey(id), count = (p.materials[key] || 0) + quantity, cost = d.price * quantity;
   if (!Number.isSafeInteger(count)) return "\u6570\u91CF\u5DF2\u8FBE\u4E0A\u9650";
   if (p.coins < cost) return "\u8FDC\u53E4\u91D1\u5E01\u4E0D\u8DB3";
@@ -48,7 +59,7 @@ function buyAncientSupply(p, id, quantity, now = Date.now()) {
   ;
   if (d.kind === "boost") {
     if (p.shopBoosts?.day !== ancientShopDay(now)) p.shopBoosts = { day: ancientShopDay(now), counts: {} };
-    p.shopBoosts.counts[id] = 5 - boostRemaining + quantity;
+    p.shopBoosts.counts[id] = ancientBoostLimit(id) - boostRemaining + quantity;
   }
   return null;
 }
@@ -99,8 +110,10 @@ function chooseAncientProfession(p, job) {
   ensureBasicSkills(p);
   return null;
 }
+const ancientBoostLimit = (id) => id === "berserk" ? 3 : 5;
 function ancientBoostsRemaining(p, id, now = Date.now()) {
-  return p.shopBoosts?.day === ancientShopDay(now) ? Math.max(0, 5 - Math.max(0, p.shopBoosts.counts?.[id] || 0)) : 5;
+  const limit = ancientBoostLimit(id);
+  return p.shopBoosts?.day === ancientShopDay(now) ? Math.max(0, limit - Math.max(0, p.shopBoosts.counts?.[id] || 0)) : limit;
 }
 function fuseAncientProfession(p, job) {
   if (p.level < 15) return "15\u7EA7\u5F00\u653E\u8F6C\u804C";
@@ -119,6 +132,7 @@ function fuseAncientProfession(p, job) {
 }
 export {
   ANCIENT_SUPPLIES,
+  ancientBoostLimit,
   ancientBoostsRemaining,
   ancientShopDay,
   ancientSkillBooksRemaining,

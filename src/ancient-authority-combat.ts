@@ -1,3 +1,4 @@
+import {potionCooldownMultiplier,potionRangeMultiplier} from './ancient-potion-effects';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {isAncientBoss} from './ancient-boss';
 import {AUTHORITY_BALANCE as B,TIME_LORD as T,migrateTimeLord,isAuthorityJob} from './ancient-authority';
@@ -72,11 +73,11 @@ export function castAuthority(a:SkillActor,p:AncientProfile,id:string,direction:
   s.echoUntil=now+T.echoDuration(level);s.echoRatio=ratio;s.echoVisual=now;c.fx(id,a.x,a.z,12,{target:'',level});
  }else if(id==='spaceswap'){
   const origin={x:a.x,y:a.y,z:a.z};let to=returning?s.anchor!:{...origin};
-  if(!returning){for(let d=1;d<=50;d++){const x=origin.x+aim[0]*d,z=origin.z+aim[2]*d;if(blocked(x,z,.8,c.map)||c.canMove&&!c.canMove(to.x,to.z,x,z))break;to={x,y:ancientMapHeight(c.map,x,z)+1.7,z};}s.anchor={...origin,until:now+9000};}else delete s.anchor;
+  if(!returning){for(let d=1;d<=50*potionRangeMultiplier(p,now);d++){const x=origin.x+aim[0]*d,z=origin.z+aim[2]*d;if(blocked(x,z,.8,c.map)||c.canMove&&!c.canMove(to.x,to.z,x,z))break;to={x,y:ancientMapHeight(c.map,x,z)+1.7,z};}s.anchor={...origin,until:now+9000};}else delete s.anchor;
   a.x=to.x;a.y=to.y;a.z=to.z;
   for(const center of [origin,to]){for(const m of living(c))if(Math.hypot(m.x-center.x,m.z-center.z)<7)strike(a,c,m,n*3,id,now);c.fx(id,center.x,center.z,7);}
  }
- r.cooldowns[id]=now+SKILLS[id].cooldown*1000;return null;
+ r.cooldowns[id]=now+SKILLS[id].cooldown*1000*potionCooldownMultiplier(p,now);return null;
 }
 export function tickAuthority(a:SkillActor,p:AncientProfile,c:SkillContext,dt:number,now:number){
  if(!isAuthorityJob(p.profession||'')||!p.authority?.[p.profession as 'timelord'|'spacelord']?.unlocked){delete runtime(a).authority;return;}

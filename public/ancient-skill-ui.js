@@ -55,7 +55,7 @@ export function createAncientSkillUI({getProfile,getPlayer,en,action,cast,slot,r
   descent:['消耗12%最大生命，生成8秒领域，压低敌方攻击并汲取生命。','Spend 12% max HP for an 8s field that weakens enemies and drains life.'],
   avatar:['消耗30深渊能量。化身持续10秒，持续失血并强化侵蚀与吸血。','Spend 30 Abyssal Energy. Transform for 10s, losing health while empowering corruption and lifesteal.'],
   temporalrift:['主目标480%攻击，6米内65%溅射。重复命中引爆为800%，降低攻击和移动。近处可自动选敌。','480% damage with 65% splash within 6m. Repeated hits detonate for 800% and weaken and slow the target. Nearby targeting assistance.'],
-  chronoshift:['一次向前跃迁12米，起点7米范围造成340%攻击，落点8米范围造成260%攻击。','Shift forward 12m once. Deal 340% damage within 7m of departure and 260% within 8m of arrival.'],
+  chronoshift:['一次向前跃迁20米，起点7米范围造成340%攻击，落点8米范围造成260%攻击。','Shift forward 20m once. Deal 340% damage within 7m of departure and 260% within 8m of arrival.'],
   rewind:['立即恢复20%最大生命并造成8米范围280%攻击，然后记录状态。低于35%血量或窗口结束自动回溯，也可再次主动回溯。','Heal 20% max HP and deal 280% damage within 8m, then record your state. Rewind automatically below 35% HP or at expiry, or recast manually.'],
   stasis:['冻结14米内普通怪物4秒并延后结算伤害，每秒造成210%攻击。首领大幅减速。','Freeze regular enemies within 14m for 4s and bank damage, dealing 210% attack per second. Bosses are heavily slowed.'],
  };
