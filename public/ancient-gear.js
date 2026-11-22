@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { ancientLateGrowth } from "./ancient-growth.js";
 import { meleeBasicSkillFloor } from "./ancient-melee-balance.js";
 import { jadeBonuses } from "./ancient-jade-wear.js";
 const GEAR_SETS = {
@@ -445,7 +446,7 @@ function ancientBaseAttack(level) {
     const [a, h] = anchors[i - 1], [b, k] = anchors[i];
     if (l <= b) return Math.round(h * (l / a) ** (Math.log(k / h) / Math.log(b / a)));
   }
-  return Math.round(l <= 150 ? 13e4 * (l / 100) ** 3 : 438750 * (l / 150) ** 4.5);
+  return Math.round(l <= 150 ? 13e4 * (l / 100) ** 3 : l <= 220 ? 438750 * (l / 150) ** 4.5 : 438750 * (220 / 150) ** 4.5 * ancientLateGrowth(l));
 }
 function ancientSkillDamage(p) {
   const s = ancientGearStats(p);

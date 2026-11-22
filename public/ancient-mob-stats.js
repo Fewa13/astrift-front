@@ -1,12 +1,14 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { ANCIENT_GROWTH } from "./ancient-growth.js";
 import { ancientBaseAttack, ancientBaseHealth } from "./ancient-gear.js";
 const MOB_FACTORS = { grox: [1, 1], hunter: [0.95, 1.1], mossling: [1.1, 1], thorn: [1, 1.1], sentinel: [1.3, 1.15], city_husk: [1.32, 1.15], city_guard: [1.68, 1.3225], city_acolyte: [1.38, 1.265] };
 function ancientMobDamageScale(level) {
-  return Math.max(1, level / 100) ** 1.5;
+  return Math.min(2, Math.max(1, level / 100) ** 1.5);
 }
 function ancientMobHealth(level, legacy) {
-  const holyRamp = Math.min(1, Math.max(0, (level - 50) / 30)), factor = level < 20 ? 6.3 : level < 30 ? 10 + 0.75 * (level - 20) : 17.5 + 26.1 * holyRamp;
-  return Math.round(Math.max(legacy, ancientBaseAttack(level) * factor) * Math.min(2, Math.max(1, level / 100) ** 0.6));
+  const attack = ancientBaseAttack(level), factor = level < 20 ? 6.3 : level < 30 ? 10 + 0.75 * (level - 20) : 17.5 + 0.5 * Math.min(1, (level - 30) / 50);
+  const archetype = Math.max(0.8, legacy / (attack * 12));
+  return Math.round(attack * Math.min(ANCIENT_GROWTH.ordinaryHealthPerAttack, factor) * archetype);
 }
 function ancientMobHP(kind, level) {
   const f = MOB_FACTORS[kind];

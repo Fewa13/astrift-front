@@ -4,7 +4,7 @@ import { ancientMobHealth } from "./ancient-mob-stats.js";
 const BOSS_FACTORS = { chief: [3, 0.18], lord: [5, 0.32], rootwarden: [4, 0.24], crystal_metal: [6, 0.34], crystal_wood: [6, 0.34], crystal_water: [6, 0.34], crystal_fire: [6, 0.34], crystal_earth: [7, 0.38], oathknight: [5, 0.29], emptyking: [8, 0.4] };
 function ancientBossHealth(level, healthFactor, mobFactor, mobRatio) {
   const earlyFloor = 0.35 + 1.15 * Math.min(1, Math.max(0, (level - 60) / 40));
-  return Math.round(Math.max(ancientBaseHealth(level) * healthFactor * earlyFloor, ancientMobHealth(level, ancientBaseAttack(level) * 12 * mobFactor) * mobRatio));
+  return Math.round(Math.max(ancientBaseHealth(level) * healthFactor * earlyFloor, ancientMobHealth(level, ancientBaseAttack(level) * 12 * mobFactor) * mobRatio * (healthFactor / 6.5)));
 }
 function ancientBossHP(kind, level) {
   const f = BOSS_FACTORS[kind];

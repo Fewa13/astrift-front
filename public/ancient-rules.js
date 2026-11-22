@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { ancientLateGrowth } from "./ancient-growth.js";
 import { chapterSurface, CHAPTER_ROUTES } from "./ancient-geography.js";
 import { DUNES_KINDS, dunesSurface, dunesHeight, dunesBlocked, dunesLineClear, dunesMonsterDamage } from "./ancient-dunes.js";
 import { communityId, communityHeight, communityBlocked, communityClear } from "./ancient-community.js";
@@ -50,9 +51,20 @@ function ancientKillExperience(baseXP, monsterLevel = 0) {
   return monsterLevel > 150 ? Math.floor(xp * 115 / 100) : xp;
 }
 const ANCIENT_SMALL_XP = [[1, 40], [5, 200], [10, 600], [15, 1e3], [20, 1600], [25, 2500]];
-function ancientMonsterXP(kind, level) {
+function legacyAncientMonsterXP(kind, level) {
   const l = Math.max(1, Number.isFinite(level) ? Math.floor(level) : 1);
   return Math.floor(ancientMonsterBaseXP(kind, l) * (l > 100 ? (l / 100) ** 3 : 1));
+}
+function ancientMonsterXP(kind, level) {
+  return level <= 220 ? legacyAncientMonsterXP(kind, level) : Math.floor(legacyAncientMonsterXP(kind, 220) * ancientLateGrowth(level));
+}
+function ancientMonsterCoinXP(kind, level, communityBoss = false) {
+  const xp = legacyAncientMonsterXP(kind, level), cap = 200 * level * level * 0.2 * (level > 100 ? (level / 100) ** 3 : 1);
+  return communityBoss ? Math.min(xp, cap) : xp;
+}
+function ancientCommunityBossXP(kind, level) {
+  const l = Math.min(220, level), cap = 200 * l * l * 0.2 * (l > 100 ? (l / 100) ** 3 : 1);
+  return Math.floor(Math.min(legacyAncientMonsterXP(kind, l), cap) * ancientLateGrowth(level));
 }
 function ancientMonsterBaseXP(kind, level) {
   const l = Math.max(1, Number.isFinite(level) ? Math.floor(level) : 1);
@@ -193,15 +205,27 @@ function upgradeCost(w) {
 function xpRewardBase(level) {
   return 200 * level ** 2;
 }
-function xpNeeded(level) {
+function legacyXPNeeded(level) {
   const l = Math.max(1, Number.isFinite(level) ? Math.floor(level) : 1);
   if (l <= 100) return Math.floor(xpRewardBase(l));
   if (l >= 180) {
     const lateGrowth = 1 + (l - 150) / 40;
     return Math.ceil(xpRewardBase(l) * 2 * lateGrowth ** 2 * 1.6 * Math.max(0.55, 1.75 / lateGrowth) ** 0.8);
   }
-  const reward = (n) => ancientKillExperience(ancientMonsterXP("grox", n)), at100 = xpRewardBase(100) / reward(100), at180 = xpRewardBase(180) * 2 * (1 + 30 / 40) ** 2 * 1.6 / reward(180), kills = at100 + (at180 - at100) * (l - 100) / 80;
+  const reward = (n) => ancientKillExperience(legacyAncientMonsterXP("grox", n)), at100 = xpRewardBase(100) / reward(100), at180 = xpRewardBase(180) * 2 * (1 + 30 / 40) ** 2 * 1.6 / reward(180), kills = at100 + (at180 - at100) * (l - 100) / 80;
   return Math.ceil(reward(l) * kills);
+}
+function xpNeeded(level) {
+  if (level <= 220) return legacyXPNeeded(level);
+  const start = legacyXPNeeded(220) / ancientKillExperience(legacyAncientMonsterXP("grox", 220), 220), t = Math.min(1, (level - 220) / 80), kills = start + (80 - start) * t;
+  return Math.ceil(ancientKillExperience(ancientMonsterXP("grox", level), level) * kills);
+}
+function migrateAncientGrowth(p) {
+  if (p.growthVersion === 1) return false;
+  const old = legacyXPNeeded(p.level), progress = Math.max(0, Math.min(1 - Number.EPSILON, p.xp / old));
+  if (xpNeeded(p.level) !== old) p.xp = Math.min(xpNeeded(p.level) - 1, Math.floor(xpNeeded(p.level) * progress));
+  p.growthVersion = 1;
+  return true;
 }
 function gainXP(p, amount, applyBoost = true) {
   const now = Date.now(), boost = applyBoost && (p.boosts?.experience || 0) > now ? 1.5 : 1, title = puzzleTitleBonus(p, now), awarded = boost === 1 && !title ? amount : Math.floor(amount * boost * (1 + title));
@@ -214,7 +238,7 @@ function gainXP(p, amount, applyBoost = true) {
 }
 function newAncientProfile() {
   const weapon = { id: crypto.randomUUID(), gun: "R6", quality: 1, level: 1, stars: 1 };
-  const p = { level: 1, xp: 0, coins: 0, potions: {}, materials: { wood: 20, stone: 15, bone: 10, core: 0 }, weapons: [weapon], equipped: weapon.id };
+  const p = { growthVersion: 1, level: 1, xp: 0, coins: 0, potions: {}, materials: { wood: 20, stone: 15, bone: 10, core: 0 }, weapons: [weapon], equipped: weapon.id };
   ensureAncientGear(p);
   return p;
 }
@@ -351,9 +375,11 @@ export {
   ancientAttackCooldown,
   ancientAttackReady,
   ancientCoinReward,
+  ancientCommunityBossXP,
   ancientKillExperience,
   ancientMapHeight,
   ancientMaxHealth,
+  ancientMonsterCoinXP,
   ancientMonsterDamage,
   ancientMonsterXP,
   ancientMoveCorrection,
@@ -375,7 +401,10 @@ export {
   forestHeight2 as forestHeight,
   forestInside,
   gainXP,
+  legacyAncientMonsterXP,
+  legacyXPNeeded,
   lineClear,
+  migrateAncientGrowth,
   newAncientProfile,
   tribeAltarHeight,
   tribeCompactZ,

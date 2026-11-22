@@ -1,3 +1,4 @@
+import {ancientLateGrowth} from './ancient-growth.js';
 import {chapterSurface,CHAPTER_ROUTES} from './ancient-geography.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {DUNES_KINDS,dunesSurface,dunesHeight,dunesBlocked,dunesLineClear,dunesMonsterDamage} from './ancient-dunes.js';
@@ -25,7 +26,7 @@ export function tribeCompactZ(z:number){return z<=30?z:z<=200?30+(z-30)*120/170:
 export function ancientMapHeight(map:string,x:number,z:number,feet?:number){if(feet!==undefined&&CHAPTER_ROUTES[map])return chapterSurface(map,x,z,feet);return map==='dunes'?dunesSurface(x,z):communityId(map)?communityHeight(map,x,z,feet):map==='skyreach'?skyreachSurface(x,z):map==='frostcourt'?frostcourtSurface(x,z):map==='starfall'?starfallSurface(x,z):map==='sanctum'?sanctumSurface(x,z,feet):map==='blight'?blightSurface(x,z,feet):isDungeonMap(map)?dungeonSurface(map,x,z,feet??-Infinity):map==='city'?(feet===undefined?cityHeight(x,z):citySurface(x,z,feet)):map==='forest'?forestSurface(x,z,feet):feet===undefined?tribeAltarHeight(x,z):Math.max(tribeAltarHeight(x,z),tribeSurface(x,z,feet))}
 export function tribeAltarHeight(x:number,z:number){let height=0;for(const [old,radius]of [[440,12],[945,21]])for(let i=0;i<3;i++)if(Math.hypot(x,z-tribeCompactZ(old))<=radius-i)height=Math.max(height,.2+i*.05);return height}
 export type AncientWeapon={id:string;gun:string;quality:number;level:number;stars:number};
-export type AncientProfile={authority?:Partial<Record<import("./ancient-authority").AuthorityJob,import("./ancient-authority").AuthorityProgress>>;quickbar?:string[];quickbarVersion?:number;fusionPassives?:Record<string,Record<number,import("./ancient-fusion-passives").FusionPassiveProgress>>;necromancerStrength?:number;advancements?:Record<string,import("./ancient-advancement-progress").AdvancementProgress>;artifactEquipped?:import("./ancient-artifacts").ArtifactId;artifacts?:Partial<Record<import("./ancient-artifacts").ArtifactId,import("./ancient-artifacts").ArtifactRecord>>;mastery?:Record<string,{level:number;points:number}>;fusedJobs?:Record<string,boolean>;consumedJobs?:Record<string,boolean>;secrets?:Record<string,1|2>;puzzleTitle?:import('./ancient-puzzle-ranking').PuzzleTitle;personalPuzzleClaimed?:number;ancientSkin?:string;ancientSkinByJob?:Record<string,string>;ancientSkins?:string[];ancientSkinFragments?:Record<string,number>;gearHunt?:{key:string;count:number};gearReroll?:{id:string;index:number;promoted?:string;original:{key:string;value:number};candidate:{key:string;value:number}};puzzleClaimed?:number;tower?:import('./ancient-tower').TowerProgress;jadeEquipped?:Partial<Record<import('./ancient-jade-wear').JadeSlot,string>>;collections?:import('./ancient-collections').JadeCollectible[];branches?:Record<string,string>;branchGuides?:Record<string,boolean>;relic?:string;relics?:string[];relicChangedAt?:number;huntClears?:Record<string,number>;fishing?:Record<string,{count:number;bestKg:number}>;gearGoal?:string;trialBadge?:string;leisureFoodAt?:number;ascension?:import('./ancient-ascension').AscensionState;purificationUnlocked?:boolean;corruptedMap?:string;corrupted?:boolean;shopSkillBooksByKind?:{day:string;counts:Record<string,number>};shopBoosts?:{day:string;counts:Record<string,number>};shopSkillBooks?:{day:string;count:number};partyFractions?:Record<string,number>;level:number;xp:number;coins:number;potions:Record<string,number>;materials:Record<string,number>;weapons:AncientWeapon[];equipped:string;boosts?:Record<string,number>;profession?:string;skills?:Record<string,number>;quest?:{step:number;count:number;revision?:number};gearAffixVersion?:number;gear?:import('./ancient-gear').AncientGear[];gearEquipped?:Partial<Record<import('./ancient-gear').GearSlot,string>>};
+export type AncientProfile={growthVersion?:number;authority?:Partial<Record<import("./ancient-authority").AuthorityJob,import("./ancient-authority").AuthorityProgress>>;quickbar?:string[];quickbarVersion?:number;fusionPassives?:Record<string,Record<number,import("./ancient-fusion-passives").FusionPassiveProgress>>;necromancerStrength?:number;advancements?:Record<string,import("./ancient-advancement-progress").AdvancementProgress>;artifactEquipped?:import("./ancient-artifacts").ArtifactId;artifacts?:Partial<Record<import("./ancient-artifacts").ArtifactId,import("./ancient-artifacts").ArtifactRecord>>;mastery?:Record<string,{level:number;points:number}>;fusedJobs?:Record<string,boolean>;consumedJobs?:Record<string,boolean>;secrets?:Record<string,1|2>;puzzleTitle?:import('./ancient-puzzle-ranking').PuzzleTitle;personalPuzzleClaimed?:number;ancientSkin?:string;ancientSkinByJob?:Record<string,string>;ancientSkins?:string[];ancientSkinFragments?:Record<string,number>;gearHunt?:{key:string;count:number};gearReroll?:{id:string;index:number;promoted?:string;original:{key:string;value:number};candidate:{key:string;value:number}};puzzleClaimed?:number;tower?:import('./ancient-tower').TowerProgress;jadeEquipped?:Partial<Record<import('./ancient-jade-wear').JadeSlot,string>>;collections?:import('./ancient-collections').JadeCollectible[];branches?:Record<string,string>;branchGuides?:Record<string,boolean>;relic?:string;relics?:string[];relicChangedAt?:number;huntClears?:Record<string,number>;fishing?:Record<string,{count:number;bestKg:number}>;gearGoal?:string;trialBadge?:string;leisureFoodAt?:number;ascension?:import('./ancient-ascension').AscensionState;purificationUnlocked?:boolean;corruptedMap?:string;corrupted?:boolean;shopSkillBooksByKind?:{day:string;counts:Record<string,number>};shopBoosts?:{day:string;counts:Record<string,number>};shopSkillBooks?:{day:string;count:number};partyFractions?:Record<string,number>;level:number;xp:number;coins:number;potions:Record<string,number>;materials:Record<string,number>;weapons:AncientWeapon[];equipped:string;boosts?:Record<string,number>;profession?:string;skills?:Record<string,number>;quest?:{step:number;count:number;revision?:number};gearAffixVersion?:number;gear?:import('./ancient-gear').AncientGear[];gearEquipped?:Partial<Record<import('./ancient-gear').GearSlot,string>>};
 export const ANCIENT_POTIONS:Record<string,{name:string;en:string;price:number;heal:number}>={
  minor:{name:'低级血瓶',en:'Minor Health Potion',price:1,heal:1000},
  medium:{name:'中级血瓶',en:'Medium Health Potion',price:10,heal:10000},
@@ -40,10 +41,15 @@ export function ancientAddCoins(balance:number,xp:number){return Math.round(bala
 export function ancientKillExperience(baseXP:number,monsterLevel=0){const xp=Math.max(0,Math.floor(baseXP*120/100));return monsterLevel>150?Math.floor(xp*115/100):xp}
 // Final base XP: the earlier +100% adjustment is already included here.
 const ANCIENT_SMALL_XP=[[1,40],[5,200],[10,600],[15,1000],[20,1600],[25,2500]];
-export function ancientMonsterXP(kind:string,level:number):number{
+export function legacyAncientMonsterXP(kind:string,level:number):number{
  const l=Math.max(1,Number.isFinite(level)?Math.floor(level):1);
  return Math.floor(ancientMonsterBaseXP(kind,l)*(l>100?(l/100)**3:1));
 }
+// Every same-kind late monster uses the same 3x / 20-level curve.
+export function ancientMonsterXP(kind:string,level:number):number{return level<=220?legacyAncientMonsterXP(kind,level):Math.floor(legacyAncientMonsterXP(kind,220)*ancientLateGrowth(level))}
+// Currency is independent of the revised experience curve.
+export function ancientMonsterCoinXP(kind:string,level:number,communityBoss=false){const xp=legacyAncientMonsterXP(kind,level),cap=200*level*level*.2*(level>100?(level/100)**3:1);return communityBoss?Math.min(xp,cap):xp}
+export function ancientCommunityBossXP(kind:string,level:number){const l=Math.min(220,level),cap=200*l*l*.2*(l>100?(l/100)**3:1);return Math.floor(Math.min(legacyAncientMonsterXP(kind,l),cap)*ancientLateGrowth(level))}
 // Apply late-level growth once, including bestiary variants (not per recursion).
 function ancientMonsterBaseXP(kind:string,level:number):number{
  const l=Math.max(1,Number.isFinite(level)?Math.floor(level):1);
@@ -107,18 +113,24 @@ export function upgradeCost(w:AncientWeapon){return w.quality*w.level**2*(w.star
 export function xpRewardBase(level:number){return 200*level**2}
 // Progression only: keep combat and all reward amounts unchanged. Spread the
 // increase evenly across Lv100–180 instead of inheriting the old Lv150 jump.
-export function xpNeeded(level:number){
+export function legacyXPNeeded(level:number){
  const l=Math.max(1,Number.isFinite(level)?Math.floor(level):1);
  if(l<=100)return Math.floor(xpRewardBase(l));
  if(l>=180){
   const lateGrowth=1+(l-150)/40;
   return Math.ceil(xpRewardBase(l)*2*lateGrowth**2*1.6*Math.max(.55,1.75/lateGrowth)**.8);
  }
- const reward=(n:number)=>ancientKillExperience(ancientMonsterXP('grox',n)),at100=xpRewardBase(100)/reward(100),at180=xpRewardBase(180)*2*(1+30/40)**2*1.6/reward(180),kills=at100+(at180-at100)*(l-100)/80;
+ const reward=(n:number)=>ancientKillExperience(legacyAncientMonsterXP('grox',n)),at100=xpRewardBase(100)/reward(100),at180=xpRewardBase(180)*2*(1+30/40)**2*1.6/reward(180),kills=at100+(at180-at100)*(l-100)/80;
  return Math.ceil(reward(l)*kills);
 }
+export function xpNeeded(level:number){
+ if(level<=220)return legacyXPNeeded(level);
+ const start=legacyXPNeeded(220)/ancientKillExperience(legacyAncientMonsterXP('grox',220),220),t=Math.min(1,(level-220)/80),kills=start+(80-start)*t;
+ return Math.ceil(ancientKillExperience(ancientMonsterXP('grox',level),level)*kills);
+}
+export function migrateAncientGrowth(p:AncientProfile){if(p.growthVersion===1)return false;const old=legacyXPNeeded(p.level),progress=Math.max(0,Math.min(1-Number.EPSILON,p.xp/old));if(xpNeeded(p.level)!==old)p.xp=Math.min(xpNeeded(p.level)-1,Math.floor(xpNeeded(p.level)*progress));p.growthVersion=1;return true;}
 export function gainXP(p:AncientProfile,amount:number,applyBoost=true){const now=Date.now(),boost=applyBoost&&(p.boosts?.experience||0)>now?1.5:1,title=puzzleTitleBonus(p,now),awarded=boost===1&&!title?amount:Math.floor(amount*boost*(1+title));p.xp+=awarded;while(p.xp>=xpNeeded(p.level)){p.xp-=xpNeeded(p.level);p.level++}return awarded}
-export function newAncientProfile():AncientProfile{const weapon={id:crypto.randomUUID(),gun:'R6',quality:1,level:1,stars:1};const p:AncientProfile={level:1,xp:0,coins:0,potions:{},materials:{wood:20,stone:15,bone:10,core:0},weapons:[weapon],equipped:weapon.id};ensureAncientGear(p);return p}
+export function newAncientProfile():AncientProfile{const weapon={id:crypto.randomUUID(),gun:'R6',quality:1,level:1,stars:1};const p:AncientProfile={growthVersion:1,level:1,xp:0,coins:0,potions:{},materials:{wood:20,stone:15,bone:10,core:0},weapons:[weapon],equipped:weapon.id};ensureAncientGear(p);return p}
 export function ancientTarget<T extends {summonOwner?:string;p:{name:string;hp:number;x:number;y:number;z:number}}>(monster:{hp:number;target:string;region:number;kind:string;x:number;y?:number;z:number;map?:string;contributions?:{name:string;damage:number}[]},players:T[]):T|undefined{
  if(monster.hp<=0)return;
  const boss=monster.kind==='chief'||monster.kind==='lord'||!!ANCIENT_KINDS[monster.kind]?.boss;

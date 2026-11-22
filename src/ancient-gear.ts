@@ -1,3 +1,4 @@
+import {ancientLateGrowth} from './ancient-growth.js';
 import {meleeBasicSkillFloor} from './ancient-melee-balance.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {jadeBonuses} from './ancient-jade-wear.js';
@@ -226,7 +227,7 @@ export function ancientBaseAttack(level:number){
  // without any target-level penalty or the weapon's fixed attack bonus.
  for(let i=1;i<anchors.length;i++){const [a,h]=anchors[i-1],[b,k]=anchors[i];if(l<=b)return Math.round(h*(l/a)**(Math.log(k/h)/Math.log(b/a)))}
  // Keep existing encounters through Lv150 unchanged, then widen level gaps.
- return Math.round(l<=150?130000*(l/100)**3:438750*(l/150)**4.5);
+ return Math.round(l<=150?130000*(l/100)**3:l<=220?438750*(l/150)**4.5:438750*(220/150)**4.5*ancientLateGrowth(l));
 }
 export function ancientSkillDamage(p:AncientProfile){const s=ancientGearStats(p);return Math.floor(ancientBaseAttack(p.level)*(1+s.bonus)*(1+s.skillBonus)*(1+s.jadeAttack)*(1+puzzleTitleBonus(p)))}
 // Upgrade legacy copies in place through definitions, without replacing IDs,
