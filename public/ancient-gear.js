@@ -418,7 +418,7 @@ function ancientGearStats(p) {
   health2 += Math.floor(ancientBaseHealth(p.level) * Math.min(0.6, hpPercent));
   const jade = jadeBonuses(p);
   health2 += Math.floor((ancientBaseHealth(p.level) + health2) * jade.health);
-  return { critChance: Math.min(1, Math.round((0.3 + critChance) * 1e4) / 1e4), critMultiplier: Math.round((1.5 + critDamage) * 1e4) / 1e4, weaponDamage, health: health2, jadeAttack: jade.attack, reduction: Math.min(0.6, reduction) + (1 - Math.min(0.6, reduction)) * jade.reduction, speed: Math.min(0.3, speed), bonus, haste: Math.min(0.2, haste), lifesteal: Math.min(0.05, lifesteal), cooldown: Math.min(0.5, Math.min(0.16, cooldown * 0.8) + Math.min(tempoCapacity, tempo)), bossSkill, finisherSkill, pet: Math.min(0.4, pet), slow: Math.min(0.2, slow), skillBonus, chainTargets, slowedBonus, petHealth, sets };
+  return { critChance: Math.min(1, Math.round((0.15 + critChance) * 1e4) / 1e4), critMultiplier: Math.round((1.5 + critDamage) * 1e4) / 1e4, weaponDamage, health: health2, jadeAttack: jade.attack, reduction: Math.min(0.6, reduction) + (1 - Math.min(0.6, reduction)) * jade.reduction, speed: Math.min(0.3, speed), bonus, haste: Math.min(0.2, haste), lifesteal: Math.min(0.05, lifesteal), cooldown: Math.min(0.5, Math.min(0.16, cooldown * 0.8) + Math.min(tempoCapacity, tempo)), bossSkill, finisherSkill, pet: Math.min(0.4, pet), slow: Math.min(0.2, slow), skillBonus, chainTargets, slowedBonus, petHealth, sets };
 }
 function ancientBaseHealth(level) {
   const l = Math.max(1, Number.isFinite(level) ? level : 1), anchors = [[1, 100], [5, 3e3], [10, 12e3], [30, 9e4], [50, 25e4], [60, 32e4], [80, 47e4], [100, 65e4]];

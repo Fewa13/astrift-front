@@ -5,7 +5,7 @@ import {skillDirectMultiplier,isFusionJob} from './ancient-skills.js';
 import {holyPower} from './ancient-ascension.js';
 import {advancementRoute} from './ancient-advancement-progress.js';
 import {FUSION_DAMAGE_SCALE,fusionDamageMultiplier,masteryPower} from './ancient-mastery.js';
-export const MELEE_BASIC_SKILL_FLOOR=.2;
+export const MELEE_BASIC_SKILL_FLOOR=.05;
 const basics:Record<string,string>={warrior:'slash',swordsman:'swordwave',shadowblade:'riftblade',stonewright:'stonefist',summoner:'soulbolt',ice:'frostburst',fire:'firebolt',lightning:'chain',curse:'hex'};
 // Direct single-target hit only: no ultimate, full duration, group total, or random critical.
 export const ADVANCEMENT_BASIC_REFERENCES:Record<string,{key:string;multiplier:number;holy?:boolean}>={

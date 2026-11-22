@@ -4,7 +4,7 @@ import { skillDirectMultiplier, isFusionJob } from "./ancient-skills.js";
 import { holyPower } from "./ancient-ascension.js";
 import { advancementRoute } from "./ancient-advancement-progress.js";
 import { FUSION_DAMAGE_SCALE, fusionDamageMultiplier, masteryPower } from "./ancient-mastery.js";
-const MELEE_BASIC_SKILL_FLOOR = 0.2;
+const MELEE_BASIC_SKILL_FLOOR = 0.05;
 const basics = { warrior: "slash", swordsman: "swordwave", shadowblade: "riftblade", stonewright: "stonefist", summoner: "soulbolt", ice: "frostburst", fire: "firebolt", lightning: "chain", curse: "hex" };
 const ADVANCEMENT_BASIC_REFERENCES = {
   berserker: { key: "X", multiplier: 9 },
