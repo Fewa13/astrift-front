@@ -6,7 +6,7 @@ export const potionActive=(a:PotionHolder,id:string,now=Date.now())=>(a.boosts?.
 export const potionCooldownMultiplier=(a:PotionHolder,now=Date.now())=>potionActive(a,'berserk',now)?POTION_EFFECTS.berserk.cooldown:1;
 export const potionRangeMultiplier=(a:PotionHolder,now=Date.now())=>potionActive(a,'berserk',now)?POTION_EFFECTS.berserk.range:1;
 export const potionSpeedMultiplier=(a:PotionHolder,now=Date.now())=>1+(potionActive(a,'speed',now)?POTION_EFFECTS.speed:0)+(potionActive(a,'berserk',now)?POTION_EFFECTS.berserk.speed:0);
-export const potionDamageMultiplier=(a:PotionHolder,now=Date.now())=>potionActive(a,'damage',now)||potionActive(a,'berserk',now)?POTION_EFFECTS.berserk.damage:1;
+export const potionDamageMultiplier=(a:PotionHolder,now=Date.now())=>(potionActive(a,'damage',now)?2:1)*(potionActive(a,'berserk',now)?POTION_EFFECTS.berserk.damage:1);
 
 export const potionCooldownReduction=(base:number,a:PotionHolder,now=Date.now())=>base+(1-base)*(1-potionCooldownMultiplier(a,now));
 

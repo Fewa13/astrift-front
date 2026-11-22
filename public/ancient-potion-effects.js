@@ -5,7 +5,7 @@ const potionActive = (a, id, now = Date.now()) => (a.boosts?.[id] || 0) > now;
 const potionCooldownMultiplier = (a, now = Date.now()) => potionActive(a, "berserk", now) ? POTION_EFFECTS.berserk.cooldown : 1;
 const potionRangeMultiplier = (a, now = Date.now()) => potionActive(a, "berserk", now) ? POTION_EFFECTS.berserk.range : 1;
 const potionSpeedMultiplier = (a, now = Date.now()) => 1 + (potionActive(a, "speed", now) ? POTION_EFFECTS.speed : 0) + (potionActive(a, "berserk", now) ? POTION_EFFECTS.berserk.speed : 0);
-const potionDamageMultiplier = (a, now = Date.now()) => potionActive(a, "damage", now) || potionActive(a, "berserk", now) ? POTION_EFFECTS.berserk.damage : 1;
+const potionDamageMultiplier = (a, now = Date.now()) => (potionActive(a, "damage", now) ? 2 : 1) * (potionActive(a, "berserk", now) ? POTION_EFFECTS.berserk.damage : 1);
 const potionCooldownReduction = (base, a, now = Date.now()) => base + (1 - base) * (1 - potionCooldownMultiplier(a, now));
 const potionIncomingMultiplier = (a, now = Date.now()) => potionActive(a, "berserk", now) ? POTION_EFFECTS.berserk.incoming : 1;
 const potionMeleeMultiplier = (a, now = Date.now()) => potionActive(a, "berserk", now) ? POTION_EFFECTS.berserk.melee : 1;

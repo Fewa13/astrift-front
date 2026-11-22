@@ -14,7 +14,7 @@ type Point={x:number;y:number;z:number};
 type Anchor=Point & {until:number};
 export type FusionRuntime={
  map:string; marks:Record<string,{until:number;stacks:number}>; energy:number;
- anchor?:Anchor; rewind?:Anchor & {hp:number;cooldowns:Record<string,number>};
+ anchor?:Anchor; rewind?:Anchor & {body?:number;hp:number;cooldowns:Record<string,number>};
  zone?:{id:string;point:Point;until:number;next:number;body:number;radius:number};
  avatar?:number;
  resonance?:number; resonanceAt?:number;
@@ -47,6 +47,7 @@ function gatherResonance(f:FusionRuntime,level:number,now:number){
 }
 function restoreTimeAnchor(a:Actor,p:AncientProfile,c:SkillContext,now:number){
  const r=runtime(a),f=state(a,c.map),saved=f.rewind;
+ const departure={x:a.x,y:a.y,z:a.z};
  if(!saved||!move(a,c,saved.x,saved.z,true))return false;
  c.motion?.({x:a.x,y:a.y,z:a.z},25);
  const cooldown=r.cooldowns.rewind;
@@ -65,7 +66,10 @@ function restoreTimeAnchor(a:Actor,p:AncientProfile,c:SkillContext,now:number){
   if(m.contributionsForMastery?.[a.name])(m.masteryMarks??={})[a.name+':rewind']={owner:a.name,id:'rewind',until:now+8000};
  }
  delete f.rewind;
- c.fx('rewind',a.x,a.z,5,{target:''});
+ for(const point of [departure,{x:a.x,y:a.y,z:a.z}]){
+  for(const m of skillAreaTargets(point as SkillMonster,8,c))if((saved.body||0)>0)c.damage(m,saved.body!*2.8,undefined,'rewind');
+  c.fx('rewind',point.x,point.z,8,{target:''});
+ }
  return true;
 }
 function fusionTarget(a:Actor,direction:unknown,c:SkillContext){
@@ -129,7 +133,7 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
   fx(a,4);
  }
  r.cooldowns[id]=now+SKILLS[id].cooldown*1000*(1-ancientGearStats(p).cooldown);
- if(id==='rewind'){a.hp=Math.min(a.maxHp||100,a.hp+(a.maxHp||100)*.20);for(const m of area(a,8))c.damage(m,body*2.8);f.rewind={...origin,hp:a.hp,cooldowns:{...r.cooldowns},until:now+8000+Math.min(4000,level*40)};fx(a,5);}
+ if(id==='rewind'){a.hp=Math.min(a.maxHp||100,a.hp+(a.maxHp||100)*.20);for(const m of area(a,8))c.damage(m,body*2.8);f.rewind={...origin,body,hp:a.hp,cooldowns:{...r.cooldowns},until:now+8000+Math.min(4000,level*40)};fx(a,5);}
  if(['stasis','voiddomain','descent'].includes(id)){
   if(id==='voiddomain')r.effects.voiddomain={level:1,until:now+8000};
   if(id==='descent')a.hp=Math.max(1,a.hp-(a.maxHp||100)*.12);
