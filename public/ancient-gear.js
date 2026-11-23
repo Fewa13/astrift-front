@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import { potionCooldownReduction } from "./ancient-potion-effects.js";
 import { ancientLateGrowth } from "./ancient-growth.js";
-import { meleeBasicSkillFloor } from "./ancient-melee-balance.js";
+import { meleeLevelBaseDamage } from "./ancient-melee-balance.js";
 import { jadeBonuses } from "./ancient-jade-wear.js";
 const GEAR_SETS = {
   thunder: { name: "\u96F7\u9E23", en: "Thunder", two: ["\u6280\u80FD\u4F24\u5BB3+5%", "Skill damage +5%"], three: ["\u8FDE\u9501\u95EA\u7535\u76EE\u6807+1\uFF0C\u6280\u80FD\u4F24\u5BB3\u518D+3%", "Chain Lightning +1 target; another +3% skill damage"] },
@@ -480,8 +480,7 @@ function ancientMeleeDamage(p) {
   const d = equippedGear(p, "weapon");
   if (!d) return 0;
   const s = ancientGearStats(p);
-  const natural = (ancientBaseAttack(p.level) + (d.damage || 0)) * (1 + s.bonus) * (1 + s.jadeAttack) * (1 + puzzleTitleBonus(p));
-  return Math.max(Math.floor(natural * (1 + s.weaponDamage)), Math.ceil(meleeBasicSkillFloor(p, ancientSkillDamage(p) * (1 + s.bossSkill) * (1 + s.finisherSkill)) * (1 + s.weaponDamage)));
+  return Math.floor(meleeLevelBaseDamage(ancientBaseAttack(p.level), d.damage || 0) * (1 + s.weaponDamage) * (1 + s.bonus) * (1 + s.jadeAttack) * (1 + puzzleTitleBonus(p)));
 }
 function ancientMeleeInterval(p) {
   return (equippedGear(p, "weapon")?.interval || 600) * (1 - ancientGearStats(p).haste);

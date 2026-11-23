@@ -1,5 +1,7 @@
 # Astrift development workflow
 
+- 2026-11-22 最新普攻规则（覆盖技能5%保底）：非暴击基础伤害＝（等级基础攻击×1＋武器基础伤害）×武器伤害词条×其他适用增伤，最后计算暴击；不得按任何职业、技能等级或技能倍率反推普攻保底。默认暴击15%与已有暴击词条机制保留，装备摘要不再展示普攻保底和暴击概率/倍率两句说明。职业实战统计删除表头“召唤”那一列，普攻及每个实际技能独立显示累计伤害；并非删除召唤职业/技能。历史技能合计保留为未分项，不伪造历史技能分配。
+
 - User preference (2026-11-01): after completing and validating each change, commit and push the relevant project updates to the configured GitHub repository as part of finishing the work.
 - Additional game mirrors (2026-11-19): `ilovegames.surge.sh` and `ilovegames.web.app` (also `.firebaseapp.com`). Keep these in the shared Surge/Firebase deployment scripts and exact backend origin allowlist. Firebase Hosting uses `primary` and `ilovegames` targets in `.firebaserc`.
 - Keep the existing main site, Workers, Surge, Firebase, and single-HTML update workflow in sync as applicable. GitHub is an additional delivery target. Every official HTML build also regenerates `../astrift-html/Astrift-Canva.html`.
