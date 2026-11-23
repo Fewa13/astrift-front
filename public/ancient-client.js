@@ -200,7 +200,7 @@ function openMenu(target){if(target==='skills')target='professions';if(target===
 let trialReturnMap='';
 const activityRequest=async(action,data={})=>{const before=profile;const r=await accountApi('ancient/profile',{...accountSession(),action,...data});return {...r,profile:profile===before?r.profile:undefined}};
 const accountPreferences=createAccountPreferences({account:()=>accountSession()?.name||'',request:async(preferences,name)=>{if(accountSession()?.name.toLowerCase()!==name)throw Error('Account changed');const r=await accountApi('ancient/profile',{...accountSession(),action:'savePreferences',preferences});if(profile&&accountSession()?.name.toLowerCase()===name){profile.preferences=r.preferences;profile.preferencesVersion=r.version}return r},onApplied:()=>{updateAncientHelp();screenLayout.schedule();if(profile){document.documentElement.lang=en()?'en':'zh';nav();}}});
-const journeyUI=createJourneyUI({en,material,request:(action,data={})=>accountApi('ancient/profile',{...accountSession(),action,...data}),onProfile:p=>{profile=p;identity();quickbar.update()}});
+const journeyUI=createJourneyUI({en,request:action=>accountApi('ancient/profile',{...accountSession(),action})});
 const activityProfile=p=>{if(p){profile=p;identity();quickbar.update()}};
 const leaderboardUI=createAncientLeaderboard({en,request:activityRequest,name:()=>accountSession()?.name||''});
 const puzzleUI=createAncientPuzzleUI({en,name:()=>accountSession()?.name||'',request:activityRequest,onProfile:activityProfile,onEnter:()=>{leave();},onExit:()=>{view='maps';renderPanel();}});
