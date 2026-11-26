@@ -1,34 +1,9 @@
-// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-(()=>{
- let frame=null,loadingTimer,progressTimer;
- const shell=window.__ASTRIFT_SHELL__;
- const cover=document.getElementById('astriftAncientCover'),retry=document.getElementById('astriftAncientRetry');
- shell.ancientReady=source=>{
-  if(source!==frame?.contentWindow)return;
-  cover.hidden=true;clearTimeout(loadingTimer);clearInterval(progressTimer);
- };
- retry.onclick=()=>switchWorld('ancient');
- function switchWorld(world,options={}){
-  if(world!=='main'&&world!=='ancient')return;
-  clearTimeout(loadingTimer);clearInterval(progressTimer);
-  cover.hidden=world!=='ancient';retry.hidden=true;
-  if(world==='ancient'){
-   shell.ancientStarted=Date.now();
-   const progress=cover.querySelector('progress');progress.value=0;
-   progressTimer=setInterval(()=>{progress.value=Math.min(90,(Date.now()-shell.ancientStarted)/100)},100);
-   loadingTimer=setTimeout(()=>{retry.hidden=false},25000);
-  }
-  document.cookie=`astrift_world=${world}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol==='https:'?'; Secure':''}`;
-  // Removing the browsing context tears down its renderer, input handlers and sockets.
-  frame?.remove();frame=document.createElement('iframe');frame.id='astriftWorldFrame';frame.title=world==='ancient'?'Astrift Ancient Age':'Astrift Front';
-  frame.allow='fullscreen; autoplay; gamepad';frame.allowFullscreen=true;
-  const search=new URLSearchParams(location.search);search.delete('astriftAuth');
-  if(world==='main'&&['register','login'].includes(options.auth))search.set('astriftAuth',options.auth);
-  frame.src='/_world/'+world+(search.size?'?'+search.toString():'');document.body.append(frame);
- }
- window.__ASTRIFT_SHELL__.switchWorld=switchWorld;
- // A fresh page entry always starts at the existing bilingual world chooser.
- // Previous-world cookies must not bypass the choice, online or offline.
- switchWorld('main');
- if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(()=>{});
-})();
+import {createStartupFlow,preloadStartupAssets} from './startup-flow.js';
+// Warm both renderers before mode selection, then tear down the unselected world.
+const shell=window.__ASTRIFT_SHELL__,frames=new Map(),waiting=new Map();let active='main';
+function ready(world,source,result){if(source!==frames.get(world)?.contentWindow)return;const pending=waiting.get(world);if(!pending)return;clearTimeout(pending.timer);waiting.delete(world);if(world==='ancient'){source.__ASTRIFT_SCENE_SUSPENDED__=true;frames.get(world).style.visibility='hidden'}pending.resolve(result||true)}
+shell.mainReady=(source,bridge)=>ready('main',source,bridge);shell.ancientReady=source=>ready('ancient',source);shell.ancientFailed=(source,message)=>{if(source===frames.get('ancient')?.contentWindow){const pending=waiting.get('ancient');if(pending){clearTimeout(pending.timer);waiting.delete('ancient');pending.reject(Error(message))}}};
+function mount(world,warm=false,options={}){if(world==='main'){for(const frame of frames.values())frame.remove();frames.clear()}else frames.get(world)?.remove();return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('加载未完成，请重试 / Loading did not complete. Retry.')),90000);waiting.set(world,{resolve,reject,timer});const frame=document.createElement('iframe');frame.id=warm?'astriftWarmAncient':'astriftWorldFrame';frame.title=world==='ancient'?'Astrift Ancient Age':'Astrift Front';frame.allow='fullscreen; autoplay; gamepad';frame.allowFullscreen=true;if(warm)frame.style.pointerEvents='none';const search=new URLSearchParams(location.search);search.delete('astriftAuth');if(world==='main'&&['register','login'].includes(options.auth))search.set('astriftAuth',options.auth);frame.src='/_world/'+world+(search.size?'?'+search.toString():'');frames.set(world,frame);document.body.append(frame)})}
+shell.switchWorld=async(world,options={})=>{if(!['main','ancient'].includes(world))return;shell.entrySelected?.();if(world===active&&frames.has(world)){for(const [key,frame]of frames)if(key!==world){frame.remove();frames.delete(key)}return;}let target=frames.get(world);try{if(!target){const result=await mount(world,false,options);target=frames.get(world);if(world==='main'){await result.authenticate();await result.prepare(()=>{});result.showChoices()}}for(const [key,frame]of frames)if(key!==world){frame.remove();frames.delete(key)}target.id='astriftWorldFrame';target.style.visibility='';target.style.pointerEvents='';target.contentWindow.__ASTRIFT_SCENE_SUSPENDED__=false;active=world;document.cookie=`astrift_world=${world}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol==='https:'?'; Secure':''}`}catch(e){shell.retryEntry?.()}};
+createStartupFlow({shell,mount,prepareAssets:report=>preloadStartupAssets(report)});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(()=>{});

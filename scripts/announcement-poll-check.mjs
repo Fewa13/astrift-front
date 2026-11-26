@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 let messages=[],account={name:'Alice'},calls=[];const children=[],listeners=new Map(),saved=new Map();
-const window={addEventListener:(n,f)=>listeners.set(n,f),removeEventListener:n=>listeners.delete(n)};
+const window={parent:{__ASTRIFT_SHELL__:{managesAnnouncements:true}},addEventListener:(n,f)=>listeners.set(n,f),removeEventListener:n=>listeners.delete(n)};
 function element(){return {style:{},setAttribute(){},append(...nodes){this.children??=[];this.children.push(...nodes)},remove(){this.removed=true},isConnected:true}}
 const document={hidden:false,createElement:element,body:{append(n){children.push(n)}}};
 const context=vm.createContext({document,window,localStorage:{getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v)},setInterval:()=>1,clearInterval(){},setTimeout:()=>2,clearTimeout(){},Date,console});
-vm.runInContext(readFileSync(new URL('../public/official-announcements.js',import.meta.url),'utf8').replace('export function','function')+'\nglobalThis.create=createAnnouncementPoll',context);
+vm.runInContext(readFileSync(new URL('../public/official-announcements.js',import.meta.url),'utf8').split('export function openEntryAnnouncements')[0].replace('export function','function')+'\nglobalThis.create=createAnnouncementPoll',context);
 const make=()=>context.create({session:()=>account,request:async(path,data)=>{calls.push({path,data});return {messages}},openInbox:async()=>{}});
 const mail=(id,extra={})=>({id,title:id,announcement:true,createdAt:Date.now(),...extra});
 messages=[mail('old',{createdAt:Date.now()-864000000}),mail('prior')];const poll=make();await poll.poll();assert.equal(children.length,0,'History must not pop on login');

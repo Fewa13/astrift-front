@@ -1,6 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261108-puzzle-room-10';
-const ASSETS=['/ancient-puzzle-ui.js','/ancient-puzzle-map.js','/ancient-gear-workshop.js','/client-version.js',
+const CACHE_NAME='astrift-offline-20261126-entry-1';
+const ASSETS=['/startup-flow.js','/startup-flow.css','/startup-manifest.json','/ancient-puzzle-ui.js','/ancient-puzzle-map.js','/ancient-gear-workshop.js','/client-version.js',
  '/ancient-community-optics.js',
  '/ancient-community-amenities.js','/ancient-community-uses.js','/ancient-amenity-defs.js',
  '/ancient-community-gameplay.js','/ancient-map-gameplay.js','/ancient-community-script-ui.js','/codehelp.html','/codehelp.js','/codehelp-data.js','/codehelp.css',
@@ -148,7 +148,7 @@ self.addEventListener('fetch',event=>{
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE_NAME);
     // Shared-world definitions must update together; retain cache only for offline use.
-    if((url.pathname.endsWith('.js')&&url.pathname!=='/three.module.js')||url.pathname==='/ancient.css'||url.pathname.startsWith('/ancient-')||url.pathname==='/world-shell.js'||url.pathname==='/world-shell.html'){
+    if(request.cache==='no-cache'||request.cache==='reload'||(url.pathname.endsWith('.js')&&url.pathname!=='/three.module.js')||url.pathname==='/ancient.css'||url.pathname.startsWith('/ancient-')||url.pathname==='/world-shell.js'||url.pathname==='/world-shell.html'){
       try{
         const response=await fetch(request,{cache:'no-cache'});
         if(response.ok){event.waitUntil(cache.put(request,response.clone()));if(url.pathname.startsWith('/world-shell'))event.waitUntil(cache.put(url.pathname,response.clone()));return response}
@@ -157,6 +157,7 @@ self.addEventListener('fetch',event=>{
       if(offlineCopy)return offlineCopy;
       return fetch(request);
     }
+    if(request.headers.has('range'))return fetch(request);
     const cached=await cache.match(request);
     if(cached)return cached;
     try{
