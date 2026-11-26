@@ -1,3 +1,4 @@
+import {renderWorkshopBrowser} from './ancient-workshop-ui.js';
 import {getCommunitySource} from './ancient-community.js';
 import {communityPlatformCarry} from './ancient-community.js';
 import {createPhotoMode} from './ancient-photo-mode.js';
@@ -276,6 +277,7 @@ function drawPanel(){closeArtifactPreview?.();closeArtifactPreview=undefined;if(
  if(view==='lobby'){card.classList.add('ancientLobby');node('small','ASTRIFT // ANCIENT AGE',card).className='ancientEyebrow';node('h1',L('远古世纪','ANCIENT AGE'),card);accountPanel(card);questUI.renderSummary(card)}
  else if(view==='menu'){node('h2',L('已暂停','Paused'),card);node('p',L('从上方分类直接选择功能。','Choose a function directly from the groups above.'),card);}
  else if(view==='skins'){skinUI.render(card,{profile,english:en(),action,account:accountSession()?.name})}
+ else if(view==='workshop'){renderWorkshopBrowser(card,{call:activityRequest,en})}
  else if(view==='market'){marketUI.render(card)}
  else if(view==='leaderboard'){leaderboardUI.render(card)}
  else if(view==='titles'){void renderAncientTitles(node('section','',card),{en,request:activityRequest,onProfile:activityProfile})}
