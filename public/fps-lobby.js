@@ -3,7 +3,7 @@ import {tutorialContext,tutorialEvent} from './smart-onboarding.js';
 // © 2026 Felix — Astrift. All rights reserved.
 const $=id=>document.getElementById(id),en=()=>document.documentElement.lang==='en',L=(a,b)=>en()?b:a;
 const menu=$('menu'),home=menu.querySelector('.homeModes');
-const start=document.createElement('button');start.id='startGame';start.className='fpsStart primary';menu.append(start);
+const start=document.createElement('button');start.id='startGame';start.className='fpsStart primary';const lobbyActions=document.createElement('div');lobbyActions.className='fpsLobbyActions';lobbyActions.hidden=true;lobbyActions.append(start);document.body.append(lobbyActions);const syncLobby=()=>{lobbyActions.hidden=!menu.classList.contains('active')||menu.hidden||!!document.getElementById('worldEntry')&&!document.getElementById('worldEntry').hidden};new MutationObserver(syncLobby).observe(menu,{attributes:true,attributeFilter:['class','hidden']});if($('worldEntry'))new MutationObserver(syncLobby).observe($('worldEntry'),{attributes:true,attributeFilter:['hidden','class']});syncLobby();
 const dialog=document.createElement('dialog');dialog.className='fpsStartDialog';dialog.innerHTML='<header><h2></h2><button type="button">×</button></header><div class="fpsModeColumns"><section><h3></h3><div id="fpsOrdinaryModes"></div></section><section><h3></h3><div id="fpsSpecialModes"></div></section></div>';document.body.append(dialog);dialog.querySelector('header button').onclick=()=>dialog.close();
 const ordinary=$('fpsOrdinaryModes'),special=$('fpsSpecialModes');
 for(const id of ['solo','openNormalMode','practice'])ordinary.append($(id));
@@ -15,7 +15,7 @@ $('openSpecialMode').hidden=true;
 const settings=document.createElement('details');settings.className='fpsSettings';settings.innerHTML='<summary></summary><div></div>';menu.append(settings);const body=settings.lastElementChild;
 for(const node of [menu.querySelector('.qualityControl'),menu.querySelector('.settingsActions')])if(node)body.append(node);
 const moveGuide=()=>{if($('openGameGuide'))body.append($('openGameGuide'));if($('openTutorial'))body.append($('openTutorial'))};moveGuide();new MutationObserver(moveGuide).observe(home,{childList:true});
-$('openLoadoutMode').classList.add('fpsLoadout');menu.append($('openLoadoutMode'));
+$('openLoadoutMode').classList.add('fpsLoadout');lobbyActions.append($('openLoadoutMode'));
 for(const option of document.querySelectorAll('#friendInviteMode option[value="bomb"],#friendInviteMode option[value="extraction"]'))option.remove();
 start.onclick=()=>dialog.showModal();dialog.addEventListener('click',e=>{if(e.target.closest('button')&&e.target!==start)dialog.close()});
 function labels(){start.textContent=L('开始游戏','Start game');settings.firstElementChild.textContent=L('设置','Settings');dialog.querySelector('h2').textContent=L('开始游戏','Start game');const headings=dialog.querySelectorAll('h3');headings[0].textContent=L('普通模式','Normal modes');headings[1].textContent=L('特殊模式','Special modes')};labels();window.addEventListener('astrift:language-changed',labels);
