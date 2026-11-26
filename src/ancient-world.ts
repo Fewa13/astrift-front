@@ -561,6 +561,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
    else if(action==='communitySave')result=data.base?store.saveMerged(name,id,data.map,revision,data.base,(kind,boss)=>['grox','hunter',...Object.keys(ANCIENT_KINDS),'chief','lord'].includes(kind)&&isAncientBoss(kind)===boss):{map:store.save(name,id,data.map,revision,(kind,boss)=>['grox','hunter',...Object.keys(ANCIENT_KINDS),'chief','lord'].includes(kind)&&isAncientBoss(kind)===boss)};
    else if(action==='communityPreview'){this.mapRuntime();const map=store.preview(name,id,p);this.ctx.storage.sql.exec('DELETE FROM ancient_world WHERE id IN (?,?)',cityWorldId('community:'+map.id),cityWorldId('community:'+map.id)+1);for(const table of ['community_script_shared','community_player_items'])this.ctx.storage.sql.exec('DELETE FROM '+table+' WHERE map=?',map.id);this.ctx.storage.sql.exec('DELETE FROM ancient_positions WHERE map=?','community:'+map.id);if(this.ctx.storage.sql.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='community_mob_cooldowns'").toArray().length)this.ctx.storage.sql.exec('DELETE FROM community_mob_cooldowns WHERE map=?','community:'+map.id);result={map};}
    else if(action==='communitySubmit')store.submit(name,id,revision);
+   else if(action==='communityUnpublish')store.unpublish(name,id);
    else if(action==='communityWithdraw')store.withdraw(name,id);
    else if(action==='communityUpgrade')store.upgrade(name,id,Number(data.tier) as 2|3);
    else if(action==='communityRedrawBuy')result={boundaryRedrawFree:true};

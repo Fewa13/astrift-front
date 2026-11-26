@@ -26,9 +26,9 @@ export function grantMailRewards(p:AncientProfile,rewards:MailReward[],selection
  const grants=new Map<string,number>();let gearCount=0;const gearPlans:{pool:string[];count:number}[]=[];
  for(const r of rewards){if(r.key==='skill-choice'||r.key.startsWith('skillbook:')&&!hasSkillBook(r.key.slice(10)))continue;if(r.key.startsWith('random-gear:')){const q=Number(r.key.split(':')[1]),pool=Object.entries(GEAR).filter(([key,d])=>d.quality===q&&!Object.hasOwn(ANCIENT_FORGE,key)).map(([key])=>key);if(!pool.length)return 'No equipment available for this quality.';gearCount+=r.quantity;gearPlans.push({pool,count:r.quantity})}else grants.set(r.key,(grants.get(r.key)||0)+r.quantity)}
  for(const [id,count]of selected){const key=skillBook(id);grants.set(key,(grants.get(key)||0)+count)}
- if((p.gear?.length||0)+gearCount>1000)return 'Gear inventory is full.';
+
  // Validate the full attachment before granting anything; the caller commits it with the claim receipt.
- for(const [key,count]of grants){const current=key==='coins'?p.coins:key==='xp'?p.xp:key.startsWith('potion:')?(p.potions?.[key.slice(7)]||0):(p.materials?.[key]||0);if(!Number.isSafeInteger(count)||!Number.isSafeInteger(Math.floor(current)+count))return '物品数量已达上限'}
+ for(const [key,count]of grants){const current=key==='coins'?p.coins:key==='xp'?p.xp:key.startsWith('potion:')?(p.potions?.[key.slice(7)]||0):(p.materials?.[key]||0);if(!Number.isSafeInteger(count)||!Number.isFinite(current+count))return 'Invalid mail reward.'}
  const gear=gearPlans.flatMap(({pool,count})=>Array.from({length:count},()=>rollGearItem(pool[Math.floor(Math.random()*pool.length)])));
  for(const [key,count]of grants)if(key==='coins')p.coins+=count;else if(key==='xp')gainXP(p,count,false);else if(key.startsWith('potion:')){p.potions??={};const id=key.slice(7);p.potions[id]=(p.potions[id]||0)+count}else{p.materials??={};p.materials[key]=(p.materials[key]||0)+count}
  if(gear.length)(p.gear??=[]).push(...gear);
