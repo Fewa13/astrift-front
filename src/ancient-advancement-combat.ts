@@ -1,6 +1,6 @@
 import {potionRangeMultiplier,potionDamageMultiplier} from './ancient-potion-effects';
 import {SKILL_CONTACT} from './ancient-skill-flight';
-import {ancientHitbox} from './ancient-hitboxes';
+import {ancientHitbox,combatBodyFeet,skeletonBodyScale,summonBodyHeight,summonHeightContact} from './ancient-hitboxes';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {isAncientBoss} from './ancient-boss';
 import {ADVANCEMENT_REWORK as RW,ADVANCED_PROFESSIONS,advancementCastKey} from './ancient-advanced-professions';
@@ -467,7 +467,7 @@ function castVoltstalker(a:SkillActor,p:AncientProfile,key:string,id:string,dire
    const mx=m.x-origin.x,mz=m.z-origin.z,along=mx*dx+mz*dz;
    if(along<0||along>distance||Math.abs(mx*dz-mz*dx)>2+ancientHitbox(m.kind).radius+SKILL_CONTACT.lanePadding)continue;
    const pathFeet=pathHeights[Math.round(along*2)];
-   if(Math.abs((m.y??ancientMapHeight(c.map,m.x,m.z,pathFeet))-pathFeet)>3)continue;
+   if(Math.abs(combatBodyFeet(m,ancientMapHeight(c.map,m.x,m.z,pathFeet))-pathFeet)>3)continue;
    if(!followup&&(volt.marks[m.id]||0)>now)volt.followupUntil=now+3000;
    voltHit(a,c,m,'Q',power*3.2,now);
   }
@@ -624,8 +624,8 @@ function castWinterwarden(a:SkillActor,p:AncientProfile,key:string,id:string,dir
   for(const m of c.monsters){
    if(m.hp<=0)continue;
    const mx=m.x-a.x,mz=m.z-a.z,along=mx*dx+mz*dz;
-   if(along<0||along>range||Math.abs(mx*dz-mz*dx)>width)continue;
-   if(!lineClear(a.x,a.y,a.z,m.x,(m.y??ancientMapHeight(c.map,m.x,m.z))+1,m.z,c.map))continue;
+   if(along<0||along>range||Math.abs(mx*dz-mz*dx)>width||!skillAreaHits({x:a.x+dx*along,y:a.y,z:a.z+dz*along},m,width,c.map))continue;
+   if(!lineClear(a.x,a.y,a.z,m.x,firePoint(c,m).y+1,m.z,c.map))continue;
    const boss=isAncientBoss(m.kind);
    m.slow=key==='C'?(boss?.55:.95):.35;
    m.slowUntil=now+(key==='C'?1800:3500);
@@ -685,8 +685,8 @@ function fireState(a:SkillActor,map:string,route:string){
  return r.advancedFire;
 }
 
-function firePoint(c:SkillContext,m:{x:number;z:number;y?:number}):StormPoint{
- return {x:m.x,y:m.y??ancientMapHeight(c.map,m.x,m.z),z:m.z};
+function firePoint(c:SkillContext,m:{x:number;z:number;y?:number;kind?:string;air?:number}):StormPoint{
+ return {x:m.x,y:combatBodyFeet(m,ancientMapHeight(c.map,m.x,m.z,m.y)),z:m.z};
 }
 
 function emberRecord(id:string,kind:Ember['kind'],damage:number,now:number,duration:number):Ember{
@@ -714,7 +714,7 @@ function castFireAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
    const dx=point.x-a.x,dz=point.z-a.z,distance=Math.hypot(dx,dz)||1;
    const travel=Math.min(24,distance),victims=c.monsters.filter(m=>{
     const mx=m.x-a.x,mz=m.z-a.z,projection=(mx*dx+mz*dz)/distance;
-    return m.hp>0&&projection>=0&&projection<=travel&&Math.abs(mx*dz-mz*dx)/distance<=4+ancientHitbox(m.kind).radius+SKILL_CONTACT.lanePadding&&lineClear(a.x,a.y,a.z,m.x,firePoint(c,m).y+1,m.z,c.map);
+    return m.hp>0&&skillAreaHits({x:a.x+dx*projection/distance,y:a.y,z:a.z+dz*projection/distance},m,4,c.map)&&projection>=0&&projection<=travel&&Math.abs(mx*dz-mz*dx)/distance<=4+ancientHitbox(m.kind).radius+SKILL_CONTACT.lanePadding&&lineClear(a.x,a.y,a.z,m.x,firePoint(c,m).y+1,m.z,c.map);
    });
    for(const m of victims)hit(m,power*3.4);
    for(const field of f.patches)if(field.until>now&&Math.hypot(field.x-point.x,field.z-point.z)<=field.radius+4){
@@ -993,6 +993,7 @@ function bladeLane(c:SkillContext,start:StormPoint,end:StormPoint,width:number){
   if(m.hp<=0)return false;
   const x=m.x-start.x,z=m.z-start.z,t=(x*dx+z*dz)/distance**2,pad=ancientHitbox(m.kind).radius+SKILL_CONTACT.lanePadding;
   return t>=-pad/distance&&t<=1+pad/distance&&Math.abs(x*dz-z*dx)/distance<=width+pad
+   &&skillAreaHits({x:start.x+dx*Math.max(0,Math.min(1,t)),y:start.y+(end.y-start.y)*Math.max(0,Math.min(1,t))+1,z:start.z+dz*Math.max(0,Math.min(1,t))},m,width,c.map)
    &&lineClear(start.x,start.y+1,start.z,m.x,firePoint(c,m).y+1,m.z,c.map);
  });
 }
@@ -1572,6 +1573,7 @@ function castSummonAdvancement(a:SkillActor,p:AncientProfile,route:string,key:st
     c.fx('beastlord-guard',a.x,a.z,5);
    }else{
     if(!target)return '请瞄准可见的敌人';
+    if(!summonHeightContact(ancientMapHeight(c.map,pet.x,pet.z),summonBodyHeight('beast'),key==='C'?5:2.8,target,ancientMapHeight(c.map,target.x,target.z,target.y)))return '目标超出召唤物攻击高度 / Target is beyond the summon\'s attack height';
     pet.target=target.id;a.skillRuntime!.advancedPriority=target.id;
     const power=ancientSkillDamage(p)*holyPower(p)*(1+Math.min(99,level-1)*.055);
     if(key==='Q')c.damage(target,power*4,undefined,tag);
@@ -1657,12 +1659,12 @@ export function castNecromancer(a:SkillActor,p:AncientProfile,id:string,directio
  return castSummonAdvancement(a,p,'necromancer',SKILLS[id].key,id,direction,c,now,masteryLevel(p,id));
 }
 
-export function summonTarget(a:SkillActor,c:SkillContext,x:number,z:number){
- const eyeY=ancientMapHeight(c.map,x,z)+1;
+export function summonTarget(a:SkillActor,c:SkillContext,x:number,z:number,height=summonBodyHeight(a.advancement==='spiritcaller'?'spirit':'beast'),reach=2.8){
+ const floor=ancientMapHeight(c.map,x,z),eyeY=floor+height*.65;
  let best:SkillMonster|undefined,bestScore=-Infinity;
  for(const m of c.monsters){
   const monster=m as SkillMonster&{target?:string;dormant?:boolean};
-  if(m.hp<=0||m.kind==='player'||monster.dormant)continue;
+  if(m.hp<=0||m.id==='@player:'+a.name||monster.dormant||!summonHeightContact(floor,height,reach,m,ancientMapHeight(c.map,m.x,m.z,m.y)))continue;
   const distance=Math.hypot(m.x-x,m.z-z);
   if(distance>24)continue;
   const score=(a.skillRuntime?.advancedPriority===m.id?100:0)+(monster.target===a.name?30:0)-distance;
@@ -1733,10 +1735,11 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
  const efficiency=skeletonAttackEfficiency(skeletonLimit(summonLevel)-free);
  const bonus=(1+Math.min(2,Math.log1p(p.necromancerStrength||0)*.18))*efficiency*potionDamageMultiplier(a,now);
  for(const pet of state.legion){
-  const target=summonTarget(a,c,pet.x,pet.z);
+  const scale=skeletonBodyScale(pet.merged),height=summonBodyHeight('skeleton',scale),swing=pet.merged?scale*1.4:2.1;
+  const target=summonTarget(a,c,pet.x,pet.z,height,swing);
   const enhanced=!!field&&Math.hypot(pet.x-field.x,pet.z-field.z)<=field.radius;
   const targetRadius=target?ancientHitbox(target.kind).radius:0;
-  const reach=targetRadius+(pet.merged?Math.min(7,1+Math.log2(pet.merged)*.48)*1.4:2.1);
+  const reach=targetRadius+swing;
   if(target&&Math.hypot(target.x-pet.x,target.z-pet.z)<reach&&pet.next<=now){
    pet.next=now+1100;
    const count=pet.merged?1:pet.count??1;
@@ -1746,8 +1749,8 @@ export function tickAdvancedSummon(a:SkillActor,p:AncientProfile,c:SkillContext,
     const x=pet.x+offset.x,z=pet.z+offset.z;
     if(Math.hypot(target.x-x,target.z-z)<reach&&!blocked(x,z,.2,c.map)&&(!c.canMove||c.canMove(x,z,target.x,target.z)))attackers++;
    }
-   c.damage(target,ancientSkillDamage(p)*.1*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*pet.scale*(attackers/count)*bonus*(enhanced?1.2:1),undefined,pet.merged?'necropolis':'unleashLegion');
-   c.fx('necromancer-strike',target.x,target.z,2,{source:{x:pet.x,y:ancientMapHeight(c.map,pet.x,pet.z)+1,z:pet.z},target:target.id});
+   c.damage(target,ancientSkillDamage(p)*.1*holyPower(p)*FUSION_DAMAGE_MULTIPLIER*pet.scale*(attackers/count)*bonus*(enhanced?1.2:1),undefined,pet.merged?'necropolis':'unleashLegion',false,{x:pet.x,y:ancientMapHeight(c.map,pet.x,pet.z)+height*.65,z:pet.z});
+   c.fx('necromancer-strike',target.x,target.z,2,{source:{x:pet.x,y:ancientMapHeight(c.map,pet.x,pet.z)+height*.65,z:pet.z},target:target.id});
   }else legionMove(c,pet,target?.x??a.x,target?.z??a.z,enhanced?6:5,dt);
  }
 }
@@ -1942,7 +1945,7 @@ function castRiftAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const anchor=state.anchor;
  if((r.cooldowns[id]||0)>now)return '技能冷却中';
  const target=selectSkillTarget(a,direction,60,c)||stormTargets(c,origin,12)
-  .find(m=>lineClear(a.x,a.y,a.z,m.x,(m.y||0)+1.4,m.z,c.map));
+  .find(m=>lineClear(a.x,a.y,a.z,m.x,firePoint(c,m).y+1.4,m.z,c.map));
  if(!target&&(key==='X'||key==='C'||route==='riftlord'&&key==='Q'))return '请瞄准可见的敌人';
  const center=target?firePoint(c,target):origin;
  if(route==='riftlord'){
@@ -2241,7 +2244,7 @@ function castTimeAdvancement(a:SkillActor,p:AncientProfile,route:string,key:stri
  const r=runtime(a),state=timeState(a,c.map),tag='advancement:'+route+':'+key;
  const origin={x:a.x,y:a.y-1.7,z:a.z};
  const target=selectSkillTarget(a,direction,60,c)||stormTargets(c,origin,12)
-  .find(m=>lineClear(a.x,a.y,a.z,m.x,(m.y||0)+1.4,m.z,c.map));
+  .find(m=>lineClear(a.x,a.y,a.z,m.x,firePoint(c,m).y+1.4,m.z,c.map));
  const power=ancientSkillDamage(p)*skillDamageMultiplier(a,now)*(1+Math.min(99,level-1)*.055)*holyPower(p)*fusionDamageMultiplier(p.profession)*1.2;
  const hit=(m:SkillMonster,multiplier:number)=>c.damage(m,power*multiplier,undefined,tag);
  expireTimeRewind(a,p,state,route,now);

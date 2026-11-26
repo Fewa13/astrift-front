@@ -12,7 +12,7 @@ const BESTIARY = {
   chain_jailer: { name: "\u9501\u94FE\u72F1\u5352", en: "Chain Jailer", map: "city", base: "city_guard", size: 1.5, range: 22, speed: 3.3, boss: false, health: 1.2, damage: 0.85, xp: 1.15, behavior: "hook", color: 12823201 },
   hollow_noble: { name: "\u7A7A\u58F3\u8D35\u65CF", en: "Hollow Noble", map: "city", base: "city_acolyte", size: 1.2, range: 16, speed: 3.1, boss: false, health: 1.05, damage: 1, xp: 1.15, behavior: "illusion", color: 11054580 },
   noble_echo: { name: "\u8D35\u65CF\u5E7B\u5F71", en: "Noble Echo", map: "city", base: "city_acolyte", size: 1.2, range: 12, speed: 3.1, boss: false, health: 0.12, damage: 0.3, xp: 0, behavior: "echo", color: 6585004 },
-  brokenwing: { name: "\u65AD\u7FFC\u9B54\u79BD", en: "Brokenwing Fiend", map: "blight", base: "blight_stalker", size: 1.7, range: 3, speed: 4.2, boss: false, health: 1.05, damage: 1.05, xp: 1.1, behavior: "dive", color: 12289768 },
+  brokenwing: { name: "\u65AD\u7FFC\u9B54\u79BD", en: "Brokenwing Fiend", map: "blight", base: "blight_stalker", size: 1.7, range: 3, speed: 10, boss: false, health: 1.05, damage: 1.05, xp: 1.1, behavior: "dive", color: 12289768 },
   shade_prowler: { name: "\u8680\u5F71\u6F5C\u730E\u8005", en: "Blightshade Prowler", map: "blight", base: "rift_maw", size: 1.45, range: 3, speed: 4, boss: false, health: 1.1, damage: 1.05, xp: 1.1, behavior: "shadow", color: 10773445 },
   refract_twin: { name: "\u6298\u5149\u53CC\u751F\u8005", en: "Refracted Twin", map: "sanctum", base: "sanctum_sentinel", size: 1.45, range: 3.2, speed: 3.8, boss: false, health: 1, damage: 1, xp: 1.1, behavior: "twin", color: 9168608 },
   light_deacon: { name: "\u5DE1\u5149\u6267\u4E8B", en: "Lightwarden Deacon", map: "sanctum", base: "mirror_wraith", size: 1.35, range: 22, speed: 3, boss: false, health: 1, damage: 1, xp: 1.1, behavior: "ring", color: 16768924 }
@@ -39,6 +39,87 @@ function bestiarySlot(map, region, index) {
   return null;
 }
 const BESTIARY_HOOK_WIDTH = 1.4;
+const BROKENWING_FLIGHT = { height: 9, speed: 10, diveSpeed: 24, windup: 900, recover: 1200, cooldown: 4500, range: 24 };
+function tickBrokenwing(m, target, c) {
+  const { now, dt } = c, B = BROKENWING_FLIGHT;
+  if (m.hp <= 0) {
+    delete m.special;
+    m.air = 0;
+    return true;
+  }
+  if (now < (m.recoverUntil || 0)) {
+    m.action = "recover";
+    m.air = Math.min(B.height, Math.max(0, (now - m.actionAt - 300) / 900) * B.height);
+    return true;
+  }
+  const flight = (x, z, step) => {
+    c.move(m, x, z, step);
+    m.air = B.height;
+  };
+  if (!target) {
+    delete m.special;
+    m.action = "idle";
+    m.air = B.height;
+    return true;
+  }
+  const s = m.special, dist = Math.hypot(target.x - m.x, target.z - m.z);
+  if (s) {
+    if (now < s.hitAt) {
+      m.action = "windup";
+      m.air = B.height;
+      return true;
+    }
+    const t = Math.min(1, Math.max(0, (now - s.hitAt) / Math.max(1, s.ends - s.hitAt))), ox = m.x, oz = m.z, oldY = c.ground(m.x, m.z) + (m.air ?? B.height), nx = s.ax + (s.tx - s.ax) * t, nz = s.az + (s.tz - s.az) * t;
+    c.move(m, nx, nz, dt * B.diveSpeed);
+    const y = (s.ay ?? c.ground(s.ax, s.az) + B.height) + ((s.ty ?? c.ground(s.tx, s.tz)) - (s.ay ?? c.ground(s.ax, s.az) + B.height)) * t;
+    if (c.solid(m.x, m.z, y)) {
+      delete m.special;
+      m.air = B.height;
+      m.action = "walk";
+      m.attackAt = now + B.cooldown;
+      return true;
+    }
+    m.air = Math.max(0, y - c.ground(m.x, m.z));
+    m.action = "dive";
+    const dx = m.x - ox, dz = m.z - oz;
+    for (const p of c.victims) {
+      const u = Math.max(0, Math.min(1, ((p.x - ox) * dx + (p.z - oz) * dz) / (dx * dx + dz * dz || 1))), hitY = oldY + (y - oldY) * u;
+      if (p.hp > 0 && !s.hit.includes(p.name) && Math.hypot(p.x - ox - dx * u, p.z - oz - dz * u) < 2.6 && p.y - 1.7 <= hitY + 2.4 && p.y + 0.4 >= hitY && c.clear(m.x, m.z, p.x, p.z)) {
+        s.hit.push(p.name);
+        c.hit(m, p, 1.25);
+      }
+    }
+    if (t >= 1) {
+      delete m.special;
+      m.air = 0;
+      m.action = "recover";
+      m.actionAt = now;
+      m.recoverUntil = now + B.recover;
+    }
+    return true;
+  }
+  m.air = B.height;
+  m.facing = Math.atan2(target.x - m.x, target.z - m.z);
+  if (dist > B.range || target.y - 1.7 > c.ground(m.x, m.z) + B.height + 2.4 || !c.clear(m.x, m.z, target.x, target.z)) {
+    flight(target.x, target.z, dt * B.speed);
+    m.action = "walk";
+    return true;
+  }
+  if (now < m.attackAt) {
+    const angle = now * 12e-4 + (m.step || 0);
+    flight(target.x + Math.sin(angle) * 10, target.z + Math.cos(angle) * 10, dt * B.speed);
+    m.action = "walk";
+    return true;
+  }
+  const travel = Math.max(450, dist / B.diveSpeed * 1e3);
+  m.special = { id: "dive", started: now, hitAt: now + B.windup, ends: now + B.windup + travel, ax: m.x, az: m.z, ay: c.ground(m.x, m.z) + B.height, tx: target.x, tz: target.z, ty: target.y - 1.7, hit: [] };
+  m.attackAt = now + B.cooldown;
+  m.step = (m.step || 0) + 1;
+  m.action = "windup";
+  m.actionAt = now;
+  c.fx(m, "dive", "warning", [{ x: target.x, z: target.z, radius: 3 }], now, now + B.windup, { tx: target.x, tz: target.z, ends: m.special.ends });
+  return true;
+}
 function bestiaryHookContact(s, p, now, dt) {
   if (now < s.hitAt || now > s.ends + 200) return false;
   const dx = s.tx - s.ax, dz = s.tz - s.az, len = Math.hypot(dx, dz);
@@ -78,6 +159,7 @@ function tickBestiary(m, target, c) {
   const d = BESTIARY[m.kind];
   if (!d) return false;
   const { now, dt } = c;
+  if (d.behavior === "dive") return tickBrokenwing(m, target, c);
   if (m.hp <= 0) {
     delete m.special;
     delete m.linked;
@@ -263,6 +345,7 @@ function tickBestiary(m, target, c) {
 export {
   BESTIARY,
   BESTIARY_HOOK_WIDTH,
+  BROKENWING_FLIGHT,
   bestiaryDamage,
   bestiaryHP,
   bestiaryHookContact,

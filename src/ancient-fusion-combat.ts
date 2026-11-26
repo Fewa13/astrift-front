@@ -8,7 +8,7 @@ import {masteryLevel} from './ancient-mastery';
 import {ancientMapHeight,blocked,lineClear,type AncientProfile} from './ancient-rules';
 import {ancientGearStats} from './ancient-gear';
 import {runtime,SKILLS} from './ancient-skills';
-import {selectSkillTarget,skillAreaTargets,type SkillContext,type SkillMonster} from './ancient-skill-combat';
+import {selectSkillTarget,skillAreaHits,skillAreaTargets,type SkillContext,type SkillMonster} from './ancient-skill-combat';
 
 type Point={x:number;y:number;z:number};
 type Anchor=Point & {until:number};
@@ -129,7 +129,7 @@ export function castFusion(a:Actor,p:AncientProfile,id:string,direction:unknown,
   if(!behind&&!shiftToward(a,c,target.x-dx/length*2,target.z-dz/length*2))return '突袭位置被阻挡';
   delete f.anchor;
   f.marks[target.id]={stacks:1,until:now+10000};
-  for(const m of c.monsters){const t=Math.max(0,Math.min(1,((m.x-origin.x)*dx+(m.z-origin.z)*dz)/length**2));if(Math.hypot(m.x-origin.x-t*dx,m.z-origin.z-t*dz)<3+ancientHitbox(m.kind).radius+SKILL_CONTACT.lanePadding)c.damage(m,body*5.5);}
+  for(const m of c.monsters){const t=Math.max(0,Math.min(1,((m.x-origin.x)*dx+(m.z-origin.z)*dz)/length**2));if(skillAreaHits({x:origin.x+t*dx,y:origin.y,z:origin.z+t*dz},m,3+SKILL_CONTACT.lanePadding,c.map))c.damage(m,body*5.5);}
   fx(a,4);
  }
  r.cooldowns[id]=now+SKILLS[id].cooldown*1000*(1-ancientGearStats(p).cooldown);

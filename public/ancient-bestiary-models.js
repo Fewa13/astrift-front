@@ -38,7 +38,7 @@ export function animateBestiary(mesh,m,time,dt){
  const duration=Math.max(1,s?s.hitAt-s.started:600),progress=Math.max(0,Math.min(1,(now-(s?.started??m.actionAt??now))/duration)),ready=wind?Math.min(1,progress*4)*(.65+.35*progress):0;
  for(let i=0;i<u.legs.length;i++){u.legs[i].rotation.set(travel?Math.sin(phase+(i%2)*Math.PI)*.5:0,0,0)}
  for(let i=0;i<2;i++)u.arms[i].rotation.set(wind?-(progress<.75?ready*1.9:1.9-(progress-.75)/.25*2.5):m.action==='attack'?.6:travel?Math.sin(phase+i*Math.PI)*.25:0,0,0);
- u.body.rotation.set(0,0,0);u.body.position.set(0,(m.air||0)+(travel?Math.abs(Math.sin(phase))*.035:Math.sin(time*.002)*.025),0);u.body.scale.set(1,m.action==='shadow'?.25:1,1);
+ u.body.rotation.set(0,0,0);u.body.position.set(0,((m.air??(m.kind==='brokenwing'?9:0))/Math.max(.01,mesh.scale.y))+(travel?Math.abs(Math.sin(phase))*.035:Math.sin(time*.002)*.025),0);u.body.scale.set(1,m.action==='shadow'?.25:1,1);
  if(behavior==='shield')u.arms[0].rotation.x=m.action==='guard'||m.action==='idle'||m.action==='walk'?-.9:wind?.7*ready:0;
  if(wind&&['charge','pounce','shadow'].includes(behavior)){
   u.body.position.y-=ready*.22;u.body.position.z+=ready*.32;u.body.rotation.x=-ready*.35;u.body.scale.y=m.action==='shadow'?.25:1-ready*.18;

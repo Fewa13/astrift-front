@@ -6,12 +6,12 @@ import {isAncientBoss} from './ancient-boss';
 import {ancientSkillDamage} from './ancient-gear';
 import {holyPower} from './ancient-ascension';
 import {skillDamageMultiplier} from './ancient-skills';
-import type {SkillContext,SkillMonster} from './ancient-skill-combat';
+import {skillAreaHits,type SkillContext,type SkillMonster} from './ancient-skill-combat';
 type Pulse={at:number;target:string;damage:number;fx:string;source?:'summon'};
 export type BranchRuntime={key:string;pulses:Pulse[];marks:Record<string,{hits:number;until:number;readyAt:number}>};
 function state(a:SkillActor,p:AncientProfile){const key=activeBranch(p),r=runtime(a);if(!r.branch||r.branch.key!==key)r.branch={key,pulses:[],marks:{}};return r.branch;}
 function queue(s:BranchRuntime,at:number,target:string,damage:number,fx:string){if(s.pulses.length<12)s.pulses.push({at,target,damage,fx});}
-function near(c:SkillContext,m:SkillMonster,radius:number){return c.monsters.filter(v=>v.hp>0&&v.id!==m.id&&Math.hypot(v.x-m.x,v.z-m.z)<=radius&&lineClear(m.x,ancientMapHeight(c.map,m.x,m.z,m.y)+1,m.z,v.x,ancientMapHeight(c.map,v.x,v.z,v.y)+1,v.z,c.map)).sort((x,y)=>Math.hypot(x.x-m.x,x.z-m.z)-Math.hypot(y.x-m.x,y.z-m.z)).slice(0,4);}
+function near(c:SkillContext,m:SkillMonster,radius:number){return c.monsters.filter(v=>v.hp>0&&v.id!==m.id&&skillAreaHits(m,v,radius,c.map)).sort((x,y)=>Math.hypot(x.x-m.x,x.z-m.z)-Math.hypot(y.x-m.x,y.z-m.z)).slice(0,4);}
 // Each wrapper owns its first-hit budget. Secondary damage bypasses this wrapper,
 // so echoes never recursively proc themselves or another echo chain.
 export function branchContext(a:SkillActor,p:AncientProfile,id:string,c:SkillContext,now:number):SkillContext{

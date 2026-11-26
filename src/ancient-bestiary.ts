@@ -13,7 +13,7 @@ export const BESTIARY:Record<string,Def>={
  chain_jailer:{name:'锁链狱卒',en:'Chain Jailer',map:'city',base:'city_guard',size:1.5,range:22,speed:3.3,boss:false,health:1.2,damage:.85,xp:1.15,behavior:'hook',color:0xc3aaa1},
  hollow_noble:{name:'空壳贵族',en:'Hollow Noble',map:'city',base:'city_acolyte',size:1.2,range:16,speed:3.1,boss:false,health:1.05,damage:1,xp:1.15,behavior:'illusion',color:0xa8adf4},
  noble_echo:{name:'贵族幻影',en:'Noble Echo',map:'city',base:'city_acolyte',size:1.2,range:12,speed:3.1,boss:false,health:.12,damage:.3,xp:0,behavior:'echo',color:0x647aac},
- brokenwing:{name:'断翼魔禽',en:'Brokenwing Fiend',map:'blight',base:'blight_stalker',size:1.7,range:3,speed:4.2,boss:false,health:1.05,damage:1.05,xp:1.1,behavior:'dive',color:0xbb86e8},
+ brokenwing:{name:'断翼魔禽',en:'Brokenwing Fiend',map:'blight',base:'blight_stalker',size:1.7,range:3,speed:10,boss:false,health:1.05,damage:1.05,xp:1.1,behavior:'dive',color:0xbb86e8},
  shade_prowler:{name:'蚀影潜猎者',en:'Blightshade Prowler',map:'blight',base:'rift_maw',size:1.45,range:3,speed:4,boss:false,health:1.1,damage:1.05,xp:1.1,behavior:'shadow',color:0xa463c5},
  refract_twin:{name:'折光双生者',en:'Refracted Twin',map:'sanctum',base:'sanctum_sentinel',size:1.45,range:3.2,speed:3.8,boss:false,health:1,damage:1,xp:1.1,behavior:'twin',color:0x8be6e0},
  light_deacon:{name:'巡光执事',en:'Lightwarden Deacon',map:'sanctum',base:'mirror_wraith',size:1.35,range:22,speed:3,boss:false,health:1,damage:1,xp:1.1,behavior:'ring',color:0xffdf9c}
@@ -31,11 +31,32 @@ export function bestiarySlot(map:string,region:number,index:number){const i=inde
  if(map==='sanctum')return ['refract_twin','refract_twin','light_deacon'][i]||null;
  return null;
 }
-export type BestiaryCast={id:string;started:number;hitAt:number;ends:number;ax:number;az:number;tx:number;tz:number;hit:string[];hookCheckedAt?:number};
+export type BestiaryCast={id:string;started:number;hitAt:number;ends:number;ax:number;az:number;ay?:number;tx:number;tz:number;ty?:number;hit:string[];hookCheckedAt?:number};
 export type BestiaryActor={id:string;kind:string;x:number;z:number;hp:number;maxHp:number;level:number;action:string;actionAt:number;attackAt:number;facing?:number;special?:BestiaryCast;recoverUntil?:number;buffUntil?:number;buffPower?:number;linked?:string;air?:number;step?:number;patron?:string;target?:string;respawnAt?:number};
 type Victim={name:string;x:number;z:number;y:number;hp:number;hinderedUntil?:number};
-type Ctx={now:number;dt:number;monsters:BestiaryActor[];victims:Victim[];ground:(x:number,z:number)=>number;clear:(ax:number,az:number,bx:number,bz:number)=>boolean;solid:(x:number,z:number)=>boolean;move:(m:BestiaryActor,x:number,z:number,amount:number)=>void;hit:(m:BestiaryActor,p:Victim,power:number)=>void;pull:(p:Victim,x:number,z:number)=>void;fx:(m:BestiaryActor,id:string,stage:string,areas:Record<string,number>[],started:number,hitAt:number,extra?:Record<string,unknown>)=>void};
+type Ctx={now:number;dt:number;monsters:BestiaryActor[];victims:Victim[];ground:(x:number,z:number)=>number;clear:(ax:number,az:number,bx:number,bz:number)=>boolean;solid:(x:number,z:number,feet?:number)=>boolean;move:(m:BestiaryActor,x:number,z:number,amount:number)=>void;hit:(m:BestiaryActor,p:Victim,power:number)=>void;pull:(p:Victim,x:number,z:number)=>void;fx:(m:BestiaryActor,id:string,stage:string,areas:Record<string,number>[],started:number,hitAt:number,extra?:Record<string,unknown>)=>void};
 export const BESTIARY_HOOK_WIDTH=1.4;
+export const BROKENWING_FLIGHT={height:9,speed:10,diveSpeed:24,windup:900,recover:1200,cooldown:4500,range:24} as const;
+function tickBrokenwing(m:BestiaryActor,target:Victim|undefined,c:Ctx){
+ const {now,dt}=c,B=BROKENWING_FLIGHT;if(m.hp<=0){delete m.special;m.air=0;return true;}
+ if(now<(m.recoverUntil||0)){m.action='recover';m.air=Math.min(B.height,Math.max(0,(now-m.actionAt-300)/900)*B.height);return true;}
+ const flight=(x:number,z:number,step:number)=>{c.move(m,x,z,step);m.air=B.height;};
+ if(!target){delete m.special;m.action='idle';m.air=B.height;return true;}
+ const s=m.special,dist=Math.hypot(target.x-m.x,target.z-m.z);
+ if(s){if(now<s.hitAt){m.action='windup';m.air=B.height;return true;}
+  const t=Math.min(1,Math.max(0,(now-s.hitAt)/Math.max(1,s.ends-s.hitAt))),ox=m.x,oz=m.z,oldY=c.ground(m.x,m.z)+(m.air??B.height),nx=s.ax+(s.tx-s.ax)*t,nz=s.az+(s.tz-s.az)*t;
+  c.move(m,nx,nz,dt*B.diveSpeed);const y=(s.ay??c.ground(s.ax,s.az)+B.height)+((s.ty??c.ground(s.tx,s.tz))-(s.ay??c.ground(s.ax,s.az)+B.height))*t;if(c.solid(m.x,m.z,y)){delete m.special;m.air=B.height;m.action='walk';m.attackAt=now+B.cooldown;return true;}m.air=Math.max(0,y-c.ground(m.x,m.z));m.action='dive';
+  const dx=m.x-ox,dz=m.z-oz;for(const p of c.victims){const u=Math.max(0,Math.min(1,((p.x-ox)*dx+(p.z-oz)*dz)/(dx*dx+dz*dz||1))),hitY=oldY+(y-oldY)*u;
+   if(p.hp>0&&!s.hit.includes(p.name)&&Math.hypot(p.x-ox-dx*u,p.z-oz-dz*u)<2.6&&p.y-1.7<=hitY+2.4&&p.y+.4>=hitY&&c.clear(m.x,m.z,p.x,p.z)){s.hit.push(p.name);c.hit(m,p,1.25);}
+  }
+  if(t>=1){delete m.special;m.air=0;m.action='recover';m.actionAt=now;m.recoverUntil=now+B.recover;}return true;
+ }
+ m.air=B.height;m.facing=Math.atan2(target.x-m.x,target.z-m.z);
+ if(dist>B.range||target.y-1.7>c.ground(m.x,m.z)+B.height+2.4||!c.clear(m.x,m.z,target.x,target.z)){flight(target.x,target.z,dt*B.speed);m.action='walk';return true;}
+ if(now<m.attackAt){const angle=now*.0012+(m.step||0);flight(target.x+Math.sin(angle)*10,target.z+Math.cos(angle)*10,dt*B.speed);m.action='walk';return true;}
+ const travel=Math.max(450,dist/B.diveSpeed*1000);m.special={id:'dive',started:now,hitAt:now+B.windup,ends:now+B.windup+travel,ax:m.x,az:m.z,ay:c.ground(m.x,m.z)+B.height,tx:target.x,tz:target.z,ty:target.y-1.7,hit:[]};m.attackAt=now+B.cooldown;m.step=(m.step||0)+1;m.action='windup';m.actionAt=now;
+ c.fx(m,'dive','warning',[{x:target.x,z:target.z,radius:3}],now,now+B.windup,{tx:target.x,tz:target.z,ends:m.special.ends});return true;
+}
 // The hook can only hit inside the visible flat-ended lane, at its current flight segment.
 export function bestiaryHookContact(s:BestiaryCast,p:{x:number;z:number},now:number,dt:number){
  if(now<s.hitAt||now>s.ends+200)return false;
@@ -47,7 +68,7 @@ export function bestiaryHookContact(s:BestiaryCast,p:{x:number;z:number},now:num
 }
 export function bestiaryIncoming(m:BestiaryActor,ax:number,az:number,now:number){const d=BESTIARY[m.kind];if(!d)return 1;if(d.behavior==='shield'&&!m.special&&(m.recoverUntil||0)<=now&&m.facing!==undefined){const dot=((ax-m.x)*Math.sin(m.facing)+(az-m.z)*Math.cos(m.facing))/(Math.hypot(ax-m.x,az-m.z)||1);if(dot>.45)return .35}return d.behavior==='twin'&&m.linked?.length? .75:1}
 export function prepareBestiary(ms:BestiaryActor[],now:number,clear:Ctx['clear']){for(const m of ms){m.linked=undefined;if(m.hp<=0)continue;const behavior=BESTIARY[m.kind]?.behavior;if(behavior==='twin'){const other=ms.find(v=>v.id!==m.id&&v.kind==='refract_twin'&&v.hp>0&&Math.hypot(v.x-m.x,v.z-m.z)<10&&clear(m.x,m.z,v.x,v.z));if(other)m.linked=other.id}if(behavior==='totem')for(const v of ms)if(v!==m&&v.hp>0&&!['chief','lord'].includes(v.kind)&&!v.kind.includes('lord')&&Math.hypot(v.x-m.x,v.z-m.z)<9&&clear(m.x,m.z,v.x,v.z)){v.buffUntil=now+350;v.buffPower=1.2}}}
-export function tickBestiary(m:BestiaryActor,target:Victim|undefined,c:Ctx){const d=BESTIARY[m.kind];if(!d)return false;const {now,dt}=c;if(m.hp<=0){delete m.special;delete m.linked;return true}if(now<(m.recoverUntil||0)){m.action='recover';m.air=0;return true}if(!target){delete m.special;m.air=d.behavior==='dive'?.7:0;return false}
+export function tickBestiary(m:BestiaryActor,target:Victim|undefined,c:Ctx){const d=BESTIARY[m.kind];if(!d)return false;const {now,dt}=c;if(d.behavior==='dive')return tickBrokenwing(m,target,c);if(m.hp<=0){delete m.special;delete m.linked;return true}if(now<(m.recoverUntil||0)){m.action='recover';m.air=0;return true}if(!target){delete m.special;m.air=d.behavior==='dive'?.7:0;return false}
  const dist=Math.hypot(target.x-m.x,target.z-m.z);if(!m.special)m.facing=Math.atan2(target.x-m.x,target.z-m.z);const canSee=c.clear(m.x,m.z,target.x,target.z);
  const areaHit=(x:number,z:number,r:number,power:number,low=false)=>{for(const p of c.victims)if(p.hp>0&&Math.hypot(p.x-x,p.z-z)<r&&(!low||p.y-c.ground(p.x,p.z)<2.2)&&c.clear(m.x,m.z,p.x,p.z))c.hit(m,p,power)};
  if(m.special){const s=m.special;m.facing=Math.atan2(s.tx-s.ax,s.tz-s.az);if(now<s.hitAt){m.action=s.id==='shadow'?'shadow':'windup';if(s.id==='shadow')c.move(m,target.x,target.z,dt*d.speed);return true}

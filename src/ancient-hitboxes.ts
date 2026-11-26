@@ -8,6 +8,14 @@ import {SANCTUM_KINDS} from './ancient-sanctum';
 import {SKYREACH_KINDS} from './ancient-skyreach';
 import {FROSTCOURT_KINDS} from './ancient-frostcourt';
 import {STARFALL_KINDS} from './ancient-starfall';
+export type CombatBody={x:number;z:number;y?:number;kind?:string;air?:number};
+export function combatBodyFeet(body:CombatBody,ground:number){
+ if(body.kind==='player')return body.y===undefined?ground:body.y-1.7;
+ return (body.y??ground)+(body.air??(body.kind==='brokenwing'?9:0));
+}
+export const skeletonBodyScale=(merged=0)=>merged?Math.min(7,1+Math.log2(merged)*.48):1;
+export const summonBodyHeight=(model:string,scale=1)=>(model==='skeleton'?1.8:model==='spirit'?1.9:2.2)*scale;
+export function summonHeightContact(floor:number,height:number,reach:number,target:CombatBody,targetGround:number){const feet=combatBodyFeet(target,targetGround),bounds=ancientHitbox(target.kind||'player');return feet<=floor+height+reach*.3&&feet+bounds.height>=floor-.35;}
 // Body/head bounds follow the model primitives, not label height, weapons,
 // floating halos or decorative horns. Horizontal tolerance is unchanged.
 export function ancientHitbox(kind:string){

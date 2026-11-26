@@ -5,11 +5,11 @@ import {AUTHORITY_BALANCE as B,TIME_LORD as T,migrateTimeLord,isAuthorityJob} fr
 import {runtime,SKILLS,skillDamageMultiplier,type SkillActor} from './ancient-skills';
 import {ancientSkillDamage} from './ancient-gear';
 import {masteryLevel,masteryPower} from './ancient-mastery';
-import {selectSkillTarget,type SkillContext,type SkillMonster} from './ancient-skill-combat';
+import {selectSkillTarget,skillAreaHits,type SkillContext,type SkillMonster} from './ancient-skill-combat';
 import {ancientMapHeight,blocked,lineClear,type AncientProfile} from './ancient-rules';
 export type TemporalHit={at:number;target:string;life:number;x:number;z:number;fromX:number;fromZ:number;amount:number;attack:string};
 type Echo=TemporalHit&{due:number;ratio:number};
-export type AuthorityRuntime={version:number;map:string;history:{at:number;hp:number;x?:number;y?:number;z?:number}[];lastHistory:number;attacks:TemporalHit[];echoQueue:Echo[];echoUntil?:number;echoRatio?:number;echoVisual?:number;shield?:{until:number;amount:number;maximum:number;credited?:boolean};domain?:{x:number;z:number;until:number;next:number;id:string;power:number;radius?:number;gates?:{x:number;z:number}[];portalAt?:number};anchor?:{x:number;y:number;z:number;until:number};bonusUntil?:number;bonus?:number};
+export type AuthorityRuntime={version:number;map:string;history:{at:number;hp:number;x?:number;y?:number;z?:number}[];lastHistory:number;attacks:TemporalHit[];echoQueue:Echo[];echoUntil?:number;echoRatio?:number;echoVisual?:number;shield?:{until:number;amount:number;maximum:number;credited?:boolean};domain?:{x:number;y?:number;z:number;until:number;next:number;id:string;power:number;radius?:number;gates?:{x:number;z:number}[];portalAt?:number};anchor?:{x:number;y:number;z:number;until:number};bonusUntil?:number;bonus?:number};
 function state(a:SkillActor,map:string){
  const r=runtime(a);
  if(!r.authority||r.authority.map!==map)r.authority={version:T.revision,map,history:[],lastHistory:0,attacks:[],echoQueue:[]};
@@ -48,16 +48,16 @@ export function castAuthority(a:SkillActor,p:AncientProfile,id:string,direction:
  const target=c.aimTarget||selectSkillTarget(a,direction,Math.min(100,50+(level-1)*2),c);
  const aim=Array.isArray(direction)&&direction.length===3&&direction.every(Number.isFinite)?direction as number[]:[0,0,1];
  let point={x:a.x,z:a.z};for(let distance=1;distance<=50;distance++){const next={x:a.x+aim[0]*distance,z:a.z+aim[2]*distance};if(blocked(next.x,next.z,.8,c.map))break;point=next;}
- const at=target||point;
+ const at=target||{...point,y:ancientMapHeight(c.map,point.x,point.z)+1};
  if(id==='timecurse'||id==='spacefracture'){
   if(!target)return '未命中目标 / No target hit';
-  if(id==='timecurse'){const acceleration=T.acceleration(level),field=s.domain,linked=field?.id==='timedominion'&&field.until>now&&Math.hypot(target.x-field.x,target.z-field.z)<=(field.radius||B.domainRadius);const victims=linked?living(c).filter(m=>Math.hypot(m.x-target.x,m.z-target.z)<=T.agingSpread(level)&&Math.hypot(m.x-field!.x,m.z-field!.z)<=field!.radius!&&lineClear(target.x,ancientMapHeight(c.map,target.x,target.z)+1,target.z,m.x,ancientMapHeight(c.map,m.x,m.z)+1,m.z,c.map)):[target];for(const m of victims)m.authorityCurse={owner:a.name,id,next:now+1000/acceleration,until:now+B.curseDuration/acceleration,interval:1000/acceleration,power:n*T.cursePower};}
-  else{const mark=target.authorityFracture?.owner===a.name&&target.authorityFracture.until>now;strike(a,c,target,n*(mark?B.fractureExplosion:B.fractureHit),id,now);if(mark){for(const m of living(c))if(m!==target&&Math.hypot(m.x-target.x,m.z-target.z)<6)strike(a,c,m,n*B.fractureSplash,id,now);delete target.authorityFracture;}else target.authorityFracture={owner:a.name,until:now+12000};}
+  if(id==='timecurse'){const acceleration=T.acceleration(level),field=s.domain,linked=field?.id==='timedominion'&&field.until>now&&skillAreaHits(field,target,field.radius||B.domainRadius,c.map);const victims=linked?living(c).filter(m=>Math.hypot(m.x-target.x,m.z-target.z)<=T.agingSpread(level)&&Math.hypot(m.x-field!.x,m.z-field!.z)<=field!.radius!&&lineClear(target.x,ancientMapHeight(c.map,target.x,target.z)+1,target.z,m.x,ancientMapHeight(c.map,m.x,m.z)+1,m.z,c.map)):[target];for(const m of victims)m.authorityCurse={owner:a.name,id,next:now+1000/acceleration,until:now+B.curseDuration/acceleration,interval:1000/acceleration,power:n*T.cursePower};}
+  else{const mark=target.authorityFracture?.owner===a.name&&target.authorityFracture.until>now;strike(a,c,target,n*(mark?B.fractureExplosion:B.fractureHit),id,now);if(mark){for(const m of living(c))if(m!==target&&skillAreaHits(target,m,6,c.map))strike(a,c,m,n*B.fractureSplash,id,now);delete target.authorityFracture;}else target.authorityFracture={owner:a.name,until:now+12000};}
   c.fx(id,target.x,target.z,3,{target:target.id,level});
  }else if(id==='timedominion'||id==='spacefold'||id==='spacecollapse'){
   const x=id==='timedominion'?a.x:at.x,z=id==='timedominion'?a.z:at.z;
-  s.domain={x,z,until:now+(id==='timedominion'?T.stopDuration(level):id==='spacecollapse'?6000:B.domainDuration),next:now,id,power:n,radius:id==='timedominion'?T.stopRadius(level):B.domainRadius};
-  if(id==='timedominion')for(const m of living(c).filter(m=>Math.hypot(m.x-x,m.z-z)<=s.domain!.radius!)){if(!isAncientBoss(m.kind)&&m.kind!=='player')m.frozenUntil=Math.max(m.frozenUntil||0,now+400);else{m.slow=T.bossSlow;m.slowUntil=now+400;}}
+  s.domain={x,y:id==='timedominion'?a.y:at.y,z,until:now+(id==='timedominion'?T.stopDuration(level):id==='spacecollapse'?6000:B.domainDuration),next:now,id,power:n,radius:id==='timedominion'?T.stopRadius(level):B.domainRadius};
+  if(id==='timedominion')for(const m of living(c).filter(m=>skillAreaHits(s.domain!,m,s.domain!.radius!,c.map))){if(!isAncientBoss(m.kind)&&m.kind!=='player')m.frozenUntil=Math.max(m.frozenUntil||0,now+400);else{m.slow=T.bossSlow;m.slowUntil=now+400;}}
   if(id==='spacefold'){const gates=[{x:x-10,z},{x:x+10,z}];if(gates.every(v=>!blocked(v.x,v.z,1,c.map)))s.domain.gates=gates;}
   c.fx(id,x,z,s.domain.radius!,{target:'',level});
  }else if(id==='timeflow'){
@@ -75,7 +75,7 @@ export function castAuthority(a:SkillActor,p:AncientProfile,id:string,direction:
   const origin={x:a.x,y:a.y,z:a.z};let to=returning?s.anchor!:{...origin};
   if(!returning){for(let d=1;d<=50*potionRangeMultiplier(p,now);d++){const x=origin.x+aim[0]*d,z=origin.z+aim[2]*d;if(blocked(x,z,.8,c.map)||c.canMove&&!c.canMove(to.x,to.z,x,z))break;to={x,y:ancientMapHeight(c.map,x,z)+1.7,z};}s.anchor={...origin,until:now+9000};}else delete s.anchor;
   a.x=to.x;a.y=to.y;a.z=to.z;
-  for(const center of [origin,to]){for(const m of living(c))if(Math.hypot(m.x-center.x,m.z-center.z)<7)strike(a,c,m,n*3,id,now);c.fx(id,center.x,center.z,7);}
+  for(const center of [origin,to]){for(const m of living(c))if(skillAreaHits(center,m,7,c.map))strike(a,c,m,n*3,id,now);c.fx(id,center.x,center.z,7);}
  }
  r.cooldowns[id]=now+SKILLS[id].cooldown*1000*potionCooldownMultiplier(p,now);return null;
 }
@@ -94,10 +94,10 @@ export function tickAuthority(a:SkillActor,p:AncientProfile,c:SkillContext,dt:nu
  const d=s.domain;
  if(d&&d.until>now){
   if(d.gates&&now>=(d.portalAt||0)){const index=d.gates.findIndex(v=>Math.hypot(a.x-v.x,a.z-v.z)<1.6);if(index>=0){const to=d.gates[1-index];a.x=to.x;a.z=to.z;a.y=ancientMapHeight(c.map,to.x,to.z)+1.7;d.portalAt=now+2000;c.fx('spaceswap',to.x,to.z,4);}}
-  const targets=living(c).filter(m=>Math.hypot(m.x-d.x,m.z-d.z)<=(d.radius||B.domainRadius));
+  const targets=living(c).filter(m=>skillAreaHits(d,m,d.radius||B.domainRadius,c.map));
   if(d.id==='timedominion')for(const m of targets){(m.masteryMarks??={})[a.name+':timedominion']={owner:a.name,id:'timedominion',until:d.until+6000};if(!isAncientBoss(m.kind)&&m.kind!=='player')m.frozenUntil=Math.max(m.frozenUntil||0,now+400);else{m.slow=Math.max(m.slow||0,T.bossSlow);m.slowUntil=Math.max(m.slowUntil||0,now+400);}}
   else if(now>=d.next){d.next=now+1000;for(const m of targets){m.slow=.75;m.slowUntil=now+1200;if(d.id==='spacecollapse'&&!isAncientBoss(m.kind)){const dx=d.x-m.x,dz=d.z-m.z,len=Math.hypot(dx,dz)||1,x=m.x+dx/len*1.5,z=m.z+dz/len*1.5;if(!blocked(x,z,1,c.map)){m.x=x;m.z=z;}}strike(a,c,m,d.power*(d.id==='spacecollapse'?3:1.2),d.id,now);}if(d.id==='spacefold'&&targets.length>1)for(const m of targets)strike(a,c,m,d.power*.4,d.id,now);}
- }else if(d){if(d.id==='spacecollapse')for(const m of living(c))if(Math.hypot(m.x-d.x,m.z-d.z)<=(d.radius||B.domainRadius)){strike(a,c,m,d.power*(m.authorityFracture?.owner===a.name?12:7),d.id,now);delete m.authorityFracture;}c.fx(d.id,d.x,d.z,d.radius||B.domainRadius,{target:'',phase:'time-resume'});delete s.domain;}
+ }else if(d){if(d.id==='spacecollapse')for(const m of living(c))if(skillAreaHits(d,m,d.radius||B.domainRadius,c.map)){strike(a,c,m,d.power*(m.authorityFracture?.owner===a.name?12:7),d.id,now);delete m.authorityFracture;}c.fx(d.id,d.x,d.z,d.radius||B.domainRadius,{target:'',phase:'time-resume'});delete s.domain;}
  const due=s.echoQueue.filter(v=>v.due<=now&&now-v.due<=T.echoGrace);s.echoQueue=s.echoQueue.filter(v=>v.due>now);
  for(const hit of due){const target=living(c).find(m=>m.id===hit.target&&((m as SkillMonster&{respawnAt?:number}).respawnAt||0)===hit.life);if(!target||Math.hypot(target.x-a.x,target.z-a.z)>120||!lineClear(hit.fromX,ancientMapHeight(c.map,hit.fromX,hit.fromZ)+1.5,hit.fromZ,target.x,ancientMapHeight(c.map,target.x,target.z)+1,target.z,c.map))continue;strike(a,c,target,hit.amount*hit.ratio,'timeresurrection',now);c.fx('timeresurrection',target.x,target.z,2,{target:target.id,phase:'time-echo',source:{x:hit.fromX,y:ancientMapHeight(c.map,hit.fromX,hit.fromZ)+1.5,z:hit.fromZ}});}
 }
