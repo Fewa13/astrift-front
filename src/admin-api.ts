@@ -16,6 +16,7 @@ export async function adminAPI(request:Request,env:Env){
  const world=env.ANCIENT_WORLDS.getByName('tribe-v1');
  if(action==='state'){const ancient=await world.adminPlayers(),names=new Set(ancient.map(p=>p.name));for(const name of await registry.knownAccounts())if(!names.has(name))ancient.push({name,level:0});return json({ok:true,players:ancient,rewards:adminRewardCatalog(),...await registry.adminState()})}
 
+ if(action==='mapReports')return json({ok:true,reports:await world.adminCommunityReports()});
  if(action==='mapReviews')return json({ok:true,maps:await world.adminCommunityMaps()});
  if(action==='mapReview'){try{return json(await world.adminCommunityReview(Number(body.mapId),Number(body.revision),body.approve===true,String(body.reason||'')))}catch(e){return json({error:e instanceof Error?e.message:'Review failed'},409)}}
  const id=typeof body.id==='string'?body.id:'';if(!/^[0-9a-f-]{36}$/i.test(id))return json({error:'操作编号无效'},400);

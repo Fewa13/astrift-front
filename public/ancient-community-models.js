@@ -1,6 +1,9 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { proceduralParts } from "./ancient-community-procedural.js";
 import { communityCatalogParts } from "./ancient-community-catalog.js";
-function communityModelParts(model) {
+function communityModelParts(model, parameters = {}) {
+  const procedural = proceduralParts(model, parameters);
+  if (procedural) return procedural;
   if (model === "__npc") {
     const parts = [];
     const p = (shape, color, x, y, z, w, h, d) => parts.push({ shape, color, x, y, z, w, h, d, ry: 0 });

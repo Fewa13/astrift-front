@@ -215,7 +215,7 @@ function compileMapScript(source) {
 }
 function cleanMapNPCs(raw, tier, items) {
   if (raw === void 0) return [];
-  if (!Array.isArray(raw) || raw.length > (tier === 1 ? 0 : 32)) throw Error("NPCs require intermediate maps; maximum 32");
+  if (!Array.isArray(raw) || raw.length > 32) throw Error("Maximum 32 NPCs");
   const text = (v) => {
     if (!Array.isArray(v) || v.length !== 2 || v.some((s) => typeof s !== "string" || !s.trim() || s.length > 500)) throw Error("NPC: Chinese and English text required");
     return [v[0].trim(), v[1].trim()];

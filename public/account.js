@@ -1,3 +1,4 @@
+import {mergeTutorialProgress} from './onboarding-progress.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {clientVersion,assertClientAvailable,requireClientUpdate} from './client-version.js';
 import {accountPageLease} from './account-page-lease.js';
@@ -8,6 +9,7 @@ const SESSION_KEY='astrift.accountSession.v1';
 const DEVICE_KEY='astrift.accountDevice.v1';
 import {SEASON_SKINS} from './skin-system.js?v=20261006-damage-result-3';
 const CLOUD_KEYS=[
+  'astrift.onboarding.v2','astrift.hud.fps.v2','astrift.hud.ancient.v2',
   'astrift.extraction.v1',
   'astrift.callsign','astrift.weaponBuilds.v1','astrift.weaponSlots.v1','astrift.sidearm.v1',
   'astrift.equipment.v1','astrift.skins.v1','astrift.knifeSkins.v1','astrift.keybinds.v1',
@@ -19,8 +21,8 @@ if(!device||!/^[0-9a-f-]{36}$/i.test(device)){device=crypto.randomUUID();localSt
 try{const value=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(value&&typeof value.name==='string'&&/^[a-f0-9]{64}$/i.test(value.token))session={name:value.name,token:value.token,device}}catch{}
 const $=id=>document.getElementById(id);
 export function accountSession(){return session}
-export function localSave(){const data={};for(const key of CLOUD_KEYS){const value=localStorage.getItem(key);if(value!==null)data[key]=value}if(session)data['astrift.callsign']=session.name;return data}
-function applyCloudSave(data,name){for(const key of CLOUD_KEYS){if(typeof data[key]==='string')localStorage.setItem(key,data[key]);else localStorage.removeItem(key)}localStorage.setItem('astrift.callsign',name)}
+export function localSave(){const data={};for(const key of CLOUD_KEYS){const value=localStorage.getItem(key);if(value!==null){if(key==='astrift.onboarding.v2'&&session){try{const all=JSON.parse(value),owner=session.name.toLowerCase();data[key]=JSON.stringify({version:2,owners:all.owners?.[owner]?{[owner]:all.owners[owner]}:{}})}catch{}}else data[key]=value}}if(session)data['astrift.callsign']=session.name;return data}
+function applyCloudSave(data,name){for(const key of CLOUD_KEYS){if(typeof data[key]==='string')localStorage.setItem(key,key==='astrift.onboarding.v2'?mergeTutorialProgress(localStorage.getItem(key)||undefined,data[key]):data[key]);else if(key!=='astrift.onboarding.v2')localStorage.removeItem(key)}localStorage.setItem('astrift.callsign',name)}
 export async function accountApi(path,body){
   assertClientAvailable();
   if(!await accountPageLease())throw Error('此设备已有游戏页面打开，请先关闭另一个页面。 / Another game page is open on this device. Close it first.');
@@ -75,6 +77,7 @@ export async function refreshAccountProfile(){
 }
 function clearSession(){session=null;profile=null;lastUploaded='';localStorage.removeItem(SESSION_KEY);renderAccount();renderSeason();window.dispatchEvent(new CustomEvent('astrift:account-profile',{detail:null}))}
 async function checkSession(){if(!session||!navigator.onLine)return;const current=session;try{await accountApi('account/check',current)}catch(error){if(error.message==='登录已失效'&&session===current)clearSession()}}
+export const saveAccountNow=()=>syncCloud();
 async function syncCloud(){
   if(!session||saving||!navigator.onLine)return;
   const snapshot=localSave(),serial=JSON.stringify(snapshot);if(serial===lastUploaded)return;

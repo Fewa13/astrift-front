@@ -3,6 +3,8 @@ import { potionDamageMultiplier, potionSpeedMultiplier, potionIncomingMultiplier
 import { AUTHORITY_JOBS, AUTHORITY_SKILLS, AUTHORITY_DESCRIPTIONS, isAuthorityJob } from "./ancient-authority.js";
 import { ARTIFACT_COMBAT } from "./ancient-artifacts.js";
 import { bossFormStats } from "./ancient-boss-cards.js";
+const VOID_HURT_HASTE = { chance: 0.25, multiplier: 1.2, duration: 3e3 };
+const BOSS_BOOK_DROP = { extraChance: 0.3, guaranteedLevelGap: 5 };
 const PROFESSIONS = {
   shadowblade: { name: "\u5F71\u5203\u884C\u8005", en: "Shadowblade", icon: "\u25C8", skills: ["shadowstep", "shadowreturn", "nightfall", "riftblade"] },
   stonewright: { name: "\u5CA9\u94F8\u5E08", en: "Stonewright", icon: "\u2B1F", skills: ["faultline", "stoneprison", "mountainfall", "stonefist"] },
@@ -281,7 +283,7 @@ function skillDamageMultiplier(a, now = Date.now()) {
 }
 function skillSpeedMultiplier(a, now = Date.now()) {
   const t = activeSkill(a, "transform", now), h = activeSkill(a, "haste", now);
-  return (1 - ((a.pvpEffects?.slowUntil || 0) > now ? a.pvpEffects?.slow || 0 : 0)) * potionSpeedMultiplier(a, now) * ((a.pvpEffects?.timeDistortion?.until || 0) > now ? 0 : 1) * (activeSkill(a, "lifeAnchorBuff", now) ? 1.2 : 1) * (activeSkill(a, "riftDomain", now) ? 1.2 : 1) * (activeSkill(a, "swordEmpower", now) ? 1.2 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 5e-3 : 1) * (activeSkill(a, "elementStorm", now) ? 1.2 : 1) * (activeSkill(a, "spiritAscendant", now) ? 1.2 : 1) * (activeSkill(a, "shadowStride", now) ? 1.25 : 1) * (activeSkill(a, "voiddomain", now) ? 1.3 : 1) * (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
+  return (activeSkill(a, "voidHurtHaste", now) ? VOID_HURT_HASTE.multiplier : 1) * (1 - ((a.pvpEffects?.slowUntil || 0) > now ? a.pvpEffects?.slow || 0 : 0)) * potionSpeedMultiplier(a, now) * ((a.pvpEffects?.timeDistortion?.until || 0) > now ? 0 : 1) * (activeSkill(a, "lifeAnchorBuff", now) ? 1.2 : 1) * (activeSkill(a, "riftDomain", now) ? 1.2 : 1) * (activeSkill(a, "swordEmpower", now) ? 1.2 + Math.min(100, activeSkill(a, "swordEmpower", now)) * 5e-3 : 1) * (activeSkill(a, "elementStorm", now) ? 1.2 : 1) * (activeSkill(a, "spiritAscendant", now) ? 1.2 : 1) * (activeSkill(a, "shadowStride", now) ? 1.25 : 1) * (activeSkill(a, "voiddomain", now) ? 1.3 : 1) * (activeSkill(a, "nightfall", now) ? 1.3 : 1) * (1 + activeSkill(a, "rage", now) * 0.2) * (t ? 1 + Math.min(0.4, 0.1 + 0.02 * t) : 1) * (h ? 1 + Math.min(0.4, 0.15 + 0.02 * h) : 1) * (1 + (bossFormStats(a, now)?.speed || 0));
 }
 function skillFireMultiplier(a, now = Date.now()) {
   const h = activeSkill(a, "haste", now);
@@ -298,29 +300,37 @@ function skillHealth(a, base, now) {
   a.maxHp = Math.floor(base * (1 + activeSkill(a, "vitality", now) * 0.03 + (t ? Math.min(1, 0.2 + 0.04 * t) : 0)) * (1 + (bossFormStats(a, now)?.health || 0)) * (activeSkill(a, "bloodSacrifice", now) ? 0.7 : 1));
   a.hp = Math.min(a.hp, a.maxHp);
 }
-function skillDrops(kind, random = Math.random, job) {
+function skillDrops(kind, random = Math.random, job, monsterLevel = 0, playerLevel = 0) {
   const boss = kind === "buried_marshal" || kind === "hourglass_regent" || kind === "sky_sovereign" || kind === "thunder_warden" || kind === "frost_crowned" || kind === "furnace_regent" || kind === "starbound_heart" || kind === "immaculate_judge" || kind === "blight_lord" || kind === "oathknight" || kind === "emptyking" || kind === "chief" || kind === "lord" || kind === "rootwarden" || ["metal", "wood", "water", "fire", "earth"].some((e) => kind === "crystal_" + e);
   if (!boss) return {};
   const ids = Object.keys(SKILLS).filter(hasSkillBook);
   const weight = (id) => SKILLS[id].job === job ? 2 : 1;
-  let roll = random() * ids.reduce((sum, id) => sum + weight(id), 0);
-  let selected = ids[ids.length - 1];
-  for (const id of ids) {
-    roll -= weight(id);
-    if (roll < 0) {
-      selected = id;
-      break;
+  const drops = {};
+  const count = monsterLevel >= playerLevel + BOSS_BOOK_DROP.guaranteedLevelGap ? 2 : random() < BOSS_BOOK_DROP.extraChance ? 2 : 1;
+  for (let n = 0; n < count; n++) {
+    let roll = random() * ids.reduce((sum, id) => sum + weight(id), 0);
+    let selected = ids[ids.length - 1];
+    for (const id of ids) {
+      roll -= weight(id);
+      if (roll < 0) {
+        selected = id;
+        break;
+      }
     }
+    const key = skillBook(selected);
+    drops[key] = (drops[key] || 0) + 1;
   }
-  return { [skillBook(selected)]: 1 };
+  return drops;
 }
 export {
+  BOSS_BOOK_DROP,
   ELEMENTAL_IMPACTS,
   FUSION_SKILLS,
   FUSION_SKILL_REQUIREMENT,
   PROFESSIONS,
   PROFESSION_FUSIONS,
   SKILLS,
+  VOID_HURT_HASTE,
   activeSkill,
   curseHitMultiplier,
   ensureBasicSkills,

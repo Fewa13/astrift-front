@@ -1,3 +1,4 @@
+import {mergeTutorialProgress} from './onboarding-progress';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {DurableObject} from 'cloudflare:workers';
 import {rankDelta,seasonLevel,seasonStepCost} from './ranked-rules';
@@ -5,6 +6,7 @@ import {contentIssue} from './content-safety';
 import {TOWER_KING_SKIN,TOWER_WEEK_MS,towerWeekStart} from './survival-ranking-rules';
 
 const KEYS=new Set([
+  'astrift.onboarding.v2','astrift.hud.fps.v2','astrift.hud.ancient.v2',
   'astrift.extraction.v1',
   'astrift.callsign','astrift.weaponBuilds.v1','astrift.weaponSlots.v1','astrift.sidearm.v1',
   'astrift.equipment.v1','astrift.skins.v1','astrift.knifeSkins.v1','astrift.keybinds.v1',
@@ -163,7 +165,7 @@ export class PlayerAccount extends DurableObject<Env>{
     return result;
   }
   async read(token:string,device:string){if(!await this.validate(token,device))return null;const row=this.row();return row?this.profile(row):null}
-  async saveSnapshot(token:string,device:string,raw:unknown){if(!await this.validate(token,device))return {ok:false,error:'请重新登录'};const row=this.row();if(!row)return {ok:false,error:'账号不存在'};const data=cleanSnapshot(raw,row.name);if(!data)return {ok:false,error:'存档格式无效'};this.ctx.storage.sql.exec('UPDATE account SET snapshot=? WHERE id=1',JSON.stringify(data));return {ok:true}}
+  async saveSnapshot(token:string,device:string,raw:unknown){if(!await this.validate(token,device))return {ok:false,error:'请重新登录'};const row=this.row();if(!row)return {ok:false,error:'账号不存在'};const data=cleanSnapshot(raw,row.name);if(!data)return {ok:false,error:'存档格式无效'};const prior=JSON.parse(row.snapshot);data['astrift.onboarding.v2']=mergeTutorialProgress(prior['astrift.onboarding.v2'],data['astrift.onboarding.v2']);this.ctx.storage.sql.exec('UPDATE account SET snapshot=? WHERE id=1',JSON.stringify(data));return {ok:true}}
   async logout(token:string,device:string){if(/^[a-f0-9]{64}$/i.test(token)&&/^([0-9a-f-]{36})$/i.test(device)){const hash=await digest(token),row=this.row();if(row)await this.registry().release(row.name.toLowerCase(),device,hash);this.ctx.storage.sql.exec('DELETE FROM sessions WHERE token_hash=?',hash)}return {ok:true}}
   recordResult(matchId:string,won:boolean,deaths:number){
     const row=this.row();if(!row||!/^([a-z0-9:-]){10,100}$/i.test(matchId))return null;

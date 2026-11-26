@@ -10,7 +10,7 @@ function mergeCommunityDraft(base, local, remote, preferLocal = () => true) {
     }
     return mine;
   };
-  for (const key of ["name", "boundary", "spawn", "sky", "skyArt", "code", "npcs", "rules", "visibility"]) map[key] = structuredClone(choose(base[key], local[key], remote[key], key));
+  for (const key of ["name", "boundary", "spawn", "sky", "skyArt", "code", "npcs", "rules", "visibility", "v2"]) map[key] = structuredClone(choose(base[key], local[key], remote[key], key));
   for (const key of ["objects", "spawns"]) {
     const b = new Map(base[key].map((o) => [o.id, o])), l = new Map(local[key].map((o) => [o.id, o])), r = new Map(remote[key].map((o) => [o.id, o])), out = [];
     for (const id of /* @__PURE__ */ new Set([...r.keys(), ...l.keys(), ...b.keys()])) {
@@ -34,7 +34,7 @@ function mergeCommunityDraft(base, local, remote, preferLocal = () => true) {
 }
 function communityChangedFields(base, next) {
   const keys = [];
-  for (const key of ["name", "boundary", "spawn", "sky", "skyArt", "code", "npcs", "rules", "visibility"]) if (!equal(base[key], next[key])) keys.push(key);
+  for (const key of ["name", "boundary", "spawn", "sky", "skyArt", "code", "npcs", "rules", "visibility", "v2"]) if (!equal(base[key], next[key])) keys.push(key);
   for (const key of ["objects", "spawns"]) {
     const b = new Map(base[key].map((o) => [o.id, o])), n = new Map(next[key].map((o) => [o.id, o]));
     for (const id of /* @__PURE__ */ new Set([...b.keys(), ...n.keys()])) {

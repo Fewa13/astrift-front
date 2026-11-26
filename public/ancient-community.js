@@ -1,12 +1,14 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+import { PROCEDURAL_MODELS } from "./ancient-community-procedural.js";
+import { cleanComponents, cleanCommunityV2, communityPoses, rotateComponentPoint, areaContains } from "./ancient-community-v2.js";
 import { COMMUNITY_CATALOG, communityCatalogTier } from "./ancient-community-catalog.js";
 import { compileMapScript, cleanMapNPCs } from "./ancient-map-script.js";
 import { communityModelParts } from "./ancient-community-models.js";
 import { COMMUNITY_HULLS, TORUS_TRIANGLES, TORUS_BINS } from "./ancient-community-hulls.js";
-const MAP_LIMITS = { 1: { area: 1e4, spawns: 30, bosses: 1, level: 80, bossLevel: 49, objects: 200 }, 2: { area: 4e4, spawns: 80, bosses: 3, level: 150, bossLevel: 150, objects: 600 }, 3: { area: 9e4, spawns: 250, bosses: 6, level: 300, bossLevel: 300, objects: 1200 } };
+const MAP_LIMITS = { 1: { area: 1e4, spawns: 250, bosses: 6, level: 300, bossLevel: 300, objects: 1200 }, 2: { area: 4e4, spawns: 250, bosses: 6, level: 300, bossLevel: 300, objects: 1200 }, 3: { area: 9e4, spawns: 250, bosses: 6, level: 300, bossLevel: 300, objects: 1200 } };
 const BASIC_MODELS = ["box", "sphere", "cylinder", "cone", "wedge", "torus"];
 const families = [["rocks", "\u5CA9\u77F3", "Rock"], ["cliffs", "\u5047\u5C71", "Crag"], ["trees", "\u6811\u6728", "Tree"], ["shrubs", "\u704C\u6728", "Shrub"], ["flowers", "\u82B1\u8349", "Flower"], ["ruins", "\u9057\u8FF9", "Ruin"], ["pillars", "\u77F3\u67F1", "Pillar"], ["arches", "\u62F1\u95E8", "Arch"], ["walls", "\u56F4\u5899", "Wall"], ["fences", "\u6805\u680F", "Fence"], ["crystals", "\u6C34\u6676", "Crystal"], ["lanterns", "\u706F\u9970", "Lantern"], ["statues", "\u96D5\u50CF", "Statue"], ["camp", "\u8425\u5730", "Camp"], ["bridges", "\u6865\u6881", "Bridge"]];
-const COMMUNITY_MODELS = [...COMMUNITY_CATALOG, ...BASIC_MODELS.map((id) => ({ id, category: "basic", name: { box: "\u65B9\u5757", sphere: "\u7403\u4F53", cylinder: "\u5706\u67F1", cone: "\u5706\u9525", wedge: "\u659C\u5761", torus: "\u5706\u73AF" }[id], en: id })), ...families.flatMap(([category, zh, en]) => Array.from({ length: 40 }, (_, i) => ({ id: `${category}-${i + 1}`, category, name: `${zh} ${i + 1}`, en: `${en} ${i + 1}` }))), { id: "mirror", category: "interactive", name: "\u53CD\u5C04\u955C", en: "Reflecting mirror", size: [2, 3, 0.22] }, ...[["lightSource", "\u5149\u6E90", "Light emitter", [1, 3, 1]], ["lightReceiver", "\u5149\u7EBF\u63A5\u6536\u5668", "Light receiver", [1.5, 3, 1]], ["lightGate", "\u5149\u63A7\u673A\u5173\u95E8", "Light gate", [4, 4, 0.7]]].map(([id, name, en, size]) => ({ id, category: "interactive", name, en, size }))];
+const COMMUNITY_MODELS = [...PROCEDURAL_MODELS, ...COMMUNITY_CATALOG, ...BASIC_MODELS.map((id) => ({ id, category: "basic", name: { box: "\u65B9\u5757", sphere: "\u7403\u4F53", cylinder: "\u5706\u67F1", cone: "\u5706\u9525", wedge: "\u659C\u5761", torus: "\u5706\u73AF" }[id], en: id })), ...families.flatMap(([category, zh, en]) => Array.from({ length: 40 }, (_, i) => ({ id: `${category}-${i + 1}`, category, name: `${zh} ${i + 1}`, en: `${en} ${i + 1}` }))), { id: "mirror", category: "interactive", name: "\u53CD\u5C04\u955C", en: "Reflecting mirror", size: [2, 3, 0.22] }, ...[["lightSource", "\u5149\u6E90", "Light emitter", [1, 3, 1]], ["lightReceiver", "\u5149\u7EBF\u63A5\u6536\u5668", "Light receiver", [1.5, 3, 1]], ["lightGate", "\u5149\u63A7\u673A\u5173\u95E8", "Light gate", [4, 4, 0.7]]].map(([id, name, en, size]) => ({ id, category: "interactive", name, en, size }))];
 function communityModelTier(id) {
   if (["mirror", "lightSource", "lightReceiver", "lightGate"].includes(id)) return 3;
   if (BASIC_MODELS.includes(id)) return 1;
@@ -16,11 +18,13 @@ function communityModelTier(id) {
 }
 const communityId = (map) => typeof map === "string" && /^community:[1-9]\d{0,7}$/.test(map) ? Number(map.slice(10)) : 0;
 const navigation = /* @__PURE__ */ new Map();
+const staticColliderCache = /* @__PURE__ */ new Map();
 const maps = /* @__PURE__ */ new Map(), indices = /* @__PURE__ */ new Map();
 function nearby(map, x, z) {
+  refreshCommunityMotion(map);
   return indices.get(map)?.get(Math.floor(x / 16) + "," + Math.floor(z / 16)) || [];
 }
-function setCommunityMap(map) {
+function indexCommunityMap(map) {
   const key = "community:" + map.id;
   if (maps.get(key) === map) return;
   if (maps.size >= 8 && !maps.has(key)) {
@@ -28,13 +32,15 @@ function setCommunityMap(map) {
     maps.delete(oldest);
     indices.delete(oldest);
     navigation.delete(oldest);
+    motionSources.delete(oldest);
+    motionTimes.delete(oldest);
   }
   maps.set(key, map);
   navigation.delete(key);
-  const index = /* @__PURE__ */ new Map();
-  for (const o of map.objects.filter((o2) => o2.solid !== false && !o2.scriptHidden && (!o2.scriptOpen || o2.model === "lightGate"))) for (const p of communityModelParts(o.model)) {
+  const source = motionSources.get(key) || map, byId = new Map([...source.v2?.groups || [], ...source.objects].map((o) => [o.id, o])), moving = (o) => !!o.components?.motions?.some((m) => m.enabled !== false) || !!o.parentId && !!byId.get(o.parentId) && moving(byId.get(o.parentId)), cached = staticColliderCache.get(key), reuse = cached?.source === source, index = reuse ? new Map([...cached.index].map(([k, v]) => [k, [...v]])) : /* @__PURE__ */ new Map();
+  for (const o of map.objects.filter((o2) => (!reuse || moving(o2)) && o2.solid !== false && !o2.scriptHidden && (!o2.scriptOpen || o2.model === "lightGate"))) for (const p of communityModelParts(o.model, o.parameters)) {
     if (o.model === "lightGate" && o.scriptOpen && p.w < 0.1) continue;
-    const r = o.rotation, dx = p.x * o.w, dz = p.z * o.d, c = { id: o.id, shape: p.shape, stair: p.stair, x: o.x + Math.cos(r) * dx - Math.sin(r) * dz, y: o.y + p.y * o.h, z: o.z + Math.sin(r) * dx + Math.cos(r) * dz, w: p.w * o.w, h: p.h * o.h, d: p.d * o.d, rotation: -r + p.ry }, radius = Math.hypot(c.w, c.d) / 2 + 2;
+    const r = o.rotation, offset = rotateComponentPoint({ x: p.x * o.w, y: p.y * o.h, z: p.z * o.d }, o.rx || 0, -r, o.rz || 0), c = { id: o.id, shape: p.shape, stair: p.stair, x: o.x + offset.x, y: o.y + offset.y, z: o.z + offset.z, w: p.w * o.w, h: p.h * o.h, d: p.d * o.d, rotation: -r + p.ry, rx: o.rx, rz: o.rz, layers: o.components?.collision?.layers }, radius = Math.hypot(c.w, c.h, c.d) / 2 + 2;
     for (let x = Math.floor((c.x - radius) / 16); x <= Math.floor((c.x + radius) / 16); x++) for (let z = Math.floor((c.z - radius) / 16); z <= Math.floor((c.z + radius) / 16); z++) {
       const k = x + "," + z;
       if (!index.has(k)) index.set(k, []);
@@ -42,8 +48,52 @@ function setCommunityMap(map) {
     }
   }
   indices.set(key, index);
+  if (!reuse) {
+    const stable = /* @__PURE__ */ new Map();
+    for (const [k, v] of index) {
+      const entries = v.filter((c) => !moving(byId.get(c.id)));
+      if (entries.length) stable.set(k, entries);
+    }
+    if (staticColliderCache.size >= 8) staticColliderCache.delete(staticColliderCache.keys().next().value);
+    staticColliderCache.set(key, { source, index: stable });
+  }
 }
-const getCommunityMap = (id) => maps.get(id);
+const motionSources = /* @__PURE__ */ new Map(), motionTimes = /* @__PURE__ */ new Map();
+function setCommunityMap(map) {
+  const key = "community:" + map.id;
+  if (motionSources.get(key) !== map || !maps.has(key)) {
+    motionSources.set(key, map);
+    motionTimes.delete(key);
+    indexCommunityMap({ ...map, objects: communityPoses(map.objects, map.v2?.groups || [], 0) });
+  }
+}
+function refreshCommunityMotion(key, time = Date.now() / 1e3) {
+  const source = motionSources.get(key);
+  if (!source || !source.objects.some((o) => o.components?.motions?.length) && !source.v2?.groups.some((o) => o.components?.motions?.length)) return;
+  const tick = Math.floor(time * 10);
+  if (motionTimes.get(key) === tick) return;
+  motionTimes.set(key, tick);
+  indexCommunityMap({ ...source, objects: communityPoses(source.objects, source.v2?.groups || [], tick / 10 - (source.v2?.epoch || 0) / 1e3) });
+}
+const getCommunitySource = (id) => motionSources.get(id);
+const getCommunityMap = (id) => {
+  refreshCommunityMotion(id);
+  return maps.get(id);
+};
+function communityPlatformCarry(map, p, from, to) {
+  const source = motionSources.get(map);
+  if (!source) return { x: 0, y: 0, z: 0 };
+  const a = communityPoses(source.objects, source.v2?.groups || [], from - (source.v2?.epoch || 0) / 1e3), b = communityPoses(source.objects, source.v2?.groups || [], to - (source.v2?.epoch || 0) / 1e3);
+  for (let i = 0; i < a.length; i++) {
+    const o = a[i];
+    if (o.components?.collision?.mode !== "platform" || o.components.collision.layers && !o.components.collision.layers.includes("player")) continue;
+    const top = o.y + Math.max(...communityModelParts(o.model, o.parameters).map((part) => part.y + part.h / 2)) * o.h;
+    if (Math.abs(p.y - top) > 0.35 || Math.abs(p.x - o.x) > o.w / 2 + 0.4 || Math.abs(p.z - o.z) > o.d / 2 + 0.4) continue;
+    const r = b[i].rotation - o.rotation, dx = p.x - o.x, dz = p.z - o.z;
+    return { x: b[i].x + dx * Math.cos(r) - dz * Math.sin(r) - p.x, y: b[i].y - o.y, z: b[i].z + dx * Math.sin(r) + dz * Math.cos(r) - p.z };
+  }
+  return { x: 0, y: 0, z: 0 };
+}
 function polygonArea(points) {
   return Math.abs(points.reduce((s, p, i) => {
     const q = points[(i + 1) % points.length];
@@ -67,6 +117,25 @@ function local(o, x, z) {
   return { x: dx * c - dz * s, z: dx * s + dz * c };
 }
 function column(o, x, z, r = 0) {
+  if (o.rx || o.rz) {
+    const origins = r ? [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]] : [[0, 0]], segments2 = [];
+    for (const [dx, dz] of origins) {
+      const a = rotateComponentPoint({ x: x + dx - o.x, y: -o.y, z: z + dz - o.z }, o.rx || 0, o.rotation, o.rz || 0, true), b = rotateComponentPoint({ x: 0, y: 1, z: 0 }, o.rx || 0, o.rotation, o.rz || 0, true);
+      let low = -Infinity, high = Infinity;
+      for (const [nx, ny, nz, d] of COMMUNITY_HULLS[o.shape] || COMMUNITY_HULLS.box) {
+        const start = nx * a.x / o.w + ny * a.y / o.h + nz * a.z / o.d, delta = nx * b.x / o.w + ny * b.y / o.h + nz * b.z / o.d;
+        if (Math.abs(delta) < 1e-9) {
+          if (start > d) {
+            low = Infinity;
+            break;
+          }
+        } else if (delta > 0) high = Math.min(high, (d - start) / delta);
+        else low = Math.max(low, (d - start) / delta);
+      }
+      if (low <= high) segments2.push([low, high]);
+    }
+    return segments2;
+  }
   let p = local(o, x, z);
   if (Math.abs(p.x) > o.w / 2 + r || Math.abs(p.z) > o.d / 2 + r) return [];
   if (r) {
@@ -105,10 +174,11 @@ function column(o, x, z, r = 0) {
   }
   return segments.map(([low, high]) => [o.y + low * o.h, o.y + high * o.h]);
 }
-function communityHeight(map, x, z, feet = 0) {
+function communityHeight(map, x, z, feet = 0, layer = "player") {
   let y = 0;
   for (const o of nearby(map, x, z)) {
-    if (o.y - o.h / 2 > feet + 0.5) continue;
+    if (o.layers && !o.layers.includes(layer)) continue;
+    if (!o.rx && !o.rz && o.y - o.h / 2 > feet + 0.5) continue;
     for (const [, top] of column(o, x, z)) if (top <= feet + 0.5) y = Math.max(y, top);
   }
   return y;
@@ -116,27 +186,30 @@ function communityHeight(map, x, z, feet = 0) {
 function communityPlayerHeight(map, x, z, feet = 0, stepUp = 0.5) {
   let y = communityHeight(map, x, z, feet + stepUp - 0.5);
   for (const o of nearby(map, x, z)) {
-    if (o.stair || o.y - o.h / 2 > feet + 0.025) continue;
+    if (o.layers && !o.layers.includes("player")) continue;
+    if (o.stair || !o.rx && !o.rz && o.y - o.h / 2 > feet + 0.025) continue;
     for (const [, top] of column(o, x, z, 0.61)) if (top <= feet + 0.025) y = Math.max(y, top);
   }
   return y;
 }
 function communityCeiling(map, x, z, previousEye) {
   let ceiling = Infinity;
-  for (const o of nearby(map, x, z)) for (const [bottom] of column(o, x, z)) if (bottom >= previousEye - 0.02) ceiling = Math.min(ceiling, bottom);
+  for (const o of nearby(map, x, z).filter((o2) => !o2.layers || o2.layers.includes("player"))) for (const [bottom] of column(o, x, z)) if (bottom >= previousEye - 0.02) ceiling = Math.min(ceiling, bottom);
   return ceiling;
 }
-function communityBlocked(map, x, z, r = 0.6, feet = 0) {
+function communityBlocked(map, x, z, r = 0.6, feet = 0, layer = "player") {
+  refreshCommunityMotion(map);
   const m = maps.get(map);
   if (!m || !Number.isFinite(x + z) || !insideBoundary(m.boundary, x, z, r)) return true;
-  return nearby(map, x, z).some((o) => o.y + o.h / 2 > feet + (o.stair ? 0.65 : 0.45) && o.y - o.h / 2 < feet + 1.7 && column(o, x, z, r).some(([bottom, top]) => feet < top - (o.stair ? 0.65 : 0.45) && feet + 1.7 > bottom + 0.02));
+  if (m.v2?.areas.some((a) => a.enabled !== false && a.type === "invisibleWall" && (!a.targets || a.targets.includes(layer)) && areaContains(a, { x, y: feet + 0.85, z }))) return true;
+  return nearby(map, x, z).some((o) => (!o.layers || o.layers.includes(layer)) && (o.rx || o.rz || o.y + o.h / 2 > feet + (o.stair ? 0.65 : 0.45) && o.y - o.h / 2 < feet + 1.7) && column(o, x, z, r).some(([bottom, top]) => feet < top - (o.stair ? 0.65 : 0.45) && feet + 1.7 > bottom + 0.02));
 }
 function communityClear(map, ax, ay, az, bx, by, bz, ignore = []) {
   if (!maps.has(map)) return false;
   const candidates = /* @__PURE__ */ new Set(), steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 4));
   for (let i = 0; i <= steps; i++) for (const c of nearby(map, ax + (bx - ax) * i / steps, az + (bz - az) * i / steps)) candidates.add(c);
-  return ![...candidates].filter((o) => !ignore.includes(o.id)).some((o) => {
-    const a = local(o, ax, az), b = local(o, bx, bz), from = [a.x / o.w, (ay - o.y) / o.h, a.z / o.d], to = [b.x / o.w, (by - o.y) / o.h, b.z / o.d];
+  return ![...candidates].filter((o) => !ignore.includes(o.id) && (!o.layers || o.layers.includes("projectile"))).some((o) => {
+    const a = rotateComponentPoint({ x: ax - o.x, y: ay - o.y, z: az - o.z }, o.rx || 0, o.rotation, o.rz || 0, true), b = rotateComponentPoint({ x: bx - o.x, y: by - o.y, z: bz - o.z }, o.rx || 0, o.rotation, o.rz || 0, true), from = [a.x / o.w, a.y / o.h, a.z / o.d], to = [b.x / o.w, b.y / o.h, b.z / o.d];
     let lo = 0, hi = 1;
     const hull = COMMUNITY_HULLS[o.shape] || COMMUNITY_HULLS.box;
     for (const [nx, ny, nz, d] of hull) {
@@ -177,21 +250,22 @@ function cleanCommunityMap(raw, tier, id, owner) {
     usedIds.add(id2);
     return id2;
   };
-  const objects = a.objects.map((o, i) => {
-    if (!COMMUNITY_MODELS.some((m) => m.id === o.model) || communityModelTier(o.model) > tier) throw Error("Model requires a higher map tier");
+  const objects = a.objects.map((input, i) => {
+    const t = input.transform, o = { ...input, model: input.model || input.type || "", x: t?.position?.x ?? input.x, y: t?.position?.y ?? input.y, z: t?.position?.z ?? input.z, w: t?.scale?.x ?? input.w, h: t?.scale?.y ?? input.h, d: t?.scale?.z ?? input.d, rotation: t?.rotation?.y ?? input.rotation ?? 0, rx: t?.rotation?.x ?? input.rx ?? 0, rz: t?.rotation?.z ?? input.rz ?? 0 };
+    if (!COMMUNITY_MODELS.some((m) => m.id === o.model)) throw Error("Model requires a higher map tier");
     const p = point(o);
     if (!insideBoundary(boundary, p.x, p.z)) throw Error("Object outside boundary");
-    return { id: entityId(o.id, "o" + i), model: o.model, ...p, y: number(o.y, 0, 500), w: number(o.w, 5e-3, 60, 1e3), h: number(o.h, 5e-3, 60, 1e3), d: number(o.d, 5e-3, 60, 1e3), rotation: number(o.rotation, -100, 100), color: color(o.color), solid: true, ...tier === 3 && o.model === "lightReceiver" && typeof o.opticsTarget === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(o.opticsTarget) ? { opticsTarget: o.opticsTarget } : {}, ...tier === 3 && typeof o.group === "string" ? { group: o.group.slice(0, 40) } : {} };
+    return { id: entityId(o.id, "o" + i), model: o.model, name: String(o.name || "").trim().slice(0, 80), ...p, y: number(o.y, 0, 500), w: number(o.w, 5e-3, 60, 1e3), h: number(o.h, 5e-3, 60, 1e3), d: number(o.d, 5e-3, 60, 1e3), rotation: number(o.rotation, -100, 100), rx: number(o.rx ?? 0, -100, 100), rz: number(o.rz ?? 0, -100, 100), color: color(o.color), solid: !["none", "trigger"].includes(o.components?.collision?.mode || "static"), parameters: o.parameters ? Object.fromEntries(Object.entries(o.parameters).slice(0, 16).map(([k, v]) => [k, k === "text" ? String(v).slice(0, 100) : k === "color" ? color(v) : number(v, 5e-3, 100)])) : void 0, locked: o.locked === true, components: cleanComponents(o.components), ...typeof o.parentId === "string" ? { parentId: o.parentId } : {}, ...o.model === "lightReceiver" && typeof o.opticsTarget === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(o.opticsTarget) ? { opticsTarget: o.opticsTarget } : {}, ...typeof o.group === "string" ? { group: o.group.slice(0, 40) } : {} };
   });
   if (objects.filter((o) => o.model === "lightSource").length > 16 || objects.filter((o) => o.model === "lightReceiver").length > 32 || objects.filter((o) => o.model === "lightGate").length > 32) throw Error("Light mechanism limit: 16 sources, 32 receivers, 32 gates");
   if (objects.filter((o) => o.model === "mirror").length > 24) throw Error("At most 24 interactive mirrors");
   const spawns = a.spawns.map((s, i) => {
     const p = point(s);
     if (!insideBoundary(boundary, p.x, p.z, 2) || Math.hypot(p.x - spawn.x, p.z - spawn.z) < 12) throw Error("Monsters must be at least 12m from spawn");
-    return { id: entityId(s.id, "s" + i), kind: String(s.kind).slice(0, 40), level: number(s.level, 1, s.boss ? limit.bossLevel : limit.level), boss: s.boss === true, ...p, y: s.y === void 0 ? void 0 : number(s.y, 0, 500, 1e3) };
+    return { id: entityId(s.id, "s" + i), enabled: s.enabled !== false, count: number(s.count ?? 1, 1, 20, 1), maximumAlive: number(s.maximumAlive ?? 1, 1, 20, 1), radius: number(s.radius ?? 0, 0, 30), respawn: number(s.respawn ?? 30, 3, 3600), delay: number(s.delay ?? 0, 0, 3600), aggro: number(s.aggro ?? 30, 5, 80), leash: number(s.leash ?? 60, 10, 120), wave: String(s.wave || "").slice(0, 40), condition: String(s.condition || "").slice(0, 80), patrol: Array.isArray(s.patrol) ? s.patrol.slice(0, 64).map(point) : [], pool: Array.isArray(s.pool) ? s.pool.slice(0, 16).map((x) => String(x).slice(0, 40)) : [], kind: String(s.kind).slice(0, 40), level: number(s.level, 1, s.boss ? limit.bossLevel : limit.level), boss: s.boss === true, ...p, y: s.y === void 0 ? void 0 : number(s.y, 0, 500, 1e3) };
   });
   if (spawns.filter((s) => s.boss).length > limit.bosses || spawns.some((s) => !Number.isInteger(s.level))) throw Error("Boss or level limit exceeded");
-  const result = { id, owner, tier, name: String(a.name || "").trim().slice(0, 48) || "Untitled", boundary, spawn, sky: tier > 1 ? color(a.sky) : "#93b4c2", skyArt: tier === 3 && Array.isArray(a.skyArt) ? a.skyArt.slice(0, 128).map((o) => ({ x: number(o.x, 0, 1), y: number(o.y, 0, 1), r: number(o.r, 5e-3, 0.5), color: color(o.color) })) : [], objects, spawns, revision: 0, visibility: a.visibility === "unlisted" ? "unlisted" : "public", rules: { disableSkills: a.rules?.disableSkills === true, disableWeapons: a.rules?.disableWeapons === true } };
+  const result = { id, owner, tier, name: String(a.name || "").trim().slice(0, 48) || "Untitled", boundary, spawn, sky: color(a.sky), skyArt: Array.isArray(a.skyArt) ? a.skyArt.slice(0, 128).map((o) => ({ x: number(o.x, 0, 1), y: number(o.y, 0, 1), r: number(o.r, 5e-3, 0.5), color: color(o.color) })) : [], objects, spawns, revision: 0, visibility: a.visibility === "unlisted" ? "unlisted" : "public", rules: { disableSkills: a.rules?.disableSkills === true, disableWeapons: a.rules?.disableWeapons === true } };
   const code = typeof a.code === "string" ? a.code : "";
   const program = compileMapScript(code), npcs = cleanMapNPCs(a.npcs, tier, program.items);
   for (const n of npcs) {
@@ -201,7 +275,9 @@ function cleanCommunityMap(raw, tier, id, owner) {
   }
   if (code) result.code = code;
   if (npcs.length) result.npcs = npcs;
-  const previous = maps.get("community:" + id);
+  result.v2 = cleanCommunityV2(a.v2, objects, spawns.map((s) => s.id));
+  if (result.v2.areas.some((area2) => area2.enabled !== false && ["kill", "damage", "invisibleWall"].includes(area2.type) && areaContains(area2, { x: spawn.x, y: 0.85, z: spawn.z }))) throw Error("Player spawn is inside a harmful or blocked area");
+  const previous = motionSources.get("community:" + id) || maps.get("community:" + id);
   try {
     setCommunityMap(result);
     for (const s of spawns) if (s.y === void 0) s.y = communityHeight("community:" + id, s.x, s.z, 0);
@@ -216,17 +292,17 @@ function cleanCommunityMap(raw, tier, id, owner) {
   }
   return result;
 }
-function communityLineWalk(map, ax, az, bx, bz, r = 1, feet = 0) {
+function communityLineWalk(map, ax, az, bx, bz, r = 1, feet = 0, layer = "player") {
   const count = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 0.3));
   for (let i = 1; i <= count; i++) {
-    const x = ax + (bx - ax) * i / count, z = az + (bz - az) * i / count, next = communityHeight(map, x, z, feet);
-    if (Math.abs(next - feet) > 0.55 || communityBlocked(map, x, z, r, next)) return false;
+    const x = ax + (bx - ax) * i / count, z = az + (bz - az) * i / count, next = communityHeight(map, x, z, feet, layer);
+    if (Math.abs(next - feet) > 0.55 || communityBlocked(map, x, z, r, next, layer)) return false;
     feet = next;
   }
   return true;
 }
 function communityRoute(map, ax, az, bx, bz, now = Date.now(), feet = 0) {
-  const walk = (ax2, az2, bx2, bz2) => communityLineWalk(map, ax2, az2, bx2, bz2, feet ? 0.65 : 1, feet);
+  const walk = (ax2, az2, bx2, bz2) => communityLineWalk(map, ax2, az2, bx2, bz2, feet ? 0.65 : 1, feet, "monster");
   const source = maps.get(map), result = (points = [], deferred = false, expanded2 = 0, cached2 = false) => ({ points: points.map((p) => ({ ...p })), deferred, expanded: expanded2, cached: cached2 });
   if (!source || ![ax, az, bx, bz].every(Number.isFinite)) return result();
   if (walk(ax, az, bx, bz)) return result([{ x: bx, z: bz }]);
@@ -244,7 +320,7 @@ function communityRoute(map, ax, az, bx, bz, now = Date.now(), feet = 0) {
     const k = key(x, z);
     let open = state.open.get(k);
     if (open === void 0) {
-      open = Math.abs(communityHeight(map, x * cell, z * cell, feet) - feet) <= 0.55 && !communityBlocked(map, x * cell, z * cell, feet ? 0.65 : 1, feet);
+      open = Math.abs(communityHeight(map, x * cell, z * cell, feet, "monster") - feet) <= 0.55 && !communityBlocked(map, x * cell, z * cell, feet ? 0.65 : 1, feet, "monster");
       if (state.open.size > 24e3) state.open.clear();
       state.open.set(k, open);
     }
@@ -366,10 +442,13 @@ export {
   communityLineWalk,
   communityModelTier,
   communityPath,
+  communityPlatformCarry,
   communityPlayerHeight,
   communityRoute,
   getCommunityMap,
+  getCommunitySource,
   insideBoundary,
   polygonArea,
+  refreshCommunityMotion,
   setCommunityMap
 };
