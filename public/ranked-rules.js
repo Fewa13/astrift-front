@@ -1,4 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+const CURRENT_SEASON = { id: 2, label: "S2" };
 function rankDelta(won, deaths) {
   return won ? 300 + 100 * (10 - Math.max(0, Math.min(10, Math.floor(deaths)))) : -300;
 }
@@ -14,7 +15,7 @@ function seasonLevel(earned) {
     spent += seasonStepCost(level);
   }
   const title = level <= 10 ? "\u9752\u94DC" : level <= 20 ? "\u767D\u94F6" : level <= 30 ? "\u9EC4\u91D1" : level <= 40 ? "\u94BB\u77F3" : level <= 50 ? "\u4F20\u8BF4" : level <= 60 ? "\u795E\u8BDD" : level <= 70 ? "\u8D85\u51E1" : level <= 80 ? "\u6218\u795E" : `\u5DC5\u5CF0${level - 80}\u9636`;
-  return { level, title, progress: total - spent, next: seasonStepCost(level + 1), earned: total };
+  return { id: CURRENT_SEASON.id, label: CURRENT_SEASON.label, level, title, progress: total - spent, next: seasonStepCost(level + 1), earned: total };
 }
 function rankedAiProfile(level, roll) {
   const chance = Math.max(0, Math.min(99, Math.floor(roll)));
@@ -29,6 +30,7 @@ function rankedAiProfile(level, roll) {
   return "masterTop";
 }
 export {
+  CURRENT_SEASON,
   rankDelta,
   rankedAiProfile,
   seasonLevel,

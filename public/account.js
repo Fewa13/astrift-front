@@ -7,6 +7,7 @@ import {diagnosticFetch,apiURL} from './network-diagnostics.js?v=20261111-feedba
 import {createAccountEmailUI,accountEmailError} from './account-email-ui.js';
 const SESSION_KEY='astrift.accountSession.v1';
 const DEVICE_KEY='astrift.accountDevice.v1';
+import {CURRENT_SEASON} from './ranked-rules.js';
 import {SEASON_SKINS} from './skin-system.js?v=20261006-damage-result-3';
 const CLOUD_KEYS=[
   'astrift.onboarding.v2','astrift.hud.fps.v2','astrift.hud.ancient.v2',
@@ -45,11 +46,11 @@ function renderAccount(){
 function renderSeason(){
   if(!$('seasonDetails'))return;
   const panel=$('seasonDetails');panel.replaceChildren();
-  if(!session){panel.textContent='登录账号后可查看 S1 赛季等级和排位分。';return}
+  if(!session){panel.textContent='登录账号后可查看 S2 赛季等级和排位分。';return}
   if(!profile){panel.textContent='正在读取赛季进度…';return}
   const season=profile.season;
   const hero=document.createElement('section');hero.className='seasonHero';
-  const kicker=document.createElement('small');kicker.textContent='当前赛季等级';
+  const kicker=document.createElement('small');kicker.textContent=(season.label||CURRENT_SEASON.label)+' · 当前赛季等级';
   const title=document.createElement('strong');title.textContent=season.title;
   const level=document.createElement('b');level.textContent=`LV. ${season.level}`;
   const points=document.createElement('p');points.textContent=`排位分 ${profile.rankPoints} · 累计成长值 ${season.earned} · 刀皮抽奖 ${profile.knifeDraw?.tickets||0} 次`;
@@ -57,8 +58,8 @@ function renderSeason(){
   const fill=document.createElement('i');fill.style.width=`${Math.min(100,season.progress/season.next*100)}%`;meter.append(fill);
   const progress=document.createElement('small');progress.textContent=`距离 ${season.level+1} 级：${season.progress} / ${season.next} 成长值`;
   hero.append(kicker,title,level,points,meter,progress);
-  const news=document.createElement('section');news.className='seasonNews';news.innerHTML='<h3>战区更新公告</h3><article><time>S1 · 最新</time><b>赛季刀皮抽奖</b><p>每升一级获得一次刀皮抽奖。进入「武器与皮肤 → 相位刃皮肤」抽取或用碎片兑换。</p></article><article><time>S1 · 最新</time><b>赛季奖励领取</b><p>达到对应等级后，在下方亲自领取称号皮肤。</p></article><article><time>S1 · 最新</time><b>相位刃外观重制</b><p>任务、抽奖与活动刀皮拥有不同的刀身轮廓。</p></article>';
-  const rewards=document.createElement('section');rewards.className='seasonRewards';const heading=document.createElement('h3');heading.textContent='赛季奖励领取';rewards.append(heading);
+  const news=document.createElement('section');news.className='seasonNews';news.innerHTML='<h3>战区更新公告</h3><article><time>S2 · 最新</time><b>赛季刀皮抽奖</b><p>每升一级获得一次刀皮抽奖。进入「武器与皮肤 → 相位刃皮肤」抽取或用碎片兑换。</p></article><article><time>S2 · 最新</time><b>赛季奖励领取</b><p>达到对应等级后，在下方亲自领取称号皮肤。</p></article><article><time>S2 · 最新</time><b>S2 赛季开启</b><p>已有段位、成长进度、抽奖次数及皮肤保留；S1皮肤作为典藏奖励继续展示。</p></article>';
+  const rewards=document.createElement('section');rewards.className='seasonRewards';const heading=document.createElement('h3');heading.textContent='S1 典藏奖励领取';rewards.append(heading);
   const claimed=new Set(profile.seasonClaims||[]);
   for(const skin of SEASON_SKINS){
     const row=document.createElement('div');row.className='seasonReward';row.style.setProperty('--reward','#'+skin.accent.toString(16).padStart(6,'0'));

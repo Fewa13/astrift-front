@@ -1,4 +1,6 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+export const CURRENT_SEASON = {id:2,label:'S2'} as const;
+
 export function rankDelta(won:boolean,deaths:number){
   return won?300+100*(10-Math.max(0,Math.min(10,Math.floor(deaths)))):-300;
 }
@@ -13,7 +15,7 @@ export function seasonLevel(earned:number){
   let level=1,spent=0;
   while(level<10000&&spent+seasonStepCost(level+1)<=total){level++;spent+=seasonStepCost(level)}
   const title=level<=10?'青铜':level<=20?'白银':level<=30?'黄金':level<=40?'钻石':level<=50?'传说':level<=60?'神话':level<=70?'超凡':level<=80?'战神':`巅峰${level-80}阶`;
-  return {level,title,progress:total-spent,next:seasonStepCost(level+1),earned:total};
+  return {id:CURRENT_SEASON.id,label:CURRENT_SEASON.label,level,title,progress:total-spent,next:seasonStepCost(level+1),earned:total};
 }
 
 export type RankedAiProfile='advancedPlus'|'master'|'masterLow'|'masterMid'|'masterHigh'|'masterTop';

@@ -17,3 +17,6 @@
 .tournamentRank{display:grid;grid-template-columns:40px 1fr 88px;gap:8px;padding:9px 8px;border-bottom:1px solid #284553;font-size:14px}.tournamentRank span:last-child{text-align:right}.tournamentRank[data-place="1"]{color:#ffd37d}.tournamentRank[data-place="2"]{color:#c4e9ff}.tournamentRank[data-place="3"]{color:#e9ac7d}
 .tournamentAdminPanel{border:1px solid #847353;background:#231c16a8;padding:16px;margin-top:16px}.tournamentAdminPanel[hidden]{display:none}.tournamentAdminPanel form{display:grid;gap:10px}.tournamentAdminPanel label{font-size:12px;letter-spacing:.08em;color:#d7c29b}.tournamentAdminPanel input,.tournamentAdminPanel textarea,.tournamentAdminPanel select{width:100%;margin:6px 0 0;background:#091622;border:1px solid #5d7180;color:white;padding:10px;font:16px Rajdhani,'Noto Sans SC',sans-serif}.tournamentAdminPanel textarea{min-height:110px;resize:vertical}.tournamentAdminButtons{display:flex;flex-wrap:wrap;gap:8px}
 @media(max-width:600px){.tournamentShell{padding:16px}.tournamentHeader h2{font-size:30px}.tournamentRank{grid-template-columns:27px 1fr 64px}}
+
+/* Temporarily remove the tournament entry without deleting event records. */
+#openTournaments[hidden]{display:none!important}

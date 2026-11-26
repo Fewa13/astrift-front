@@ -241,7 +241,7 @@ export function initSkinScreen(models){
       section.append(heading,cards);drawSection.append(section);
     }
     const season=document.createElement('section');season.className='skinsTier seasonSkins';
-    const seasonHeading=document.createElement('h3');seasonHeading.textContent='S1 赛季 · 称号奖励';
+    const seasonHeading=document.createElement('h3');seasonHeading.textContent='S1 典藏 · 称号奖励';
     const seasonNote=document.createElement('small');seasonNote.textContent=seasonLevel?`当前 ${seasonLevel} 级 · 达到等级后去赛季页面领取`:'登录账号后查看赛季奖励';
     const seasonCards=document.createElement('div');seasonCards.className='skinCards';
     for(const skin of SEASON_SKINS){
