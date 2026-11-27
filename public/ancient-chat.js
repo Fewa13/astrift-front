@@ -1,3 +1,5 @@
+import {mobileDevice} from './mobile-ui.js';
+import {setTouchButtonContent} from './touch-icons.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {ancientInputCode,ancientKeyLabel} from './ancient-input-settings.js';
 export function createAncientChat({en,active,connected,send,suspend,resume}){
@@ -13,7 +15,7 @@ export function createAncientChat({en,active,connected,send,suspend,resume}){
  function close(){if(!opened)return;opened=false;form.hidden=true;input.value='';resume()}
  function open(){if(!active())return;update();if(opened)return;opened=true;suspend();form.hidden=false;input.focus()}
  function line(name,text,error=false){const row=document.createElement('div');row.className=error?'ancientChatError':'ancientChatMessage';const author=document.createElement('b');author.textContent=name;const body=document.createElement('span');body.textContent=text;row.append(author,body);log.append(row);while(log.children.length>6)log.firstElementChild.remove();setTimeout(()=>row.remove(),14000)}
- function update(){root.hidden=!active();toggle.textContent=ancientKeyLabel('KeyY',en())+(en()?' · Map chat':' · 地图聊天');submit.textContent=en()?'Send':'发送';input.placeholder=en()?'Message · max 120 characters':'消息 · 最多120字符';input.setAttribute('aria-label',input.placeholder)}
+ function update(){root.hidden=!active();const label=ancientKeyLabel('KeyY',en())+(en()?' · Map chat':' · 地图聊天');if(mobileDevice)setTouchButtonContent(toggle,label,'feedback');else toggle.textContent=label;submit.textContent=en()?'Send':'发送';input.placeholder=en()?'Message · max 120 characters':'消息 · 最多120字符';input.setAttribute('aria-label',input.placeholder)}
  toggle.onclick=open;cancel.onclick=close;
  form.onsubmit=e=>{e.preventDefault();const text=input.value.trim();if(!text)return;if(Array.from(text).length>120){line('',en()?'Maximum 120 characters':'最多120个字符',true);return}if(!connected()){line('',en()?'Reconnecting — message not sent':'正在重连，消息未发送',true);return}send({type:'chat',text});close()};
  document.addEventListener('keydown',e=>{if(opened){e.stopImmediatePropagation();if(e.isComposing)return;if(e.code==='Escape'){e.preventDefault();close()}else if(e.code==='Enter'||e.code==='NumpadEnter'){e.preventDefault();form.requestSubmit()}return}if(active()&&!document.body.classList.contains('ancientLayoutEditing')&&!e.repeat&&ancientInputCode(e.code)==='KeyY'&&!e.target?.closest?.('input,textarea,select,button')){e.preventDefault();e.stopImmediatePropagation();open()}},true);

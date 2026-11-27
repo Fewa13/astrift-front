@@ -1,0 +1,15 @@
+import {touchIconSVG} from './touch-icons.js';
+import {joystickInput} from './touch-joystick.js';
+export function createAncientTouchControls({en,move,turn,actions}){
+ const root=document.createElement('div');root.id='ancientMobile';document.body.append(root);const L=(zh,english)=>en()?english:zh;
+ const stick=document.createElement('button');stick.type='button';stick.id='ancientStick';stick.dataset.layoutKey='touch-joystick';stick.setAttribute('aria-label',L('移动摇杆：上推走，继续上推跑','Joystick: push up to walk, further to sprint'));stick.innerHTML=touchIconSVG('joystick')+'<i class="ancientStickThumb"></i><span class="ancientStickLabel"></span>';root.append(stick);const label=stick.querySelector('span');
+ function resetStick(){move(0,0,false);stick.classList.remove('sprinting');stick.style.setProperty('--stick-x','0px');stick.style.setProperty('--stick-y','0px');label.textContent=L('移动','Move')}
+ function update(e){const r=stick.getBoundingClientRect(),radius=r.width*.38,input=joystickInput(e.clientX-r.left-r.width/2,e.clientY-r.top-r.height/2,radius);move(input.x,input.y,input.sprint);stick.classList.toggle('sprinting',input.sprint);label.textContent=input.sprint?L('奔跑','Sprint'):L('移动','Move');stick.style.setProperty('--stick-x',input.x*radius/(r.width/stick.offsetWidth)+'px');stick.style.setProperty('--stick-y',input.y*radius/(r.width/stick.offsetWidth)+'px')}
+ stick.onpointerdown=e=>{e.preventDefault();stick.setPointerCapture(e.pointerId);update(e)};stick.onpointermove=e=>{if(stick.hasPointerCapture(e.pointerId)){e.preventDefault();update(e)}};for(const type of ['pointerup','pointercancel','lostpointercapture'])stick.addEventListener(type,resetStick);resetStick();
+ const held=new Map();for(const [id,icon,zh,english]of [['Fire','fire','攻击','Attack'],['Jump','jump','跳跃','Jump'],['Interact','interact','交互','Interact'],['Action','absorb','拾取／吸收','Pick up / absorb'],['Bag','bag','背包','Inventory']]){
+  const b=document.createElement('button');b.type='button';b.className='ancientTouch'+id;b.dataset.layoutKey='touch-'+id;b.setAttribute('aria-label',L(zh,english));b.innerHTML=touchIconSVG(icon);root.append(b);
+  const end=e=>{if(!held.has(b))return;held.delete(b);b.classList.remove('pressed');actions[id]?.end?.()};
+  b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);held.set(b,{x:e.clientX,y:e.clientY});b.classList.add('pressed');actions[id]?.start?.()};b.onpointermove=e=>{const p=held.get(b);if(!p||!b.hasPointerCapture(e.pointerId)||id!=='Fire')return;e.preventDefault();turn(e.clientX-p.x,e.clientY-p.y);p.x=e.clientX;p.y=e.clientY};for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,end);
+ }
+ function reset(){resetStick();for(const b of [...held.keys()]){const id=b.dataset.layoutKey.slice(6);held.delete(b);actions[id]?.end?.();b.classList.remove('pressed')}}window.addEventListener('blur',reset);window.addEventListener('astrift:orientation-blocked',e=>{if(e.detail.blocked)reset()});document.addEventListener('visibilitychange',()=>{if(document.hidden)reset()});return {root,reset};
+}

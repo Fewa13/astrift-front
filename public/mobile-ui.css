@@ -5,3 +5,21 @@ html[data-mobile-ui=true] .ancientPuzzleRoom{width:calc(100vw * var(--mobile-ui-
 #astriftOrientationGuard{box-sizing:border-box;position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px;background:radial-gradient(ellipse at center,#143448,#070e19 75%);color:#e0f8ff;text-align:center;font-family:system-ui;touch-action:none;overscroll-behavior:none}
 #astriftOrientationGuard[hidden]{display:none!important}
 #astriftOrientationGuard h2{margin:0;font-size:27px}#astriftOrientationGuard p{margin:0;max-width:330px;color:#a9cbd8;font-size:17px;line-height:1.6}#astriftOrientationGuard button{margin-top:12px;padding:14px 22px;background:#12333f;color:#d6fbff;border:1px solid #73d7dd;border-radius:4px;font:600 16px system-ui;cursor:pointer}.orientationPhone{width:82px;height:134px;display:grid;place-items:center;border:3px solid #78e9e4;border-radius:13px;color:#87eeeb;font-size:58px;transform:rotate(-24deg);margin-bottom:22px}
+
+html[data-mobile-ui=true] .ancientControlsCard{height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:32px}
+html[data-mobile-ui=true] .fpsSettings>div,html[data-mobile-ui=true] .astriftHudEditor{min-height:0;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-content:start}
+html[data-mobile-ui=true] #ancientVitals,html[data-mobile-ui=true] #ancientVitals *,html[data-mobile-ui=true] #hud .health,html[data-mobile-ui=true] #hud .health *{pointer-events:none!important}
+html[data-mobile-ui=true] #ancientMobile{z-index:3}
+.touchActionGlyph{display:inline-block;width:19px;height:19px;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;pointer-events:none}
+#ancientMobile button>.touchActionGlyph{width:55%;height:55%;pointer-events:none}#ancientMobile button{display:grid;place-items:center}#ancientMobile button.pressed{background:#317b755c;border-color:#a8ffff}
+.ancientStickThumb{position:absolute;width:34%;height:34%;border:1px solid #d9fffa99;background:#86fff52b;border-radius:50%;transform:translate(var(--stick-x,0px),var(--stick-y,0px));pointer-events:none}#ancientStick>.touchActionGlyph{opacity:.35!important}.ancientStickLabel{position:absolute;bottom:8px;font:10px system-ui;pointer-events:none}.sprinting{border-color:#85ffe1!important;box-shadow:0 0 12px #6dffc83d!important}.sprinting .ancientStickLabel{color:#9dffe1}
+html[data-mobile-ui=true] #ancientNav .touchActionGlyph{width:14px;height:14px;margin-right:4px}html[data-mobile-ui=true] .ancientSkillBar .touchActionGlyph{width:22px;height:22px;margin-right:6px}
+
+html[data-mobile-ui=true] .ancientHome #ancientPanel{top:max(calc(var(--ancient-toolbar-bottom,90px) + 12px),128px);min-height:0;overflow:hidden}
+html[data-mobile-ui=true] .ancientHome .ancientLobby{margin-top:0;min-height:0;max-height:100%;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+html[data-mobile-ui=true] #ancientQuestTracker{max-height:45dvh;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;pointer-events:auto;-webkit-overflow-scrolling:touch}
+
+html[data-mobile-ui=true] #ancientStick{scale:1.5;left:51px;bottom:125px}
+html[data-mobile-ui=true] #ancientChat{top:calc(var(--ancient-identity-bottom,118px) + 10px);left:var(--ancient-identity-left,26px);bottom:auto;display:flex;flex-direction:column;align-items:flex-start;pointer-events:none}
+html[data-mobile-ui=true] #ancientChat[hidden]{display:none!important}
+html[data-mobile-ui=true] #ancientChat>button{order:0;margin:0 0 8px;pointer-events:auto}html[data-mobile-ui=true] #ancientChat .ancientChatLog{order:1;max-height:110px;overflow:hidden}html[data-mobile-ui=true] #ancientChat form{order:2;pointer-events:auto;max-width:100%}html[data-mobile-ui=true] #ancientChat .touchActionGlyph{width:15px;height:15px;margin-right:5px}
