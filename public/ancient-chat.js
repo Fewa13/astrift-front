@@ -13,7 +13,7 @@ export function createAncientChat({en,active,connected,send,suspend,resume}){
  form.append(input,submit,cancel);root.append(log,toggle,form);document.body.append(root);
  let opened=false;
  function close(){if(!opened)return;opened=false;form.hidden=true;input.value='';resume()}
- function open(){if(!active())return;update();if(opened)return;opened=true;suspend();form.hidden=false;input.focus()}
+ function open(){if(!active())return;update();if(opened)return;opened=true;suspend();form.hidden=false;input.focus({preventScroll:true})}
  function line(name,text,error=false){const row=document.createElement('div');row.className=error?'ancientChatError':'ancientChatMessage';const author=document.createElement('b');author.textContent=name;const body=document.createElement('span');body.textContent=text;row.append(author,body);log.append(row);while(log.children.length>6)log.firstElementChild.remove();setTimeout(()=>row.remove(),14000)}
  function update(){root.hidden=!active();const label=ancientKeyLabel('KeyY',en())+(en()?' · Map chat':' · 地图聊天');if(mobileDevice)setTouchButtonContent(toggle,label,'feedback');else toggle.textContent=label;submit.textContent=en()?'Send':'发送';input.placeholder=en()?'Message · max 120 characters':'消息 · 最多120字符';input.setAttribute('aria-label',input.placeholder)}
  toggle.onclick=open;cancel.onclick=close;

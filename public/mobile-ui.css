@@ -24,3 +24,11 @@ html[data-mobile-ui=true] #ancientChat{top:calc(var(--ancient-identity-bottom,11
 html[data-mobile-ui=true] #ancientChat[hidden]{display:none!important}
 html[data-mobile-ui=true] #ancientChat>button{order:0;margin:0 0 8px;pointer-events:auto}html[data-mobile-ui=true] #ancientChat .ancientChatLog{order:1;max-height:110px;overflow:hidden}html[data-mobile-ui=true] #ancientChat form{order:2;pointer-events:auto;max-width:100%}html[data-mobile-ui=true] #ancientChat .touchActionGlyph{width:15px;height:15px;margin-right:5px}
 #ancientMobile button>.ancientTouchLabel{position:absolute;bottom:4px;font:9px system-ui;line-height:1;pointer-events:none;white-space:nowrap}#ancientMobile button>.touchActionGlyph{width:47%;height:47%;margin-bottom:9px}
+/* Keep editable text at 16 physical CSS pixels after the mobile HUD scale.
+   Smaller fields trigger focus zoom in mobile browsers. Do not disable pinch zoom. */
+html[data-mobile-ui=true] input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=color]),html[data-mobile-ui=true] textarea,html[data-mobile-ui=true] select,html[data-mobile-ui=true] [contenteditable=true]{font-size:20px!important}
+/* Information stays behind controls; navigation keeps its own interactive layer. */
+html[data-mobile-ui=true] #ancientHeader{z-index:auto}
+html[data-mobile-ui=true] #ancientHeader>div:first-child{position:relative;z-index:2;pointer-events:none}
+html[data-mobile-ui=true] #ancientHeader>div:first-child *{pointer-events:none!important}
+html[data-mobile-ui=true] #ancientNav{position:relative;z-index:31}

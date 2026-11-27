@@ -24,7 +24,7 @@ export function initGameChat(options){({send:sendMessage,isPlaying,isOnline,isCo
     if(open){if(event.isComposing){event.stopImmediatePropagation();return}if(event.code==='Escape'){event.preventDefault();event.stopImmediatePropagation();close()}else if(event.code==='Enter'||event.code==='NumpadEnter'){event.preventDefault();event.stopImmediatePropagation();$('gameChatForm').requestSubmit()}else event.stopImmediatePropagation();return}
     $('gameChatHint').textContent=`${chatKey().replace(/^Key/,'')} 聊天`;
     if(!isPlaying()||event.repeat||event.code!==chatKey()||event.target.closest?.('input,textarea,select,button')||!$('keybindSettings').hidden)return;
-    event.preventDefault();event.stopImmediatePropagation();open=true;suspend();$('gameChatForm').hidden=false;$('gameChatInput').focus();
+    event.preventDefault();event.stopImmediatePropagation();open=true;suspend();$('gameChatForm').hidden=false;$('gameChatInput').focus({preventScroll:true});
   },true);
   document.addEventListener('pointerdown',event=>{if(open&&event.target!==$('gameChatInput')&&!$('gameChatForm').contains(event.target))close()},true);
 }
