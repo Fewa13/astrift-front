@@ -1,0 +1,7 @@
+/* Scale the complete UI, without changing the world renderer or creating transform containing blocks. */
+html[data-mobile-ui=true] body{zoom:var(--mobile-ui-scale)}
+html[data-mobile-ui=true] #game,html[data-mobile-ui=true] #ancientCanvas,html[data-mobile-ui=true] body>iframe{zoom:var(--mobile-ui-inverse)}
+html[data-mobile-ui=true] .ancientPuzzleRoom{width:calc(100vw * var(--mobile-ui-inverse));height:calc(100dvh * var(--mobile-ui-inverse))}
+#astriftOrientationGuard{box-sizing:border-box;position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px;background:radial-gradient(ellipse at center,#143448,#070e19 75%);color:#e0f8ff;text-align:center;font-family:system-ui;touch-action:none;overscroll-behavior:none}
+#astriftOrientationGuard[hidden]{display:none!important}
+#astriftOrientationGuard h2{margin:0;font-size:27px}#astriftOrientationGuard p{margin:0;max-width:330px;color:#a9cbd8;font-size:17px;line-height:1.6}#astriftOrientationGuard button{margin-top:12px;padding:14px 22px;background:#12333f;color:#d6fbff;border:1px solid #73d7dd;border-radius:4px;font:600 16px system-ui;cursor:pointer}.orientationPhone{width:82px;height:134px;display:grid;place-items:center;border:3px solid #78e9e4;border-radius:13px;color:#87eeeb;font-size:58px;transform:rotate(-24deg);margin-bottom:22px}

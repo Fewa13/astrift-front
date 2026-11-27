@@ -1,3 +1,4 @@
+import './mobile-ui.js';
 import {openEntryAnnouncements} from './official-announcements.js';
 // One actual-work driven entry sequence, shared by online and portable shells.
 export async function preloadStartupAssets(report,{fetchImpl=fetch,manifestURL='/startup-manifest.json'}={}){

@@ -94,17 +94,24 @@ export class PlayerAccount extends DurableObject<Env>{
     this.ctx.storage.sql.exec('INSERT OR IGNORE INTO event_rewards(event_id,skin_id,claimed_at,expires) VALUES(?,?,?,?)',eventId,`knife-event-warrior-${suffix}`,now,expires);
     return this.profile(row);
   }
-  async drawKnife(token:string,device:string){
+  async drawKnife(token:string,device:string,count:number=1){
+    if(count!==1&&count!==10)return {ok:false,error:'抽奖数量无效'};
     if(!await this.validate(token,device))return {ok:false,error:'请重新登录'};
-    const row=this.row();if(!row)return {ok:false,error:'账号不存在'};
-    const level=seasonLevel(row.season_earned+row.season_bonus).level;
-    const current=this.ctx.storage.sql.exec<{used:number}>('SELECT used FROM knife_draw_state WHERE id=1').one();
-    if(current.used>=level-1)return {ok:false,error:'暂无抽奖次数'};
-    const random=crypto.getRandomValues(new Uint32Array(1))[0],skinId=KNIFE_DRAW_IDS[random%KNIFE_DRAW_IDS.length];
-    const duplicate=Boolean(this.ctx.storage.sql.exec('SELECT skin_id FROM knife_draw_owned WHERE skin_id=?',skinId).toArray()[0]);
-    this.ctx.storage.sql.exec('UPDATE knife_draw_state SET used=used+1,shards=shards+? WHERE id=1',duplicate?2:0);
-    if(!duplicate)this.ctx.storage.sql.exec('INSERT INTO knife_draw_owned VALUES(?,?)',skinId,Date.now());
-    return {ok:true,skinId,duplicate,shardsGained:duplicate?2:0,profile:this.profile(row)};
+    return this.ctx.storage.transactionSync(()=>{
+      const row=this.row();if(!row)return {ok:false,error:'账号不存在'};
+      const level=seasonLevel(row.season_earned+row.season_bonus).level;
+      const current=this.ctx.storage.sql.exec<{used:number}>('SELECT used FROM knife_draw_state WHERE id=1').one();
+      if(level-1-current.used<count)return {ok:false,error:count===10?'十连抽需要10次抽奖机会':'暂无抽奖次数'};
+      const random=crypto.getRandomValues(new Uint32Array(count)),results=[];
+      for(const value of random){
+        const skinId=KNIFE_DRAW_IDS[value%KNIFE_DRAW_IDS.length];
+        const duplicate=Boolean(this.ctx.storage.sql.exec('SELECT skin_id FROM knife_draw_owned WHERE skin_id=?',skinId).toArray()[0]);
+        if(!duplicate)this.ctx.storage.sql.exec('INSERT INTO knife_draw_owned VALUES(?,?)',skinId,Date.now());
+        results.push({skinId,duplicate,shardsGained:duplicate?2:0});
+      }
+      this.ctx.storage.sql.exec('UPDATE knife_draw_state SET used=used+?,shards=shards+? WHERE id=1',count,results.reduce((n,r)=>n+r.shardsGained,0));
+      return {ok:true,...results[0],results,profile:this.profile(row)};
+    });
   }
   async redeemKnife(token:string,device:string,skinId:string){
     if(!await this.validate(token,device))return {ok:false,error:'请重新登录'};

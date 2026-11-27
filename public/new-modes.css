@@ -99,3 +99,5 @@
 .knifeSkinCard[data-skin="knife-event-ranked-apex"] .knifePreviewBlade{clip-path:polygon(62% 0,83% 25%,66% 49%,100% 71%,78% 100%,14% 100%,0 53%,25% 26%)}
 .knifeSkinCard[data-skin="knife-event-warrior-silver"] .knifePreviewBlade{width:37px;height:78px;top:1px;clip-path:polygon(61% 0,91% 36%,100% 69%,72% 100%,12% 100%,0 62%,22% 31%)}
 .knifeSkinCard:disabled{opacity:1}.knifeSkinCard:disabled small{opacity:.65}
+
+.skinDrawActions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.skinDrawResult{white-space:pre-line}

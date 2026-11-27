@@ -611,7 +611,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       if(url.pathname==='/api/account/guide'){if(!await account.validate(token,device))return json({error:'请先登录 / Please log in'},401);const result=await registry.gameGuide(name.toLowerCase(),body);return json(result,result.ok?200:400)}
       if(url.pathname==='/api/account/check')return await account.validate(token,device)?json({ok:true}):json({error:'登录已失效'},401);
       if(url.pathname==='/api/account/season-claim'){const result=await account.claimSeasonReward(token,device,typeof body.skinId==='string'?body.skinId:'');return json(result,result.ok?200:403)}
-      if(url.pathname==='/api/account/knife-draw'){const result=await account.drawKnife(token,device);return json(result,result.ok?200:403)}
+      if(url.pathname==='/api/account/knife-draw'){const count=body.count===undefined?1:body.count;if(count!==1&&count!==10)return json({ok:false,error:'抽奖数量无效'},400);const result=await account.drawKnife(token,device,count);return json(result,result.ok?200:403)}
       if(url.pathname==='/api/account/knife-redeem'){const result=await account.redeemKnife(token,device,typeof body.skinId==='string'?body.skinId:'');return json(result,result.ok?200:403)}
       if(url.pathname==='/api/account/save'){const result=await account.saveSnapshot(token,device,body.snapshot);return json(result,result.ok?200:401)}
       if(url.pathname==='/api/account/logout'){

@@ -211,12 +211,17 @@ export function initSkinScreen(models){
     const tickets=Math.max(0,Math.floor(state.kills/15)-state.drawsUsed);
     drawSection.replaceChildren();
     const head=document.createElement('div');head.className='skinDrawHead';const info=document.createElement('div');const h=document.createElement('h3');h.textContent='星隙补给 · 抽奖枪皮';const stat=document.createElement('small');stat.textContent=`每 15 次击杀得 1 抽 · 可抽 ${tickets} 次 · 已收藏 ${state.drawOwned.length}/20 · 碎片 ${state.shards}`;info.append(h,stat);
-    const drawButton=document.createElement('button');drawButton.type='button';drawButton.textContent='抽取 1 次';drawButton.disabled=tickets<1;drawButton.onclick=()=>{
-      if(Math.floor(state.kills/15)<=state.drawsUsed)return;
-      const random=new Uint32Array(2);crypto.getRandomValues(random);const roll=random[0]/4294967296*100;let total=0;const rarity=LOTTERY_RARITIES.find(r=>(total+=r.weight)>roll)||LOTTERY_RARITIES.at(-1);const pool=LOTTERY_SKINS.filter(s=>s.rarity===rarity.id);const skin=pool[random[1]%pool.length];state.drawsUsed++;
-      const repeated=state.drawOwned.includes(skin.id);if(repeated)state.shards+=rarity.shards;else state.drawOwned.push(skin.id);
-      save();render();document.getElementById('skinDrawResult').textContent=repeated?`抽到重复的「${skin.name}」，转为 ${rarity.shards} 碎片`:`抽到 ${rarity.name}「${skin.name}」！已加入收藏，点击下方卡片装备。`;
-    };head.append(info,drawButton);drawSection.append(head);
+    const actions=document.createElement('div');actions.className='skinDrawActions';
+    for(const count of [1,10]){const drawButton=document.createElement('button');drawButton.type='button';drawButton.dataset.drawCount=String(count);drawButton.textContent=count===10?'十连抽':'抽取 1 次';drawButton.disabled=tickets<count;drawButton.onclick=()=>{
+      if(Math.floor(state.kills/15)-state.drawsUsed<count)return;
+      const results=[];
+      for(let i=0;i<count;i++){
+        const random=new Uint32Array(2);crypto.getRandomValues(random);const roll=random[0]/4294967296*100;let total=0;const rarity=LOTTERY_RARITIES.find(r=>(total+=r.weight)>roll)||LOTTERY_RARITIES.at(-1);const pool=LOTTERY_SKINS.filter(s=>s.rarity===rarity.id);const skin=pool[random[1]%pool.length];state.drawsUsed++;
+        const repeated=state.drawOwned.includes(skin.id);if(repeated)state.shards+=rarity.shards;else state.drawOwned.push(skin.id);
+        results.push((count===10?(i+1)+'. ':'')+(repeated?`抽到重复的「${skin.name}」，转为 ${rarity.shards} 碎片`:`抽到 ${rarity.name}「${skin.name}」！已加入收藏。`));
+      }
+      save();render();document.getElementById('skinDrawResult').textContent=results.join('\n');
+    };actions.append(drawButton)}head.append(info,actions);drawSection.append(head);
     const odds=document.createElement('small');odds.className='skinDrawOdds';odds.textContent='概率：普通 50% · 稀有 30% · 史诗 15% · 传说 5%。重复获得碎片，可兑换未拥有的皮肤。';drawSection.append(odds);
     const result=document.createElement('p');result.id='skinDrawResult';result.className='skinDrawResult';result.setAttribute('aria-live','polite');drawSection.append(result);
     for(const rarity of LOTTERY_RARITIES){
