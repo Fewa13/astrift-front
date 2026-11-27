@@ -1,3 +1,4 @@
+import {fixedAttack} from './mobile-movement-settings.js';
 import {floatingJoystick} from './floating-joystick.js';
 import {touchIconSVG} from './touch-icons.js';
 import {joystickInput} from './touch-joystick.js';
@@ -10,7 +11,7 @@ export function createAncientTouchControls({en,move,turn,actions,canMove}){
  const held=new Map();for(const [id,icon,zh,english]of [['Fire','fire','攻击','Attack'],['Jump','jump','跳跃','Jump'],['Bag','bag','背包','Inventory']]){
   const b=document.createElement('button');b.type='button';b.className='ancientTouch'+id;b.dataset.layoutKey='touch-'+id;b.setAttribute('aria-label',L(zh,english));b.innerHTML=touchIconSVG(icon)+'<span class="ancientTouchLabel">'+L(zh,english)+'</span>';root.append(b);
   const end=e=>{if(!held.has(b))return;held.delete(b);b.classList.remove('pressed');actions[id]?.end?.()};
-  b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);held.set(b,{x:e.clientX,y:e.clientY});b.classList.add('pressed');actions[id]?.start?.()};b.onpointermove=e=>{const p=held.get(b);if(!p||!b.hasPointerCapture(e.pointerId)||id!=='Fire')return;e.preventDefault();turn(e.clientX-p.x,e.clientY-p.y);p.x=e.clientX;p.y=e.clientY};for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,end);
+  b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);held.set(b,{x:e.clientX,y:e.clientY});b.classList.add('pressed');actions[id]?.start?.()};b.onpointermove=e=>{const p=held.get(b);if(!p||!b.hasPointerCapture(e.pointerId)||id!=='Fire'||fixedAttack())return;e.preventDefault();turn(e.clientX-p.x,e.clientY-p.y);p.x=e.clientX;p.y=e.clientY};for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,end);
  }
  function reset(){resetStick();restoreFloating();for(const b of [...held.keys()]){const id=b.dataset.layoutKey.slice(6);held.delete(b);actions[id]?.end?.();b.classList.remove('pressed')}}window.addEventListener('blur',reset);window.addEventListener('astrift:orientation-blocked',e=>{if(e.detail.blocked)reset()});document.addEventListener('visibilitychange',()=>{if(document.hidden)reset()});return {root,reset};
 }
