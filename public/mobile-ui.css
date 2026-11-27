@@ -43,3 +43,4 @@ html[data-mobile-ui=true] #ancientChat.chatOpen .ancientChatLog{width:100%;max-h
 html[data-mobile-ui=true] #ancientChat.chatOpen form{width:100%;box-sizing:border-box;min-height:52px;padding:6px;border-radius:3px}
 html[data-mobile-ui=true] #ancientChat.chatOpen input{min-height:40px;box-sizing:border-box}
 html[data-mobile-ui=true] #ancientChat.chatOpen form button{min-width:48px;min-height:40px;border-radius:3px}
+.fpsSettings .touchMovementSetting{display:grid;grid-template-columns:minmax(0,1fr) 86px;gap:10px}.fpsSettings .touchMovementSetting .touchMovementSwitch{width:86px;min-width:0;padding:7px 8px 7px 30px}.fpsSettings .touchMovementSetting strong{font-size:13px}.fpsSettings .touchMovementSetting small{font-size:11px}

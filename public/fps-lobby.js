@@ -1,3 +1,5 @@
+import {mobileDevice} from './mobile-ui.js';
+import {renderFixedMovement} from './mobile-movement-settings.js';
 import {createHUDEditor} from './astrift-hud-editor.js';
 import {tutorialContext,tutorialEvent} from './smart-onboarding.js';
 // © 2026 Felix — Astrift. All rights reserved.
@@ -12,7 +14,7 @@ for(const entry of [...$('specialModePanel').querySelectorAll('.duelEntry,.objec
  (entry.querySelector('#quickDuel,#soloAiDuel,#createTri,#createQuad')?ordinary:special).append(entry);entry.hidden=false;
 }
 $('openSpecialMode').hidden=true;
-const settings=document.createElement('details');settings.className='fpsSettings';settings.innerHTML='<summary></summary><div></div>';menu.append(settings);const body=settings.lastElementChild;
+const settings=document.createElement('details');settings.className='fpsSettings';settings.innerHTML='<summary></summary><div></div>';menu.append(settings);const body=settings.lastElementChild;if(mobileDevice)renderFixedMovement(body,en);
 for(const node of [$('toggleLanguage'),menu.querySelector('.qualityControl'),menu.querySelector('.settingsActions')])if(node)body.append(node);
 const moveGuide=()=>{if($('openGameGuide'))body.append($('openGameGuide'));if($('openTutorial'))body.append($('openTutorial'))};moveGuide();new MutationObserver(moveGuide).observe(home,{childList:true});
 $('openLoadoutMode').classList.add('fpsLoadout');const forum=$('openForum');forum.innerHTML='<b></b><small></small>';home.append(forum);home.classList.add('fpsLobbyDock');home.append($('openLoadoutMode'));lobbyActions.append(home);
