@@ -1,5 +1,5 @@
 import {clientVersion} from './client-version.js';
-import {accountApi,accountSession} from './account.js?v=20261111-feedback-1';
+import {accountApi,accountSession} from './account.js';
 import {apiURL} from './network-diagnostics.js';
 import {VOICE_AUDIO_SOURCE} from './voice-audio.js';
 const instances=new Map();

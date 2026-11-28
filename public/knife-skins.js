@@ -1,7 +1,7 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 const STORAGE='astrift.knifeSkins.v1';
 import {knifeCombat} from './knife-combat.js?v=20261006-damage-result-3';
-import {accountSession,accountApi} from './account.js?v=20261027-auth-recovery-1';
+import {accountSession,accountApi} from './account.js';
 import {knifePreviewSVG} from './knife-forms.js?v=20261006-damage-result-3';
 export const KNIFE_TIERS=[
   {name:'常规',kills:3,styles:[

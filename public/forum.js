@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {accountSession} from './account.js?v=20261027-auth-recovery-1';
+import {accountSession} from './account.js';
 
 const $=id=>document.getElementById(id);
 const DEVICE_KEY='astrift.forum.device.v1';

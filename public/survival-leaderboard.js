@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {accountSession,refreshAccountProfile} from './account.js?v=20261027-auth-recovery-1';
+import {accountSession,refreshAccountProfile} from './account.js';
 import {protectName,getLanguage} from './i18n.js?v=20261008-onboarding-1';
 export function towerTime(milliseconds){const total=Math.max(0,Math.floor(milliseconds/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total/60)%60,seconds=total%60;return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}.${String(Math.floor(milliseconds%1000/10)).padStart(2,'0')}`}
 const namesLabel=names=>{names.forEach(protectName);return names.filter(Boolean).join('  ')};

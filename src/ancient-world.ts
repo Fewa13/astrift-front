@@ -1034,6 +1034,7 @@ async webSocketMessage(ws:WebSocket,message:string|ArrayBuffer){if(typeof messag
    position:m,floor:combatBodyFeet(m,ground(m.x,m.z)),radius:ancientHitbox(m.kind).radius,
   }));
   const separateUnits=()=>spaceAncientUnits([...monsterBodies(),...summonBodies],(body,x,z)=>
+   communityId(map)?!communityBlocked(map,x,z,body.radius,body.floor,'monster')&&communityLineWalk(map,body.position.x,body.position.z,x,z,body.radius,body.floor,'monster'):
    !blocked(x,z,body.radius,map,body.floor)&&clear(body.position.x,body.floor+.5,body.position.z,x,body.floor+.5,z));
   separateUnits();
   const pets=pairs.flatMap(({p:owner,ws})=>{

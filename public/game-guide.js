@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {accountApi,accountSession} from './account.js?v=20261027-auth-recovery-1';
+import {accountApi,accountSession} from './account.js';
 const getLanguage=()=>{try{return localStorage.getItem('astrift.language.v1')==='zh'?'zh':'en'}catch{return 'en'}};
 const categories=[['skills','职业与技能','Professions & skills'],['gear','装备与武器','Equipment & weapons'],['quests','主线与NPC','Quests & NPCs'],['shop','商店与药水','Shop & potions'],['jade','玉石与藏品','Jade & collections'],['community','社区地图','Community maps'],['fps','FPS与高塔生存','FPS & tower survival'],['account','账号与操作','Account & controls']];
 const L=(a,b)=>getLanguage()==='en'?b:a;

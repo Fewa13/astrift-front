@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';import {emailHarness} from './account-email-check.mjs';
+const h=await emailHarness(),name='SaveOrderQA',password='Save-order-fixture-123',device=crypto.randomUUID();
+let result=await h.api('register',{name,password,device,snapshot:{}});assert.equal(result.status,200);const token=result.body.token,session={name,token,device},account=h.accounts.get('account:'+name.toLowerCase());
+const original=account.validate.bind(account);let release,hold=true;
+account.validate=async(...args)=>{const valid=await original(...args);if(hold){hold=false;await new Promise(r=>release=r)}return valid};
+const earlier=account.saveSnapshot(token,device,{'astrift.skins.v1':'old'},1);while(!release)await new Promise(setImmediate);
+assert((await account.saveSnapshot(token,device,{'astrift.skins.v1':'new'},2)).ok);release();assert((await earlier).stale);assert.equal((await account.read(token,device)).snapshot['astrift.skins.v1'],'new');assert((await account.saveSnapshot(token,device,{'astrift.skins.v1':'legacy'})).stale);
+hold=true;release=null;const expired=account.saveSnapshot(token,device,{'astrift.skins.v1':'old session'},3);while(!release)await new Promise(setImmediate);
+result=await h.api('login',{name,password,device});assert.equal(result.status,200);release();assert.equal((await expired).ok,false,'A request validated before session replacement cannot save later');
+assert((await account.saveSnapshot(result.body.token,device,{'astrift.skins.v1':'new session'},1)).ok);assert.equal((await account.read(result.body.token,device)).saveSequence,1);
+console.log('PASS actual Worker/SQLite: reordered saves, legacy/pagehide overwrites rejected, replaced session rejected and new session sequence reset');

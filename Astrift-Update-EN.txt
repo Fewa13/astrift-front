@@ -1,6 +1,12 @@
 Last updated: November 27
 Updates:
 
+Desktop & Mobile Reliability
+- Fixed secondary touches taking over movement, aiming or attack controls; switching movement modes now releases held controls.
+- Ancient Age now initializes after mode selection, with the previous mode released first.
+- Improved cached-resource consistency and offline recovery.
+- Prevented delayed cloud saves from overwriting newer settings or affecting a newly selected account.
+
 BUG FIXES — Community Maps
 - Removed hidden 48-monster and 16-scripted-monster truncation. Authored targets and valid scripted summons retain their world state; distant idle AI updates less often while nearby and engaged monsters remain responsive.
 - Fixed wandering monsters ignoring monster-only walls. Wander movement, path checks and ground height now consistently use the monster collision layer.

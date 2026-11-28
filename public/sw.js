@@ -1,5 +1,9 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261127-entry-2';
+const CACHE_NAME='astrift-offline-20261127-audit-3';
+let assetHashes=null;
+function rememberManifest(manifest){assetHashes=new Map((manifest.files||[]).filter(f=>/^[a-f0-9]{64}$/.test(f.hash)).map(f=>[new URL(f.url,self.location.origin).href,f.hash]));}
+async function currentHashes(cache){if(assetHashes)return assetHashes;const manifest=await cache.match('/startup-manifest.json');if(manifest)try{rememberManifest(await manifest.json())}catch{}return assetHashes||new Map();}
+async function verifyAsset(response,expected){const bytes=await response.clone().arrayBuffer(),actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');if(actual!==expected)return null;const headers=new Headers(response.headers);headers.delete('Content-Encoding');headers.delete('Content-Length');headers.set('X-Astrift-Asset-Hash',expected);return new Response(bytes,{status:response.status,statusText:response.statusText,headers});}
 const ASSETS=['/mobile-ui.js','/mobile-ui.css','/startup-flow.js','/startup-flow.css','/startup-manifest.json','/ancient-puzzle-ui.js','/ancient-puzzle-map.js','/ancient-gear-workshop.js','/client-version.js',
  '/ancient-community-optics.js',
  '/ancient-community-amenities.js','/ancient-community-uses.js','/ancient-amenity-defs.js',
@@ -128,6 +132,9 @@ self.addEventListener('notificationclick',event=>{
 self.addEventListener('fetch',event=>{
   const request=event.request,url=new URL(request.url);
   if(request.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/'))return;
+  if(url.pathname==='/startup-manifest.json'){
+    event.respondWith((async()=>{const cache=await caches.open(CACHE_NAME);try{const response=await fetch(request,{cache:'no-cache'});if(!response.ok)throw Error('Manifest unavailable');rememberManifest(await response.clone().json());await cache.put('/startup-manifest.json',response.clone()).catch(()=>{});return response}catch(error){const saved=await cache.match('/startup-manifest.json');if(!saved)throw error;rememberManifest(await saved.clone().json());return saved}})());return;
+  }
   if(request.mode==='navigate'){
     event.respondWith((async()=>{
       try{
@@ -147,6 +154,14 @@ self.addEventListener('fetch',event=>{
   }
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE_NAME);
+    const expected=(await currentHashes(cache)).get(url.href);
+    if(expected){
+      const saved=await cache.match(request)||await cache.match(request,{ignoreSearch:true});
+      if(saved?.headers.get('X-Astrift-Asset-Hash')===expected&&request.cache!=='reload')return saved;
+      if(saved&&request.cache!=='reload'){const verified=await verifyAsset(saved,expected);if(verified){await cache.put(request,verified.clone()).catch(()=>{});return verified}}
+      const response=await fetch(request,{cache:'no-cache'});if(!response.ok)throw Error('Resource unavailable');
+      const verified=await verifyAsset(response,expected);if(!verified)throw Error('Resources changed during loading. Please retry.');await cache.put(request,verified.clone()).catch(()=>{});return verified;
+    }
     // Shared-world definitions must update together; retain cache only for offline use.
     if(request.cache==='no-cache'||request.cache==='reload'||(url.pathname.endsWith('.js')&&url.pathname!=='/three.module.js')||url.pathname==='/ancient.css'||url.pathname.startsWith('/ancient-')||url.pathname==='/world-shell.js'||url.pathname==='/world-shell.html'){
       try{

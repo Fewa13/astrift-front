@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift. All rights reserved.
-import {accountSession,accountApi,saveAccountNow} from './account.js?v=20261027-auth-recovery-1';
+import {accountSession,accountApi,saveAccountNow} from './account.js';
 export const ONBOARDING_KEY='astrift.onboarding.v2';
 export const LESSONS={
  'fps.combat.v1':[['WASD 移动，鼠标观察','Move with WASD; look with the mouse','move'],['瞄准并命中敌人','Aim and hit an enemy','attack']],

@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {accountSession,accountApi,refreshAccountProfile} from './account.js?v=20261027-auth-recovery-1';
+import {accountSession,accountApi,refreshAccountProfile} from './account.js';
 
 const $=id=>document.getElementById(id);
 const stage={registration:'报名阶段',active:'比赛进行中',finished:'比赛结束'};

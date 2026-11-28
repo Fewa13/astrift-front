@@ -1,6 +1,6 @@
 import {friendVoice} from './friend-voice.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {accountSession,accountApi} from './account.js?v=20261111-feedback-1';
+import {accountSession,accountApi} from './account.js';
 import {protectName} from './i18n.js?v=20261008-onboarding-1';
 
 const $=id=>document.getElementById(id);

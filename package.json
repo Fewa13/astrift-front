@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check:audit": "npm run typecheck && node scripts/audit-mobile-pointers-check.mjs && node scripts/audit-startup-scheduling-check.mjs && node scripts/ancient-entry-decoupling-check.mjs && node scripts/startup-progress-check.mjs && node scripts/audit-cache-check.mjs && node scripts/audit-account-client-check.mjs && node scripts/audit-account-order-check.mjs && node scripts/audit-unit-spacing-check.mjs && node scripts/community-ai-budget-check.mjs && node scripts/community-spawn-regression-check.mjs && node scripts/ancient-community-server-check.mjs && node scripts/ancient-community-monster-navigation-check.mjs && node scripts/community-v2-server-check.mjs && node scripts/account-page-lease-check.mjs",
+    "check:audit:browser": "node scripts/startup-flow-browser-check.mjs && node scripts/ancient-map-entry-browser-check.mjs && MAP_MOBILE=1 node scripts/ancient-map-entry-browser-check.mjs && ASTRIFT_QA_CONTROLS=1 node scripts/ancient-entry-parity-check.mjs",
     "crazygames:build": "node crazygames/build.mjs",
     "crazygames:preview": "node crazygames/preview.mjs",
     "crazygames:check": "node crazygames/check.mjs",

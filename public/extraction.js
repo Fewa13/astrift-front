@@ -4,7 +4,7 @@ import * as THREE from './three.module.js?v=0.180.0';
 import {EXTRACTION_KEY,GUN_PRICES,LOOT,LOOT_BY_ID,partPrice,ammoPrice,refreshDaily} from './extraction-economy.js?v=20261008-7';
 import {item,value,saleValue,addItems,migrateInventory,inventoryAction,beginRaid,detachAmmo,settleRaid,upgradeCost,ARMOR_NAMES,HELMET_NAMES,MEDICAL_PRICES} from './extraction-inventory.js?v=20261008-7';
 import {EXTRACTION_LOOT_POINTS,EXTRACTION_HOUSES,EXTRACTION_LIMIT,EXTRACTION_SPAWN,EXTRACTION_EXITS} from './extraction-world.js?v=20261014-raid-1';
-import {accountSession,accountApi} from './account.js?v=20261027-auth-recovery-1';
+import {accountSession,accountApi} from './account.js';
 import {DISTRICTS,districtAt,EXIT_SPECS,containerSpec,CONTAINER_NAMES,LOOT_EN,rollContainer,sortRaidBag,itemRarity} from './extraction-design.js?v=20261014-raid-1';
 import {createRaidPresentation,lootIcon} from './extraction-presentation.js?v=20261014-raid-1';
 export function initExtraction(api){

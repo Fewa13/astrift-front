@@ -33,7 +33,7 @@ import {item as extractionItem,value as extractionValue,addItems as extractionAd
 import {rankedAiProfile as extractionRankProfile} from './ranked-rules.js?v=20261008-7';
 import {updateExtractionLoot} from './extraction-ai.js?v=20261014-raid-1';
 let extractionClient=null,extractionBackup=null,extractionSocket=null,extractionHost=true,extractionParty=null,extractionNextSync=0,extractionRetry=null;
-import {accountSession,accountApi,refreshAccountProfile,initAccountUI} from './account.js?v=20261111-feedback-1';
+import {accountSession,accountApi,refreshAccountProfile,initAccountUI} from './account.js';
 import {initSocialUI} from './social.js?v=20261026-admin-1';
 import {initTournamentUI} from './tournament.js?v=20261026-admin-1';
 import {initForumUI} from './forum.js?v=20261026-admin-1';

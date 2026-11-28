@@ -55,6 +55,7 @@ export class PlayerAccount extends DurableObject<Env>{
     try{ctx.storage.sql.exec('ALTER TABLE account ADD COLUMN season_bonus INTEGER NOT NULL DEFAULT 0');addedBonus=true}catch(error){if(!String(error).includes('duplicate column name'))throw error}
     if(addedBonus){const previous=ctx.storage.sql.exec<{season_earned:number}>('SELECT season_earned FROM account WHERE id=1').toArray()[0];if(previous)ctx.storage.sql.exec('UPDATE account SET season_bonus=? WHERE id=1',legacySeasonBonus(previous.season_earned))}
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY,expires INTEGER NOT NULL)');
+    ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS account_save_order (id INTEGER PRIMARY KEY,session_hash TEXT NOT NULL,sequence INTEGER NOT NULL)');
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS rank_results (match_id TEXT PRIMARY KEY,delta INTEGER NOT NULL,won INTEGER NOT NULL,created INTEGER NOT NULL)');
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS season_rewards (skin_id TEXT PRIMARY KEY,claimed_at INTEGER NOT NULL)');
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS knife_draw_state (id INTEGER PRIMARY KEY CHECK(id=1),used INTEGER NOT NULL DEFAULT 0,shards INTEGER NOT NULL DEFAULT 0)');
@@ -78,7 +79,8 @@ export class PlayerAccount extends DurableObject<Env>{
     const permanentEventRewards=this.ctx.storage.sql.exec<{skin_id:string}>('SELECT DISTINCT skin_id FROM event_rewards WHERE expires=0').toArray().map(item=>item.skin_id);
     const timedSkins=this.ctx.storage.sql.exec<{skin_id:string;expires:number;week:number}>('SELECT * FROM timed_skin_rewards WHERE expires>?',Date.now()).toArray().map(item=>({skinId:item.skin_id,expiresAt:item.expires,weekStart:item.week}));
     timedSkins.push(...this.ctx.storage.sql.exec<{skin_id:string;expires:number}>('SELECT skin_id,MAX(expires) expires FROM event_rewards WHERE expires>? GROUP BY skin_id',Date.now()).toArray().map(item=>({skinId:item.skin_id,expiresAt:item.expires,weekStart:0})));
-    return {name:row.name,snapshot,rankPoints:row.rank_points,season:level,seasonClaims,eventRewards,permanentEventRewards,timedSkins,serverNow:Date.now(),knifeDraw:{used:knifeDraw.used,shards:knifeDraw.shards,owned:knifeOwned,tickets:Math.max(0,level.level-1-knifeDraw.used)}};
+    const saveSequence=this.ctx.storage.sql.exec<{sequence:number}>('SELECT sequence FROM account_save_order WHERE id=1').toArray()[0]?.sequence||0;
+    return {name:row.name,snapshot,saveSequence,rankPoints:row.rank_points,season:level,seasonClaims,eventRewards,permanentEventRewards,timedSkins,serverNow:Date.now(),knifeDraw:{used:knifeDraw.used,shards:knifeDraw.shards,owned:knifeOwned,tickets:Math.max(0,level.level-1-knifeDraw.used)}};
   }
   grantTowerReward(week:number,expires:number){
     if(!Number.isSafeInteger(week)||towerWeekStart(week)!==week||expires!==week+2*TOWER_WEEK_MS||!this.row())return null;
@@ -136,6 +138,7 @@ export class PlayerAccount extends DurableObject<Env>{
       const row=this.row();if(!row||!await this.registry().claim(row.name.toLowerCase(),device,hash,expires))throw Error('设备标识无效');
       this.ctx.storage.sql.exec('DELETE FROM sessions');
       this.ctx.storage.sql.exec('INSERT INTO sessions VALUES (?,?)',hash,expires);
+      this.ctx.storage.sql.exec('DELETE FROM account_save_order');
       return token;
     });
   }
@@ -172,7 +175,16 @@ export class PlayerAccount extends DurableObject<Env>{
     return result;
   }
   async read(token:string,device:string){if(!await this.validate(token,device))return null;const row=this.row();return row?this.profile(row):null}
-  async saveSnapshot(token:string,device:string,raw:unknown){if(!await this.validate(token,device))return {ok:false,error:'请重新登录'};const row=this.row();if(!row)return {ok:false,error:'账号不存在'};const data=cleanSnapshot(raw,row.name);if(!data)return {ok:false,error:'存档格式无效'};const prior=JSON.parse(row.snapshot);data['astrift.onboarding.v2']=mergeTutorialProgress(prior['astrift.onboarding.v2'],data['astrift.onboarding.v2']);this.ctx.storage.sql.exec('UPDATE account SET snapshot=? WHERE id=1',JSON.stringify(data));return {ok:true}}
+  async saveSnapshot(token:string,device:string,raw:unknown,sequence?:unknown){
+    const hash=await digest(token);if(!await this.validate(token,device))return {ok:false,error:'请重新登录'};
+    if(!this.ctx.storage.sql.exec('SELECT token_hash FROM sessions WHERE token_hash=? AND expires>?',hash,Date.now()).toArray().length)return {ok:false,error:'请重新登录'};
+    if(sequence!==undefined&&(!Number.isSafeInteger(sequence)||Number(sequence)<1))return {ok:false,error:'存档顺序无效'};
+    const order=this.ctx.storage.sql.exec<{session_hash:string;sequence:number}>('SELECT session_hash,sequence FROM account_save_order WHERE id=1').toArray()[0];
+    if(order?.session_hash===hash&&(sequence===undefined||Number(sequence)<=order.sequence))return {ok:true,stale:true,saveSequence:order.sequence};
+    const row=this.row();if(!row)return {ok:false,error:'账号不存在'};const data=cleanSnapshot(raw,row.name);if(!data)return {ok:false,error:'存档格式无效'};
+    const prior=JSON.parse(row.snapshot);data['astrift.onboarding.v2']=mergeTutorialProgress(prior['astrift.onboarding.v2'],data['astrift.onboarding.v2']);
+    this.ctx.storage.transactionSync(()=>{this.ctx.storage.sql.exec('UPDATE account SET snapshot=? WHERE id=1',JSON.stringify(data));if(sequence!==undefined)this.ctx.storage.sql.exec('INSERT INTO account_save_order VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET session_hash=excluded.session_hash,sequence=excluded.sequence',hash,Number(sequence))});return {ok:true};
+  }
   async logout(token:string,device:string){if(/^[a-f0-9]{64}$/i.test(token)&&/^([0-9a-f-]{36})$/i.test(device)){const hash=await digest(token),row=this.row();if(row)await this.registry().release(row.name.toLowerCase(),device,hash);this.ctx.storage.sql.exec('DELETE FROM sessions WHERE token_hash=?',hash)}return {ok:true}}
   recordResult(matchId:string,won:boolean,deaths:number){
     const row=this.row();if(!row||!/^([a-z0-9:-]){10,100}$/i.test(matchId))return null;

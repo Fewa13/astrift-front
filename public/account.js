@@ -16,7 +16,15 @@ const CLOUD_KEYS=[
   'astrift.equipment.v1','astrift.skins.v1','astrift.knifeSkins.v1','astrift.keybinds.v1',
   'astrift.quality.v1','astrift.map.v1','astrift.gunmasterWeapon','astrift.weapon'
 ];
-let session=null,profile=null,lastUploaded='',saving=false;
+let session=null,profile=null,lastUploaded='',saving=null,authenticationEpoch=0,saveOrderMemory={};
+function readSaveOrder(current){let order=saveOrderMemory;try{order=JSON.parse(sessionStorage.getItem('astrift.saveOrder.v1')||JSON.stringify(saveOrderMemory))}catch{}return saveOrderMemory.token===current.token&&(order.token!==current.token||saveOrderMemory.sequence>order.sequence)?saveOrderMemory:order;}
+function saveEnvelope(current,snapshot){
+ const key='astrift.saveOrder.v1',order=readSaveOrder(current);
+ const saveSequence=order.token===current.token&&Number.isSafeInteger(order.sequence)?order.sequence+1:1;
+ saveOrderMemory={token:current.token,sequence:saveSequence};try{sessionStorage.setItem(key,JSON.stringify(saveOrderMemory))}catch{}
+ return {...current,snapshot,clientVersion,saveSequence};
+}
+function observeSaveSequence(current,sequence){if(!Number.isSafeInteger(sequence)||sequence<0)return;const key='astrift.saveOrder.v1',order=readSaveOrder(current);if(order.token!==current.token||sequence>(order.sequence||0)){saveOrderMemory={token:current.token,sequence};try{sessionStorage.setItem(key,JSON.stringify(saveOrderMemory))}catch{}}}
 let device=localStorage.getItem(DEVICE_KEY);
 if(!device||!/^[0-9a-f-]{36}$/i.test(device)){device=crypto.randomUUID();localStorage.setItem(DEVICE_KEY,device)}
 try{const value=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(value&&typeof value.name==='string'&&/^[a-f0-9]{64}$/i.test(value.token))session={name:value.name,token:value.token,device}}catch{}
@@ -31,7 +39,7 @@ export async function accountApi(path,body){
   let result;try{result=await response.json()}catch{throw Error('服务器响应无效')}
   requireClientUpdate(result,path==='account/save');
   if(response.status===401&&session&&body?.token===session.token){clearSession();window.dispatchEvent(new CustomEvent('astrift:account-reset'))}
-  if(!response.ok||!result?.ok){if(String(result?.error||'').startsWith('账号已被')){clearSession();window.dispatchEvent(new CustomEvent('astrift:account-banned'));window.dispatchEvent(new CustomEvent('astrift:account-reset'))}throw Error(result?.error||'请求失败');}
+  if(!response.ok||!result?.ok){if(session&&body?.token===session.token&&String(result?.error||'').startsWith('账号已被')){clearSession();window.dispatchEvent(new CustomEvent('astrift:account-banned'));window.dispatchEvent(new CustomEvent('astrift:account-reset'))}throw Error(result?.error||'请求失败');}
   return result;
 }
 export const accountEmailUI=createAccountEmailUI({request:accountApi,getSession:accountSession,onReset:()=>{clearSession();window.dispatchEvent(new CustomEvent('astrift:account-reset'));document.getElementById('loginAccount')?.click()}});
@@ -73,22 +81,28 @@ function renderSeason(){
 export async function refreshAccountProfile(){
   if(!session)return null;
   const current=session;
-  try{const result=await accountApi('account/profile',current);if(session!==current)return null;profile=result.profile;renderAccount();renderSeason();window.dispatchEvent(new CustomEvent('astrift:account-profile',{detail:profile}));return profile}
+  try{const result=await accountApi('account/profile',current);if(session!==current)return null;profile=result.profile;observeSaveSequence(current,profile.saveSequence);renderAccount();renderSeason();window.dispatchEvent(new CustomEvent('astrift:account-profile',{detail:profile}));return profile}
   catch(error){if(error.message==='登录已失效'&&session===current)clearSession();throw error}
 }
-function clearSession(){session=null;profile=null;lastUploaded='';localStorage.removeItem(SESSION_KEY);renderAccount();renderSeason();window.dispatchEvent(new CustomEvent('astrift:account-profile',{detail:null}))}
+function clearSession(){authenticationEpoch++;session=null;profile=null;lastUploaded='';localStorage.removeItem(SESSION_KEY);renderAccount();renderSeason();window.dispatchEvent(new CustomEvent('astrift:account-profile',{detail:null}))}
 async function checkSession(){if(!session||!navigator.onLine)return;const current=session;try{await accountApi('account/check',current)}catch(error){if(error.message==='登录已失效'&&session===current)clearSession()}}
 export const saveAccountNow=()=>syncCloud();
 async function syncCloud(){
-  if(!session||saving||!navigator.onLine)return;
+  if(!session||!navigator.onLine)return;
+  const current=session;
+  if(saving){await saving;if(session===current)return syncCloud();return}
   const snapshot=localSave(),serial=JSON.stringify(snapshot);if(serial===lastUploaded)return;
-  saving=true;try{await accountApi('account/save',{...session,snapshot});lastUploaded=serial}catch{}finally{saving=false}
+  let uploaded=false,retryStale=false;
+  const task=(async()=>{try{const result=await accountApi('account/save',saveEnvelope(current,snapshot));if(session===current){if(result.stale){observeSaveSequence(current,result.saveSequence);retryStale=Number.isSafeInteger(result.saveSequence)}else{lastUploaded=serial;uploaded=true}}}catch{}})();
+  saving=task;try{await task}finally{if(saving===task)saving=null}
+  if(retryStale&&session===current)return syncCloud();
+  if(uploaded&&session===current&&JSON.stringify(localSave())!==serial)return syncCloud();
 }
 export async function authenticateAccount(action,name,password,beforeChanged=()=>{}){
- if(!['login','register'].includes(action))throw Error('操作无效');const result=await accountApi('account/'+action,{name:name.trim().normalize('NFKC'),password,...(action==='register'?{snapshot:localSave()}:{})});
- session={name:result.profile.name,token:result.token,device};profile=result.profile;localStorage.setItem(SESSION_KEY,JSON.stringify(session));if(action==='login'||result.registrationRecovered)applyCloudSave(profile.snapshot,session.name);else localStorage.setItem('astrift.callsign',session.name);lastUploaded=JSON.stringify(localSave());renderAccount();renderSeason();beforeChanged(result);if(action==='register')await accountEmailUI.offer();window.dispatchEvent(new CustomEvent('astrift:account-changed',{detail:{action,name:session.name,snapshot:profile.snapshot,profile}}));return result;
+ if(!['login','register'].includes(action))throw Error('操作无效');const attempt=++authenticationEpoch,result=await accountApi('account/'+action,{name:name.trim().normalize('NFKC'),password,...(action==='register'?{snapshot:localSave()}:{})});if(attempt!==authenticationEpoch)throw Error('登录操作已被替换 / Login superseded');
+ session={name:result.profile.name,token:result.token,device};profile=result.profile;localStorage.setItem(SESSION_KEY,JSON.stringify(session));if(action==='login'||result.registrationRecovered)applyCloudSave(profile.snapshot,session.name);else localStorage.setItem('astrift.callsign',session.name);lastUploaded=JSON.stringify(localSave());renderAccount();renderSeason();const authenticated=session;beforeChanged(result);if(action==='register')await accountEmailUI.offer();if(session!==authenticated||attempt!==authenticationEpoch)return result;window.dispatchEvent(new CustomEvent('astrift:account-changed',{detail:{action,name:session.name,snapshot:profile.snapshot,profile}}));return result;
 }
-export async function logoutAccount(){const previous=session;if(!previous)return;await syncCloud();try{await accountApi('account/logout',previous)}catch{}clearSession();window.dispatchEvent(new CustomEvent('astrift:account-reset'))}
+export async function logoutAccount(){const previous=session,epoch=authenticationEpoch;if(!previous)return;await syncCloud();if(session!==previous||epoch!==authenticationEpoch)return;try{await accountApi('account/logout',previous)}catch{}if(session!==previous||epoch!==authenticationEpoch)return;clearSession();window.dispatchEvent(new CustomEvent('astrift:account-reset'))}
 export function initAccountUI(){
   const dialog=$('accountDialog'),form=$('accountForm');dialog.setAttribute('data-no-translate','');$('accountPassword').parentElement.firstChild.textContent='密码 / Password';$('accountCancel').textContent='返回 / Back';$('accountName').parentElement.setAttribute('data-no-translate','');let action='register',submitting=false;
   const open=mode=>{if(submitting)return;action=mode;dialog.hidden=false;$('accountDialogTitle').textContent=mode==='register'?'注册账号 / Register':'登录账号 / Log in';$('accountDialogHint').textContent=mode==='register'?'注册时会上传本机存档。 / Your local save will be uploaded.':'登录后使用云端存档。 / Your cloud save will be loaded.';$('accountSubmit').textContent=mode==='register'?'注册 / Register':'登录 / Log in';$('accountSubmit').disabled=false;$('accountPassword').autocomplete=mode==='register'?'new-password':'current-password';$('accountName').maxLength=mode==='register'?14:254;$('accountName').parentElement.firstChild.textContent=mode==='register'?'账号名 / Account name':'账号名或邮箱 / Account name or email';$('accountName').value=mode==='register'?$('name').value:'';$('accountPassword').value='';$('accountError').textContent='';$('accountName').focus()};
@@ -105,14 +119,18 @@ export function initAccountUI(){
   $('openSeason').onclick=()=>{$('seasonDialog').hidden=false;renderSeason();if(session)void refreshAccountProfile().catch(()=>{panelError('赛季进度读取失败，请稍后再试')})};
   $('closeSeason').onclick=()=>{$('seasonDialog').hidden=true};
   renderAccount();renderSeason();
-  if(session)void refreshAccountProfile().then(value=>{if(value)lastUploaded=JSON.stringify(value.snapshot)}).catch(()=>{});
+}
+let accountSyncStarted=false;
+function startAccountSync(){
+  if(accountSyncStarted)return;accountSyncStarted=true;
+  if(session){const current=session;void refreshAccountProfile().then(value=>{if(value&&session===current)lastUploaded=JSON.stringify(value.snapshot)}).catch(()=>{});}
   setInterval(()=>{void syncCloud()},4000);
   setInterval(()=>{void checkSession()},15000);
   setInterval(()=>{if(session&&!document.hidden)void refreshAccountProfile().catch(()=>{})},60000);
   addEventListener('focus',()=>{void checkSession()});
   addEventListener('online',()=>{void syncCloud()});
-  addEventListener('pagehide',()=>{if(session&&JSON.stringify(localSave())!==lastUploaded)void fetch(apiURL('/api/account/save'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...session,snapshot:localSave(),clientVersion}),keepalive:true}).catch(()=>{})});
+  addEventListener('pagehide',()=>{if(!session)return;const snapshot=localSave();if(JSON.stringify(snapshot)!==lastUploaded)void fetch(apiURL('/api/account/save'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(saveEnvelope(session,snapshot)),keepalive:true}).catch(()=>{})});
 }
 function panelError(message){$('seasonDetails').textContent=message}
 
-void accountPageLease().then(allowed=>{if(!allowed){session=null;profile=null;window.dispatchEvent(new CustomEvent('astrift:account-reset'));}});
+void accountPageLease().then(allowed=>{if(!allowed){session=null;profile=null;window.dispatchEvent(new CustomEvent('astrift:account-reset'));}else startAccountSync()});
