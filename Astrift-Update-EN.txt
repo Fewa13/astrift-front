@@ -1,0 +1,64 @@
+Last updated: November 27
+Updates:
+
+BUG FIXES — Community Maps
+- Fixed wandering monsters ignoring monster-only walls. Wander movement, path checks and ground height now consistently use the monster collision layer.
+
+Mobile Interface
+
+- The Inventory, Character, Adventure, Social and Shop category buttons can now be moved and resized individually in the screen layout editor, with saved positions.
+- Equipped gear is collapsed by default on mobile. Expand it to inspect or change gear; its height is limited to preserve space for inventory items.
+- Reduced spacing around the mobile inventory title, categories and auxiliary links. The item area scrolls independently.
+
+Ancient Entry and Map Selection
+
+- Moved previous dungeon cleanup into the loading phase with an explicit progress stage.
+- Prepare the official map selector before loading finishes; Enter opens it directly without another cleanup request.
+- Dungeon cleanup still applies on entering/leaving the game, while reconnects retain their state.
+- Pause background 3D rendering while map selection is open, then resume on exit to reduce menu overhead.
+
+Friend Voice and Mobile Controls
+
+- Fixed scrolling on the mobile profession page; profession and skill content now scrolls with touch.
+- Added Start voice chat to Ancient and FPS friend conversations. Friends can accept or decline; the caller sees declined, unanswered, cancelled and ended states.
+- Accepted calls provide one-to-one voice with mute, unmute and hangup, using a landscape-friendly mobile panel.
+- Release local audio when calls end, are declined, disconnect or microphone setup is cancelled. Only friends and call participants can connect. Call audio is not stored.
+
+Mobile Login Fix
+
+- Login and registration pages now scroll vertically, keeping their bottom actions reachable in landscape.
+- Authentication and password recovery adapt to the visible area when the keyboard opens, including embedded pages.
+- Ancient login no longer shifts out of view due to vertical centering; recovery dialogs stay above the login page.
+
+Map Loading, Voice Access and Skill-book Choices
+
+- Official maps and trial scenes are built during startup loading, with material compilation and texture preparation before entry. Map changes reuse prepared scenes; loading shows the current map being prepared.
+- Voice call buttons now appear beside each friend, with another entry inside the conversation.
+- Selectable skill books list only regular professions that actually use books; authority and fusion professions are excluded.
+- Action notices such as friend-request confirmations disappear after about 3.5 seconds.
+
+Selectable Skill Books and Trial Exits
+
+- Selectable books from mail, the tower and puzzle rewards now go to Inventory → Consumables when claimed.
+- Tap skills to add or remove copies, including across regular professions. Use any selected amount; unspent choices remain. No forced full redemption or typed quantity.
+- Selection stops at the owned amount. Invalid, duplicate or excessive requests are rejected without spending items.
+- Leaving dungeons or profession trials opens map selection instead of automatically entering the Tribe. Late dungeon updates cannot pull players back into an exited run.
+
+Map Entry Loading
+
+- Startup prepares only the initial scene and map selector rather than warming every map at once.
+- Selecting a map opens a dedicated loading bar for map data, materials, textures, graphics preparation and the world connection.
+- Graphics warmup uses a one-pixel viewport and waits for GPU completion instead of queueing full-map draws.
+- Return to map selection during loading or after a connection failure. Previously built scenes are reused.
+
+First Entry After a Full Restart
+
+- First map selection builds a lightweight menu instead of reinserting menu nodes previously mounted during startup.
+- The lobby Enter button opens Official Maps rather than restoring My Maps and waiting for its network request.
+- Game pages opt out of third-party live text scanning to reduce extension interference.
+
+Lobby Entry Responsiveness
+
+- The lobby renders its background once, avoiding continuous 3D submissions while entering menus. Normal rendering resumes in the map.
+- Map selection removes repeated full-map gradients and hover filters while keeping region shapes, colors, landmarks and entries.
+- High-resolution checks use actual pointer input and cover the first entry after a full restart.
