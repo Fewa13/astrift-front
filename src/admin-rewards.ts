@@ -19,13 +19,8 @@ export function cleanMailRewards(value:unknown):MailReward[]|null{
 }
 export function mailBookChoices(){return Object.entries(PROFESSIONS).filter(([,p])=>p.skills.some(hasSkillBook)).map(([id,p])=>({id,name:p.name,en:p.en,skills:p.skills.filter(hasSkillBook).map(id=>({id,name:SKILLS[id].name,en:SKILLS[id].en}))}))}
 export function grantMailRewards(p:AncientProfile,rewards:MailReward[],selection:unknown=[]){
- const required=rewards.find(r=>r.key==='skill-choice')?.quantity||0,selected=new Map<string,number>();let total=0;
- if(!Array.isArray(selection)||selection.length>Object.keys(SKILLS).length)return 'Invalid skill book selection.';
- for(const item of selection){if(!item||typeof item.id!=='string'||!hasSkillBook(item.id)||selected.has(item.id)||!Number.isSafeInteger(item.quantity)||item.quantity<1||item.quantity>required-total)return 'Invalid skill book selection.';total+=item.quantity;selected.set(item.id,item.quantity)}
- if(total!==required)return required?'Choose all skill books before claiming.':'Invalid skill book selection.';
  const grants=new Map<string,number>();let gearCount=0;const gearPlans:{pool:string[];count:number}[]=[];
- for(const r of rewards){if(r.key==='skill-choice'||r.key.startsWith('skillbook:')&&!hasSkillBook(r.key.slice(10)))continue;if(r.key.startsWith('random-gear:')){const q=Number(r.key.split(':')[1]),pool=Object.entries(GEAR).filter(([key,d])=>d.quality===q&&!Object.hasOwn(ANCIENT_FORGE,key)).map(([key])=>key);if(!pool.length)return 'No equipment available for this quality.';gearCount+=r.quantity;gearPlans.push({pool,count:r.quantity})}else grants.set(r.key,(grants.get(r.key)||0)+r.quantity)}
- for(const [id,count]of selected){const key=skillBook(id);grants.set(key,(grants.get(key)||0)+count)}
+ for(const r of rewards){if(r.key.startsWith('skillbook:')&&!hasSkillBook(r.key.slice(10)))continue;if(r.key.startsWith('random-gear:')){const q=Number(r.key.split(':')[1]),pool=Object.entries(GEAR).filter(([key,d])=>d.quality===q&&!Object.hasOwn(ANCIENT_FORGE,key)).map(([key])=>key);if(!pool.length)return 'No equipment available for this quality.';gearCount+=r.quantity;gearPlans.push({pool,count:r.quantity})}else {const key=r.key==='skill-choice'?'supply:skill-choice':r.key;grants.set(key,(grants.get(key)||0)+r.quantity)}}
 
  // Validate the full attachment before granting anything; the caller commits it with the claim receipt.
  for(const [key,count]of grants){const current=key==='coins'?p.coins:key==='xp'?p.xp:key.startsWith('potion:')?(p.potions?.[key.slice(7)]||0):(p.materials?.[key]||0);if(!Number.isSafeInteger(count)||!Number.isFinite(current+count))return 'Invalid mail reward.'}

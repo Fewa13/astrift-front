@@ -1,3 +1,4 @@
+import {useSkillChoices,SKILL_CHOICE_KEY} from './ancient-book-choices';
 import {communityPlatformCarry} from './ancient-community';
 import {areaContains,cleanComponents} from './ancient-community-v2';
 import {AncientWorkshop} from './ancient-workshop';
@@ -641,6 +642,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
    return {ok:true,profile:this.read(name)};
   }
   if(action==='towerStart'){const error=this.ctx.storage.transactionSync(()=>{const error=this.dungeons().createTower(name);if(!error)this.trials().leave(name);return error;});if(error)return fail(error);return {ok:true,profile:this.read(name),dungeonState:this.dungeons().state(name)}}
+  if(action==='towerClaimBooks')return this.ctx.storage.transactionSync(()=>{const fresh=this.read(name),n=fresh.tower?.books||0;if(!n)return fail('No selectable skill book available');fresh.materials[SKILL_CHOICE_KEY]=(fresh.materials[SKILL_CHOICE_KEY]||0)+n;fresh.tower!.books=0;this.save(name,fresh);return {ok:true,profile:fresh}});
   if(action==='towerBook')return this.ctx.storage.transactionSync(()=>{const fresh=this.read(name),id=String(data.id||'');if(!fresh.tower||fresh.tower.books<1||!hasSkillBook(id))return fail('No selectable skill book available');fresh.tower.books--;const key='skillbook:'+id;fresh.materials[key]=(fresh.materials[key]||0)+1;this.save(name,fresh);return {ok:true,profile:fresh}});
   if(action.startsWith('dungeon')){this.parties().touch(name);const error=this.ctx.storage.transactionSync(()=>this.dungeons().command(name,action,data));if(error)return fail(error);if(action!=='dungeonState')for(const ws of this.allSockets())this.send(ws,{type:'dungeonChanged'});return {ok:true,profile:p,dungeonState:this.dungeons().state(name)}}
   if(action.startsWith('trade')){this.parties().touch(name);const trade=this.trades();const error=this.ctx.storage.transactionSync(()=>trade.command(name,action,data));if(error)return fail(error);if(action==='tradeConfirm')for(const peer of this.connections()){const a=this.readSocket(peer) as Player;if(a.jadeDisplay&&!this.read(a.name).collections?.some(i=>i.id===a.jadeDisplay!.id))this.cancelJadeDisplay(a.name);}if(action!=='tradeState')for(const peer of this.allSockets()){const player=this.readSocket(peer) as Player|null;if(player)this.send(peer,{type:'tradeChanged'})}return {ok:true,profile:this.read(name),tradeState:trade.state(name)}}
@@ -691,6 +693,7 @@ private read(name:string,preview=0){const id=preview||this.previewId(name);if(id
    if(trial?.status==='active'&&trial.artifact?.id==='abyss')return fail('Food healing is disabled during the Abyssal trial.');
 const key=String(data.key||'meal:grilled'),food=Object.hasOwn(LEISURE_FOODS,key)?LEISURE_FOODS[key]:undefined;if(!food)return fail('Not enough food');const ws=this.connections().find(ws=>(this.readSocket(ws) as Player).name===name),a=this.readSocket(ws) as Player|null;if(!ws||!a||a.hp<=0)return fail('Use food while alive');if((p.leisureFoodAt||0)>Date.now())return fail('Food is cooling down');if((p.materials[key]||0)<1)return fail('Not enough food');if(a.hp>=(a.maxHp||100))return fail('Health is already full');p.materials[key]--;p.leisureFoodAt=Date.now()+60000;const amount=Math.min((a.maxHp||100)-a.hp,Math.max(1,Math.floor((a.maxHp||100)*food.healPercent/100)));a.hp+=amount;this.save(name,p);this.persistHealth(a);this.writeSocket(ws,a);this.send(ws,{type:'healed',hp:a.hp,maxHp:a.maxHp,amount})}
   else if(action==='buySupply'){const error=buyAncientSupply(p,String(data.id||''),Number(data.quantity??1));if(error)return fail(error);this.save(name,p)}
+  else if(action==='useSkillChoices'){const error=useSkillChoices(p,data.selection);if(error)return fail(error);this.save(name,p);}
   else if(action==='useSupply'){
    const id=String(data.id||''),quantity=Number(data.quantity??1);
    if(!Number.isSafeInteger(quantity)||quantity<1||quantity>999)return fail('使用数量无效 / Invalid quantity');

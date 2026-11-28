@@ -74,28 +74,12 @@ export function createAncientPuzzleUI({en,name,request,onProfile,onEnter,onExit}
   }
   const floor=state.pendingBooksFloor;
   make(view,'h2',L('第 '+floor+' 层奖励','Floor '+floor+' reward'));
-  make(view,'p',L('选满三本技能书后继续。','Choose all three skill books to continue.'));
-  const choices=Array.from({length:3},(_,index)=>{
-   const label=make(view,'label',L('技能书 ','Skill book ')+(index+1));label.className='ancientPuzzleBookChoice';
-   const select=make(label,'select');
-   const placeholder=make(select,'option',L('请选择','Choose a book'));placeholder.value='';
-   for(const [job,profession] of Object.entries(PROFESSIONS)){
-    if(isFusionJob(job))continue;
-    const group=make(select,'optgroup');group.label=en()?profession.en:profession.name;
-    for(const skill of profession.skills){const option=make(group,'option',en()?SKILLS[skill].en:SKILLS[skill].name);option.value=skill;}
-   }
-   return select;
-  });
-  const claim=button(view,L('领取三本技能书','Claim three skill books'),async()=>{
-   claim.disabled=true;
-   const counts=new Map();
-   for(const choice of choices)counts.set(choice.value,(counts.get(choice.value)||0)+1);
-   await update('puzzleClaim',{floor,selection:[...counts].map(([id,quantity])=>({id,quantity}))});
+  make(view,'p',L('领取3本自选技能书到消耗品背包，之后可分次选择使用。','Claim 3 selectable skill books to Consumables and choose them later.'));
+  const claim=button(view,L('领取到消耗品背包','Claim to Consumables'),async()=>{
+   claim.disabled=true;await update('puzzleClaim',{floor});
    if(claim.isConnected){status.textContent=feedback;claim.disabled=false;}
    if(!state?.pendingBooksFloor)room?.querySelector('.ancientPuzzlePanel')?.close();
   });
-  claim.disabled=true;
-  for(const choice of choices)choice.onchange=()=>{claim.disabled=choices.some(select=>!select.value)};
   button(view,L('离开解谜地图','Leave puzzle map'),close);
 
  }
