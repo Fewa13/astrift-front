@@ -280,9 +280,9 @@ function cleanCommunityMap(raw, tier, id, owner) {
   const previous = motionSources.get("community:" + id) || maps.get("community:" + id);
   try {
     setCommunityMap(result);
-    for (const s of spawns) if (s.y === void 0) s.y = communityHeight("community:" + id, s.x, s.z, 0);
+    for (const s of spawns) if (s.y === void 0) s.y = communityHeight("community:" + id, s.x, s.z, 0, "monster");
     if (npcs.some((n) => Math.abs(communityHeight("community:" + id, n.x, n.z, n.y) - n.y) > 0.15 || communityBlocked("community:" + id, n.x, n.z, 0.4, n.y))) throw Error("NPC needs a walkable floor");
-    if (communityBlocked("community:" + id, spawn.x, spawn.z, 1.2) || spawns.some((s) => Math.abs(communityHeight("community:" + id, s.x, s.z, s.y || 0) - (s.y || 0)) > 0.15 || communityBlocked("community:" + id, s.x, s.z, 0.65, s.y || 0))) throw Error("Spawn point is obstructed");
+    if (communityBlocked("community:" + id, spawn.x, spawn.z, 1.2) || spawns.some((s) => Math.abs(communityHeight("community:" + id, s.x, s.z, s.y || 0, "monster") - (s.y || 0)) > 0.15 || communityBlocked("community:" + id, s.x, s.z, 0.65, s.y || 0, "monster"))) throw Error("Spawn point is obstructed");
   } finally {
     if (previous) setCommunityMap(previous);
     else {
