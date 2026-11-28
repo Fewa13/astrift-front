@@ -2,7 +2,7 @@
 import {ANCIENT_POTIONS,gainXP,type AncientProfile} from './ancient-rules';
 import {ANCIENT_SUPPLIES,supplyKey} from './ancient-commerce';
 import {GEAR,GEAR_QUALITIES,ANCIENT_FORGE,rollGearItem} from './ancient-gear';
-import {PROFESSIONS,SKILLS,hasSkillBook,isFusionJob,skillBook} from './ancient-skills';
+import {PROFESSIONS,SKILLS,hasSkillBook,skillBook} from './ancient-skills';
 export type MailReward={key:string;quantity:number;name?:string;en?:string};
 export function adminRewardCatalog(){return [
  ...[1,2,3].map(tier=>({key:'blank-map:'+tier,name:['','初级空白地图','中级空白地图','高级空白地图'][tier],en:['','Basic Blank Map','Intermediate Blank Map','Advanced Blank Map'][tier]})),
@@ -17,7 +17,7 @@ export function cleanMailRewards(value:unknown):MailReward[]|null{
  if(value===undefined)return [];if(!Array.isArray(value)||value.length>20)return null;const allowed=new Set(adminRewardCatalog().map(r=>r.key)),seen=new Set<string>();
  const rewards:MailReward[]=[];for(const r of value){if(!r||!allowed.has(r.key)||seen.has(r.key)||!Number.isSafeInteger(r.quantity)||r.quantity<1||(r.key.startsWith('random-gear:')&&r.quantity>1000))return null;seen.add(r.key);rewards.push({key:r.key,quantity:r.quantity})}return rewards;
 }
-export function mailBookChoices(){return Object.entries(PROFESSIONS).filter(([id])=>!isFusionJob(id)).map(([id,p])=>({id,name:p.name,en:p.en,skills:p.skills.map(id=>({id,name:SKILLS[id].name,en:SKILLS[id].en}))}))}
+export function mailBookChoices(){return Object.entries(PROFESSIONS).filter(([,p])=>p.skills.some(hasSkillBook)).map(([id,p])=>({id,name:p.name,en:p.en,skills:p.skills.filter(hasSkillBook).map(id=>({id,name:SKILLS[id].name,en:SKILLS[id].en}))}))}
 export function grantMailRewards(p:AncientProfile,rewards:MailReward[],selection:unknown=[]){
  const required=rewards.find(r=>r.key==='skill-choice')?.quantity||0,selected=new Map<string,number>();let total=0;
  if(!Array.isArray(selection)||selection.length>Object.keys(SKILLS).length)return 'Invalid skill book selection.';

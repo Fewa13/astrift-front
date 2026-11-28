@@ -19,7 +19,7 @@ export function createStartupFlow({shell,mount,prepareAssets,musicURL='/ASTRIFT_
   update(0,'正在读取游戏资源 / Reading game resources');await prepareAssets((fraction,text,done,total)=>update(fraction*.9,text,done!==undefined?`${done} / ${total}`:''));
   update(.9,'正在初始化游戏引擎 / Initializing game engine');const bridge=await mount('main');update(1,'资源准备完成 / Resources ready');await new Promise(requestAnimationFrame);
   await bridge.authenticate(()=>{cover.hidden=true});update(0,'正在读取账户存档 / Reading account save');const messages=await bridge.prepare((fraction,text)=>update(fraction*.6,text));
-  update(.6,'正在准备远古世纪场景 / Preparing Ancient Age scene');await mount('ancient',true);update(.9,'正在准备模式选择 / Preparing mode selection');await bridge.prepareChoices();update(1,'准备完成 / Ready');await new Promise(requestAnimationFrame);finished=true;cover.hidden=true;bridge.showChoices();
+  update(.6,'正在准备远古世纪场景 / Preparing Ancient Age scene');shell.entryAncientProgress=(value,text)=>update(.6+.3*Math.max(0,Math.min(100,value))/100,text);try{await mount('ancient',true)}finally{shell.entryAncientProgress=null};update(.9,'正在准备模式选择 / Preparing mode selection');await bridge.prepareChoices();update(1,'准备完成 / Ready');await new Promise(requestAnimationFrame);finished=true;cover.hidden=true;bridge.showChoices();
   if(messages.length)openEntryAnnouncements({messages,onRead:id=>bridge.readAnnouncement(id)});
  }catch(e){cover.hidden=false;label.textContent='启动未完成 / Startup incomplete';details.textContent=e.message;retry.hidden=false}finally{running=false}}
  retry.onclick=()=>void run();shell.retryEntry=()=>void run();shell.entryFinished=()=>finished;void run();return {audio,run,stop:()=>shell.entrySelected()};
