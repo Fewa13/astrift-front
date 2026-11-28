@@ -1,0 +1,7 @@
+// © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
+export function createMapLoading({en,onCancel}){
+ const L=(a,b)=>en()?b:a,root=document.createElement('section');root.className='ancientMapLoading';root.hidden=true;root.style.cssText='position:fixed;inset:0;z-index:100100;display:grid;place-items:center;background:#07111cf5;color:#d9f5ff;padding:24px';
+ root.innerHTML='<div style="width:min(520px,90vw);padding:28px;border:1px solid #427582;background:#0d202e"><small>ASTRIFT // ANCIENT AGE</small><h2></h2><div style="display:flex;justify-content:space-between;gap:16px"><span role="status"></span><b>0%</b></div><progress max="100" value="0" aria-label="地图加载 / Map loading" style="width:100%;height:12px;accent-color:#6ce2dc;margin:14px 0 22px"></progress><button type="button" style="padding:10px 16px;border:1px solid #427582;background:#132d3c;color:#d9f5ff"></button></div>';document.body.append(root);
+ root.querySelector('button').onclick=onCancel;
+ return {show(){root.hidden=false;root.querySelector('h2').textContent=L('正在进入地图','Entering map');root.querySelector('button').textContent=L('返回地图选择','Back to map selection');this.stage(0,L('准备地图数据…','Preparing map data…'))},stage(value,text){root.querySelector('progress').value=value;root.querySelector('b').textContent=Math.floor(value)+'%';root.querySelector('[role=status]').textContent=text},close(){root.hidden=true},fail(text){root.querySelector('h2').textContent=L('地图进入失败','Could not enter map');root.querySelector('[role=status]').textContent=text}};
+}
