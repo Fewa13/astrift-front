@@ -1,10 +1,12 @@
 import './mobile-ui.js';
+import {entryTimer} from './ancient-entry-performance.js';
 import {openEntryAnnouncements} from './official-announcements.js';
 // One actual-work driven entry sequence, shared by online and portable shells.
 export async function preloadStartupAssets(report,{fetchImpl=fetch,manifestURL='/startup-manifest.json'}={}){
+ const finish=entryTimer('startup.downloads');
  const response=await fetchImpl(manifestURL,{cache:'no-cache'});if(!response.ok)throw Error('Unable to load resource manifest');const manifest=await response.json(),files=manifest.files;if(!Array.isArray(files)||!files.length)throw Error('Resource manifest is empty');const total=files.reduce((n,f)=>n+f.bytes,0),received=new Map();let index=0,done=0,failed=false;
  const update=(file,n,complete=false)=>{if(failed)return;received.set(file.url,complete?file.bytes:Math.min(file.bytes,n));const bytes=[...received.values()].reduce((a,b)=>a+b,0);report(bytes/total,file.url.endsWith('.css')?'界面样式 / Interface styles':file.url.includes('ancient')?'远古世纪资源 / Ancient Age resources':'战斗与界面资源 / Combat & interface resources',done,files.length)};
- await Promise.all(Array.from({length:Math.min(8,files.length)},async()=>{try{while(index<files.length&&!failed){const file=files[index++],res=await fetchImpl(file.url,{cache:'no-cache'});if(!res.ok)throw Error('Resource failed: '+file.url);let bytes=0;if(res.body?.getReader){const reader=res.body.getReader();for(;;){const {value,done}=await reader.read();if(done)break;bytes+=value.byteLength;update(file,bytes)}}else bytes=(await res.arrayBuffer()).byteLength;done++;update(file,bytes,true)}}catch(e){failed=true;throw e}}));report(1,'资源加载完成 / Resources loaded',files.length,files.length);
+ await Promise.all(Array.from({length:Math.min(8,files.length)},async()=>{try{while(index<files.length&&!failed){const file=files[index++],res=await fetchImpl(file.url,{cache:'no-cache'});if(!res.ok)throw Error('Resource failed: '+file.url);let bytes=0;if(res.body?.getReader){const reader=res.body.getReader();for(;;){const {value,done}=await reader.read();if(done)break;bytes+=value.byteLength;update(file,bytes)}}else bytes=(await res.arrayBuffer()).byteLength;done++;update(file,bytes,true)}}catch(e){failed=true;throw e}}));report(1,'资源加载完成 / Resources loaded',files.length,files.length);finish({files:files.length,bytes:total});
 }
 export function createStartupFlow({shell,mount,prepareAssets,musicURL='/ASTRIFT_UNBOUND_Full_Theme_V1.mp3'}){
  shell.managesAnnouncements=true;shell.managesEntry=true;let selected=false,finished=false,running=false,optedOut=false;const audio=new Audio(musicURL);audio.loop=true;audio.volume=.55;audio.preload='auto';

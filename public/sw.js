@@ -1,5 +1,5 @@
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-const CACHE_NAME='astrift-offline-20261126-entry-1';
+const CACHE_NAME='astrift-offline-20261127-entry-2';
 const ASSETS=['/mobile-ui.js','/mobile-ui.css','/startup-flow.js','/startup-flow.css','/startup-manifest.json','/ancient-puzzle-ui.js','/ancient-puzzle-map.js','/ancient-gear-workshop.js','/client-version.js',
  '/ancient-community-optics.js',
  '/ancient-community-amenities.js','/ancient-community-uses.js','/ancient-amenity-defs.js',
