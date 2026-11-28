@@ -11,7 +11,7 @@ const ctx={waitUntil:p=>pending.push(p),storage:{sql,getAlarm:async()=>1,setAlar
 const w=new h.classes.AncientWorld(ctx,h.env);
 await w.command('arenaqa','profile',{});w.community().saveWallet('arenaqa',{blank:0,blank3:1,medium:0,advanced:0,redraw:0,wins:0});
 let r=await w.command('arenaqa','communityCreate',{tier:3});assert(r.ok,JSON.stringify(r));
-const fixture=JSON.parse(fs.readFileSync('scripts/fixtures/skill-recording-arena.json','utf8')).map;
+const fixture=JSON.parse(fs.readFileSync(process.env.ARENA_FIXTURE||'scripts/fixtures/skill-recording-arena.json','utf8')).map;
 r=await w.command('arenaqa','communitySave',{id:r.map.id,revision:r.map.revision,map:{...r.map,...fixture,id:r.map.id,tier:3}});assert(r.ok,JSON.stringify(r));
 const map=r.map;assert.equal(map.spawns.length,18);assert(map.spawns.every(s=>s.respawn===3600));
 assert((await w.command('arenaqa','communitySubmit',{id:map.id,revision:map.revision})).ok);w.adminCommunityReview(map.id,map.revision,true,'');
@@ -31,6 +31,10 @@ ready(map.id);const state=JSON.parse(sql.exec('SELECT data FROM ancient_abilitie
 actor.x=pedal.x;actor.z=pedal.z;actor.y=(pedal.y||0)+1.7;
 w.componentEvent(ws,actor,definition,'heartbeat','');world=w.world(key);
 assert.equal(world.monsters.length,18,'Pedal restores authored identities, no temporary duplicates');assert(world.monsters.every(m=>m.hp===m.maxHp&&m.hp>0));assert.equal(sql.exec('SELECT * FROM community_mob_cooldowns WHERE map=?',key).toArray().length,0);assert.equal(sql.exec('SELECT * FROM community_mob_cooldowns WHERE map=?','community:999999').toArray().length,1);
+if(definition.v2.triggers.find(t=>t.id==='refill').actions.some(a=>a.type==='resetEncounter')){
+ for(const mob of world.monsters.filter(m=>m.homeX>=-6&&m.homeX<=6&&m.homeZ>=34&&m.homeZ<=38)){mob.hp=0;mob.respawnAt=until;sql.exec('INSERT INTO community_mob_cooldowns VALUES(?,?,?)',key,mob.id,until)}w.persist(world);
+ assert.equal(world.monsters.filter(m=>m.hp<=0).length,10);ready(map.id);w.componentEvent(ws,actor,definition,'heartbeat','');world=w.world(key);assert.equal(world.monsters.filter(m=>m.hp>0).length,18,'Only killing the middle ten no longer blocks the reset pad');assert(world.monsters.every(m=>m.spawnRespawn===3600));
+}
 actor.x=0;actor.z=-1000;assert.equal(w.world(key).monsters.length,18,'Far pedal/player does not discard this small encounter');
 const preview=await w.command('arenaqa','communityPreview',{id:map.id});assert(preview.ok,JSON.stringify(preview));ready(preview.map.id);actor.map='community:'+preview.map.id;const testWorld=w.world(actor.map);assert.equal(testWorld.monsters.length,18,'Preview also contains all 18 targets');
 actor.x=0;actor.z=0;
