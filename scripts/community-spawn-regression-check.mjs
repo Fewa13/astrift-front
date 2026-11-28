@@ -36,4 +36,7 @@ const preview=await w.command('arenaqa','communityPreview',{id:map.id});assert(p
 actor.x=0;actor.z=0;
 for(const mob of [testWorld.monsters[0],testWorld.monsters[1]]){const start=Date.now();w.damageMonster(ws,actor,mob,mob.maxHp*100);assert.equal(mob.hp,0);assert(mob.respawnAt>=start+3600000&&mob.respawnAt<=Date.now()+3600000,'Boss and normal monster use authored 3600 seconds');}
 const fresh=w.world(key).monsters.find(m=>m.kind==='grox');assert(w.findMobRespawn(fresh,key,[]),'Authored respawn position remains valid');
+const stale=w.world(actor.map),wave={...w.community().load(preview.map.id),v2:{...preview.map.v2,triggers:[{id:'waveqa',event:'interact',max:1,actions:Array.from({length:24},(_,i)=>({type:'spawn',kind:'grox',level:200,x:-20+i,y:0,z:-25}))}]}};
+w.componentEvent(ws,actor,wave,'interact','waveqa');assert.equal(w.world(actor.map).monsters.filter(m=>m.id.startsWith('script-')).length,24,'More than 16 scripted monsters spawn and survive world reconstruction');
+w.persist(stale);assert.equal(w.world(actor.map).monsters.filter(m=>m.id.startsWith('script-')).length,24,'Persisting an older snapshot preserves all concurrently spawned monsters');
 await Promise.all(pending);console.log('PASS real Advanced arena: 18 published/preview targets, durable deaths, shipped pedal restores 18 identities, scoped cooldown reset and distant player');

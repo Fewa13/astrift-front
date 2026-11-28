@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+const {outputFiles}=await build({entryPoints:['src/ancient-community-ai.ts'],bundle:true,write:false,format:'esm',platform:'node'});
+const {communityAIUpdates}=await import('data:text/javascript;base64,'+Buffer.from(outputFiles[0].text).toString('base64'));
+const monsters=Array.from({length:250},(_,i)=>({id:'m'+i,x:1000+i*10,z:0,hp:100})),players=[{x:0,z:0,hp:100}];
+assert.equal(communityAIUpdates(monsters,players,1000,.2).size,250);
+assert.equal(communityAIUpdates(monsters,players,1200,.2).size,48);
+monsters[249].target='player';assert(communityAIUpdates(monsters,players,1400,.2).has('m249'),'Combat bypasses the idle budget');
+delete monsters[249].target;
+const due=communityAIUpdates(monsters,players,2000,.2);assert(due.has('m200'));assert.equal(due.get('m200'),1,'Distant idle movement uses elapsed time');
+const nearby=communityAIUpdates(monsters,[{x:monsters[249].x,z:0,hp:100}],2200,.2);assert(nearby.has('m249'),'Approach wakes the monster immediately');assert.equal(nearby.get('m249'),.2);
+assert.equal(monsters.length,250);assert(monsters.every(m=>m.hp===100));
+console.log('PASS 250 identities retained; 48 prioritized idle AI, one-second distant updates, immediate combat/proximity wakeup');

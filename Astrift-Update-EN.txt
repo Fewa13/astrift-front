@@ -2,6 +2,7 @@ Last updated: November 27
 Updates:
 
 BUG FIXES — Community Maps
+- Removed hidden 48-monster and 16-scripted-monster truncation. Authored targets and valid scripted summons retain their world state; distant idle AI updates less often while nearby and engaged monsters remain responsive.
 - Fixed wandering monsters ignoring monster-only walls. Wander movement, path checks and ground height now consistently use the monster collision layer.
 
 Mobile Interface
