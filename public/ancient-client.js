@@ -365,7 +365,7 @@ function drawPanel(){closeArtifactPreview?.();closeArtifactPreview=undefined;if(
   }
  }
  else if(view==='skills'){skillUI.render(card)}
- else if(view==='professions'){if(profile?.profession==='voidsword')node('p',L('被动 · 受伤加速：每次受伤有25%概率移速+20%，持续3秒，不可叠加。','Passive · Hurt Haste: each hit taken has a 25% chance to grant +20% movement speed for 3 seconds. Does not stack.'),card);button(L('成长与战斗记录','Journey & Combat'),()=>openMenu('journey'),card);skillUI.renderProfessions(card)}
+ else if(view==='professions'){card.classList.add('ancientProfessionsCard');if(profile?.profession==='voidsword')node('p',L('被动 · 受伤加速：每次受伤有25%概率移速+20%，持续3秒，不可叠加。','Passive · Hurt Haste: each hit taken has a 25% chance to grant +20% movement speed for 3 seconds. Does not stack.'),card);button(L('成长与战斗记录','Journey & Combat'),()=>openMenu('journey'),card);skillUI.renderProfessions(card)}
  else if(view==='journey'){void journeyUI.render(card)}
  else if(view==='research'){
  const links=node('nav','',card);links.className='ancientActivityFilters';

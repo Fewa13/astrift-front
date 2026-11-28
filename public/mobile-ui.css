@@ -59,3 +59,19 @@ html[data-mobile-ui=true] .ancientInventoryTabs{padding:6px 0;gap:4px}
 html[data-mobile-ui=true] .ancientInventoryTabs button{padding:6px 9px!important;font-size:12px}
 html[data-mobile-ui=true] .ancientInventoryBody{touch-action:pan-y;-webkit-overflow-scrolling:touch}
 html[data-mobile-ui=true] .ancientLayoutToolbar.collapsed{top:auto;bottom:10px;justify-content:flex-end}
+html[data-mobile-ui=true] #ancientPanel:has(>.ancientProfessionsCard){overflow:hidden;min-height:0;touch-action:pan-y}
+html[data-mobile-ui=true] .ancientProfessionsCard{height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;padding-bottom:40px}
+html[data-mobile-ui=true] .ancientProfessionsCard button{touch-action:pan-y}
+/* Authentication uses the visible area, including when the software keyboard is open. */
+html[data-mobile-ui=true] #accountDialog,html[data-mobile-ui=true] #ancientEntryAuth,html[data-mobile-ui=true] .astriftEmailModal{top:var(--mobile-visible-top,0px)!important;bottom:auto!important;height:var(--mobile-visible-height,calc(100dvh * var(--mobile-ui-inverse)));overflow-y:auto!important;overflow-x:hidden;align-items:start;align-content:start!important;box-sizing:border-box;padding:12px!important;touch-action:pan-y pinch-zoom;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+html[data-mobile-ui=true] #accountDialog .roomCard{box-sizing:border-box;margin:0 auto;max-height:none;padding:16px;min-height:0;touch-action:pan-y pinch-zoom}
+html[data-mobile-ui=true] #accountDialog .roomCard h2{font-size:23px;margin:5px 0}
+html[data-mobile-ui=true] #accountDialog .roomCard p{margin:8px 0}
+html[data-mobile-ui=true] #accountDialog .roomActions{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:10px}
+html[data-mobile-ui=true] #accountDialog button,html[data-mobile-ui=true] #accountDialog input,html[data-mobile-ui=true] .astriftAccountPanel,html[data-mobile-ui=true] .astriftAccountPanel button,html[data-mobile-ui=true] .astriftEmailCard{touch-action:pan-y pinch-zoom}
+html[data-mobile-ui=true] #ancientEntryAuth{gap:12px!important;justify-items:center}
+html[data-mobile-ui=true] #ancientEntryAuth h1{font-size:24px;margin:8px 0}
+html[data-mobile-ui=true] .astriftEmailModal .astriftEmailCard{max-height:none;margin:0 auto}
+html[data-mobile-ui=true] #ancientPanel:has(>.ancientLoginCard){pointer-events:auto;overflow-y:auto;overflow-x:hidden;min-height:0;top:calc(var(--mobile-visible-top,0px) + 12px)!important;bottom:auto!important;height:max(1px,calc(var(--mobile-visible-height,100dvh) - 24px));max-height:none;margin:0 auto;z-index:100002;touch-action:pan-y pinch-zoom;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+html[data-mobile-ui=true] .ancientLoginCard{max-height:none!important;touch-action:pan-y pinch-zoom}
+html[data-mobile-ui=true] .astriftEmailModal{z-index:100003}

@@ -1,5 +1,6 @@
+import {friendVoice} from './friend-voice.js';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
-import {accountSession,accountApi} from './account.js?v=20261027-auth-recovery-1';
+import {accountSession,accountApi} from './account.js?v=20261111-feedback-1';
 import {protectName} from './i18n.js?v=20261008-onboarding-1';
 
 const $=id=>document.getElementById(id);
@@ -22,6 +23,7 @@ async function poll(onEnter){if(polling||!account()||!navigator.onLine)return;po
     if(selected)void loadChat();
   }catch(error){if(!$('friendsScreen').hidden)status(error.message)}finally{polling=false}}
 export function initSocialUI(onEnter){
+  const voice=friendVoice('fps');const voiceButton=document.createElement('button');voiceButton.type='button';voiceButton.className='friendVoiceEntry';voiceButton.textContent='发起语音聊天 / Start voice chat';voiceButton.onclick=()=>{if(selected)void voice.start(selected);else status('请先选择好友 / Select a friend')};document.getElementById('friendMessageForm').before(voiceButton);
   enterRoom=onEnter;
   const openFriends=()=>{$('friendsScreen').hidden=false;document.exitPointerLock?.();status('');void poll(onEnter)};
   $('openFriends').onclick=()=>{if(!account()&&!document.body.classList.contains('tutorialBrowsing')){pendingFriendsLogin=true;$('loginAccount').click();return}pendingFriendsLogin=false;openFriends();if(!account())status('教程预览：登录后即可添加好友、聊天和邀请对局')};

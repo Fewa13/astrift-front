@@ -1,3 +1,4 @@
+export {VoiceHub} from './voice-hub';
 // © 2026 Felix — Astrift / ASTRIFT FRONT. All rights reserved.
 import {requiresClientVersion,currentClient,clientVersionResponse} from './client-version';
 import {adminAPI} from './admin-api';
@@ -385,7 +386,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       const origin=request.headers.get('Origin');if(!origin||origin==='null'||!allowedApiOrigin(origin,url.origin)||googleEmbedOrigin(origin)||canvaEmbedOrigin(origin))return Response.json({error:'管理请求来源无效'},{status:403});return adminAPI(request,env);
     }
     if(['/admin','/admin/'].includes(url.pathname)){const response=await env.ASSETS.fetch(new Request(new URL('/admin/',url),request));const headers=new Headers(response.headers);headers.set('Cache-Control','no-store');headers.set('X-Frame-Options','DENY');return new Response(response.body,{status:response.status,headers})}
-    if(request.headers.get('Upgrade')==='websocket'&&!url.pathname.startsWith('/api/ancient/')){
+    if(request.headers.get('Upgrade')==='websocket'&&!url.pathname.startsWith('/api/ancient/')&&url.pathname!=='/api/voice/socket'){
       const account=await env.ACCOUNT_SESSIONS.getByName('global-v1').consumeSocketTicket(url.searchParams.get('ticket')||'',url.pathname);
       if(!account)return Response.json({error:'请重新登录 / Please log in again'},{status:401});
       socketAccount=account;
@@ -502,6 +503,25 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         await hub.markClaimed(eventId,key);return json({ok:true,profile,place:reward.place});
       }
       return json({error:'页面不存在'},404);
+    }
+    if(url.pathname.startsWith('/api/voice/')){
+      const action=url.pathname.slice('/api/voice/'.length),hub=env.VOICE_HUB.getByName('registry');
+      if(action==='socket'){
+        if(request.headers.get('Origin')&&!allowedApiOrigin(request.headers.get('Origin'),url.origin))return new Response('Invalid origin',{status:403});
+        const id=url.searchParams.get('call')||'';if(!/^[0-9a-f-]{36}$/.test(id))return new Response('Invalid call',{status:400});
+        if(!await hub.validTicket(url.searchParams.get('ticket')||'',id))return new Response('Voice ticket expired',{status:403});
+        return env.VOICE_HUB.getByName('relay:'+id).fetch(request);
+      }
+      const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{'Cache-Control':'no-store'}});
+      if(request.method!=='POST'||!request.headers.get('Content-Type')?.startsWith('application/json'))return json({error:'Invalid request'},400);
+      if(request.headers.get('Origin')&&!allowedApiOrigin(request.headers.get('Origin'),url.origin))return json({error:'Invalid origin'},403);
+      let body:Record<string,unknown>;try{const raw=await request.text();if(raw.length>2048)throw Error();body=JSON.parse(raw);if(!body||typeof body!=='object'||Array.isArray(body))throw Error()}catch{return json({error:'Invalid request'},400)}
+      const name=String(body.name||'').trim().toLowerCase(),account=env.PLAYER_ACCOUNTS.getByName('account:'+name);
+      if(!/^[-_\p{L}\p{N}]{2,14}$/u.test(name)||!await account.validate(String(body.token||''),String(body.device||'')))return json({error:'Please sign in'},401);
+      if(['start','respond','ticket'].includes(action)&&!currentClient(body.clientVersion))return clientVersionResponse();
+      if(!await rateLimit('voice-'+action+':'+name,action==='state'?90:action==='start'?8:30,60000))return limited();
+      let result;if(action==='start')result=await hub.start(name,String(body.target||''),String(body.scope||''));else if(action==='state')result=await hub.state(name);else if(action==='respond')result=await hub.respond(name,String(body.id||''),body.accept===true);else if(action==='end')result=await hub.end(name,String(body.id||''));else if(action==='ticket')result=await hub.ticket(name,String(body.id||''));else return json({error:'Not found'},404);
+      return json(result,result.ok?200:400);
     }
     if(url.pathname.startsWith('/api/social/')){
       const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store'}});
@@ -807,7 +827,7 @@ function googleEmbedOrigin(origin:string|null){return Boolean(origin&&/^https:\/
 // credentialless game clients, never proof of an account or administrative access.
 function canvaEmbedOrigin(origin:string|null){return Boolean(origin&&/^https:\/\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.canvacode\.com$/.test(origin))}
 function allowedApiOrigin(origin:string|null,workerOrigin:string){return origin===workerOrigin||origin==='null'||Boolean(origin&&(PUBLIC_ORIGINS.has(origin)||googleEmbedOrigin(origin)||canvaEmbedOrigin(origin)))}
-function googleEmbedPath(path:string){return /^\/api\/(account|ancient|social)\//.test(path)}
+function googleEmbedPath(path:string){return /^\/api\/(account|ancient|social|voice)\//.test(path)}
 // Opaque origins cannot identify a particular file. Treat these as public,
 // credentialless clients; protected actions still require explicit account tokens.
 function localFilePath(path:string){return path==='/api/devbuild/redeem'||path==='/api/client-version'||googleEmbedPath(path)||/^\/api\/(extraction|room|duel|tri|quad|gunmaster|challenge|ranked|tournament|ctf|hardpoint|survival|bomb)\//.test(path)||['/api/loadout-codes','/api/matchmaking/ranked','/api/matchmaking/duel','/api/forum','/api/forum/post'].includes(path)}

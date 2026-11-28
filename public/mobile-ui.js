@@ -9,6 +9,14 @@ if(mobileDevice&&!window.__ASTRIFT_MOBILE_UI__){
  window.__ASTRIFT_MOBILE_UI__=true;
  const html=document.documentElement;html.dataset.mobileUi='true';html.style.setProperty('--mobile-ui-scale',String(uiScale()));html.style.setProperty('--mobile-ui-inverse',String(1/uiScale()));
  const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./mobile-ui.css',import.meta.url).href;document.head.append(style);
+ const visibleViewport=()=>{
+  let height=window.visualViewport?.height||innerHeight,top=window.visualViewport?.offsetTop||0;
+  try{if(window.parent!==window&&window.parent.visualViewport){const parent=window.parent.visualViewport,frame=window.frameElement?.getBoundingClientRect();if(frame){const start=Math.max(parent.offsetTop,frame.top),end=Math.min(parent.offsetTop+parent.height,frame.bottom);top=Math.max(0,start-frame.top);height=Math.min(height,Math.max(1,end-start),Math.max(1,innerHeight-top));}}}catch{}
+  html.style.setProperty('--mobile-visible-height',uiCoord(height)+'px');html.style.setProperty('--mobile-visible-top',uiCoord(top)+'px');
+ };
+ for(const event of ['resize','scroll'])window.visualViewport?.addEventListener(event,visibleViewport,{passive:true});
+ try{if(window.parent!==window)for(const event of ['resize','scroll'])window.parent.visualViewport?.addEventListener(event,visibleViewport,{passive:true});}catch{}
+ window.addEventListener('resize',visibleViewport,{passive:true});visibleViewport();
  const setup=()=>{
   const guard=document.createElement('section');guard.id='astriftOrientationGuard';guard.setAttribute('data-no-translate','');guard.hidden=true;guard.setAttribute('role','dialog');guard.setAttribute('aria-modal','true');guard.setAttribute('aria-label','横屏继续 / Landscape required');guard.innerHTML='<div class="orientationPhone" aria-hidden="true">↻</div><h2>请旋转至横屏继续</h2><p>Rotate your device to landscape to continue.</p><button type="button">切换横屏 / Use landscape</button>';document.body.append(guard);
   let blocked=false;

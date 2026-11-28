@@ -21,6 +21,7 @@ export class SocialHub extends DurableObject<Env>{
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS social_mutes (target TEXT NOT NULL,sender TEXT NOT NULL,until INTEGER NOT NULL,PRIMARY KEY(target,sender))');
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS social_presence (name TEXT PRIMARY KEY,seen INTEGER NOT NULL)');
   }
+  voiceFriendAllowed(a:string,b:string){return this.friends(a,b)}
   private friends(a:string,b:string){return Boolean(this.ctx.storage.sql.exec<{friend:string}>('SELECT friend FROM social_friends WHERE owner=? AND friend=?',key(a),key(b)).toArray()[0]);}
   private clean(){const now=Date.now();this.ctx.storage.sql.exec('DELETE FROM social_invites WHERE expires<?',now-60000);this.ctx.storage.sql.exec('DELETE FROM social_mutes WHERE until<?',now);this.ctx.storage.sql.exec('DELETE FROM social_presence WHERE seen<?',now-3600000);}
   state(name:string){this.clean();const me=key(name),now=Date.now();this.ctx.storage.sql.exec('INSERT INTO social_presence(name,seen) VALUES(?,?) ON CONFLICT(name) DO UPDATE SET seen=excluded.seen',me,now);
